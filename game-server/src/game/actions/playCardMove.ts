@@ -5,6 +5,7 @@ import { hasCardFeatures } from './utils/typeGuards';
 import { isCardPlayable } from '../utils/cardUtils';
 import { applySpecialEffect } from './utils/effectHandling';
 import { getEffectiveCardType } from '../utils/wildcardUtils';
+import { TemporaryEffectsManager } from './temporaryEffectsManager';
 
 /**
  * Action to play a card from hand onto the field
@@ -22,17 +23,38 @@ export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pla
   
   const card = player.hand[cardIndex];
   
-  // Check if player has enough action points (each card costs AP equal to its cost)
-  if (player.actionPoints < card.cost) {
+  // Handle wildcards - they can be played as other types using our utility function
+  const extendedCard = hasCardFeatures(card) ? card : card;
+  let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
+  
+  // Calculate effective card cost, applying any cost reductions
+  let effectiveCost = card.cost;
+  
+  // Handle Living Off The Land cost reduction (A302)
+  if (card.id === 'A302') {
+    // Check if there's a user infrastructure to target
+    const hasUserInfrastructure = G.infrastructure?.some(infra => infra.type === 'user');
+    if (hasUserInfrastructure) {
+      effectiveCost = Math.max(0, card.cost - 1);
+      console.log(`Living Off The Land: Cost reduced from ${card.cost} to ${effectiveCost}`);
+    }
+  }
+  
+  // Check if player has global cost reduction effects
+  const playerHasCostReduction = TemporaryEffectsManager.hasEffect(G, 'cost_reduction', playerID);
+  if (playerHasCostReduction) {
+    const reduction = 1; // Default reduction amount
+    effectiveCost = Math.max(0, effectiveCost - reduction);
+    console.log(`Cost reduction effect applied: Cost reduced to ${effectiveCost}`);
+  }
+  
+  // Check if player has enough action points for the effective cost
+  if (player.actionPoints < effectiveCost) {
     return {
       ...G,
       message: "Not enough action points to play this card"
     };
   }
-  
-  // Handle wildcards - they can be played as other types using our utility function
-  const extendedCard = hasCardFeatures(card) ? card : card;
-  let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
   
   // For non-immediate effect cards like counter-attack,
   // check if it's the appropriate time to play them
@@ -64,7 +86,7 @@ export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pla
       ...player,
       activeCards: [...activeCards, cardCopy],
       hand: player.hand.filter((_, idx) => idx !== cardIndex),
-      actionPoints: player.actionPoints - card.cost
+      actionPoints: player.actionPoints - effectiveCost // Use effective cost with reductions
     };
     
     // Record action
@@ -116,7 +138,7 @@ export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pla
     ...updatedPlayer,
     hand: newHand,
     discard: [...updatedPlayer.discard, cardCopy],
-    actionPoints: updatedPlayer.actionPoints - card.cost
+    actionPoints: updatedPlayer.actionPoints - effectiveCost // Use effective cost with reductions
   };
   
   // Record action

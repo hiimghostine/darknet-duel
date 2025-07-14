@@ -3,6 +3,7 @@ import { PhaseConfig, Ctx, LongFormMove } from 'boardgame.io';
 import { GameState, PlayerRole, TurnStage, GameAction, PendingReaction } from 'shared-types/game.types';
 import { Card } from 'shared-types/card.types';
 import { drawCard, drawStartingHand, initializePlayer, initializePlayerWithData } from './playerManager';
+import { TemporaryEffectsManager } from '../actions/temporaryEffectsManager';
 
 // Type for move parameter context
 type MoveParams<T> = {
@@ -316,7 +317,8 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     // We don't set default activePlayers here, instead we set it explicitly in onBegin
     // This gives us more control over the stage transitions
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
-      let updatedG = { ...G };
+      // Process temporary effects at turn start
+      let updatedG = TemporaryEffectsManager.processTurnStart(G);
       
       // Track which player is currently active (for turn-based logic)
       const currentPlayer = ctx.currentPlayer;
@@ -331,6 +333,11 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
         console.log(`Attacker turn start: AP ${G.attacker.actionPoints}/${G.gameConfig.maxActionPoints}`);
       } else if (!isAttacker && G.defender) {
         console.log(`Defender turn start: AP ${G.defender.actionPoints}/${G.gameConfig.maxActionPoints}`);
+      }
+      
+      // Log any active temporary effects
+      if (updatedG.temporaryEffects && updatedG.temporaryEffects.length > 0) {
+        console.log(`Active temporary effects: ${updatedG.temporaryEffects.length}`, updatedG.temporaryEffects);
       }
       
       // Start in the Action stage with a clean state

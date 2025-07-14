@@ -8,6 +8,7 @@ import { Card, CardType, AttackVector } from 'shared-types/card.types';
 import { GameState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
+import { TemporaryEffectsManager, TemporaryEffect } from './temporaryEffectsManager';
 
 export interface WildcardPlayContext {
   gameState: GameState;
@@ -142,67 +143,110 @@ export class WildcardResolver {
     const { gameState } = context;
     let updatedGameState = { ...gameState };
     
-    // If not a wildcard or no special effects, return unchanged
-    if (card.type !== 'wildcard' || !card.specialEffect) {
+    // If not a wildcard, return unchanged
+    if (card.type !== 'wildcard') {
       return updatedGameState;
     }
     
-    // Handle various special effects
-    switch (card.specialEffect) {
-      case 'prevent_reactions':
-        // Prevent reactions for 1 turn
+    // Handle card-specific effects based on card ID
+    switch (card.id) {
+      case 'A301': // Advanced Persistent Threat
         if (context.targetInfrastructure) {
-          updatedGameState.temporaryEffects = [
-            ...(updatedGameState.temporaryEffects || []),
-            {
+          // Prevents reaction cards from being played on this infrastructure
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'prevent_reactions',
+            targetId: context.targetInfrastructure.id,
+            playerId: context.playerID,
+            duration: 1,
+            sourceCardId: card.id
+          });
+          
+          updatedGameState.message = `${card.name} prevents reactions on this infrastructure`;
+        }
+        break;
+        
+      case 'A302': // Living Off The Land
+        // Cost reduction is handled in the throwCardMove logic
+        if (context.targetInfrastructure?.type === 'user') {
+          updatedGameState.message = `${card.name} used efficiently on user systems (-1 AP)`;
+        }
+        break;
+        
+      case 'A304': // Privilege Escalation
+        if (context.targetInfrastructure) {
+          // Prevents restoration of this infrastructure for 1 turn
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'prevent_restore',
+            targetId: context.targetInfrastructure.id,
+            duration: 1,
+            sourceCardId: card.id
+          });
+          
+          updatedGameState.message = `${card.name} prevents restoration on this infrastructure`;
+        }
+        break;
+        
+      case 'D301': // Zero Trust Architecture
+        // This needs special handling in the validation system
+        if (context.targetInfrastructure) {
+          updatedGameState.message = `${card.name} requires 2 matching exploits to compromise`;
+        }
+        break;
+        
+      case 'D304': // Threat Intelligence
+        // This needs special UI for hand viewing and selection
+        // For now, just add a message
+        updatedGameState.message = `${card.name} reveals attacker's hand`;
+        break;
+    }
+    
+    // Handle generic special effects
+    if (card.specialEffect) {
+      switch (card.specialEffect) {
+        case 'prevent_reactions':
+          // Prevent reactions for 1 turn
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
               type: 'prevent_reactions',
               targetId: context.targetInfrastructure.id,
               playerId: context.playerID,
               duration: 1,
               sourceCardId: card.id
-            }
-          ];
-        }
-        break;
-      
-      case 'prevent_restore':
-        // Prevent restore effects for 1 turn
-        if (context.targetInfrastructure) {
-          updatedGameState.temporaryEffects = [
-            ...(updatedGameState.temporaryEffects || []),
-            {
+            });
+          }
+          break;
+        
+        case 'prevent_restore':
+          // Prevent restore effects for 1 turn
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
               type: 'prevent_restore',
               targetId: context.targetInfrastructure.id,
               duration: 1,
               sourceCardId: card.id
-            }
-          ];
-        }
-        break;
-      
-      case 'chain_vulnerability':
-        // Mark that we need to make another infrastructure vulnerable
-        updatedGameState.temporaryEffects = [
-          ...(updatedGameState.temporaryEffects || []),
-          {
+            });
+          }
+          break;
+          
+        case 'chain_vulnerability':
+          // Mark that we need to make another infrastructure vulnerable
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
             type: 'chain_vulnerability',
             playerId: context.playerID,
             duration: 0, // Immediate effect
             sourceCardId: card.id
-          }
-        ];
-        break;
-      
-      case 'discard_redraw':
-        // Handle discard and redraw effect
-        // This would normally be handled by a separate move
-        break;
-      
-      // Add cases for other special effects
-      
-      default:
-        // No recognized special effect
-        break;
+          });
+          break;
+        
+        case 'discard_redraw':
+          // Handle discard and redraw effect
+          // This would normally be handled by a separate move
+          break;
+          
+        default:
+          // No recognized special effect
+          break;
+      }
     }
     
     // Handle other wildcard-specific effects

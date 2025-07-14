@@ -6,6 +6,7 @@ import { getEffectiveCardType } from '../../utils/wildcardUtils';
 import { applyCardEffect } from './cardEffects';
 import { validateCardTargeting } from '../utils/validators';
 import { calculateScores } from '../utils/scoring';
+import { TemporaryEffectsManager } from '../temporaryEffectsManager';
 
 /**
  * Action to throw a card at an infrastructure target
@@ -43,20 +44,36 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   // Use our type guard to handle the Card interface properties
   const extendedCard = hasCardFeatures(card) ? card : card;
   
-  // Check if player has enough action points
-  if (player.actionPoints < card.cost) {
-    return { 
-      ...G,
-      message: "Not enough action points to throw this card"
-    };
-  }
-  
   // Find the target infrastructure
   const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
   if (!targetInfrastructure) {
     return { 
       ...G,
       message: "Target infrastructure not found"
+    };
+  }
+  
+  // Calculate effective card cost, applying any cost reductions
+  let effectiveCost = card.cost;
+  
+  // Handle Living Off The Land cost reduction (A302)
+  if (card.id === 'A302' && targetInfrastructure.type === 'user') {
+    effectiveCost = Math.max(0, card.cost - 1);
+    console.log(`Living Off The Land: Cost reduced from ${card.cost} to ${effectiveCost}`);
+  }
+  
+  // Check for cost_reduction temporary effects
+  if (TemporaryEffectsManager.hasEffect(G, 'cost_reduction', targetInfrastructure.id)) {
+    const reduction = 1; // Default reduction amount
+    effectiveCost = Math.max(0, effectiveCost - reduction);
+    console.log(`Cost reduction effect applied: Cost reduced to ${effectiveCost}`);
+  }
+  
+  // Check if player has enough action points for effective cost
+  if (player.actionPoints < effectiveCost) {
+    return { 
+      ...G,
+      message: "Not enough action points to throw this card"
     };
   }
   
@@ -113,7 +130,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     ...player,
     hand: newHand,
     discard: [...player.discard, cardCopy],
-    actionPoints: player.actionPoints - card.cost // Use action points
+    actionPoints: player.actionPoints - effectiveCost // Use effective action points with reductions applied
   };
   
   // Log the card removal for debugging

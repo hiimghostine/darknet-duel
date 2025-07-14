@@ -1,16 +1,55 @@
-import { InfrastructureCard, InfrastructureState } from 'shared-types/game.types';
-import { AttackVector, Vulnerability } from 'shared-types/card.types';
+import { InfrastructureCard, InfrastructureState, GameState } from 'shared-types/game.types';
+import { AttackVector, Vulnerability, Card } from 'shared-types/card.types';
+import { TemporaryEffectsManager } from '../temporaryEffectsManager';
 
 /**
  * Validate that a card can target an infrastructure based on type and state
+ * Also checks for temporary effects that might prevent certain actions
  */
 export function validateCardTargeting(
   cardType: string, 
   infrastructure: InfrastructureCard,
-  attackVector?: AttackVector
+  attackVector?: AttackVector,
+  gameState?: GameState,
+  card?: Card
 ): { valid: boolean, message?: string } {
   // Default validation result
   const invalid = { valid: false, message: "Invalid target for this card" };
+  
+  // Check temporary effects that might prevent certain actions
+  if (gameState) {
+    // Check if reactions are prevented
+    if (cardType === 'reaction' && 
+        TemporaryEffectsManager.hasEffect(gameState, 'prevent_reactions', infrastructure.id)) {
+      return { valid: false, message: "This infrastructure is protected from reactions" };
+    }
+    
+    // Check if restoration is prevented
+    if (cardType === 'response' && 
+        TemporaryEffectsManager.hasEffect(gameState, 'prevent_restore', infrastructure.id)) {
+      return { valid: false, message: "This infrastructure cannot be restored" };
+    }
+    
+    // Handle Zero Trust Architecture special validation (requires 2 matching exploits)
+    if (card && card.id === 'D301' && infrastructure.state === 'secure') {
+      // Only if we're trying to exploit it
+      if (cardType === 'exploit' && attackVector) {
+        // Count matching vulnerabilities
+        const existingVulns = infrastructure.vulnerabilities?.filter(v => {
+          if (typeof v === 'string') {
+            return v === attackVector;
+          } else if (typeof v === 'object' && v !== null) {
+            return v.vector === attackVector;
+          }
+          return false;
+        }).length || 0;
+        
+        if (existingVulns < 1) {
+          return { valid: false, message: "Zero Trust Architecture requires matching exploits" };
+        }
+      }
+    }
+  }
   
   switch (cardType) {
     case 'exploit':

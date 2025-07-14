@@ -4,6 +4,8 @@ import { CardType, Card } from 'shared-types/card.types';
 import { applyCardEffect } from '../actions/throwCardMove/cardEffects';
 // Fix import path for calculateScores - it's in actions/utils/scoring
 import { calculateScores } from '../actions/utils/scoring';
+import { TemporaryEffectsManager } from '../actions/temporaryEffectsManager';
+import { WildcardResolver } from '../actions/wildcardResolver';
 
 /**
  * Move for players to choose a type when playing a wildcard card
@@ -108,8 +110,36 @@ export const chooseWildcardTypeMove = ({ G, ctx, playerID }: { G: GameState; ctx
   // Normal case - card effect applied successfully
   const newInfrastructure = effectResult;
   
+  // Apply any wildcard-specific effects now that we know the chosen type
+  let updatedGameState: GameState = {
+    ...G,
+    infrastructure: newInfrastructure, // We know this is defined because we checked earlier
+    pendingWildcardChoice: undefined // Clear the pending choice
+  };
+  
+  // Use the already defined isAttacker to determine player role
+  const playerRole = isAttacker ? 'attacker' : 'defender';
+  
+  // Apply any special effects from this wildcard based on its ID
+  updatedGameState = WildcardResolver.applyWildcardEffects(card, {
+    gameState: updatedGameState,
+    playerID,
+    playerRole,
+    targetInfrastructure: targetInfrastructureObj,
+    card, // Pass the card itself
+    chosenType
+  });
+  
+  // Check if reactions are prevented by temporary effects
+  const reactionsBlocked = TemporaryEffectsManager.hasEffect(
+    updatedGameState, 
+    'prevent_reactions', 
+    targetInfrastructureObj.id
+  );
+  
   // Check if this card should trigger reaction phase (like in throwCardMove)
-  const shouldTriggerReaction = !card.preventReaction && 
+  const shouldTriggerReaction = !reactionsBlocked && 
+                             !card.preventReaction && 
                              (chosenType === 'attack' || chosenType === 'exploit');
   
   // Calculate scores based on infrastructure states
@@ -117,12 +147,11 @@ export const chooseWildcardTypeMove = ({ G, ctx, playerID }: { G: GameState; ctx
   
   // Update game state
   const updatedState: GameState = {
-    ...G,
-    infrastructure: newInfrastructure,
-    message: `Wildcard played as ${chosenType}`,
+    ...updatedGameState,
     attackerScore,
     defenderScore,
-    pendingWildcardChoice: undefined // Clear the pending choice
+    // Use the message from wildcard resolver if it exists, otherwise use default
+    message: updatedGameState.message || `Wildcard played as ${chosenType}`
   };
   
   // Add reaction stage if needed
