@@ -1,10 +1,11 @@
 import { Ctx } from 'boardgame.io';
-import { GameState, GameAction, InfrastructureCard } from 'shared-types/game.types';
-import { Card, AttackVector, CardType } from 'shared-types/card.types';
-import { validateCardTargeting } from '../utils/validators';
+import { GameState, GameAction } from 'shared-types/game.types';
+import { Card, CardType, AttackVector } from 'shared-types/card.types';
 import { hasCardFeatures } from '../utils/typeGuards';
-import { calculateScores } from '../utils/scoring';
+import { getEffectiveCardType } from '../../utils/wildcardUtils';
 import { applyCardEffect } from './cardEffects';
+import { validateCardTargeting } from '../utils/validators';
+import { calculateScores } from '../utils/scoring';
 
 /**
  * Action to throw a card at an infrastructure target
@@ -68,17 +69,9 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   };
 
   // Handle card type-specific targeting validation
-  // For wildcard cards, determine the effective card type
-  // Note: Handle both string and array types for wildcardType per the shared types memory
-  let effectiveCardType = card.type;
-  
-  if (extendedCard.wildcardType && extendedCard.type === 'wildcard') {
-    if (Array.isArray(extendedCard.wildcardType) && extendedCard.wildcardType.length > 0) {
-      effectiveCardType = extendedCard.wildcardType[0];
-    } else if (typeof extendedCard.wildcardType === 'string') {
-      effectiveCardType = extendedCard.wildcardType as string;
-    }
-  }
+  // For wildcard cards, determine the effective card type using our utility function
+  // This ensures consistent handling across the codebase
+  let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
   
   // Get attack vector if available, or fall back to metadata.category
   let attackVector = extendedCard.attackVector as AttackVector | undefined;

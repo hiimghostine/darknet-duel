@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ExtendedCard } from './types';
-// Import helpers from frontend types (these are UI-specific functions)
 import { isAttackerCard, isDefenderCard, isReactiveCardObject } from '../../../types/card.types';
+import { getWildcardTypeDisplay } from '../../../utils/wildcardTypeUtils';
 import '../../../styles/card.css';
 
 interface CardDisplayProps {
@@ -111,7 +111,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             <div className="card-special" title={card.specialEffect}>✦</div>
           )}
           {card.wildcardType && (
-            <div className="card-wildcard" title={`Can be played as: ${Array.isArray(card.wildcardType) ? card.wildcardType.join(', ') : card.wildcardType}`}>W</div>
+            <div className="card-wildcard" title={`Can be played as: ${getWildcardTypeDisplay(card.wildcardType)}`}>W</div>
           )}
         </div>
       </div>

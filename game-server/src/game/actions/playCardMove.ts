@@ -1,9 +1,10 @@
 import { Ctx } from 'boardgame.io';
 import { GameState, GameAction } from 'shared-types/game.types';
 import { Card, CardType } from 'shared-types/card.types';
-import { isCardPlayable } from '../utils/cardUtils';
 import { hasCardFeatures } from './utils/typeGuards';
+import { isCardPlayable } from '../utils/cardUtils';
 import { applySpecialEffect } from './utils/effectHandling';
+import { getEffectiveCardType } from '../utils/wildcardUtils';
 
 /**
  * Action to play a card from hand onto the field
@@ -29,18 +30,9 @@ export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pla
     };
   }
   
-  // Handle wildcards - they can be played as other types
-  // Keep the original simple implementation but handle both string and array types
-  let effectiveCardType = card.type;
-  
+  // Handle wildcards - they can be played as other types using our utility function
   const extendedCard = hasCardFeatures(card) ? card : card;
-  if (extendedCard.type === 'wildcard' && extendedCard.wildcardType) {
-    if (Array.isArray(extendedCard.wildcardType) && extendedCard.wildcardType.length > 0) {
-      effectiveCardType = extendedCard.wildcardType[0];
-    } else if (typeof extendedCard.wildcardType === 'string') {
-      effectiveCardType = extendedCard.wildcardType as unknown as CardType;
-    }
-  }
+  let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
   
   // For non-immediate effect cards like counter-attack,
   // check if it's the appropriate time to play them

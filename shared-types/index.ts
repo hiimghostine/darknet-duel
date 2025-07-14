@@ -14,6 +14,15 @@ export type {
   Shield
 } from './card.types';
 
+// Export wildcard utility types and functions
+export type { NormalizedWildcardType } from './utils/wildcardTypeUtils';
+export { 
+  getAvailableCardTypes,
+  normalizeWildcardType,
+  canPlayWildcardAs,
+  getWildcardTypeDisplay
+} from './utils/wildcardTypeUtils';
+
 // Export game-specific types from game.types.ts
 export type {
   GameState,
