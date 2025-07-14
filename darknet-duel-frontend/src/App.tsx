@@ -8,6 +8,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
+import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/lobbies/*" element={<LobbyPage />} />
           <Route path="/game/:matchID" element={<GamePage />} />
         </Route>
