@@ -493,10 +493,16 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
     const endTime = new Date();
     const gameDuration = Math.floor((endTime.getTime() - new Date(startTime).getTime()) / 1000); // in seconds
     
+    // ✅ FIX: Add debugging and handle abandoned games properly
+    console.log('🔍 GAME RESULT DEBUG:');
+    console.log('   - winnerId:', winnerId);
+    console.log('   - winnerRole:', winnerRole);
+    console.log('   - isAbandoned:', winnerRole === 'abandoned');
+    
     // Prepare game result data - updated to match the new structure expected by the backend
     const gameResult: GameResultData = {
       gameId: gameID,
-      winner: {
+      winner: winnerRole === 'abandoned' ? null : {
         id: winnerId,
         role: winnerRole
       },
@@ -508,6 +514,8 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       gameMode,
       abandonReason: winnerRole === 'abandoned' ? 'players_disconnected' : undefined
     };
+    
+    console.log('🔍 Final winner object being sent:', JSON.stringify(gameResult.winner, null, 2));
     
     // Create game history data
     const gameHistory: GameHistoryData = {

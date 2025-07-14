@@ -101,20 +101,23 @@ export const sendGameResults = async (gameResult: GameResultData): Promise<boole
       return isNumericId;
     });
     
-    // Restructure game result to match backend expectations
+    // ✅ FIX: Restructure game result to match backend expectations
+    // The backend expects winner at the top level, not inside gameData
     const restructuredPayload = {
       gameId: gameResult.gameId,
+      winner: gameResult.winner, // ✅ Winner at top level
       players: gameResult.players,
       gameData: {
         turnCount: gameResult.turnCount,
         startTime: gameResult.startTime,
         endTime: gameResult.endTime,
         actions: gameResult.actions,
-        winner: gameResult.winner,
         gameMode: gameResult.gameMode,
         abandonReason: gameResult.abandonReason
       }
     };
+    
+    console.log('🔍 PAYLOAD DEBUG: Winner data being sent:', JSON.stringify(restructuredPayload.winner, null, 2));
     
     console.log(`Sending game results to backend for ${gameResult.gameId}...`);
     let retries = 0;
@@ -226,7 +229,7 @@ export interface GameResultData {
   winner: {
     id: string;
     role: string;
-  };
+  } | null; // ✅ Allow null for abandoned games
   players: {
     id: string;
     name: string;

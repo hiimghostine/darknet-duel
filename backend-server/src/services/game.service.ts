@@ -19,7 +19,7 @@ interface GameResultData {
   winner: {
     id: string;    // accountId
     role: string;  // playerRole
-  };
+  } | null; // ✅ Allow null for abandoned games
   players: {
     id: string;    // accountId
     name: string;  // player name
@@ -50,18 +50,34 @@ export class GameService {
     await queryRunner.startTransaction();
     
     try {
+      // ✅ FIX: Add debugging to see what winner data we're receiving
+      console.log('🔍 WINNER DATA DEBUG:');
+      console.log('   - data.winner:', JSON.stringify(data.winner, null, 2));
+      console.log('   - data.winner?.id:', data.winner?.id);
+      console.log('   - data.winner?.role:', data.winner?.role);
+      console.log('   - abandonReason:', data.gameData.abandonReason);
+      
       // Create the game result record
       const gameResult = new GameResult();
       gameResult.id = uuidv4();
       gameResult.gameId = data.gameId;
-      gameResult.winnerId = data.winner?.id; // Use id as accountId
-      gameResult.winnerRole = data.winner?.role;   // Use role directly
+      
+      // ✅ FIX: Handle case where winner data might be null/undefined
+      if (data.winner && data.winner.id && data.winner.role) {
+        gameResult.winnerId = data.winner.id;
+        gameResult.winnerRole = data.winner.role;
+        console.log(`✅ Winner data set: ${data.winner.role} (${data.winner.id})`);
+      } else {
+        (gameResult as any).winnerId = null;
+        (gameResult as any).winnerRole = null;
+        console.log(`❌ No valid winner data - setting winnerId and winnerRole to null`);
+      }
+      
       gameResult.turnCount = data.gameData.turnCount;
       gameResult.startTime = new Date(data.gameData.startTime);
       gameResult.endTime = new Date(data.gameData.endTime);
       gameResult.gameMode = data.gameData.gameMode;
-      // isAbandoned field doesn't exist in schema
-      gameResult.abandonReason = data.gameData.abandonReason;
+      (gameResult as any).abandonReason = data.gameData.abandonReason || null;
       
       // Save the game result first to establish the record
       await queryRunner.manager.save(gameResult);
@@ -74,8 +90,8 @@ export class GameService {
         gamePlayer.accountId = playerData.id;       // Use id as accountId
         gamePlayer.playerRole = playerData.role;    // Use role directly
         // Determine if player is winner by comparing with winner role
-        gamePlayer.isWinner = playerData.isWinner || 
-          (data.winner && playerData.role === data.winner.role && !data.gameData.abandonReason);
+        gamePlayer.isWinner = !!(playerData.isWinner ||
+          (data.winner && playerData.role === data.winner.role && !data.gameData.abandonReason));
         gamePlayer.ratingBefore = playerData.ratingBefore || null;
         gamePlayer.ratingAfter = playerData.ratingAfter || null;
         gamePlayer.ratingChange = playerData.ratingChange || null;
