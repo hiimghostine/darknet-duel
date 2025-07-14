@@ -8,15 +8,22 @@ const getToken = (): string | null => {
 
 const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL || 'http://localhost:8001';
 
-// Configure authentication for API requests
+// Configure global axios defaults
+axios.defaults.timeout = 10000; // 10 second default timeout for all requests
 
-// Use our custom fetch function when making requests with axios
+// Configure authentication for API requests
 axios.interceptors.request.use((config) => {
   const token = getToken();
   if (token) {
     config.headers = config.headers || {};
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+  
+  // Set a shorter timeout for polling requests to prevent UI hanging
+  if (config.url?.includes('/games/darknet-duel/')) {
+    config.timeout = 5000; // 5 seconds for polling requests
+  }
+  
   return config;
 });
 
@@ -244,13 +251,19 @@ export const lobbyService = {
     }
   },
 
-  // Get match details
+  // Get match details with timeout and error handling
   getMatch: async (matchID: string): Promise<GameMatch | null> => {
     try {
-      const match = await axios.get(`${GAME_SERVER_URL}/games/darknet-duel/${matchID}`);
+      const match = await axios.get(`${GAME_SERVER_URL}/games/darknet-duel/${matchID}`, {
+        timeout: 5000, // 5 second timeout
+        signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined // Additional timeout for modern browsers
+      });
       return match.data;
     } catch (error) {
-      console.error('Failed to get match details:', error);
+      // Only log non-timeout errors to reduce console spam
+      if (axios.isAxiosError(error) && error.code !== 'ECONNABORTED') {
+        console.error('Failed to get match details:', error);
+      }
       return null;
     }
   },

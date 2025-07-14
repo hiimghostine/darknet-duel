@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import type { GameMatch } from '../../services/lobby.service';
@@ -16,14 +16,20 @@ const LobbyDetail: React.FC = () => {
   const [isHost, setIsHost] = useState(false);
   const [currentPlayerID, setCurrentPlayerID] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
-  // Track previous player slots for detecting host transfers
-  const [prevPlayerIDs, setPrevPlayerIDs] = useState<{[key: string]: number}>({});
+  // Track previous player slots for detecting host transfers using ref to avoid dependency issues
+  const prevPlayerIDsRef = useRef<{[key: string]: number}>({});
   const [hostTransferOccurred, setHostTransferOccurred] = useState<boolean>(false);
   
   // Fetch match details using useCallback to avoid recreation on each render
-  const fetchMatchDetails = useCallback(async () => {
+  const fetchMatchDetails = useCallback(async (isBackgroundFetch = false) => {
     if (!matchID) return;
+    
+    // Don't start new fetch if one is already in progress (prevents queuing)
+    if (isPolling && isBackgroundFetch) return;
+    
+    if (isBackgroundFetch) setIsPolling(true);
     
     try {
       const matchDetails = await lobbyService.getMatch(matchID);
@@ -40,8 +46,8 @@ const LobbyDetail: React.FC = () => {
         // Check if any player has moved positions (host transfer)
         Object.keys(currentPlayerMap).forEach(name => {
           // If we have seen this player before but their ID changed
-          if (prevPlayerIDs[name] !== undefined && 
-              prevPlayerIDs[name] !== currentPlayerMap[name]) {
+          if (prevPlayerIDsRef.current[name] !== undefined &&
+              prevPlayerIDsRef.current[name] !== currentPlayerMap[name]) {
             // Player moved - host transfer occurred
             if (currentPlayerMap[name] === 0) {
               // This player is now the host
@@ -52,7 +58,7 @@ const LobbyDetail: React.FC = () => {
         });
         
         // Update previous player positions for next comparison
-        setPrevPlayerIDs(currentPlayerMap);
+        prevPlayerIDsRef.current = currentPlayerMap;
         
         // Update match details
         setMatch(matchDetails);
@@ -98,8 +104,9 @@ const LobbyDetail: React.FC = () => {
       setError('Failed to load lobby details');
     } finally {
       setLoading(false);
+      if (isBackgroundFetch) setIsPolling(false);
     }
-  }, [matchID, navigate, setMatch, setCurrentPlayerID, setIsHost, setIsReady, setLoading, setError, prevPlayerIDs]);
+  }, [matchID, navigate]);
 
   // Initial fetch when component mounts
   useEffect(() => {
@@ -109,7 +116,8 @@ const LobbyDetail: React.FC = () => {
   // Poll for match updates every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchMatchDetails();
+      // Use background fetch flag to prevent UI blocking
+      fetchMatchDetails(true);
     }, 2000);
     
     // Clear interval on component unmount
