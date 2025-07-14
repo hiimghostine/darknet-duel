@@ -6,6 +6,8 @@ import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
 import infoRoutes from './routes/info.routes';
+import accountRoutes from './routes/account.routes';
+import filesRoutes from './routes/files.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 // Load environment variables
@@ -55,6 +57,12 @@ app.use(cors({
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Account management routes
+app.use('/api/account', accountRoutes);
+
+// File management routes
+app.use('/api/files', filesRoutes);
 
 // Server-to-server routes for game-server communication
 app.use('/api/server', serverRoutes);

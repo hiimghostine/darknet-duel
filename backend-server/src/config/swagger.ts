@@ -82,6 +82,12 @@ const options: swaggerJSDoc.Options = {
               type: 'integer',
               description: 'Current ELO rating'
             },
+            bio: {
+              type: 'string',
+              maxLength: 30,
+              nullable: true,
+              description: 'User bio'
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
@@ -258,6 +264,108 @@ const options: swaggerJSDoc.Options = {
               description: 'Success message'
             }
           }
+        },
+        UpdateAccountRequest: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'New email address (optional)'
+            },
+            username: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 20,
+              description: 'New username (optional)'
+            },
+            password: {
+              type: 'string',
+              minLength: 8,
+              description: 'New password (optional)'
+            },
+            bio: {
+              type: 'string',
+              maxLength: 30,
+              description: 'User bio (optional, max 30 characters)'
+            }
+          }
+        },
+        UpdateAccountFormRequest: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'New email address (optional)'
+            },
+            username: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 20,
+              description: 'New username (optional)'
+            },
+            password: {
+              type: 'string',
+              minLength: 8,
+              description: 'New password (optional)'
+            },
+            bio: {
+              type: 'string',
+              maxLength: 30,
+              description: 'User bio (optional, max 30 characters)'
+            },
+            avatar: {
+              type: 'string',
+              format: 'binary',
+              description: 'Avatar image file (optional, max 5MB, JPEG/PNG/GIF/WebP)'
+            }
+          }
+        },
+        PublicUser: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'Unique user identifier'
+            },
+            username: {
+              type: 'string',
+              description: 'Unique username'
+            },
+            isActive: {
+              type: 'boolean',
+              description: 'Whether the account is active'
+            },
+            gamesPlayed: {
+              type: 'integer',
+              description: 'Total number of games played'
+            },
+            gamesWon: {
+              type: 'integer',
+              description: 'Total number of games won'
+            },
+            gamesLost: {
+              type: 'integer',
+              description: 'Total number of games lost'
+            },
+            rating: {
+              type: 'integer',
+              description: 'Current ELO rating'
+            },
+            bio: {
+              type: 'string',
+              maxLength: 30,
+              nullable: true,
+              description: 'User bio'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Account creation timestamp'
+            }
+          }
         }
       }
     },
@@ -265,6 +373,14 @@ const options: swaggerJSDoc.Options = {
       {
         name: 'Authentication',
         description: 'User authentication and account management'
+      },
+      {
+        name: 'Account Management',
+        description: 'User account details and profile management'
+      },
+      {
+        name: 'File Management',
+        description: 'File upload and retrieval endpoints'
       },
       {
         name: 'Profile & Info',

@@ -32,6 +32,15 @@ export class Account {
   @Column({ default: 1200 })
   rating: number;
 
+  @Column({ nullable: true, length: 30 })
+  bio: string;
+
+  @Column({ type: 'longblob', nullable: true })
+  avatar: Buffer;
+
+  @Column({ nullable: true, length: 100 })
+  avatarMimeType: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
