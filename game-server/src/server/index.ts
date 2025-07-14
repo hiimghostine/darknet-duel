@@ -306,26 +306,76 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
     if (matchData.state) {
       state = matchData.state;
       
+      // ✅ FIX: First try to get real player data from lobby metadata
+      let realPlayerData: any = {};
+      
+      if (matchData.metadata?.players) {
+        console.log('🔍 Found lobby metadata with players:', Object.keys(matchData.metadata.players));
+        console.log('🔍 Full metadata structure:', JSON.stringify(matchData.metadata, null, 2));
+        
+        Object.entries(matchData.metadata.players).forEach(([playerId, playerMeta]: [string, any]) => {
+          console.log(`\n🔍 Analyzing player ${playerId}:`);
+          console.log(`   - playerMeta type:`, typeof playerMeta);
+          console.log(`   - playerMeta.name:`, playerMeta?.name);
+          console.log(`   - playerMeta.data:`, playerMeta?.data);
+          
+          if (playerMeta && typeof playerMeta === 'object') {
+            // Extract real user data if available
+            if (playerMeta.data?.realUserId && playerMeta.data?.realUsername) {
+              console.log(`   - realUserId:`, playerMeta.data.realUserId);
+              console.log(`   - realUsername:`, playerMeta.data.realUsername);
+              console.log(`   - realUserId type:`, typeof playerMeta.data.realUserId);
+              console.log(`   - is UUID format?:`, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerMeta.data.realUserId));
+              
+              realPlayerData[playerId] = {
+                id: playerMeta.data.realUserId, // ✅ Always use the UUID
+                name: playerMeta.data.realUsername,
+                role: playerId === '0' ? 'attacker' : 'defender'
+              };
+              console.log(`✅ Using real UUID for player ${playerId}: ${playerMeta.data.realUsername} (UUID: ${playerMeta.data.realUserId})`);
+            } else if (playerMeta.name) {
+              // ❌ DON'T use username as ID - this causes foreign key errors
+              console.warn(`⚠️ Player ${playerId} missing real UUID data:`);
+              console.warn(`   - Name: ${playerMeta.name}`);
+              console.warn(`   - Data keys: ${Object.keys(playerMeta.data || {})}`);
+              console.warn(`   - realUserId: ${playerMeta.data?.realUserId}`);
+              console.warn(`   - realUsername: ${playerMeta.data?.realUsername}`);
+              console.warn(`   ❌ Skipping to prevent foreign key errors`);
+            }
+          }
+        });
+      }
+      
       // Look for players in the state object
       if (state.G && state.G.attacker && state.G.defender) {
         // Game-specific structure where players are in G as attacker/defender
+        // ✅ Use real player data if available, otherwise fall back to game state
         players = {
-          '0': {
+          '0': realPlayerData['0'] || {
             id: state.G.attacker.id || '0',
             name: state.G.attacker.name || 'Attacker',
             role: 'attacker'
           },
-          '1': {
+          '1': realPlayerData['1'] || {
             id: state.G.defender.id || '1',
             name: state.G.defender.name || 'Defender',
             role: 'defender'
           }
         };
-        console.log(`Using game-specific player structure from G.attacker/G.defender`);
+        console.log(`Using game-specific player structure with real data overlay`);
       } else if (state.players) {
-        // Players are directly in state
-        players = state.players;
-        console.log(`Using players from state.players`);
+        // Players are directly in state - overlay real data
+        players = { ...state.players };
+        Object.keys(realPlayerData).forEach(playerId => {
+          if (players[playerId]) {
+            players[playerId] = { ...players[playerId], ...realPlayerData[playerId] };
+          }
+        });
+        console.log(`Using players from state.players with real data overlay`);
+      } else if (Object.keys(realPlayerData).length > 0) {
+        // Use real player data directly
+        players = realPlayerData;
+        console.log(`Using real player data from lobby metadata`);
       } else {
         // Fallback - create minimal players structure
         players = {};

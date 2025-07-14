@@ -37,11 +37,21 @@ const CreateLobby: React.FC = () => {
         throw new Error('Failed to create lobby');
       }
       
-      // Join the created match - auto-assign role
+      // Join the created match - auto-assign role with real user data
+      console.log('🔍 TRACING: CreateLobby joining with user data:');
+      console.log('   - user.id:', user.id);
+      console.log('   - user.username:', user.username);
+      
       const result = await lobbyService.joinMatch(
         matchID,
         user.username,
-        '0' // Host is always player 0
+        '0', // Host is always player 0
+        {
+          data: {
+            realUserId: user.id,        // ✅ Pass UUID directly
+            realUsername: user.username // ✅ Pass username directly
+          }
+        }
       );
       
       if (result) {

@@ -171,8 +171,8 @@ export const lobbyService = {
 
   // Join an existing match
   joinMatch: async (
-    matchID: string, 
-    playerName: string, 
+    matchID: string,
+    playerName: string,
     playerID: string = '0',
     options?: {
       role?: 'attacker' | 'defender';
@@ -180,7 +180,7 @@ export const lobbyService = {
     }
   ): Promise<{ playerCredentials: string } | null> => {
     try {
-      // We don't need to access token directly here, the fetch wrapper handles it
+      // ✅ SIMPLE FIX: Just use the data passed from the caller
       const data = options?.data || {};
       
       // If role preference is specified, add it to join data
@@ -188,11 +188,23 @@ export const lobbyService = {
         data.role = options.role;
       }
 
-      const result = await lobbyClient.joinMatch('darknet-duel', matchID, {
+      console.log('🎮 LOBBY SERVICE: Joining match with data:');
+      console.log('   - playerID:', playerID);
+      console.log('   - playerName:', playerName);
+      console.log('   - data object:', JSON.stringify(data, null, 2));
+      console.log('   - data keys:', Object.keys(data));
+      
+      const joinPayload = {
         playerID,
         playerName,
         data
-      });
+      };
+      
+      console.log('🎮 LOBBY SERVICE: Full join payload:', JSON.stringify(joinPayload, null, 2));
+
+      const result = await lobbyClient.joinMatch('darknet-duel', matchID, joinPayload);
+      
+      console.log('🎮 LOBBY SERVICE: Join result:', result);
 
       // Store the player credentials locally
       localStorage.setItem(`match_${matchID}_credentials`, result.playerCredentials);
@@ -237,11 +249,19 @@ export const lobbyService = {
       
       if (!playerID || !credentials) return false;
       
-      // Update player metadata with ready status
+      // ✅ FIX: Get current player data to preserve existing fields like realUserId
+      const currentMatch = await lobbyService.getMatch(matchID);
+      const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
+      const existingData = currentPlayer?.data || {};
+      
+      console.log('🔍 READY STATUS: Preserving existing data:', existingData);
+      console.log('🔍 READY STATUS: Setting isReady to:', isReady);
+      
+      // Update player metadata with ready status while preserving existing data
       await lobbyClient.updatePlayer('darknet-duel', matchID, {
         playerID,
         credentials,
-        data: { isReady }
+        data: { ...existingData, isReady }  // ✅ MERGE instead of overwrite
       });
       
       return true;
@@ -276,12 +296,20 @@ export const lobbyService = {
       
       if (!playerID || !credentials || playerID !== '0') return false;
       
+      // ✅ FIX: Get current player data to preserve existing fields like realUserId
+      const currentMatch = await lobbyService.getMatch(matchID);
+      const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
+      const existingData = currentPlayer?.data || {};
+      
+      console.log('🔍 START MATCH: Preserving existing data:', existingData);
+      console.log('🔍 START MATCH: Adding gameStarted flag');
+      
       // Since we can't directly update match metadata, we'll set a special flag
-      // on the host player that others can check
+      // on the host player that others can check while preserving existing data
       await lobbyClient.updatePlayer('darknet-duel', matchID, {
         playerID,
         credentials,
-        data: { isReady: true, gameStarted: true }
+        data: { ...existingData, isReady: true, gameStarted: true }  // ✅ MERGE instead of overwrite
       });
       
       return true;

@@ -71,11 +71,28 @@ const LobbyBrowser: React.FC = () => {
         role = 'defender';
       }
       
+      // ✅ SIMPLE FIX: Pass real user data directly from auth store
+      console.log('🔍 TRACING: About to join match with user data:');
+      console.log('   - user.id:', user.id);
+      console.log('   - user.username:', user.username);
+      console.log('   - playerID:', playerID);
+      console.log('   - role:', role);
+      
+      const joinData = {
+        role,
+        data: {
+          realUserId: user.id,        // ✅ Pass UUID directly
+          realUsername: user.username // ✅ Pass username directly
+        }
+      };
+      
+      console.log('🔍 TRACING: Join data being sent:', joinData);
+      
       const result = await lobbyService.joinMatch(
         matchID,
         user.username,
         playerID,
-        { role }
+        joinData
       );
       
       if (result) {

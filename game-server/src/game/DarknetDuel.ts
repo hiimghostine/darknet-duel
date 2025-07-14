@@ -23,8 +23,14 @@ const DarknetDuel: Game<GameState> = {
   
   // Setup function initializes the game state
   setup({ ctx }: { ctx: Ctx }) {
-    console.log('Game setup initiated');
+    console.log('Game setup initiated - creating minimal initial state');
+    console.log(`Players in setup: ${ctx.playOrder.length}/2`);
+    
+    // ✅ FIX: Only create basic state structure, don't initialize players yet
+    // Player initialization will happen in the setup phase onBegin when both players join
     const state = createInitialState();
+    
+    console.log('✅ Minimal game state created, waiting for players to join');
     return state;
   },
 

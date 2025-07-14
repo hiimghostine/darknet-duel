@@ -31,6 +31,39 @@ export const initializePlayer = (playerId: string, role: PlayerRole, gameConfig:
 };
 
 /**
+ * Initialize a player with real user data
+ * @param playerId Boardgame.io player identifier ("0", "1")
+ * @param role Player role (attacker/defender)
+ * @param gameConfig Game configuration settings
+ * @param userData Real user data with id and name
+ * @returns Fully initialized Player object with real user data
+ */
+export const initializePlayerWithData = (
+  playerId: string,
+  role: PlayerRole,
+  gameConfig: GameState['gameConfig'],
+  userData: { id: string; name: string }
+): Player => {
+  // Load appropriate deck based on player role
+  const deck = role === 'attacker' ? createAttackerDeck() : createDefenderDeck();
+  
+  console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (ID: ${userData.id})`);
+
+  return {
+    id: userData.id,              // ✅ Use real user UUID
+    name: userData.name,          // ✅ Use real user name
+    role: role,
+    resources: gameConfig.initialResources,
+    actionPoints: gameConfig.initialActionPoints,
+    freeCardCyclesUsed: 0,
+    deck: deck,
+    hand: [],
+    field: [],
+    discard: []
+  };
+};
+
+/**
  * Draw a card from player's deck
  * @param player Current player state
  * @returns Updated player state with a new card in hand

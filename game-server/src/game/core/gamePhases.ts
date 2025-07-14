@@ -2,7 +2,7 @@ import { FnContext } from 'boardgame.io/dist/types/src/types';
 import { PhaseConfig, Ctx, LongFormMove } from 'boardgame.io';
 import { GameState, PlayerRole, TurnStage, GameAction, PendingReaction } from 'shared-types/game.types';
 import { Card } from 'shared-types/card.types';
-import { drawCard, drawStartingHand, initializePlayer } from './playerManager';
+import { drawCard, drawStartingHand, initializePlayer, initializePlayerWithData } from './playerManager';
 
 // Type for move parameter context
 type MoveParams<T> = {
@@ -50,28 +50,22 @@ export const setupPhase = {
   
   moves: {
     // Register player's JWT token to map boardgame.io ID to real UUID
-    registerPlayerToken: async ({ G, playerID }: MoveParams<GameState>, token: string) => {
+    registerPlayerToken: ({ G, playerID }: MoveParams<GameState>, token: string) => {
       console.log(`Player ${playerID} is registering their JWT token`);
       
+      // ✅ FIX: Remove async/await since boardgame.io moves must be synchronous
+      // We'll handle the mapping through lobby metadata instead
       try {
-        // Import validateToken to verify the token and get user data
-        const { validateToken } = require('../../server/auth');
+        // Initialize playerUuidMap if it doesn't exist
+        if (!G.playerUuidMap) {
+          G.playerUuidMap = {};
+        }
         
-        // Validate the token against the backend server
-        const validation = await validateToken(token);
-        
-        if (validation.valid && validation.user && validation.user.id) {
-          // Initialize playerUuidMap if it doesn't exist
-          if (!G.playerUuidMap) {
-            G.playerUuidMap = {};
-          }
-          
-          // Map this player's boardgame.io ID to their real UUID
-          G.playerUuidMap[playerID] = validation.user.id;
-          
-          console.log(`✅ Successfully mapped player ${playerID} to UUID ${validation.user.id}`);
-        } else {
-          console.error(`❌ Failed to validate token for player ${playerID}`);
+        // For now, just store the token for later processing
+        // Real UUID mapping will happen through lobby metadata
+        if (playerID) {
+          G.playerUuidMap[playerID] = `pending_${token.substring(0, 8)}`;
+          console.log(`✅ Token registered for player ${playerID}, will be resolved via lobby metadata`);
         }
       } catch (error) {
         console.error(`Error registering player token:`, error);
@@ -141,25 +135,64 @@ export const setupPhase = {
     }
   },
   
-  onBegin: ({ G, ctx }: FnContext<GameState>) => {
+  onBegin: ({ G, ctx }: FnContext<GameState>): GameState => {
     // Skip if players are already initialized
-    if (G.attacker && G.defender) return G;
+    if (G.attacker && G.defender) {
+      console.log('Game already initialized, skipping setup');
+      return G;
+    }
     
     // Get player IDs from the game context
     const attackerId = ctx.playOrder[0];
     const defenderId = ctx.playOrder[1];
     
-    // Check if we have both players
+    // ✅ FIX: Don't initialize if we don't have both players yet
+    // This prevents early setup when lobby is created with only 1 player
     if (!attackerId || !defenderId) {
-      console.error('Missing player IDs in ctx.playOrder');
+      console.log('⏳ Waiting for both players to join lobby before initializing game');
+      console.log(`Current players: ${ctx.playOrder.length}/2`);
+      return G; // Return unchanged state, wait for both players
+    }
+    
+    // Additional check: Ensure we actually have 2 players
+    if (ctx.playOrder.length < 2) {
+      console.log('⏳ Only 1 player connected, waiting for second player');
       return G;
     }
     
-    console.log(`Initializing game with attacker ${attackerId}, defender ${defenderId}`);
+    console.log(`✅ Both players present, initializing game with attacker ${attackerId}, defender ${defenderId}`);
+    console.log('Available ctx properties:', Object.keys(ctx));
     
-    // Initialize players with their roles
-    let attacker = initializePlayer(attackerId, 'attacker', G.gameConfig);
-    let defender = initializePlayer(defenderId, 'defender', G.gameConfig);
+    // ✅ FIX: Extract real player data from boardgame.io match metadata
+    let attackerData = { id: attackerId, name: `Player ${attackerId}` };
+    let defenderData = { id: defenderId, name: `Player ${defenderId}` };
+    
+    // Check if we have playerUuidMap from setup phase token registration
+    if (G.playerUuidMap) {
+      console.log('Found playerUuidMap as fallback:', G.playerUuidMap);
+      
+      if (G.playerUuidMap[attackerId]) {
+        attackerData.id = G.playerUuidMap[attackerId];
+        console.log(`✅ Attacker: Using playerUuidMap ${attackerData.id}`);
+      }
+      
+      if (G.playerUuidMap[defenderId]) {
+        defenderData.id = G.playerUuidMap[defenderId];
+        console.log(`✅ Defender: Using playerUuidMap ${defenderData.id}`);
+      }
+    }
+    
+    console.log(`🎮 Final player data: Attacker=${attackerData.name} (${attackerData.id}), Defender=${defenderData.name} (${defenderData.id})`);
+    
+    // Warn if we're still using generic IDs
+    if (attackerData.id === attackerId || defenderData.id === defenderId) {
+      console.warn('⚠️ WARNING: Using generic player IDs - this will cause foreign key errors in backend!');
+      console.warn('Expected real UUIDs, got:', { attacker: attackerData.id, defender: defenderData.id });
+    }
+    
+    // Initialize players with real data (fallback to generic if real data not available)
+    let attacker = initializePlayerWithData(attackerId, 'attacker', G.gameConfig, attackerData);
+    let defender = initializePlayerWithData(defenderId, 'defender', G.gameConfig, defenderData);
     
     // Draw starting hands for both players
     attacker = drawStartingHand(attacker, G.gameConfig.startingHandSize);
@@ -170,23 +203,44 @@ export const setupPhase = {
     
     console.log(`Created ${infrastructureCards.length} infrastructure cards`);
     
-    // Add all infrastructure cards to the game board immediately
-    // In the original code, infrastructure cards were part of the initial game state
-    return {
+    // ✅ FIX: Ensure all data is serializable by creating a clean object
+    const cleanAttacker = JSON.parse(JSON.stringify(attacker));
+    const cleanDefender = JSON.parse(JSON.stringify(defender));
+    const cleanInfrastructure = JSON.parse(JSON.stringify(infrastructureCards));
+    
+    // Return a clean, serializable game state
+    const newGameState: GameState = {
       ...G,
-      attacker,
-      defender,
+      attacker: cleanAttacker,
+      defender: cleanDefender,
       infrastructureDeck: [], // Keep as a backup if needed
-      infrastructure: infrastructureCards, // Add all infrastructure cards to the board immediately
+      infrastructure: cleanInfrastructure, // Add all infrastructure cards to the board immediately
     };
+    
+    console.log('✅ Game initialization complete with serializable state');
+    return newGameState;
   },
   
   next: 'playing',
   
   // Add an endIf function to automatically transition from setup to playing phase
   endIf: ({ G, ctx }: { G: GameState, ctx: Ctx }) => {
-    // If we have both players initialized, end the setup phase
-    return Boolean(G.attacker && G.defender);
+    // Only end setup phase if:
+    // 1. Both players are initialized AND
+    // 2. Both players are actually connected (not just lobby slots filled)
+    const bothPlayersInitialized = Boolean(G.attacker && G.defender);
+    const bothPlayersConnected = ctx.playOrder.length === 2;
+    
+    // Additional check: ensure this isn't just a lobby creation
+    const gameCanStart = bothPlayersInitialized && bothPlayersConnected;
+    
+    if (gameCanStart) {
+      console.log('✅ Setup phase complete, transitioning to playing phase');
+    } else {
+      console.log(`⏳ Setup phase waiting: initialized=${bothPlayersInitialized}, connected=${bothPlayersConnected}`);
+    }
+    
+    return gameCanStart;
   }
 };
 
