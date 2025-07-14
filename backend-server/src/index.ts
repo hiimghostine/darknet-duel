@@ -8,6 +8,7 @@ import serverRoutes from './routes/server.routes';
 import infoRoutes from './routes/info.routes';
 import accountRoutes from './routes/account.routes';
 import filesRoutes from './routes/files.routes';
+import currencyRoutes from './routes/currency.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 // Load environment variables
@@ -69,6 +70,9 @@ app.use('/api/server', serverRoutes);
 
 // Info routes for user profile and activity data
 app.use('/api/info', infoRoutes);
+
+// Currency management routes
+app.use('/api/currency', currencyRoutes);
 
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));

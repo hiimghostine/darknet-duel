@@ -88,6 +88,16 @@ const options: swaggerJSDoc.Options = {
               nullable: true,
               description: 'User bio'
             },
+            creds: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Virtual currency: Creds'
+            },
+            crypts: {
+              type: 'integer',
+              minimum: 0,
+              description: 'Virtual currency: Crypts'
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
@@ -393,6 +403,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: 'Health',
         description: 'System health and monitoring'
+      },
+      {
+        name: 'Currency',
+        description: 'Virtual currency management (Creds and Crypts)'
       }
     ]
   },

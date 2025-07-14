@@ -22,6 +22,8 @@ export interface User {
   gamesLost: number;
   points: number;
   level: number;
+  creds: number;
+  crypts: number;
   createdAt: string;
   updatedAt: string;
 }

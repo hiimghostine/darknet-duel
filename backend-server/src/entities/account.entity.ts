@@ -41,6 +41,12 @@ export class Account {
   @Column({ nullable: true, length: 100 })
   avatarMimeType: string;
 
+  @Column({ default: 0 })
+  creds: number;
+
+  @Column({ default: 0 })
+  crypts: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

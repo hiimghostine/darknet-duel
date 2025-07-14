@@ -317,7 +317,7 @@ const DashboardPage: React.FC = () => {
                         <div className="text-xs text-base-content/70 mb-2">
                           RATING: {profileStats?.rating || 1000}
                         </div>
-                        <div className="text-sm text-base-content/90">
+                        <div className="text-sm text-base-content/90 mb-3">
                           {userBio ? (
                             <div className="italic border-l-2 border-primary/30 pl-2">
                               "{userBio}"
@@ -327,6 +327,20 @@ const DashboardPage: React.FC = () => {
                               Click [EDIT] to add your bio
                             </div>
                           )}
+                        </div>
+                        
+                        {/* Currency Display */}
+                        <div className="flex items-center gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-400">💰</span>
+                            <span className="text-yellow-400 font-bold">CREDS:</span>
+                            <span className="text-yellow-300 font-mono">{user?.creds || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-purple-400">💎</span>
+                            <span className="text-purple-400 font-bold">CRYPTS:</span>
+                            <span className="text-purple-300 font-mono">{user?.crypts || 0}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

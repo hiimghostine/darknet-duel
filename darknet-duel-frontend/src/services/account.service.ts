@@ -11,6 +11,8 @@ export interface AccountData {
   gamesLost: number;
   rating: number;
   bio: string | null;
+  creds: number;
+  crypts: number;
   createdAt: string;
   updatedAt: string;
 }
