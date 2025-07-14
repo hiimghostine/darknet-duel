@@ -1,0 +1,42 @@
+import { useEffect } from 'react';
+import './App.css';
+import './styles/lobby.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/auth.store';
+import HomePage from './pages/HomePage';
+import AuthPage from './pages/AuthPage';
+import DashboardPage from './pages/DashboardPage';
+import LobbyPage from './pages/LobbyPage';
+import GamePage from './pages/GamePage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+function App() {
+  const { loadUser } = useAuthStore();
+  
+  useEffect(() => {
+    // Check authentication status when app loads
+    loadUser();
+  }, [loadUser]);
+
+  return (
+    <Router>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/lobbies/*" element={<LobbyPage />} />
+          <Route path="/game/:matchID" element={<GamePage />} />
+        </Route>
+        
+        {/* Default redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;

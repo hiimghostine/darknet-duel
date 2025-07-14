@@ -1,0 +1,237 @@
+/* Infrastructure Card Styles for Darknet Duel */
+
+.infrastructure-card {
+  position: relative;
+  width: 180px;
+  height: 220px;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  margin: 8px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  border: 1px solid #333;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.infra-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-bottom: 1px solid #444;
+}
+
+.infra-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.infra-type {
+  font-size: 0.7rem;
+  background: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.infra-body {
+  flex-grow: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  overflow-y: auto;
+}
+
+.infra-state {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.infra-state-indicator {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.infra-health {
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  background: rgba(51, 51, 51, 0.7);
+  border-radius: 4px;
+}
+
+.infra-description {
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+.infra-vulnerabilities {
+  margin-top: auto;
+  font-size: 0.7rem;
+}
+
+.vuln-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.vuln-vectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.vuln-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  background: #333;
+}
+
+.vuln-network {
+  background-color: #cc3333;
+  color: white;
+}
+
+.vuln-web {
+  background-color: #cc7722;
+  color: white;
+}
+
+.vuln-social {
+  background-color: #cccc22;
+  color: black;
+}
+
+.vuln-malware {
+  background-color: #9933cc;
+  color: white;
+}
+
+.infra-footer {
+  padding: 6px;
+  font-size: 0.7rem;
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.7);
+  border-top: 1px solid #444;
+  opacity: 0.8;
+}
+
+.infra-flavor {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Infrastructure card states */
+.infra-state-operational {
+  border-color: #33cc33;
+  box-shadow: 0 0 8px rgba(51, 204, 51, 0.3);
+}
+
+.infra-state-vulnerable {
+  border-color: #cccc22;
+  box-shadow: 0 0 8px rgba(204, 204, 34, 0.3);
+}
+
+.infra-state-breached {
+  border-color: #cc7722;
+  box-shadow: 0 0 8px rgba(204, 119, 34, 0.3);
+}
+
+.infra-state-compromised {
+  border-color: #cc3333;
+  box-shadow: 0 0 8px rgba(204, 51, 51, 0.3);
+}
+
+.infra-state-secured {
+  border-color: #3399cc;
+  box-shadow: 0 0 8px rgba(51, 153, 204, 0.3);
+}
+
+/* Styles for defender states */
+.infra-state-shielded {
+  border-color: #33aadd; /* Bright blue for shielded */
+  box-shadow: 0 0 8px rgba(51, 170, 221, 0.5);
+}
+
+.infra-state-fortified {
+  border-color: #2288dd; /* Deeper blue for fortified */
+  box-shadow: 0 0 10px rgba(34, 136, 221, 0.6);
+  border-width: 2px;
+}
+
+.infra-state-firewalled {
+  border-color: #9933cc;
+  box-shadow: 0 0 8px rgba(153, 51, 204, 0.3);
+}
+
+/* Interactive states */
+.infra-targetable {
+  cursor: pointer;
+  border-width: 2px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+}
+
+.infra-targetable:hover {
+  transform: translateY(-5px);
+}
+
+.infra-selected {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.8);
+}
+
+.infra-damaged {
+  position: relative;
+}
+
+.infra-damaged::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(204, 51, 51, 0.1),
+    rgba(204, 51, 51, 0.1) 10px,
+    rgba(204, 51, 51, 0.2) 10px,
+    rgba(204, 51, 51, 0.2) 20px
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Infrastructure board layout */
+.infrastructure-area {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+  .infrastructure-card {
+    width: 140px;
+    height: 180px;
+    font-size: 0.7em;
+  }
+}

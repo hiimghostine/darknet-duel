@@ -1,0 +1,210 @@
+/* Card Throw & Targeting Styles */
+
+/* Apply transitions to all elements inside game board for smoother state changes */
+.game-board-v2 * {
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1.0);
+}
+
+/* Prevent layout shifts during state changes */
+.game-board-v2 {
+    contain: layout;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    position: relative;
+}
+
+/* Styling for move processing indicator */
+.move-indicator {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1000;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Add a subtle overlay when processing moves */
+.game-board-v2.processing-move::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Selected card highlight */
+.card.selected {
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
+  border: 2px solid rgba(255, 170, 0, 0.9);
+  transform: scale(1.05);
+}
+
+/* Targeting mode cursor */
+.targeting-mode {
+  cursor: crosshair;
+}
+
+/* Prevent any layout shifts during game state changes */
+.game-layout {
+  min-height: 60vh;
+  position: relative;
+}
+
+/* Targetable infrastructure card */
+.infrastructure-card.targetable {
+  transform: translateY(-5px);
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+  cursor: pointer;
+  animation: pulse 1.5s infinite;
+}
+
+.infrastructure-card.being-targeted {
+  animation: target-hit 0.4s forwards;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 255, 0, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+  }
+}
+
+@keyframes target-hit {
+  0% {
+    transform: translateY(-5px) scale(1);
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+  }
+  30% {
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.9);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+/* Card throw animation */
+.card.card-throwing {
+  animation: card-throw-animation 0.4s forwards;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes card-throw-animation {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0, -50px) rotate(-15deg) scale(1.2);
+    opacity: 0.9;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  }
+  100% {
+    transform: translate(0, -10px) rotate(-5deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Animation for infrastructure being targeted */
+@keyframes targetPulse {
+  0% { box-shadow: 0 0 5px rgba(255, 170, 0, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(255, 170, 0, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(255, 170, 0, 0.3); }
+}
+
+.infrastructure-card.being-targeted {
+  animation: targetPulse 1s infinite;
+}
+
+/* Game controls in top bar */
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.targeting-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  background: rgba(255, 170, 0, 0.2);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  color: #ffc107;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+}
+
+/* Game message display */
+.game-message {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 17, 23, 0.8);
+  border: 1px solid var(--primary-color);
+  color: var(--text-light);
+  padding: 8px 15px;
+  border-radius: 4px;
+  z-index: 100;
+  font-size: 14px;
+  max-width: 80%;
+  text-align: center;
+  animation: fadeInOut 4s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
+/* End Turn Button - now in top bar */
+.end-turn-btn {
+  padding: 6px 15px;
+  background: linear-gradient(to right, var(--primary-color), #2cb5a0);
+  border: none;
+  border-radius: 4px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}

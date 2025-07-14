@@ -1,0 +1,162 @@
+// Game types for Darknet Duel
+// CANONICAL SOURCE OF TRUTH: This file contains game state definitions
+// that are used throughout the game server.
+// IMPORTANT: Any changes to these types should be reflected in the frontend types:
+// - darknet-duel-frontend/src/types/game.types.ts
+
+import { InfrastructureCard, InfrastructureState } from '../game/cards/types';
+
+// Re-export types from cards/types
+export { InfrastructureCard, InfrastructureState };
+
+export interface PlayerMetadata {
+  id: string;
+  name: string;
+  credentials?: string;
+  role?: 'attacker' | 'defender';
+}
+
+// Import types from cards types
+import { AttackVector, CardType } from '../game/cards/types';
+
+export interface Card {
+  id: string;
+  name: string;
+  type: 'attack' | 'defense' | 'virus' | 'firewall' | 'utility' | 'exploit' | 'counter-attack' | 'wildcard' | 'shield' | 'fortify' | 'response' | 'hack' | 'reaction' | 'counter';
+  cost: number;
+  power: number;
+  description: string;
+  effects?: CardEffect[];
+  metadata?: Record<string, any>; // For storing additional card metadata
+  
+  // New card system properties
+  wildcardType?: CardType[]; // Types this wildcard can be played as
+  draw?: number; // Number of cards to draw when played
+  specialEffect?: string; // Special effect identifier
+  isReactive?: boolean; // Whether card can be played out of turn
+  preventReaction?: boolean; // Whether card prevents reactions
+  attackVector?: AttackVector; // The type of attack vector
+}
+
+export interface CardEffect {
+  type: string;
+  value: number;
+  description: string;
+}
+
+export interface Player {
+  id: string;
+  name: string;          // Player name
+  role: 'attacker' | 'defender';  // Player role (attacker or defender)
+  resources: number;
+  actionPoints: number;     // Current action points available (capped at 10)
+  freeCardCyclesUsed: number; // Track how many free card cycles used this turn
+  deck: Card[];
+  hand: Card[];
+  field: Card[];
+  discard: Card[];
+}
+
+// Player connection state tracking
+export enum PlayerConnectionState {
+  CONNECTED = 'connected',
+  DISCONNECTED = 'disconnected'
+}
+
+// Turn stage types
+export type TurnStage = 'action' | 'reaction' | 'end' | null;
+
+export interface GameState {
+  attacker?: Player;
+  defender?: Player;
+  infrastructure?: InfrastructureCard[];  // Infrastructure cards in play
+  infrastructureDeck?: InfrastructureCard[]; // Available infrastructure cards
+  currentTurn: 'attacker' | 'defender';
+  turnNumber: number;
+  gamePhase: 'setup' | 'playing' | 'gameOver';
+  winner?: 'attacker' | 'defender' | 'abandoned';
+  actions: GameAction[];
+  playerConnections: Record<string, PlayerConnectionState>; // Track player connection state
+  disconnectTime?: number; // Timestamp when a player disconnected
+  
+  // Turn stage management
+  currentStage?: TurnStage;  // Current stage in a turn (action, reaction, end)
+  pendingReactions?: PendingReaction[]; // Cards waiting for reaction
+  reactionComplete?: boolean; // Whether all reactions are complete
+  currentActionPlayer?: string; // ID of the player currently in action stage (used for stage transitions)
+  message?: string; // Game message to display to players
+  gameEnded?: boolean; // Whether the game has ended
+  
+  // Player view properties
+  playerRole?: 'attacker' | 'defender' | 'spectator'; // Role of the current player viewing the game
+  isAttacker?: boolean; // Whether the current player is the attacker
+  isDefender?: boolean; // Whether the current player is the defender
+  playerID?: string; // ID of the current player viewing the game
+  
+  // Debugging information
+  debug?: {
+    attackerId?: string;
+    defenderId?: string;
+    playerIdStr?: string;
+    directIdMatch?: boolean;
+    playOrderIndex?: number;
+    roleDetectionMethod?: string;
+    [key: string]: any;
+  }
+  gameConfig: {
+    initialResources: number;
+    maxTurns: number;
+    startingHandSize: number;
+    infrastructureCount: number; // Number of infrastructure cards to use in game
+    initialActionPoints: number; // Starting AP at game start (both players start with 2 AP)
+    attackerActionPointsPerTurn: number; // AP given to attacker each turn (2 AP)
+    defenderActionPointsPerTurn: number; // AP given to defender each turn (3 AP)
+    maxActionPoints: number; // Maximum AP cap (10 AP)
+    freeCardCyclesPerTurn: number; // Number of free card cycles per turn
+  };
+}
+
+export interface PendingReaction {
+  card: Card;
+  source: string; // Player ID of the card player
+  target: string; // Player ID of the reaction target
+}
+
+export interface GameAction {
+  playerRole: 'attacker' | 'defender';
+  actionType: string;
+  timestamp: number;
+  payload?: any;
+}
+
+export interface LobbyConfig {
+  uuid?: string;
+  unlisted?: boolean;
+  setupData: {
+    gameMode: 'standard' | 'blitz' | 'custom';
+    timeLimit?: number;
+    initialResources: number;
+    maxTurns: number;
+    roles: {
+      attackerPlayerId?: string;
+      defenderPlayerId?: string;
+    };
+  };
+}
+
+export interface GameResult {
+  id: string;
+  winnerId: string;
+  loserIds: string[];
+  winnerRole: 'attacker' | 'defender';
+  startTime: Date;
+  endTime: Date;
+  totalTurns: number;
+  playerStats: {
+    [playerId: string]: {
+      role: 'attacker' | 'defender';
+      resourcesSpent: number;
+      cardsPlayed: number;
+    };
+  };
+}

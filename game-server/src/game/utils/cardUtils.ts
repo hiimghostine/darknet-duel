@@ -1,0 +1,110 @@
+import { Ctx } from 'boardgame.io';
+import { GameState, Player } from 'shared-types/game.types';
+import { Card } from 'shared-types/card.types';
+
+/**
+ * Comprehensive check if a card is playable in the current game state
+ * This considers all relevant factors:
+ * - Is it the player's turn?
+ * - Game phase check
+ * - Action point costs
+ * - Card type requirements
+ * - Special game state conditions
+ * 
+ * @param G The current game state
+ * @param ctx The boardgame.io context
+ * @param playerID The ID of the player trying to play the card
+ * @param card The card being evaluated
+ * @param player The player object (containing action points, etc.)
+ * @param debug Whether to log debugging info (default: false)
+ * @returns Whether the card is playable
+ */
+export function isCardPlayable(
+  G: GameState, 
+  ctx: Ctx, 
+  playerID: string, 
+  card: Card, 
+  player: Player, 
+  debug: boolean = false
+): boolean {
+  // Get player information if not provided
+  if (!player) {
+    const isAttacker = playerID === G.attacker?.id;
+    player = isAttacker ? G.attacker! : G.defender!;
+    
+    // Safety check
+    if (!player) {
+      if (debug) console.log(`Card ${card.name} not playable: Player not found`);
+      return false;
+    }
+  }
+
+  // Only consider cards playable during playing phase
+  if (G.gamePhase !== 'playing') {
+    if (debug) console.log(`Card ${card.name} not playable: Game not in playing phase`);
+    return false;
+  }
+  
+  // Check if the player has enough action points to play this card
+  if (player.actionPoints < card.cost) {
+    if (debug) console.log(`Card ${card.name} not playable: Not enough action points (${player.actionPoints}/${card.cost})`);
+    return false;
+  }
+  
+  // Check if it's the player's turn for non-reactive cards
+  const isPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) || 
+                      (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  
+  // Check reaction-specific conditions
+  // Check both the boardgame.io active player stage AND the pendingReactions array
+  const playerStage = ctx.activePlayers?.[playerID];
+  const isInReactionStage = playerStage === 'reaction';
+  const hasPendingReactions = G.pendingReactions !== undefined && G.pendingReactions.length > 0;
+  const isReactionPhase = isInReactionStage || hasPendingReactions;
+  
+  // Get player role (attacker or defender)
+  const isAttacker = playerID === G.attacker?.id;
+  
+  // Check if the card type and isReactive flag are consistent
+  const isProperReactiveCard = 
+    (isAttacker && card.type === 'counter-attack') || 
+    (!isAttacker && card.type === 'reaction');
+  
+  // During reaction phase, only proper reactive cards can be played
+  if (isReactionPhase) {
+    if (!card.isReactive || !isProperReactiveCard) {
+      if (debug) console.log(`Card ${card.name} not playable during reaction phase: Not a proper reaction card`);
+      return false;
+    }
+    
+    return true; // Reactive cards can be played during reaction phase
+  }
+  
+  // Outside reaction phase, reactive cards shouldn't be played
+  if (card.isReactive) {
+    if (debug) console.log(`Reactive card ${card.name} not playable: Not in reaction phase`);
+    return false;
+  }
+  
+  // For regular cards during normal play
+  if (!isPlayerTurn) {
+    if (debug) console.log(`Card ${card.name} not playable: Not player's turn`);
+    return false;
+  }
+  
+  // Additional type-specific rules could be added here
+  
+  // For debugging
+  if (debug) {
+    console.log(`Card ${card.name} playability result:`, {
+      isPlayerTurn,
+      cardType: card.type,
+      isReactive: card.isReactive,
+      hasPendingReactions,
+      actionPoints: `${player.actionPoints}/${card.cost}`,
+      result: true
+    });
+  }
+  
+  return true; // If we got here, the card is playable
+}

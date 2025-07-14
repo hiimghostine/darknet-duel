@@ -1,0 +1,268 @@
+/* Winner Lobby Styles */
+.winner-lobby {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #0a0a0a;
+  background-image: linear-gradient(to bottom, #0a0a0a, #1a1a1a);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 0;
+  animation: fadeIn 0.5s ease-in-out;
+  overflow-y: auto;
+}
+
+.winner-lobby-content {
+  width: 90%;
+  max-width: 1200px;
+  background-color: #121212;
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  box-shadow: 0 0 30px rgba(0, 255, 170, 0.3);
+}
+
+/* Layout for future analytics sections */
+.analytics-ready-section {
+  width: 100%;
+  padding: 1.5rem;
+  background-color: rgba(20, 20, 35, 0.8);
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #4e9bff;
+}
+
+/* For attacker win */
+.winner-message {
+  border-color: #00ffa9;
+  text-align: center;
+  color: #00ffa9;
+  animation: glowGreen 2s infinite alternate;
+}
+
+/* For defender win */
+.loser-message {
+  border-color: #ff3860;
+  text-align: center;
+  color: #ff3860;
+  animation: glowRed 2s infinite alternate;
+}
+
+.winner-announcement {
+  text-align: center;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.winner-announcement h1 {
+  font-size: 4rem;
+  margin: 0;
+  text-shadow: 0 0 10px currentColor;
+  letter-spacing: 4px;
+  margin-bottom: 1rem;
+}
+
+.win-reason {
+  font-style: italic;
+  opacity: 0.8;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.winner-lobby-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.winner-lobby-actions button {
+  padding: 0.75rem 1.5rem;
+  background-color: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.winner-lobby-actions button:hover {
+  background-color: #2a2a2a;
+  transform: translateY(-2px);
+}
+
+.winner-lobby-actions button.active {
+  background-color: #2a2a2a;
+  border-color: #888;
+}
+
+.rematch-button {
+  background-color: #1e3a8a !important;
+  border-color: #2563eb !important;
+}
+
+.rematch-button:hover {
+  background-color: #2563eb !important;
+}
+
+.rematch-button.requested {
+  background-color: #2563eb !important;
+  cursor: not-allowed !important;
+}
+
+.rematch-pending {
+  color: #10b981;
+  font-weight: bold;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  margin: 1rem 0;
+  animation: pulse 1.5s infinite;
+}
+
+.game-stats {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.game-stats h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #888;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 4px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #eee;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes glowGreen {
+  from { text-shadow: 0 0 5px rgba(0, 255, 170, 0.5); }
+  to { text-shadow: 0 0 20px rgba(0, 255, 170, 0.8); }
+}
+
+@keyframes glowRed {
+  from { text-shadow: 0 0 5px rgba(255, 56, 96, 0.5); }
+  to { text-shadow: 0 0 20px rgba(255, 56, 96, 0.8); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Post-game chat styling */
+/* Section titles styling */
+.section-title {
+  color: #4e9bff;
+  text-align: center;
+  font-size: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 10px rgba(78, 155, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  animation: glow-chat 2s infinite alternate;
+  position: relative;
+  display: inline-block;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 100px;
+  height: 3px;
+  background-color: #4e9bff;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(78, 155, 255, 0.5);
+}
+
+.post-game-section {
+  margin-top: 2.5rem;
+  padding: 1.5rem;
+  background-color: rgba(26, 26, 38, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.post-game-chat {
+  margin-top: 2rem;
+  border: 2px solid #4e9bff;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: rgba(20, 20, 35, 0.9);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+  animation: pulse-border 2s infinite alternate;
+}
+
+@keyframes pulse-border {
+  0% { border-color: #4e9bff; }
+  100% { border-color: #1c5c9e; }
+}
+
+.post-game-chat .chat-header {
+  border-bottom: 2px solid #4e9bff;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #4e9bff;
+  font-size: 1.25rem;
+}
+
+.post-game-chat .chat-header h3 {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  animation: glow-chat 2s infinite alternate;
+}
+
+@keyframes glow-chat {
+  from { text-shadow: 0 0 5px rgba(78, 155, 255, 0.5); }
+  to { text-shadow: 0 0 15px rgba(78, 155, 255, 0.8); }
+}

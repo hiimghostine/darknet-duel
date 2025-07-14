@@ -1,0 +1,746 @@
+import { Ctx } from 'boardgame.io';
+import { GameState, GameAction, InfrastructureCard, Player, InfrastructureState } from 'shared-types/game.types';
+import { Card, AttackVector, Vulnerability, Shield, CardType } from 'shared-types/card.types';
+import { isCardPlayable } from '../utils/cardUtils';
+import { drawCard } from '../core/playerManager';
+
+/**
+ * Action to cycle (discard and draw) a card
+ */
+export const cycleCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string): GameState => {
+  // IMPORTANT: Make sure cardId is a string to avoid serialization issues
+  const cardIdStr = String(cardId);
+  
+  // Ensure we have proper player role properties preserved
+  const isAttacker = playerID === G.attacker?.id;
+  const player = isAttacker ? G.attacker : G.defender;
+  
+  // Exit early if player data is missing
+  if (!player) {
+    console.error('cycleCardMove: Player data missing');
+    return G;
+  }
+  
+  // Find the card in player's hand
+  const cardIndex = player.hand.findIndex(card => card.id === cardIdStr);
+  if (cardIndex === -1) {
+    console.error(`cycleCardMove: Card ${cardIdStr} not found in hand`);
+    return G; // Card not found
+  }
+  
+  // Remove card from hand
+  const newHand = [...player.hand];
+  const [discardedCard] = newHand.splice(cardIndex, 1);
+  
+  // Create a deep copy of the card to ensure all properties are preserved during serialization
+  const cardCopy = JSON.parse(JSON.stringify(discardedCard));
+  
+  // Add card to discard pile
+  let updatedPlayer = {
+    ...player,
+    hand: newHand,
+    discard: [...player.discard, cardCopy],
+  };
+  
+  // Check if this is a free card cycle for the turn
+  // Each player gets 1 free cycle per turn (freeCardCyclesPerTurn)
+  const isFreeCardCycle = updatedPlayer.freeCardCyclesUsed < G.gameConfig.freeCardCyclesPerTurn;
+  
+  // If not free, spend an action point
+  if (!isFreeCardCycle) {
+    // Check if player has action points to spend
+    if (updatedPlayer.actionPoints < 1) {
+      console.error('cycleCardMove: Not enough action points');
+      return G;
+    }
+    
+    // Spend 1 action point
+    updatedPlayer.actionPoints -= 1;
+  } else {
+    // Increment the free card cycles used counter
+    updatedPlayer.freeCardCyclesUsed += 1;
+  }
+  
+  // Draw a new card
+  updatedPlayer = drawCard(updatedPlayer);
+  
+  // Record action
+  const newAction: GameAction = {
+    playerRole: isAttacker ? 'attacker' : 'defender',
+    actionType: isFreeCardCycle ? 'freeCardCycle' : 'paidCardCycle',
+    timestamp: Date.now(),
+    payload: { cardId: cardIdStr }
+  };
+  
+  // CRITICAL FIX: Explicitly preserve player role properties
+  return {
+    ...G,
+    attacker: isAttacker ? updatedPlayer : G.attacker,
+    defender: !isAttacker ? updatedPlayer : G.defender,
+    actions: [...G.actions, newAction],
+    // Explicitly preserve these critical properties
+    playerRole: G.playerRole,
+    isAttacker: G.isAttacker,
+    isDefender: G.isDefender,
+    playerID: G.playerID
+  };
+};
+
+/**
+ * Action to play a card from hand onto the field
+ * This handles general card playing and effects
+ */
+export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetId?: string): GameState => {
+  const isAttacker = playerID === G.attacker?.id;
+  const player = isAttacker ? G.attacker : G.defender;
+  
+  if (!player) return G;
+  
+  // Find the card in player's hand
+  const cardIndex = player.hand.findIndex(card => card.id === cardId);
+  if (cardIndex === -1) return G; // Card not found
+  
+  const card = player.hand[cardIndex];
+  
+  // Check if player has enough action points (each card costs AP equal to its cost)
+  if (player.actionPoints < card.cost) {
+    return {
+      ...G,
+      message: "Not enough action points to play this card"
+    };
+  }
+  
+  // Handle wildcards - they can be played as other types
+  const effectiveCardType = card.type === 'wildcard' && card.wildcardType ? 
+    card.wildcardType[0] : card.type;
+  
+  // For non-immediate effect cards like counter-attack,
+  // check if it's the appropriate time to play them
+  if (effectiveCardType === 'counter-attack' && !isCardPlayable(G, ctx, playerID, card, player)) {
+    return {
+      ...G,
+      message: "Cannot play this card type at this time"
+    };
+  }
+  
+  // Remove card from hand
+  const newHand = [...player.hand];
+  newHand.splice(cardIndex, 1);
+  
+  // Create a deep copy of the card to ensure all properties are preserved during serialization
+  const cardCopy = JSON.parse(JSON.stringify(card));
+  
+  // Add card to field or discard based on card type
+  let updatedPlayer = {
+    ...player,
+    hand: newHand,
+    actionPoints: player.actionPoints - card.cost // Use action points
+  };
+  
+  // For immediate effect cards, add to discard
+  // For field cards, add to field
+  if (['counter-attack'].includes(effectiveCardType)) {
+    updatedPlayer = {
+      ...updatedPlayer,
+      discard: [...player.discard, cardCopy]
+    };
+  } else {
+    updatedPlayer = {
+      ...updatedPlayer,
+      field: [...player.field, cardCopy]
+    };
+  }
+  
+  // DISABLED: Auto card draw effects
+  // Cards should not auto-replenish when played
+  // Draw occurs only at end of turn now (exactly 2 cards per turn)
+  // Original code:
+  /*
+  if (card.draw && card.draw > 0) {
+    const drawCount = Math.min(card.draw, updatedPlayer.deck.length);
+    if (drawCount > 0) {
+      const drawnCards = updatedPlayer.deck.slice(0, drawCount);
+      updatedPlayer = {
+        ...updatedPlayer,
+        hand: [...updatedPlayer.hand, ...drawnCards],
+        deck: updatedPlayer.deck.slice(drawCount)
+      };
+    }
+  }
+  */
+  // Log that we're skipping the auto-draw
+  console.log(`Skipping auto-draw effect (${card.draw || 0} cards) from card ${card.name} (${card.id})`);
+  
+  
+  // Record action
+  const newAction: GameAction = {
+    playerRole: isAttacker ? 'attacker' : 'defender',
+    actionType: 'playCard',
+    timestamp: Date.now(),
+    payload: { cardId, cardType: card.type }
+  };
+  
+  // Update game state with the updated player
+  let updatedG = {
+    ...G,
+    attacker: isAttacker ? updatedPlayer : G.attacker,
+    defender: !isAttacker ? updatedPlayer : G.defender,
+    actions: [...G.actions, newAction],
+    message: `${card.name} played by ${isAttacker ? 'attacker' : 'defender'}`
+  } as GameState; // Type assertion to fix type mismatch
+  
+  // Apply any special card effects
+  if (card.specialEffect) {
+    updatedG = applySpecialEffect(updatedG, card.specialEffect, playerID);
+  }
+  
+  return updatedG;
+};
+
+// isCardTypePlayable function has been replaced by the shared utility function isCardPlayable
+
+/**
+ * Apply special effects from cards
+ */
+function applySpecialEffect(G: GameState, effectType: string, playerID: string): GameState {
+  // Implement special effects here
+  switch (effectType) {
+    case 'preventReaction':
+      return {
+        ...G,
+        reactionComplete: true,
+        message: `${G.message} (No reactions possible)`
+      } as GameState; // Type assertion to satisfy TS
+    // Add more special effects as needed
+    default:
+      return G;
+  }
+}
+
+/**
+ * Action to manually end the player's turn
+ */
+export const endTurnMove = ({ G, ctx, events }: { G: GameState; ctx: Ctx; events: any }): GameState => {
+  // Player manually ends their turn
+  events?.endTurn();
+  return G;
+};
+
+// Type guard to check if a card has certain properties from our new Card interface
+function hasCardFeatures(card: any): card is Card & { wildcardType?: string | CardType[], draw?: number, specialEffect?: string, isReactive?: boolean, preventReaction?: boolean, attackVector?: AttackVector } {
+  return card !== undefined;
+}
+
+/**
+ * Action to throw a card at an infrastructure target
+ * This deducts AP and applies card effects to target infrastructure
+ */
+export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetInfrastructureId: string): GameState => {
+  // Verify it's the player's turn or a valid reaction
+  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) || 
+                             (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  
+  // Check if player is in reaction mode - important for counter-attack cards
+  const isInReactionMode = ctx.activePlayers && 
+                        playerID in ctx.activePlayers && 
+                        ctx.activePlayers[playerID] === 'reaction';
+  
+  // In reaction mode, the non-active player can play counter-attack and reaction cards
+  if (!isCurrentPlayerTurn && !isInReactionMode) {
+    // Not this player's turn and not in reaction mode
+    return {
+      ...G,
+      message: "Cannot throw cards when it's not your turn"
+    };
+  }
+  
+  const isAttacker = playerID === G.attacker?.id;
+  const player = isAttacker ? G.attacker : G.defender;
+  
+  if (!player) return G;
+  
+  // Find the card in player's hand
+  const cardIndex = player.hand.findIndex(card => card.id === cardId);
+  if (cardIndex === -1) return G; // Card not found
+  
+  const card = player.hand[cardIndex];
+  // Use our type guard to handle the new Card interface properties
+  const extendedCard = hasCardFeatures(card) ? card : card;
+  
+  // Check if player has enough action points
+  if (player.actionPoints < card.cost) {
+    return { 
+      ...G,
+      message: "Not enough action points to throw this card"
+    };
+  }
+  
+  // Find the target infrastructure
+  const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
+  if (!targetInfrastructure) {
+    return { 
+      ...G,
+      message: "Target infrastructure not found"
+    };
+  }
+  
+  // Record action - moved here so it's available throughout the function
+  const newAction: GameAction = {
+    playerRole: isAttacker ? 'attacker' : 'defender',
+    actionType: 'throwCard',
+    timestamp: Date.now(),
+    payload: { cardId, targetInfrastructureId, cardType: card.type }
+  };
+
+  // Handle card type-specific targeting validation
+  // For wildcard cards, determine the effective card type
+  const effectiveCardType = extendedCard.wildcardType && extendedCard.type === 'wildcard' ? 
+    extendedCard.wildcardType[0] : card.type;
+  
+  // Get attack vector if available, or fall back to metadata.category
+  let attackVector = extendedCard.attackVector as AttackVector | undefined;
+  
+  // If no explicit attackVector, try to get it from metadata.category
+  if (!attackVector && extendedCard.metadata && extendedCard.metadata.category && 
+      extendedCard.metadata.category !== 'any') {
+    // Cast the category to AttackVector if it's one of our known values
+    const category = extendedCard.metadata.category;
+    
+    // Check if the category is a valid AttackVector
+    const validAttackVectors = ['exploit', 'ddos', 'attack', 'network', 'web', 'social', 'malware'];
+    if (validAttackVectors.includes(category)) {
+      attackVector = category as AttackVector;
+      console.log(`Using metadata.category as attack vector: ${attackVector}`);
+    }
+  }
+  
+  console.log(`Card ${card.name} (${card.id}) has attack vector: ${attackVector || 'NONE'}`);
+    
+  // Validate targeting based on card type
+  const targetValidation = validateCardTargeting(effectiveCardType, targetInfrastructure, attackVector);
+  if (!targetValidation.valid) {
+    return {
+      ...G,
+      message: targetValidation.message || "Invalid target for this card type"
+    };
+  }
+  
+  // Remove card from hand
+  const newHand = [...player.hand];
+  newHand.splice(cardIndex, 1);
+  
+  // Create a deep copy of the card to ensure all properties are preserved during serialization
+  const cardCopy = JSON.parse(JSON.stringify(card));
+  
+  // Add card to discard pile
+  const updatedPlayer = {
+    ...player,
+    hand: newHand,  // FIX: Use the modified hand that has the card removed
+    discard: [...player.discard, cardCopy],
+    actionPoints: player.actionPoints - card.cost // Use action points
+  };
+  
+  // Log the card removal for debugging
+  console.log(`CARD REMOVED: ${card.name} (${card.id}) from ${isAttacker ? 'attacker' : 'defender'}'s hand. Hand size: ${player.hand.length} -> ${newHand.length}`);
+  
+  // Handle infrastructure state changes - clone everything first
+  const updatedInfrastructure = G.infrastructure ? [...G.infrastructure] : [];
+  const infraIndex = updatedInfrastructure.findIndex(infra => infra.id === targetInfrastructureId);
+  
+  // Only proceed if we found the target infrastructure
+  if (infraIndex !== -1) {
+    // Clone the target infrastructure object to avoid direct mutation
+    const currentInfra = {
+      ...updatedInfrastructure[infraIndex]
+    };
+    
+    // Apply card effects based on card type
+    switch (effectiveCardType) {
+      case 'exploit':
+        // Apply vulnerability or weaken fortification based on current state
+        if (attackVector) {
+          console.log(`Processing exploit card on infrastructure ${currentInfra.id} (${currentInfra.name}) with current state: ${currentInfra.state}`);
+          
+          // Handle different infrastructure states
+          if (currentInfra.state === 'fortified') {
+            console.log(`Weakening fortified infrastructure ${currentInfra.name} to fortified_weaken state`);
+            // First exploit hit on fortified infrastructure weakens it but doesn't make it vulnerable yet
+            updatedInfrastructure[infraIndex] = {
+              ...currentInfra,
+              state: 'fortified_weaken' as InfrastructureState
+            };
+          } 
+          else if (currentInfra.state === 'fortified_weaken') {
+            console.log(`Second exploit hit on weakened fortified infrastructure ${currentInfra.name}, making it vulnerable`);
+            
+            // Initialize the vulnerabilities array
+            let vulnArray: (string | Vulnerability)[] = [];
+            
+            // Handle the case where vulnerabilities might be undefined or not an array
+            if (currentInfra.vulnerabilities) {
+              if (Array.isArray(currentInfra.vulnerabilities)) {
+                vulnArray = [...currentInfra.vulnerabilities];
+              }
+            }
+            
+            // Add the simple string vulnerability
+            vulnArray.push(attackVector);
+            
+            // Add the full vulnerability object
+            const fullVulnerability: Vulnerability = {
+              vector: attackVector,
+              appliedBy: card.id,
+              appliedByPlayer: playerID,
+              timestamp: Date.now()
+            };
+            vulnArray.push(fullVulnerability);
+            
+            // Replace the infrastructure in the array - second hit removes fortification and makes it vulnerable
+            updatedInfrastructure[infraIndex] = {
+              ...currentInfra,
+              vulnerabilities: vulnArray,
+              state: 'vulnerable' as InfrastructureState
+            };
+          }
+          else if (currentInfra.state === 'secure') {
+            console.log(`Adding vulnerability with vector: ${attackVector} to infrastructure ${currentInfra.id} (${currentInfra.name})`);
+            
+            // Create both a simple string vulnerability and a complete vulnerability object
+            const simpleVulnerability = attackVector;
+            
+            // Initialize the vulnerabilities array
+            let vulnArray: (string | Vulnerability)[] = [];
+            
+            // Handle the case where vulnerabilities might be undefined or not an array
+            if (currentInfra.vulnerabilities) {
+              if (Array.isArray(currentInfra.vulnerabilities)) {
+                // Make a copy of the existing array
+                vulnArray = [...currentInfra.vulnerabilities];
+              }
+            }
+            
+            // Always add a simple string vulnerability for maximum compatibility
+            vulnArray.push(simpleVulnerability);
+            
+            // Also add a full vulnerability object for future-proofing
+            const fullVulnerability: Vulnerability = {
+              vector: attackVector,
+              appliedBy: card.id,
+              appliedByPlayer: playerID,
+              timestamp: Date.now()
+            };
+            vulnArray.push(fullVulnerability);
+            
+            console.log(`Infrastructure ${currentInfra.id} vulnerabilities after update:`, vulnArray);
+            
+            // Create a new infra object with updated state and vulnerabilities
+            const updatedInfra = {
+              ...currentInfra,
+              vulnerabilities: vulnArray,
+              state: 'vulnerable' as InfrastructureState
+            };
+            
+            // Replace the infrastructure in the array
+            updatedInfrastructure[infraIndex] = updatedInfra;
+          }
+        }
+        break;
+        
+      case 'attack':
+        // Check if infrastructure is vulnerable to this attack vector
+        if (attackVector && currentInfra.vulnerabilities) {
+          console.log(`Checking if infrastructure ${currentInfra.id} is vulnerable to attack vector: ${attackVector}`);
+          console.log(`Current vulnerabilities:`, currentInfra.vulnerabilities);
+          
+          // First check if the infrastructure is in vulnerable state
+          if (currentInfra.state !== 'vulnerable') {
+            console.log(`Infrastructure ${currentInfra.id} is not in vulnerable state, current state: ${currentInfra.state}`);
+            return {
+              ...G,
+              message: `Attack cards can only target vulnerable infrastructure (${currentInfra.name} is ${currentInfra.state})`
+            };
+          }
+          
+          // Then check if there's a matching vulnerability
+          const isVulnerable = Array.isArray(currentInfra.vulnerabilities) && 
+            currentInfra.vulnerabilities.some(v => {
+              const match = typeof v === 'string' ? 
+                v === attackVector : 
+                (v && typeof v === 'object' && v.vector === attackVector);
+              
+              console.log(`Checking vulnerability ${JSON.stringify(v)} against ${attackVector}: ${match}`);
+              return match;
+            });
+          
+          console.log(`Is infrastructure vulnerable to this attack? ${isVulnerable}`);
+          
+          if (isVulnerable) {
+            console.log(`Successfully compromising infrastructure ${currentInfra.id}`);
+            
+            // Create a new infra object with updated state
+            updatedInfrastructure[infraIndex] = {
+              ...currentInfra,
+              state: 'compromised' as InfrastructureState
+            };
+            
+            // Check if this attack caused attacker to win
+            // Count how many infrastructure cards are now compromised
+            const compromisedCount = updatedInfrastructure.filter(
+              infra => infra.state === 'compromised'
+            ).length;
+            
+            console.log(`Compromised infrastructure count: ${compromisedCount}`);
+            
+            // Win condition: if more than half the infrastructure is compromised
+            const infrastructureThreshold = Math.ceil(updatedInfrastructure.length / 2) + 1; // 3+ out of 5
+            console.log(`Win threshold: ${infrastructureThreshold}`);
+            
+            if (compromisedCount >= infrastructureThreshold) {
+              console.log(`Attacker wins with ${compromisedCount} compromised infrastructure!`);
+              return {
+                ...G,
+                attacker: isAttacker ? updatedPlayer : G.attacker,
+                defender: !isAttacker ? updatedPlayer : G.defender,
+                infrastructure: updatedInfrastructure,
+                actions: [...G.actions, newAction],
+                message: `Game over! Attacker wins by compromising ${compromisedCount} infrastructure cards!`,
+                gamePhase: 'gameOver' as const,
+                winner: 'attacker'
+              } as GameState;
+            }
+          } else {
+            return {
+              ...G,
+              message: `This infrastructure is not vulnerable to ${attackVector} attacks`
+            };
+          }
+        } else {
+          console.log(`Missing attack vector or vulnerabilities for infrastructure ${currentInfra.id}`);
+          return {
+            ...G,
+            message: `Missing attack vector or vulnerabilities`
+          };
+        }
+        break;
+        
+      case 'shield':
+        // Apply shield
+        if (attackVector) {
+          const newShield: Shield = {
+            vector: attackVector,
+            appliedBy: card.id,
+            appliedByPlayer: playerID,
+            timestamp: Date.now()
+          };
+          
+          // Create new shields array
+          const shieldArray = currentInfra.shields ? [...currentInfra.shields] : [];
+          shieldArray.push(newShield);
+          
+          // Create a new infra object with updated state and shields
+          updatedInfrastructure[infraIndex] = {
+            ...currentInfra,
+            shields: shieldArray,
+            state: 'shielded' as InfrastructureState
+          };
+        }
+        break;
+        
+      case 'fortify':
+        // Apply fortification
+        if (currentInfra.state === 'shielded') {
+          updatedInfrastructure[infraIndex] = {
+            ...currentInfra,
+            state: 'fortified' as InfrastructureState
+          };
+        }
+        break;
+        
+      case 'response':
+        // Recover compromised infrastructure
+        if (currentInfra.state === 'compromised') {
+          updatedInfrastructure[infraIndex] = {
+            ...currentInfra,
+            state: 'secure' as InfrastructureState,
+            vulnerabilities: [] // Clear vulnerabilities
+          };
+        }
+        break;
+      case 'reaction':
+        // Reaction cards cancel out exploit effects on vulnerable infrastructure
+        console.log(`Processing reaction card ${card.name} targeting ${targetInfrastructure.name}`);
+        if (currentInfra.state === 'vulnerable') {
+          console.log(`Cancelling vulnerability on infrastructure ${currentInfra.name}`);
+          updatedInfrastructure[infraIndex] = {
+            ...currentInfra,
+            state: 'secure' as InfrastructureState,
+            vulnerabilities: [] // Clear vulnerabilities
+          };
+          console.log(`Infrastructure ${currentInfra.name} returned to secure state`);
+        } else {
+          console.log(`Target infrastructure ${currentInfra.name} is not vulnerable, reaction had no effect`);
+        }
+        break;
+        
+      case 'counter-attack':
+      case 'counter':
+        // Counter-attack cards cancel out shield effects on shielded infrastructure
+        console.log(`Processing counter-attack card ${card.name} targeting ${targetInfrastructure.name}`);
+        if (currentInfra.state === 'shielded') {
+          console.log(`Cancelling shield on infrastructure ${currentInfra.name}`);
+          updatedInfrastructure[infraIndex] = {
+            ...currentInfra,
+            state: 'secure' as InfrastructureState,
+            shields: [] // Clear shields
+          };
+          console.log(`Infrastructure ${currentInfra.name} returned to secure state`);
+        } else {
+          console.log(`Target infrastructure ${currentInfra.name} is not shielded, counter-attack had no effect`);
+        }
+        break;
+    }
+  }
+  
+  // Check if this card should trigger reaction phase
+  const shouldTriggerReaction = !extendedCard.preventReaction && 
+                               (effectiveCardType === 'attack' || effectiveCardType === 'exploit');
+  
+  // Calculate scores based on infrastructure states
+  let attackerScore = 0;
+  let defenderScore = 0;
+  
+  // Count infrastructure control for score
+  updatedInfrastructure.forEach(infra => {
+    if (infra.state === 'compromised') {
+      attackerScore++;
+    } else if (infra.state === 'fortified') {
+      defenderScore++;
+    }
+  });
+  
+  console.log(`Updated scores - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
+  
+  // Update game state
+  return {
+    ...G,
+    attacker: isAttacker ? updatedPlayer : G.attacker,
+    defender: !isAttacker ? updatedPlayer : G.defender,
+    infrastructure: updatedInfrastructure,
+    actions: [...G.actions, newAction],
+    message: `${card.name} thrown at ${targetInfrastructure.name}`,
+    attackerScore,
+    defenderScore,
+    // Add pending reaction if needed
+    pendingReactions: shouldTriggerReaction ? [
+      ...(G.pendingReactions || []),
+      { 
+        card: cardCopy, 
+        source: playerID,
+        target: isAttacker ? G.defender?.id || '' : G.attacker?.id || ''
+      }
+    ] : G.pendingReactions
+  } as GameState; // Type assertion to fix type mismatch
+};
+
+/**
+ * Validate that a card can target an infrastructure based on type and state
+ */
+function validateCardTargeting(
+  cardType: string, 
+  infrastructure: InfrastructureCard,
+  attackVector?: AttackVector
+): { valid: boolean, message?: string } {
+  // Default validation result
+  const invalid = { valid: false, message: "Invalid target for this card" };
+  
+  switch (cardType) {
+    case 'exploit':
+      // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
+      if (infrastructure.state !== 'secure' && 
+          infrastructure.state !== 'fortified' && 
+          infrastructure.state !== 'fortified_weaken') {
+        return { 
+          valid: false, 
+          message: "Exploit cards can only target secure or fortified infrastructure" 
+        };
+      }
+      return { valid: true };
+      
+    case 'attack':
+      // Attack cards can only target vulnerable infrastructure with matching vulnerability
+      if (infrastructure.state !== 'vulnerable') {
+        return { valid: false, message: "Attack cards can only target vulnerable infrastructure" };
+      }
+      
+      // If attack vector is specified, check for matching vulnerability
+      if (attackVector && (!infrastructure.vulnerabilities || 
+          !infrastructure.vulnerabilities.some(v => {
+            // Handle both string vulnerabilities and object vulnerabilities
+            if (typeof v === 'string') {
+              return v === attackVector;
+            } else if (typeof v === 'object' && v !== null) {
+              return v.vector === attackVector;
+            }
+            return false;
+          }))) {
+        return { 
+          valid: false, 
+          message: `This infrastructure is not vulnerable to ${attackVector} attacks` 
+        };
+      }
+      return { valid: true };
+      
+    case 'shield':
+      // Shield cards can target any infrastructure except already shielded/fortified
+      if (infrastructure.state === 'shielded' || infrastructure.state === 'fortified') {
+        return { 
+          valid: false, 
+          message: "Shield cards cannot target already shielded or fortified infrastructure" 
+        };
+      }
+      return { valid: true };
+      
+    case 'fortify':
+      // Fortify cards can only target shielded infrastructure
+      if (infrastructure.state !== 'shielded') {
+        return { valid: false, message: "Fortify cards can only target shielded infrastructure" };
+      }
+      return { valid: true };
+      
+    case 'response':
+      // Response cards can only target compromised infrastructure
+      if (infrastructure.state !== 'compromised') {
+        return { valid: false, message: "Response cards can only target compromised infrastructure" };
+      }
+      return { valid: true };
+      
+    case 'counter-attack':
+    case 'counter':
+      // Counter-attack cards should specifically target shielded infrastructure when in reaction mode
+      if (infrastructure.state !== 'shielded') {
+        return { valid: false, message: "Counter-attack cards can only target shielded infrastructure" };
+      }
+      return { valid: true };
+
+    case 'reaction':
+      // Reaction cards can target vulnerable or compromised infrastructure
+      if (infrastructure.state !== 'vulnerable' && 
+          infrastructure.state !== 'compromised' && 
+          (!infrastructure.vulnerabilities || infrastructure.vulnerabilities.length === 0)) {
+        return { 
+          valid: false, 
+          message: "Reaction cards can only target vulnerable or compromised infrastructure" 
+        };
+      }
+      return { valid: true };
+      
+    // Handle legacy card types for backward compatibility
+    case 'attack':
+    case 'defense':
+    case 'utility':
+      return { valid: true };
+      
+    default:
+      return invalid;
+  }
+}

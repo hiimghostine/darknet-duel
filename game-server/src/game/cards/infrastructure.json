@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-06-18",
+  "cards": [
+    {
+      "id": "I001",
+      "name": "Enterprise Firewall",
+      "type": "network",
+      "description": "Primary perimeter defense system",
+      "flavor": "The first line of defense against external threats",
+      "vulnerabilities": ["network"],
+      "img": "firewall"
+    },
+    {
+      "id": "I003",
+      "name": "Corporate Website",
+      "type": "web",
+      "description": "Public-facing web presence",
+      "flavor": "Your company's digital storefront",
+      "vulnerabilities": ["web"],
+      "img": "website"
+    },
+    {
+      "id": "I005",
+      "name": "Main Database Cluster",
+      "type": "data",
+      "description": "Primary data storage for all operations",
+      "flavor": "The crown jewels of corporate information",
+      "vulnerabilities": ["network", "web"],
+      "img": "database"
+    },
+    {
+      "id": "I007",
+      "name": "Employee Workstations",
+      "type": "user",
+      "description": "End-user computing devices",
+      "flavor": "As secure as the humans using them",
+      "vulnerabilities": ["social", "malware"],
+      "img": "workstation"
+    },
+    {
+      "id": "I009",
+      "name": "Financial System",
+      "type": "critical",
+      "description": "Core accounting and payment platform",
+      "flavor": "Where the money moves - a prime target",
+      "vulnerabilities": ["network", "web", "malware"],
+      "img": "financial"
+    }
+  ]
+}

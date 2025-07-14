@@ -1,0 +1,40 @@
+.game-controls-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-top: 1px solid var(--border-color, #ddd);
+}
+
+.game-debug-info {
+  font-family: monospace;
+  color: var(--text-secondary-color, #666);
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.game-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.leave-game-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--danger-color, #dc3545);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.leave-game-button:hover {
+  background-color: var(--danger-dark-color, #c82333);
+}
+
+.leave-game-button:active {
+  background-color: var(--danger-darker-color, #bd2130);
+}

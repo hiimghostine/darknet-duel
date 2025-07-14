@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: system-ui, "Roboto Mono", monospace, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  min-width: 100svw;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* CSS Variables for theme colors - will be overridden by daisyUI themes */
+  --color-primary-rgb: 0, 183, 255; /* Default blue for cyberpunk theme */
+  --color-error-rgb: 255, 50, 50; /* Error red */
+  --animation-speed: 1s;
+  --color-primary-glow: rgba(0, 183, 255, 0.5);
+  --color-error-glow: rgba(255, 50, 50, 0.5);
+}
+
+html[data-theme='cyberpunk'] {
+  --color-primary-rgb: 0, 183, 255; /* Blue for light theme */
+  --color-primary-glow: rgba(0, 183, 255, 0.5);
+}
+
+html[data-theme='cyberpunk-dark'] {
+  --color-primary-rgb: 255, 37, 91; /* Red for dark theme */
+  --color-primary-glow: rgba(255, 37, 91, 0.5);
+}
+
+/* Apply theme transition to the entire HTML document and all its children */
+html, html * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Cyberpunk styling utilities */
+@layer components {
+  /* Glowing effects */
+  .pulse-glow {
+    animation: pulse-animation var(--animation-speed) infinite;
+    box-shadow: 0 0 0 0 var(--color-primary-glow);
+  }
+  
+  /* Cyberpunk button hover effect */
+  .btn-cyberpunk {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-cyberpunk::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(var(--color-primary-rgb), 0.4), transparent);
+    transition: 0.5s;
+  }
+  
+  .btn-cyberpunk:hover::before {
+    left: 100%;
+  }
+  
+  .pulse-error {
+    animation: pulse-error-animation 0.6s;
+  }
+  
+  /* Terminal typing animation */
+  .typing-animation {
+    overflow: hidden;
+    border-right: 0.15em solid var(--color-primary-glow);
+    white-space: nowrap;
+    margin: 0;
+    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+  }
+  
+  /* Corner-bordered container */
+  .corner-borders {
+    position: relative;
+    border: 1px solid hsl(var(--p) / 0.2);
+    padding: 1rem;
+  }
+  
+  .corner-borders::before,
+  .corner-borders::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: hsl(var(--p));
+  }
+  
+  /* Grid background */
+  .grid-bg {
+    background-image: linear-gradient(
+      to right,
+      rgba(var(--color-primary-rgb), 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(var(--color-primary-rgb), 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 20px 20px;
+  }
+  
+  /* Flickering text effect */
+  .text-flicker {
+    animation: text-flicker 3s linear infinite;
+  }
+  
+  /* Data corruption effect for hover states */
+  .data-corrupt {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .data-corrupt:hover::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(var(--color-primary-rgb), 0.05);
+    animation: data-corrupt 1s steps(1) infinite;
+    overflow: hidden;
+  }
+  
+  /* Scanlines overlay effect */
+  .scanline {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanline::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 50%,
+      rgba(0, 0, 0, 0.05) 51%,
+      transparent 51%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  /* Intense scanlines for logout effect */
+  .scanline-intense {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanline-intense::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 50%,
+      rgba(255, 0, 0, 0.07) 51%,
+      transparent 51%
+    );
+    background-size: 100% 3px;
+    animation: scan-intensity 0.5s linear infinite;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  /* Pulse glow animation */
+  .pulse-glow {
+    animation: pulse-glow 2s infinite;
+  }
+
+  @keyframes pulse-glow {
+    0% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px var(--primary));
+    }
+    100% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+  }
+
+  /* Pulse error animation */
+  .pulse-error {
+    animation: pulse-error 1.2s infinite;
+  }
+
+  @keyframes pulse-error {
+    0% {
+      filter: drop-shadow(0 0 2px var(--error));
+    }
+    50% {
+      filter: drop-shadow(0 0 12px var(--error));
+    }
+    100% {
+      filter: drop-shadow(0 0 2px var(--error));
+    }
+  }
+}
+
+/* Keyframes for animations */
+@keyframes pulse-animation {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-primary-glow);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes pulse-error-animation {
+  0% {
+    transform: translateX(0);
+    border-color: rgba(var(--color-error-rgb), 0.5);
+    background-color: rgba(var(--color-error-rgb), 0.1);
+  }
+  25% {
+    transform: translateX(-5px);
+    border-color: rgba(var(--color-error-rgb), 0.8);
+    background-color: rgba(var(--color-error-rgb), 0.2);
+  }
+  50% {
+    transform: translateX(5px);
+    border-color: rgba(var(--color-error-rgb), 0.8);
+    background-color: rgba(var(--color-error-rgb), 0.2);
+  }
+  75% {
+    transform: translateX(-5px);
+    border-color: rgba(var(--color-error-rgb), 0.5);
+    background-color: rgba(var(--color-error-rgb), 0.1);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: var(--color-primary-glow) }
+}
+
+@keyframes text-flicker {
+  0% { opacity: 1; }
+  2% { opacity: 0.8; }
+  3% { opacity: 1; }
+  7% { opacity: 1; }
+  8% { opacity: 0.2; }
+  9% { opacity: 1; }
+  12% { opacity: 1; }
+  18% { opacity: 0.4; }
+  20% { opacity: 1; }
+  33% { opacity: 1; }
+  34% { opacity: 0.8; }
+  36% { opacity: 1; }
+  54% { opacity: 1; }
+  55% { opacity: 0.7; }
+  56% { opacity: 1; }
+  85% { opacity: 1; }
+  87% { opacity: 0.6; }
+  88% { opacity: 0.8; }
+  89% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes data-corrupt {
+  0% { clip-path: inset(40% 0 61% 0); }
+  20% { clip-path: inset(75% 0 28% 0); }
+  40% { clip-path: inset(82% 0 2% 0); }
+  60% { clip-path: inset(31% 0 58% 0); }
+  80% { clip-path: inset(5% 0 34% 0); }
+  100% { clip-path: inset(58% 0 43% 0); }
+}

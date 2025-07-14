@@ -1,0 +1,154 @@
+/* Infrastructure Area Styles */
+.infrastructure-area {
+  width: 100%;
+  padding: 10px;
+  background: rgba(20, 30, 40, 0.8);
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.infrastructure-title {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #ddd;
+  text-align: center;
+}
+
+.infrastructure-cards-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.infrastructure-card {
+  flex: 1;
+  min-width: 120px;
+  background: #2a3040;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.infrastructure-card.targetable {
+  cursor: crosshair;
+  box-shadow: 0 0 5px rgba(255, 255, 100, 0.8);
+}
+
+.infrastructure-card.being-targeted {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 5px rgba(255, 100, 100, 0.8); }
+  50% { box-shadow: 0 0 15px rgba(255, 50, 50, 0.9); }
+  100% { box-shadow: 0 0 5px rgba(255, 100, 100, 0.8); }
+}
+
+.infra-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+.infra-name {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #eee;
+}
+
+.infra-state {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.infra-body {
+  padding: 5px 0;
+}
+
+.infra-type {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.infra-state-display {
+  margin: 5px 0;
+}
+
+.state-indicator {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+}
+
+/* State-specific colors */
+.infra-state-neutral .state-indicator {
+  background-color: #555;
+  color: #fff;
+}
+
+.infra-state-vulnerable .state-indicator {
+  background-color: #e67e22;
+  color: #fff;
+}
+
+.infra-state-shielded .state-indicator {
+  background-color: #33aadd;
+  color: white;
+}
+
+.infra-state-compromised .state-indicator {
+  background-color: #cc3333;
+  color: white;
+}
+
+.infra-state-fortified .state-indicator {
+  background-color: #2288dd;
+  color: white;
+}
+
+.infra-state-fortified_weaken .state-indicator {
+  background-color: #f39c12;
+  color: #fff;
+}
+
+.infra-state-secured .state-indicator {
+  background-color: #3399cc;
+  color: white;
+}
+
+.infra-state-firewalled .state-indicator {
+  background-color: #f39c12;
+  color: #fff;
+}
+
+.infra-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.effect-badge {
+  font-size: 0.7rem;
+  background: rgba(80, 100, 140, 0.8);
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.empty-infrastructure {
+  padding: 15px;
+  text-align: center;
+  color: #aaa;
+  font-style: italic;
+}

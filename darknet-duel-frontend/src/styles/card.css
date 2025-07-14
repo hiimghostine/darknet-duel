@@ -1,0 +1,280 @@
+/* Card styles for Darknet Duel */
+
+.card {
+  position: relative;
+  width: 160px;
+  height: 200px;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  margin: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  border: 1px solid #333;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border-bottom: 1px solid #444;
+}
+
+.card-cost {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  background: #333;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+.card-name {
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-align: center;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 5px;
+}
+
+.card-body {
+  flex-grow: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  font-size: 0.7rem;
+}
+
+.card-type {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.card-description {
+  flex-grow: 1;
+  font-size: 0.7rem;
+  overflow-y: auto;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border-top: 1px solid #444;
+  min-height: 24px;
+}
+
+.card-footer-left,
+.card-footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.card-footer-left {
+  justify-content: flex-start;
+}
+
+.card-footer-right {
+  justify-content: flex-end;
+}
+
+.card-power {
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+/* Card types */
+.card-attacker {
+  background: linear-gradient(135deg, #1a1a1a, #331111);
+  border-color: #661111;
+}
+
+.card-defender {
+  background: linear-gradient(135deg, #1a1a1a, #112233);
+  border-color: #113366;
+}
+
+.card-wildcard {
+  background: linear-gradient(135deg, #1a1a1a, #332211);
+  border-color: #664422;
+}
+
+/* Card states */
+.card-playable {
+  border-color: #33cc33;
+  box-shadow: 0 0 8px rgba(51, 204, 51, 0.5);
+}
+
+.card-selected {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+}
+
+.card-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Attack vectors */
+.card-vector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.7rem;
+}
+
+.card-vector-network {
+  background-color: #cc3333;
+  color: white;
+}
+
+.card-vector-web {
+  background-color: #cc7722;
+  color: white;
+}
+
+.card-vector-social {
+  background-color: #cccc22;
+  color: black;
+}
+
+.card-vector-malware {
+  background-color: #9933cc;
+  color: white;
+}
+
+/* Category tags */
+.card-category {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  margin-left: 4px;
+  text-transform: capitalize;
+}
+
+.card-category-web {
+  background-color: #cc7722;
+  color: white;
+}
+
+.card-category-network {
+  background-color: #cc3333;
+  color: white;
+}
+
+.card-category-social {
+  background-color: #cccc22;
+  color: black;
+}
+
+.card-category-malware {
+  background-color: #9933cc;
+  color: white;
+}
+
+.card-category-exploit {
+  background-color: #33cccc;
+  color: black;
+}
+
+.card-category-ddos {
+  background-color: #cc33cc;
+  color: white;
+}
+
+.card-category-attack {
+  background-color: #cc3333;
+  color: white;
+}
+
+.card-category-any {
+  background-color: #666666;
+  color: white;
+}
+
+/* Special markers */
+.card-reactive-marker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  background: #cc3333;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.card-special, .card-wildcard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.card-special {
+  background: #33cc33;
+  color: white;
+}
+
+.card-wildcard {
+  background: #cc9922;
+  color: white;
+}
+
+/* Card layout within player's hand */
+.player-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .card {
+    width: 120px;
+    height: 160px;
+    font-size: 0.7em;
+  }
+  
+  .card-description {
+    font-size: 0.65em;
+  }
+}

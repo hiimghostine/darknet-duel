@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="cyberpunk-dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Darknet Duel - The underground card game of digital warfare" />
+    <title>Darknet Duel</title>
+    <script>
+      // Theme handling
+      (function() {
+        // Default to dark theme (cyberpunk-dark) if no preference is stored
+        const savedTheme = localStorage.getItem('darknet-theme') || 'cyberpunk-dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

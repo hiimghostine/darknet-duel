@@ -1,0 +1,761 @@
+/* Lobby System Styling */
+
+/* Common Elements */
+.lobby-page {
+  background-color: #0d1117;
+  min-height: 100vh;
+  padding: 2rem 0;
+  color: #e6e6e6;
+}
+
+.lobby-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 1rem;
+}
+
+.lobby-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Buttons */
+.refresh-btn, 
+.create-lobby-btn,
+.join-btn,
+.spectate-btn,
+.leave-btn,
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-btn {
+  background-color: #21262d;
+  color: #e6e6e6;
+}
+
+.refresh-btn:hover {
+  background-color: #30363d;
+}
+
+.create-lobby-btn, 
+.btn-primary {
+  background-color: #238636;
+  color: #e6e6e6;
+}
+
+.create-lobby-btn:hover, 
+.btn-primary:hover {
+  background-color: #2ea043;
+}
+
+.join-btn, 
+.btn-secondary {
+  background-color: #1f6feb;
+  color: #e6e6e6;
+}
+
+.join-btn:hover, 
+.btn-secondary:hover {
+  background-color: #388bfd;
+}
+
+.join-btn.attacker {
+  background-color: #f85149;
+}
+
+.join-btn.attacker:hover {
+  background-color: #fa6b63;
+}
+
+.join-btn.defender {
+  background-color: #1f6feb;
+}
+
+.join-btn.defender:hover {
+  background-color: #388bfd;
+}
+
+.spectate-btn {
+  background-color: #30363d;
+  color: #8b949e;
+  cursor: not-allowed;
+}
+
+.leave-btn {
+  background-color: #f85149;
+  color: #e6e6e6;
+}
+
+.leave-btn:hover {
+  background-color: #fa6b63;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Lobby Cards */
+.lobbies-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.lobby-card {
+  background-color: #161b22;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.lobby-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: #388bfd;
+}
+
+.lobby-card.full {
+  opacity: 0.7;
+}
+
+.lobby-info h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e6e6e6;
+}
+
+.lobby-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.mode-badge {
+  background-color: #30363d;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.players-count {
+  color: #8b949e;
+  font-size: 0.875rem;
+}
+
+.role-availability {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.role {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: #21262d;
+}
+
+.role.available {
+  border-left: 3px solid #238636;
+}
+
+.role.taken {
+  border-left: 3px solid #f85149;
+}
+
+.role-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.status {
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.role.available .status {
+  color: #238636;
+}
+
+.role.taken .status {
+  color: #f85149;
+}
+
+.join-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Create Lobby Form */
+.create-lobby-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #161b22;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h3 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #e6e6e6;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 0.5rem;
+}
+
+.role-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.role-btn {
+  background-color: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.role-btn.selected {
+  border-color: #388bfd;
+  background-color: rgba(56, 139, 253, 0.1);
+}
+
+.role-btn.attacker.selected {
+  border-color: #f85149;
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+.role-btn.defender.selected {
+  border-color: #1f6feb;
+  background-color: rgba(31, 111, 235, 0.1);
+}
+
+.role-icon {
+  font-size: 1.5rem;
+}
+
+.role-name {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #e6e6e6;
+}
+
+.role-desc {
+  font-size: 0.875rem;
+  color: #8b949e;
+}
+
+.setting-group {
+  margin-bottom: 1.5rem;
+}
+
+.setting-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  color: #e6e6e6;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.range-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.range-control input[type="range"] {
+  flex-grow: 1;
+  background-color: #30363d;
+}
+
+.range-value {
+  width: 40px;
+  text-align: center;
+  font-weight: 600;
+  background-color: #21262d;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.lobby-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Lobby Detail / Waiting Room */
+.lobby-detail {
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: #161b22;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  position: relative;
+}
+
+.countdown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(13, 17, 23, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.countdown-content {
+  text-align: center;
+}
+
+.countdown-timer {
+  font-size: 5rem;
+  font-weight: 700;
+  color: #e6e6e6;
+}
+
+.game-mode-badge {
+  display: inline-block;
+  background-color: #238636;
+  color: #e6e6e6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-left: 1rem;
+  vertical-align: middle;
+}
+
+.players-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2rem 0;
+}
+
+.player-card {
+  flex: 1;
+  background-color: #21262d;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  max-width: 350px;
+}
+
+.vs-divider {
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0 1rem;
+  color: #8b949e;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.role-badge.attacker {
+  background-color: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.role-badge.defender {
+  background-color: rgba(31, 111, 235, 0.2);
+  color: #1f6feb;
+}
+
+.host-badge {
+  display: inline-block;
+  background-color: #30363d;
+  color: #8b949e;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.lobby-settings {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #21262d;
+  border-radius: 8px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-label {
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.setting-value {
+  font-weight: 500;
+}
+
+.lobby-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #30363d;
+}
+
+.status-message {
+  color: #8b949e;
+  font-style: italic;
+}
+
+/* Loading and Error States */
+.loading-spinner,
+.no-lobbies {
+  text-align: center;
+  padding: 3rem;
+  color: #8b949e;
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.alert-danger {
+  background-color: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  color: #f85149;
+}
+
+/* Game Board Styling */
+.game-page {
+  background-color: #0d1117;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  color: #e6e6e6;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.game-client-container {
+  width: 100%;
+  height: 100vh;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background-color: #0d1117;
+}
+
+.game-controls {
+  background-color: #161b22;
+  padding: 1rem;
+  border-top: 1px solid #30363d;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.leave-game-btn {
+  background-color: #f85149;
+  color: #e6e6e6;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+}
+
+.leave-game-btn:hover {
+  background-color: #fa6b63;
+}
+
+.game-board {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-board .card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.game-card {
+  width: 180px;
+  height: 250px;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border: 1px solid #30363d;
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+}
+
+.game-card.attack {
+  background-color: rgba(248, 81, 73, 0.1);
+  border-color: #f85149;
+}
+
+.game-card.defense {
+  background-color: rgba(31, 111, 235, 0.1);
+  border-color: #1f6feb;
+}
+
+.game-card.utility {
+  background-color: rgba(46, 160, 67, 0.1);
+  border-color: #2ea043;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.card-cost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #30363d;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.card-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.card-type {
+  color: #8b949e;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.card-power, .card-defense {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.game-status {
+  background-color: #161b22;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.player-info, .opponent-info {
+  background-color: #21262d;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.game-areas {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.player-board, .opponent-board {
+  flex: 1;
+  background-color: #161b22;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.board-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.board-card {
+  width: 100px;
+  height: 130px;
+  border-radius: 4px;
+  padding: 0.5rem;
+  border: 1px solid #30363d;
+  font-size: 0.75rem;
+}
+
+.end-turn-btn {
+  background-color: #30363d;
+  color: #e6e6e6;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.end-turn-btn:hover {
+  background-color: #388bfd;
+}
+
+.your-turn {
+  color: #2ea043;
+  font-weight: 600;
+}
+
+.opponent-turn {
+  color: #8b949e;
+}
+
+.game-over {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(13, 17, 23, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.game-over.win h2,
+.game-over.win h3 {
+  color: #2ea043;
+}
+
+.game-over.loss h2,
+.game-over.loss h3 {
+  color: #f85149;
+}
+
+.empty-board {
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: #8b949e;
+  font-style: italic;
+}
+
+.resource-counter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resource-value {
+  font-weight: 600;
+  color: #e6e6e6;
+  background-color: #30363d;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
