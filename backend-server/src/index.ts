@@ -9,6 +9,7 @@ import infoRoutes from './routes/info.routes';
 import accountRoutes from './routes/account.routes';
 import filesRoutes from './routes/files.routes';
 import currencyRoutes from './routes/currency.routes';
+import paymentRoutes from './routes/payment.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 // Load environment variables
@@ -73,6 +74,9 @@ app.use('/api/info', infoRoutes);
 
 // Currency management routes
 app.use('/api/currency', currencyRoutes);
+
+// Payment processing routes
+app.use('/api/payment', paymentRoutes);
 
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));

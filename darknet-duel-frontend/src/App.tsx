@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import ProfilePage from './pages/ProfilePage';
+import TopUpPage from './pages/TopUpPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/topup" element={<TopUpPage />} />
           <Route path="/lobbies/*" element={<LobbyPage />} />
           <Route path="/game/:matchID" element={<GamePage />} />
         </Route>

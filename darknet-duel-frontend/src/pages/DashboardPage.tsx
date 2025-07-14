@@ -156,6 +156,16 @@ const DashboardPage: React.FC = () => {
                 <span className="hidden sm:inline">PROFILE</span>
               </button>
               
+              <button 
+                onClick={() => navigate('/topup')} 
+                className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
+                aria-label="Top Up"
+              >
+                <span className="mr-1">💎</span>
+                <span className="hidden sm:inline text-flicker">TOP-UP</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+              </button>
+              
               <button
                 onClick={toggleTheme}
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"

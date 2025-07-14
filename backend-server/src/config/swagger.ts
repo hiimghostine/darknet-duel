@@ -407,6 +407,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: 'Currency',
         description: 'Virtual currency management (Creds and Crypts)'
+      },
+      {
+        name: 'Payment',
+        description: 'Payment processing via Xendit for purchasing crypts'
       }
     ]
   },
