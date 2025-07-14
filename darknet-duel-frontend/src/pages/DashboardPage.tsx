@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout, loadUser } = useAuthStore();
@@ -11,18 +12,36 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Refresh user data on dashboard load and simulate loading
-    loadUser();
-    
-    // Simulate loading data on mount with a delay for aesthetic purposes
-    // Using a longer delay to ensure the loading animation completes fully
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
-    
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        // Refresh user data on dashboard load
+        await loadUser();
+        
+        // Fetch profile information from our new API
+        const profileInfo = await infoService.getProfile(5); // Get last 5 activities
+        setRecentActivity(profileInfo.recentActivity);
+        setProfileStats(profileInfo.profileStats);
+        setDataError(null);
+      } catch (error) {
+        console.error('Failed to fetch profile data:', error);
+        setDataError('Failed to load profile data');
+        // Fallback to empty arrays if API fails
+        setRecentActivity([]);
+        setProfileStats(null);
+      } finally {
+        // Simulate loading for aesthetic purposes but reduce delay
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 2000);
+      }
+    };
+
+    fetchData();
   }, [loadUser]);
   
   // Get theme from localStorage
@@ -54,20 +73,22 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/auth" replace />;
   }
   
-  // Stats data
-  const statsData = [
-    { label: 'WINS', value: user?.gamesWon || '0' },
-    { label: 'LOSSES', value: user?.gamesLost || '0' },
-    { label: 'RATIO', value: user?.gamesPlayed ? 
-      ((user.gamesWon / user.gamesPlayed) * 100).toFixed(1) + '%' : '0%' },
-    { label: 'ELO', value: user?.rating || '0' }
+  // Stats data - now using profileStats from API instead of user object
+  const statsData = profileStats ? [
+    { label: 'WINS', value: profileStats.wins.toString() },
+    { label: 'LOSSES', value: profileStats.losses.toString() },
+    { label: 'RATIO', value: profileStats.winRate },
+    { label: 'ELO', value: profileStats.rating.toString() }
+  ] : [
+    { label: 'WINS', value: '0' },
+    { label: 'LOSSES', value: '0' },
+    { label: 'RATIO', value: '0%' },
+    { label: 'ELO', value: '0' }
   ];
   
-  // Activities data - could be replaced with actual activity data
-  const activitiesData = [
-    { type: 'WIN', opponent: 'ByteRunner', time: '2h ago' },
-    { type: 'LOSS', opponent: 'NeonHex', time: '5h ago' },
-    { type: 'WIN', opponent: 'Cyph3rPunk', time: '1d ago' }
+  // Use real activities data from API or show placeholder if empty
+  const activitiesData = recentActivity.length > 0 ? recentActivity : [
+    { type: 'WIN' as const, opponent: 'No recent games', time: 'Play a game to see activity', pointsChange: '+0 PTS' },
   ];
 
   return (
@@ -182,7 +203,7 @@ const DashboardPage: React.FC = () => {
                   
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-mono text-primary text-lg">HACKER_STATS</h3>
-                    <div className="text-xs text-base-content/70 font-mono">LEVEL: {user?.level || 1}</div>
+                    <div className="text-xs text-base-content/70 font-mono">LEVEL: {profileStats?.level || 1}</div>
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -251,6 +272,13 @@ const DashboardPage: React.FC = () => {
                     <div className="text-xs text-base-content/70 font-mono">LAST_UPDATE: NOW</div>
                   </div>
                   
+                  {dataError && (
+                    <div className="border border-error/50 bg-error/10 p-3 rounded mb-3">
+                      <div className="text-error font-mono text-sm">⚠️ {dataError}</div>
+                      <div className="text-error/70 font-mono text-xs mt-1">Check your connection and try refreshing</div>
+                    </div>
+                  )}
+                  
                   <div className="space-y-3">
                     {activitiesData.map((activity, index) => (
                       <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
@@ -264,7 +292,7 @@ const DashboardPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-xs font-mono text-primary">
-                          {activity.type === 'WIN' ? '+125 PTS' : '-75 PTS'}
+                          {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                         </div>
                       </div>
                     ))}

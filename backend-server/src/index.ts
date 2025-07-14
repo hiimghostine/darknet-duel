@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
+import infoRoutes from './routes/info.routes';
 
 // Load environment variables
 dotenv.config();
@@ -56,6 +57,9 @@ app.use('/api/auth', authRoutes);
 
 // Server-to-server routes for game-server communication
 app.use('/api/server', serverRoutes);
+
+// Info routes for user profile and activity data
+app.use('/api/info', infoRoutes);
 
 // Game-related routes that use normal authentication
 app.get('/api/games/:id', (req, res) => {
