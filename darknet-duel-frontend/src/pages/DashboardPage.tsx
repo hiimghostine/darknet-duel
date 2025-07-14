@@ -60,7 +60,7 @@ const DashboardPage: React.FC = () => {
     { label: 'LOSSES', value: user?.gamesLost || '0' },
     { label: 'RATIO', value: user?.gamesPlayed ? 
       ((user.gamesWon / user.gamesPlayed) * 100).toFixed(1) + '%' : '0%' },
-    { label: 'POINTS', value: user?.points || '0' }
+    { label: 'ELO', value: user?.rating || '0' }
   ];
   
   // Activities data - could be replaced with actual activity data
