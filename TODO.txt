@@ -1,0 +1,14 @@
+Accounts (ignore this):
+- Notshige1!
+- Notshige2!
+
+Issues:
+- No "Wrong password" message
+- Browsing lobbies and creating a lobby will get stuck in loading screeen when there's no matches
+- Lobbies poll too fast
+
+
+Later to fix:
+- Hacker stats in front
+- Recent activity in dashboard, and View Full History button
+- Dynamic system updates in dashboard
