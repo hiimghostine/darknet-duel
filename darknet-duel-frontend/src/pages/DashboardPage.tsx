@@ -5,6 +5,7 @@ import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
+import accountService from '../services/account.service';
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout, loadUser } = useAuthStore();
@@ -15,6 +16,7 @@ const DashboardPage: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [userBio, setUserBio] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -26,6 +28,16 @@ const DashboardPage: React.FC = () => {
         const profileInfo = await infoService.getProfile(5); // Get last 5 activities
         setRecentActivity(profileInfo.recentActivity);
         setProfileStats(profileInfo.profileStats);
+        
+        // Fetch account details to get bio
+        try {
+          const accountData = await accountService.getMyAccount();
+          setUserBio(accountData.bio);
+        } catch (error) {
+          console.error('Failed to fetch account bio:', error);
+          setUserBio(null);
+        }
+        
         setDataError(null);
       } catch (error) {
         console.error('Failed to fetch profile data:', error);
@@ -256,8 +268,72 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Right column - Activity & Updates */}
+            {/* Right column - Profile & Activity */}
             <div className="space-y-8">
+              {/* User Profile */}
+              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-primary/20 p-4 relative">
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-mono text-primary text-lg">USER_PROFILE</h3>
+                    <Link
+                      to="/profile"
+                      className="text-xs text-base-content/70 font-mono hover:text-primary transition-colors cursor-pointer"
+                    >
+                      [EDIT]
+                    </Link>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    {/* Profile Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 border-2 border-primary/50 bg-base-300/50 rounded-full overflow-hidden relative">
+                        <img
+                          src={user?.id ? accountService.getAvatarUrl(user.id) : logo}
+                          alt={`${user?.username}'s avatar`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to logo if avatar fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = logo;
+                          }}
+                        />
+                        {/* Online indicator */}
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-base-200 rounded-full"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Profile Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono">
+                        <div className="text-lg font-bold text-primary truncate">
+                          {user?.username}
+                        </div>
+                        <div className="text-xs text-base-content/70 mb-2">
+                          RATING: {profileStats?.rating || 1000}
+                        </div>
+                        <div className="text-sm text-base-content/90">
+                          {userBio ? (
+                            <div className="italic border-l-2 border-primary/30 pl-2">
+                              "{userBio}"
+                            </div>
+                          ) : (
+                            <div className="text-base-content/50 italic">
+                              Click [EDIT] to add your bio
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Recent Activity */}
               <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
                 <div className="bg-base-200 border border-primary/20 p-4 relative">
