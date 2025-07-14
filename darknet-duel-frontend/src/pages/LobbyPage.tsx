@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
 import LobbyDetail from '../components/lobby/LobbyDetail';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
+import LogoutScreen from '../components/LogoutScreen';
+import logo from '../assets/logo.png';
 
 const LobbyPage: React.FC = () => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
   
   // Add loading animation only for initial login transition
   useEffect(() => {
@@ -25,6 +30,28 @@ const LobbyPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated]);
+
+  // Get theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      logout();
+      navigate('/auth', { replace: true });
+    }, 1500);
+  };
   
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
@@ -32,9 +59,9 @@ const LobbyPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content flex flex-col">
-      {/* Wrapper to hide content during loading */}
-      <div className={`${isLoading ? 'hidden' : 'block'}`}>
+    <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
+      {/* Wrapper to hide content during logout */}
+      <div className={`${isLoggingOut ? 'hidden' : 'block'}`}>
         
         {/* Background grid and decorative elements */}
         <div className="absolute inset-0 pointer-events-none">
@@ -58,51 +85,94 @@ const LobbyPage: React.FC = () => {
         </div>
 
         {/* Main content */}
-        <main className="relative z-10 flex flex-col flex-grow">
-          {/* Header with glow effect */}
-          <header className="py-6 px-8 border-b border-primary/30 relative">
-            <div className="max-w-[1920px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-focus text-flicker mb-1">DARKNET LOBBIES</h1>
-                <div className="h-px w-full bg-gradient-to-r from-transparent via-primary to-transparent mb-2"></div>
-                <div className="text-base-content/70 font-mono text-sm flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 pulse-glow"></div>
-                  <span>SECURE CONNECTION ESTABLISHED // {user?.username?.toUpperCase() || 'USER'} AUTHENTICATED</span>
-                </div>
+        <div className={`relative z-10 transition-opacity duration-500 ${isLoading || isLoggingOut ? 'opacity-0' : 'opacity-100'} scanline`}>
+          <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
+            <div className="container mx-auto flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <img src={logo} alt="Darknet Duel Logo" className="h-8" />
+                <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
+                  DARKNET_DUEL
+                </h1>
               </div>
-              
-              <div className="flex items-center space-x-4 self-end">
-                <div className="text-xs text-base-content/50 font-mono text-right">
-                  <div>STATUS: ONLINE</div>
-                  <div>PING: 23ms</div>
-                </div>
+          
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => navigate('/dashboard')} 
+                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+                >
+                  <span className="mr-1">🏠</span> 
+                  <span className="hidden sm:inline">DASHBOARD</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigate('/profile')} 
+                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+                  aria-label="Profile"
+                >
+                  <span className="mr-1">👤</span>
+                  <span className="hidden sm:inline">PROFILE</span>
+                </button>
+                
+                <button
+                  onClick={toggleTheme}
+                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+                  aria-label="Toggle Theme"
+                >
+                  {theme === 'cyberpunk' ? '🌙' : '☀️'}
+                </button>
+                
+                <button
+                  onClick={handleLogout}
+                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+                  aria-label="Logout"
+                >
+                  <span className="mr-1">🚪</span>
+                  <span className="hidden sm:inline">EXIT</span>
+                </button>
               </div>
             </div>
           </header>
-          
-          {/* Content section - full width */}
-          <div className="p-8 flex-grow">
-            <div className="max-w-[1920px] mx-auto">
-              <Routes>
-                <Route path="/" element={<LobbyBrowser />} />
-                <Route path="/create" element={<CreateLobby />} />
-                <Route path="/:matchID" element={<LobbyDetail />} />
-              </Routes>
+
+          <main className="container mx-auto p-4">
+            {/* Lobbies banner */}
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm mb-8">
+              <div className="bg-base-200 border border-primary/20 p-4 relative">
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                
+                <div className="font-mono">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-2xl font-bold mb-2 font-mono">
+                      DARKNET_LOBBIES
+                    </h2>
+                  </div>
+                  <div className="text-base-content text-sm flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 pulse-glow"></div>
+                    <span>SECURE CONNECTION ESTABLISHED • {user?.username?.toUpperCase() || 'USER'} AUTHENTICATED</span>
+                  </div>
+                  <div className="text-xs text-primary mt-3">⚠️ ENCRYPTED COMMUNICATION ACTIVE • PROCEED WITH CAUTION</div>
+                </div>
+              </div>
             </div>
-          </div>
           
-          {/* Footer */}
-          <footer className="p-4 border-t border-primary/20 text-center mt-auto">
-            <div className="text-base-content/60 text-xs font-mono">
-              DARKNET_DUEL LOBBY v0.0.1 • {new Date().toISOString().split('T')[0]} • 
-              <span className="text-primary ml-1 text-flicker">NETWORK: SECURE</span>
-            </div>
-          </footer>
-        </main>
+            {/* Content section */}
+            <Routes>
+              <Route path="/" element={<LobbyBrowser />} />
+              <Route path="/create" element={<CreateLobby />} />
+              <Route path="/:matchID" element={<LobbyDetail />} />
+            </Routes>
+          </main>
+        </div>
       </div>
       
       {/* Show loading animation */}
       {isLoading && <LoadingScreen text="CONNECTING TO DARKNET SERVERS" />}
+      
+      {/* Show logout screen */}
+      {isLoggingOut && <LogoutScreen />}
     </div>
   );
 };
