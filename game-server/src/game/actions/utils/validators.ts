@@ -1,6 +1,6 @@
 import { InfrastructureCard, InfrastructureState, GameState } from 'shared-types/game.types';
 import { AttackVector, Vulnerability, Card } from 'shared-types/card.types';
-import { TemporaryEffectsManager } from '../temporaryEffectsManager';
+import { TemporaryEffectsManager, TemporaryEffect } from '../temporaryEffectsManager';
 
 /**
  * Validate that a card can target an infrastructure based on type and state
@@ -11,8 +11,9 @@ export function validateCardTargeting(
   infrastructure: InfrastructureCard,
   attackVector?: AttackVector,
   gameState?: GameState,
-  card?: Card
-): { valid: boolean, message?: string } {
+  card?: Card,
+  playerID?: string // Added playerID to check player-specific effects
+): { valid: boolean, message?: string, bypassCost?: boolean } { // Added bypassCost flag
   // Default validation result
   const invalid = { valid: false, message: "Invalid target for this card" };
   
@@ -20,14 +21,41 @@ export function validateCardTargeting(
   if (gameState) {
     // Check if reactions are prevented
     if (cardType === 'reaction' && 
-        TemporaryEffectsManager.hasEffect(gameState, 'prevent_reactions', infrastructure.id)) {
+        TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_reactions', infrastructure.id)) {
       return { valid: false, message: "This infrastructure is protected from reactions" };
     }
     
     // Check if restoration is prevented
     if (cardType === 'response' && 
-        TemporaryEffectsManager.hasEffect(gameState, 'prevent_restore', infrastructure.id)) {
+        TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_restore', infrastructure.id)) {
       return { valid: false, message: "This infrastructure cannot be restored" };
+    }
+    
+    // PHASE 2: Check for chain vulnerability - makes all exploits valid on this infra
+    if (cardType === 'exploit' && 
+        TemporaryEffectsManager.hasEffect(gameState as GameState, 'chain_vulnerability' as any, infrastructure.id)) {
+      // If the infrastructure has chain_vulnerability, all exploits are valid
+      // This overrides other validation checks for exploits
+      return { valid: true, message: "Exploit valid due to chain vulnerability" };
+    }
+    
+    // PHASE 2: Check infrastructure targeting restrictions
+    if (playerID && TemporaryEffectsManager.hasEffect(gameState as GameState, 'restrict_targeting' as any, playerID)) {
+      // Get the effect details to see what targets are restricted
+      const restrictionEffects = gameState.temporaryEffects?.filter(e => 
+        (e as TemporaryEffect).type === 'restrict_targeting' && e.targetId === playerID) || [];
+      
+      for (const effect of restrictionEffects as TemporaryEffect[]) {
+        // Check if this specific infrastructure is in the restricted list
+        if (effect.metadata && effect.metadata.restrictedTargets?.includes(infrastructure.id)) {
+          return { valid: false, message: "You cannot target this infrastructure due to effect restrictions" };
+        }
+        
+        // Check if this infrastructure type is in the restricted list
+        if (effect.metadata && effect.metadata.restrictedTypes?.includes(infrastructure.type)) {
+          return { valid: false, message: `You cannot target ${infrastructure.type} infrastructure due to effect restrictions` };
+        }
+      }
     }
     
     // Handle Zero Trust Architecture special validation (requires 2 matching exploits)
@@ -49,6 +77,24 @@ export function validateCardTargeting(
         }
       }
     }
+    
+    // PHASE 2: Handle Quantum Resistant Cryptography (D304) - requires specific attack vectors
+    if (card && card.id === 'D304' && cardType === 'shield') {
+      // Additional validation for Quantum Resistant Cryptography
+      // Check if the infrastructure already has quantum protection
+      const hasQuantumProtection = gameState.temporaryEffects?.some(
+        e => (e as TemporaryEffect).type === 'quantum_protection' && e.targetId === infrastructure.id
+      ) || false;
+      
+      if (hasQuantumProtection) {
+        return { valid: false, message: "This infrastructure already has quantum protection" };
+      }
+    }
+    
+    // PHASE 2: Handle Honeypot (D303) - can only be applied to vulnerable infrastructure
+    if (card && card.id === 'D303' && infrastructure.state !== 'vulnerable') {
+      return { valid: false, message: "Honeypot can only be applied to vulnerable infrastructure" };
+    }
   }
   
   switch (cardType) {
@@ -68,6 +114,14 @@ export function validateCardTargeting(
       // Attack cards can only target vulnerable infrastructure with matching vulnerability
       if (infrastructure.state !== 'vulnerable') {
         return { valid: false, message: "Attack cards can only target vulnerable infrastructure" };
+      }
+      
+      // PHASE 2: Special handling for Living Off The Land (A302)
+      // It can bypass attack vector restrictions when targeting user infrastructure
+      if (card && card.id === 'A302' && infrastructure.type === 'user') {
+        // Living Off The Land can always target user infrastructure regardless of vector
+        // and gets a cost reduction
+        return { valid: true, message: "Living Off The Land can target any user infrastructure", bypassCost: true };
       }
       
       // If attack vector is specified, check for matching vulnerability

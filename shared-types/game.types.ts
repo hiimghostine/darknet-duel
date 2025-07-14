@@ -67,6 +67,7 @@ export interface InfrastructureCard {
   damaged?: boolean;     // Track if card has been damaged
   state: InfrastructureState;
   effects?: InfrastructureCardEffect[];
+  critical?: boolean;    // Whether this is a critical infrastructure (added for Phase 3)
   // For backend compatibility
   shields?: Shield[];
 }
@@ -128,6 +129,26 @@ export interface PendingReaction {
   card?: Card;
   source?: string; // Player ID of the card player
   target?: string; // Player ID of the reaction target
+}
+
+/**
+ * Chain effect type - used for lateral movement across infrastructure (Phase 3)
+ */
+export interface ChainEffect {
+  type: 'chain_vulnerability' | 'chain_compromise';
+  sourceCardId: string;
+  playerId: string;
+  availableTargets: string[];
+}
+
+/**
+ * Hand disruption choice - used for hand disruption effects (Phase 3)
+ */
+export interface HandDisruptionChoice {
+  type: 'discard_from_hand';
+  targetPlayerId: string;
+  revealedHand: Card[];
+  count?: number; // Number of cards to discard
 }
 
 /**
@@ -208,13 +229,21 @@ export interface GameState {
     timestamp: number;
   };
   
+  // PHASE 3: Chain effect system (lateral movement)
+  pendingChainChoice?: ChainEffect;
+  
+  // PHASE 3: Hand disruption system
+  pendingHandChoice?: HandDisruptionChoice;
+  
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
-    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability';
+    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' | 
+          'restrict_targeting' | 'quantum_protection' | 'honeypot'; // Added Phase 2 & 3 effect types
     targetId?: string;
     playerId?: string;
     duration: number;
     sourceCardId: string;
+    metadata?: any; // For complex effect data
   }[];
   
   // Game configuration (required by backend)

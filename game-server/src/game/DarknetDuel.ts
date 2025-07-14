@@ -11,6 +11,8 @@ import { setupPhase, playingPhase, gameOverPhase } from './core/gamePhases';
 // Import actions
 import { cycleCardMove, playCardMove, endTurnMove, throwCardMove } from './actions/playerActions';
 import { chooseWildcardTypeMove } from './moves/chooseWildcardType';
+import { chooseChainTargetMove } from './moves/chooseChainTarget';
+import { chooseHandDiscardMove } from './moves/chooseHandDiscard';
 
 /**
  * Darknet Duel Game Definition
@@ -122,6 +124,20 @@ const DarknetDuel: Game<GameState> = {
       // Handle both formats: direct type or object with type property
       const chosenType = typeof args === 'string' ? args : args?.type;
       return chooseWildcardTypeMove(props, chosenType);
+    },
+    
+    // Choose target for chain effect (lateral movement)
+    chooseChainTarget: (props, args) => {
+      // Handle both formats: direct string or object with targetId
+      const targetInfrastructureId = typeof args === 'string' ? args : args?.targetId;
+      return chooseChainTargetMove(props.G, props.ctx, props.playerID, targetInfrastructureId);
+    },
+    
+    // Choose cards to discard from opponent's hand (hand disruption)
+    chooseHandDiscard: (props, args) => {
+      // Handle both formats: array of strings or object with cardIds
+      const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+      return chooseHandDiscardMove(props.G, props.ctx, props.playerID, cardIds);
     },
     
     // Skip reaction during reaction stage

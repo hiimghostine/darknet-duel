@@ -11,6 +11,7 @@ import { TemporaryEffectsManager } from '../temporaryEffectsManager';
 /**
  * Action to throw a card at an infrastructure target
  * This deducts AP and applies card effects to target infrastructure
+ * @returns GameState - The updated game state
  */
 export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetInfrastructureId: string): GameState => {
   // Verify it's the player's turn or a valid reaction
@@ -53,17 +54,60 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     };
   }
   
+  // Record action so it's available throughout the function
+  const newAction: GameAction = {
+    playerRole: isAttacker ? 'attacker' : 'defender',
+    actionType: 'throwCard',
+    timestamp: Date.now(),
+    payload: { cardId, targetInfrastructureId, cardType: card.type }
+  };
+  
+  // Handle card type-specific targeting validation
+  // For wildcard cards, determine the effective card type using our utility function
+  const effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
+  
+  // Get attack vector if available, or fall back to metadata.category
+  let attackVector = extendedCard.attackVector as AttackVector | undefined;
+  
+  // If no explicit attackVector, try to get it from metadata.category
+  if (!attackVector && extendedCard.metadata && extendedCard.metadata.category && 
+      extendedCard.metadata.category !== 'any') {
+    // Cast the category to AttackVector if it's one of our known values
+    attackVector = extendedCard.metadata.category as AttackVector;
+  }
+  
+  console.log(`Card ${card.name} (${card.id}) has attack vector: ${attackVector || 'NONE'}`);
+
+  // Validate targeting for the card
+  // This will also check for special cost reduction cases in Phase 2
+  const validationResult = validateCardTargeting(
+    effectiveCardType, 
+    targetInfrastructure, 
+    attackVector, 
+    G, // Pass the full game state for effect checking
+    card, // Pass the card for special card handling
+    playerID // Pass playerID for player-specific effect checks
+  );
+
+  if (!validationResult.valid) {
+    return { 
+      ...G,
+      message: validationResult.message || "Invalid target for this card"
+    };
+  }
+
   // Calculate effective card cost, applying any cost reductions
   let effectiveCost = card.cost;
   
-  // Handle Living Off The Land cost reduction (A302)
-  if (card.id === 'A302' && targetInfrastructure.type === 'user') {
+  // Handle cost reductions based on validation result bypassCost flag
+  // This covers Living Off The Land (A302) and other special cases
+  if (validationResult.bypassCost) {
     effectiveCost = Math.max(0, card.cost - 1);
-    console.log(`Living Off The Land: Cost reduced from ${card.cost} to ${effectiveCost}`);
+    console.log(`Wildcard cost reduction: Cost reduced from ${card.cost} to ${effectiveCost}`);
   }
   
   // Check for cost_reduction temporary effects
-  if (TemporaryEffectsManager.hasEffect(G, 'cost_reduction', targetInfrastructure.id)) {
+  if (TemporaryEffectsManager.hasEffect(G as GameState, 'cost_reduction', targetInfrastructure.id)) {
     const reduction = 1; // Default reduction amount
     effectiveCost = Math.max(0, effectiveCost - reduction);
     console.log(`Cost reduction effect applied: Cost reduced to ${effectiveCost}`);
@@ -74,47 +118,6 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     return { 
       ...G,
       message: "Not enough action points to throw this card"
-    };
-  }
-  
-  // Record action - moved here so it's available throughout the function
-  const newAction: GameAction = {
-    playerRole: isAttacker ? 'attacker' : 'defender',
-    actionType: 'throwCard',
-    timestamp: Date.now(),
-    payload: { cardId, targetInfrastructureId, cardType: card.type }
-  };
-
-  // Handle card type-specific targeting validation
-  // For wildcard cards, determine the effective card type using our utility function
-  // This ensures consistent handling across the codebase
-  let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
-  
-  // Get attack vector if available, or fall back to metadata.category
-  let attackVector = extendedCard.attackVector as AttackVector | undefined;
-  
-  // If no explicit attackVector, try to get it from metadata.category
-  if (!attackVector && extendedCard.metadata && extendedCard.metadata.category && 
-      extendedCard.metadata.category !== 'any') {
-    // Cast the category to AttackVector if it's one of our known values
-    const category = extendedCard.metadata.category;
-    
-    // Check if the category is a valid AttackVector
-    const validAttackVectors = ['exploit', 'ddos', 'attack', 'network', 'web', 'social', 'malware'];
-    if (validAttackVectors.includes(category)) {
-      attackVector = category as AttackVector;
-      console.log(`Using metadata.category as attack vector: ${attackVector}`);
-    }
-  }
-  
-  console.log(`Card ${card.name} (${card.id}) has attack vector: ${attackVector || 'NONE'}`);
-    
-  // Validate targeting based on card type
-  const targetValidation = validateCardTargeting(effectiveCardType, targetInfrastructure, attackVector);
-  if (!targetValidation.valid) {
-    return {
-      ...G,
-      message: targetValidation.message || "Invalid target for this card type"
     };
   }
   

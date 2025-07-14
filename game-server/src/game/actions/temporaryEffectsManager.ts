@@ -4,11 +4,20 @@ import { GameState } from 'shared-types/game.types';
  * Interface defining a temporary effect in the game
  */
 export interface TemporaryEffect {
-  type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability';
+  type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' | 
+        'restrict_targeting' | 'quantum_protection' | 'honeypot';
   targetId?: string;
   playerId?: string;
   duration: number;
   sourceCardId: string;
+  // Optional metadata for effects that need additional information
+  metadata?: {
+    restrictedTargets?: string[];
+    restrictedTypes?: string[];
+    vulnerabilityType?: string;
+    revealHandTo?: string;
+    [key: string]: any; // Allow any other metadata properties
+  };
 }
 
 /**
@@ -47,7 +56,10 @@ export class TemporaryEffectsManager {
   /**
    * Check if an effect of specified type exists, optionally for a specific target
    */
-  static hasEffect(gameState: GameState, type: string, targetId?: string): boolean {
+  static hasEffect(gameState: GameState, 
+                   type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 
+                        'chain_vulnerability' | 'restrict_targeting' | 'quantum_protection' | 'honeypot', 
+                   targetId?: string): boolean {
     return gameState.temporaryEffects?.some(effect => 
       effect.type === type && (!targetId || effect.targetId === targetId)
     ) || false;
