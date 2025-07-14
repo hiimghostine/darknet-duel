@@ -18,6 +18,7 @@ import GameControls from './board-components/GameControls';
 import PowerBar from './board-components/PowerBar';
 import RoundTracker from './board-components/RoundTracker';
 import WinnerLobby from './board-components/WinnerLobby';
+import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -266,10 +267,26 @@ const GameBoardComponent = (props: GameBoardProps) => {
     );
   }
   
+  // Create the handler for wildcard type choice
+  const handleChooseWildcardType = useCallback((type: string) => {
+    if (moves.chooseWildcardType) {
+      moves.chooseWildcardType({ type });
+    }
+  }, [moves]);
+
   // Otherwise show the regular game UI
   return (
     <div className={containerClass}>
       {isProcessingMove && <div className="move-indicator">Processing move...</div>}
+      
+      {/* Show wildcard choice UI when pending choice exists */}
+      {G.pendingWildcardChoice && (
+        <WildcardChoiceUI 
+          pendingChoice={G.pendingWildcardChoice}
+          playerId={playerID || ''}
+          onChooseType={handleChooseWildcardType}
+        />
+      )}
       
       {/* Connection status indicator */}
       <div className="connection-status">
@@ -365,8 +382,6 @@ const GameBoardComponent = (props: GameBoardProps) => {
       </div>
     </div>
   );
-};
-
 };
 
 // Create a memoized version of the GameBoard with custom comparison function

@@ -133,15 +133,17 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     ...updatedInfrastructure[infraIndex]
   };
   
-  // Apply card effects based on card type
+  // Apply card effects based on the effective card type
+  // Note: For wildcard cards, we now need to pass the gameState for proper handling
   const effectResult = applyCardEffect(
-    effectiveCardType,
-    currentInfra,
-    infraIndex,
-    updatedInfrastructure,
-    card,
+    effectiveCardType, 
+    targetInfrastructure, 
+    infraIndex, 
+    updatedInfrastructure, 
+    extendedCard,
     attackVector,
-    playerID
+    playerID,
+    G // Pass the current game state for wildcard resolution
   );
   
   // Handle the various possible outcomes from applying the card effect
@@ -163,6 +165,17 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       gamePhase: 'gameOver' as const,
       winner: 'attacker'
     } as GameState;
+  } else if ('pendingChoice' in effectResult) {
+    // Wildcard card needs player choice
+    return {
+      ...G,
+      attacker: isAttacker ? updatedPlayer : G.attacker,
+      defender: !isAttacker ? updatedPlayer : G.defender,
+      // Don't update infrastructure yet - will be updated after choice
+      actions: [...G.actions], // We'll add the action after the choice is made
+      message: `Select a type to play this wildcard as`,
+      // pendingWildcardChoice was added to GameState in the wildcard resolver
+    };
   }
   
   // Normal case - card effect applied successfully

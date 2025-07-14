@@ -4,7 +4,7 @@
  * used by both frontend and backend.
  */
 
-import type { Card, AttackVector, Shield, Vulnerability } from './card.types';
+import type { Card, AttackVector, Shield, Vulnerability, CardType } from './card.types';
 
 /**
  * Player role in the game
@@ -198,6 +198,24 @@ export interface GameState {
     infrastructureChanged: number; // How many times infra cards changed state
     winReason: string;         // Reason for winning
   };
+  
+  // NEW: Wildcard choice system
+  pendingWildcardChoice?: {
+    cardId: string;
+    playerId: string;
+    availableTypes: CardType[];
+    targetInfrastructure?: string;
+    timestamp: number;
+  };
+  
+  // NEW: Temporary effects for wildcard specials
+  temporaryEffects?: {
+    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability';
+    targetId?: string;
+    playerId?: string;
+    duration: number;
+    sourceCardId: string;
+  }[];
   
   // Game configuration (required by backend)
   gameConfig: {

@@ -76,6 +76,10 @@ export interface Card {
   lookAt?: number;        // Number of cards to look at
   specialEffect?: string; // Special effect identifier
   preventReaction?: boolean; // Whether card prevents reactions
+  onCompromise?: {        // Effects triggered when a target becomes compromised
+    effect: string;       // Effect type (e.g., 'gain_ap')
+    amount?: number;      // Amount for numeric effects
+  }
   
   // Additional properties
   leadsTo?: string[];     // Cards this can lead to

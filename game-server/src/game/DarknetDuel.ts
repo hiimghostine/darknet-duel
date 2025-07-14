@@ -10,6 +10,7 @@ import { setupPhase, playingPhase, gameOverPhase } from './core/gamePhases';
 
 // Import actions
 import { cycleCardMove, playCardMove, endTurnMove, throwCardMove } from './actions/playerActions';
+import { chooseWildcardTypeMove } from './moves/chooseWildcardType';
 
 /**
  * Darknet Duel Game Definition
@@ -115,6 +116,13 @@ const DarknetDuel: Game<GameState> = {
     
     // End the current player's turn
     endTurn: (props) => endTurnMove(props),
+    
+    // Choose a type for a wildcard card
+    chooseWildcardType: (props, args) => {
+      // Handle both formats: direct type or object with type property
+      const chosenType = typeof args === 'string' ? args : args?.type;
+      return chooseWildcardTypeMove(props, chosenType);
+    },
     
     // Skip reaction during reaction stage
     skipReaction: (props) => {
