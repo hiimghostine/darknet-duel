@@ -6,7 +6,7 @@ To add:
 
 
 Issues:
-- No "Wrong password" message
+/ - No "Wrong password" message
 - Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
 / - Lobbies poll too fast
 - Can't restart game because of duplicate ids
@@ -20,4 +20,4 @@ Later to add:
 
 Missing:
 Dashboard:
-    - Profile
+/     - Profile
