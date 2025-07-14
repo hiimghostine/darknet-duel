@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { GameResult } from '../entities/game-result.entity';
 import { GamePlayer } from '../entities/game-player.entity';
+import { Account } from '../entities/account.entity';
 import { AppDataSource } from '../utils/database';
 
 interface GameHistoryData {
@@ -82,10 +83,38 @@ export class GameService {
         await queryRunner.manager.save(gamePlayer);
       }
       
+      // ✅ FIX: Update account statistics (gamesPlayed, gamesWon, gamesLost)
+      console.log('📊 Updating account statistics for players...');
+      
+      for (const playerData of data.players) {
+        const isWinner = playerData.isWinner ||
+          (data.winner && playerData.role === data.winner.role && !data.gameData.abandonReason);
+        
+        console.log(`📊 Updating stats for player ${playerData.id}: isWinner=${isWinner}, role=${playerData.role}`);
+        
+        // Increment gamesPlayed for all players
+        await queryRunner.manager.increment(Account, { id: playerData.id }, 'gamesPlayed', 1);
+        
+        // Increment gamesWon or gamesLost based on result
+        if (isWinner) {
+          await queryRunner.manager.increment(Account, { id: playerData.id }, 'gamesWon', 1);
+          console.log(`📊 ✅ Incremented gamesWon for ${playerData.id}`);
+        } else {
+          await queryRunner.manager.increment(Account, { id: playerData.id }, 'gamesLost', 1);
+          console.log(`📊 ❌ Incremented gamesLost for ${playerData.id}`);
+        }
+        
+        console.log(`📊 ✅ Incremented gamesPlayed for ${playerData.id}`);
+      }
+      
       await queryRunner.commitTransaction();
       
       // Return the saved game result with players included
-      return this.getGameById(data.gameId);
+      const savedGame = await this.getGameById(data.gameId);
+      if (!savedGame) {
+        throw new Error('Failed to retrieve saved game result');
+      }
+      return savedGame;
     } catch (error) {
       // If anything fails, rollback the transaction
       await queryRunner.rollbackTransaction();
