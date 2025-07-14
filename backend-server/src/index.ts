@@ -6,6 +6,7 @@ import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
 import infoRoutes from './routes/info.routes';
+import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +62,14 @@ app.use('/api/server', serverRoutes);
 // Info routes for user profile and activity data
 app.use('/api/info', infoRoutes);
 
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+
+// Redirect /docs to /api-docs for convenience
+app.get('/docs', (req, res) => {
+  res.redirect('/api-docs');
+});
+
 // Game-related routes that use normal authentication
 app.get('/api/games/:id', (req, res) => {
   // TODO: Implement game data retrieval (placeholder)
@@ -72,6 +81,22 @@ app.get('/api/players/:id/rating', (req, res) => {
   res.status(200).json({ playerId: req.params.id, rating: 1200 });
 });
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags: [Health]
+ *     summary: Health check endpoint
+ *     description: Returns server status for monitoring and health checks
+ *     responses:
+ *       200:
+ *         description: Server is running normally
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "Server is running"
+ */
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).send('Server is running');

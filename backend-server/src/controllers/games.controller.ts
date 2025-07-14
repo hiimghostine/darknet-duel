@@ -7,7 +7,99 @@ export class GamesController {
   private ratingService = new RatingService();
 
   /**
-   * Record game results from the game server
+   * @swagger
+   * /api/server/games/results:
+   *   post:
+   *     tags: [Server]
+   *     summary: Save game results (Server-to-server)
+   *     description: Records game results sent from the game server for persistence and rating updates
+   *     security:
+   *       - serverApiKey: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [gameId, players, gameData]
+   *             properties:
+   *               gameId:
+   *                 type: string
+   *                 description: Unique game identifier
+   *               players:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     playerId:
+   *                       type: string
+   *                     accountId:
+   *                       type: string
+   *                     role:
+   *                       type: string
+   *                       enum: [attacker, defender]
+   *                     isWinner:
+   *                       type: boolean
+   *               gameData:
+   *                 type: object
+   *                 properties:
+   *                   mode:
+   *                     type: string
+   *                   startTime:
+   *                     type: string
+   *                     format: date-time
+   *                   endTime:
+   *                     type: string
+   *                     format: date-time
+   *                   turnCount:
+   *                     type: integer
+   *           example:
+   *             gameId: "game-123-456"
+   *             players:
+   *               - playerId: "0"
+   *                 accountId: "550e8400-e29b-41d4-a716-446655440000"
+   *                 role: "attacker"
+   *                 isWinner: true
+   *               - playerId: "1"
+   *                 accountId: "550e8400-e29b-41d4-a716-446655440001"
+   *                 role: "defender"
+   *                 isWinner: false
+   *             gameData:
+   *               mode: "standard"
+   *               startTime: "2023-12-01T10:00:00Z"
+   *               endTime: "2023-12-01T10:30:00Z"
+   *               turnCount: 25
+   *     responses:
+   *       200:
+   *         description: Game results saved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *       400:
+   *         description: Bad request - missing required data
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized - invalid server API key
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   saveGameResults = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -88,7 +180,43 @@ export class GamesController {
   };
 
   /**
-   * Validate server connection (ping endpoint)
+   * @swagger
+   * /api/server/validate:
+   *   get:
+   *     tags: [Server]
+   *     summary: Validate server connection (Server-to-server)
+   *     description: Validates that the game server can communicate with the backend server
+   *     security:
+   *       - serverApiKey: []
+   *     responses:
+   *       200:
+   *         description: Server connection validated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: "ok"
+   *                 message:
+   *                   type: string
+   *                   example: "Server-to-server communication successful"
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       401:
+   *         description: Unauthorized - invalid server API key
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   validateServer = async (req: Request, res: Response): Promise<void> => {
     try {
