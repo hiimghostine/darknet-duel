@@ -1,0 +1,57 @@
+.temporary-effects-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.effect-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Effect-specific styling */
+.effect-badge.prevent_reactions {
+  background-color: #8a2be2; /* BlueViolet */
+}
+
+.effect-badge.prevent_restore {
+  background-color: #dc3545; /* Danger Red */
+}
+
+.effect-badge.cost_reduction {
+  background-color: #28a745; /* Success Green */
+}
+
+.effect-badge.chain_vulnerability {
+  background-color: #fd7e14; /* Warning Orange */
+}
+
+.effect-badge.restrict_targeting {
+  background-color: #6c757d; /* Secondary Gray */
+}
+
+.effect-badge.quantum_protection {
+  background-color: #17a2b8; /* Info Blue */
+}
+
+.effect-badge.honeypot {
+  background-color: #ffc107; /* Yellow */
+}
+
+.effect-type {
+  font-size: 0.7rem;
+  margin-bottom: 2px;
+}
+
+.effect-duration {
+  font-size: 0.65rem;
+  font-weight: 400;
+}

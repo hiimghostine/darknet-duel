@@ -2,6 +2,7 @@ import React from 'react';
 import type { PlayerHandProps, ExtendedCard } from './types';
 import CardDisplay from './CardDisplay';
 import { isAttackerCard, isReactiveCardObject } from '../../../types/card.types';
+import { getAvailableCardTypes } from '../../../utils/wildcardTypeUtils';
 
 const PlayerHand: React.FC<PlayerHandProps> = ({
   player,
@@ -35,7 +36,8 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
   const handleCardClick = (card: ExtendedCard, event?: React.MouseEvent) => {
     console.log('💥 Card clicked:', { 
       cardName: card.name, 
-      cardType: card.type, 
+      cardType: card.type,
+      wildcardType: card.wildcardType,
       playable: card.playable, 
       disabled: card.disabled,
       isActive,
@@ -62,7 +64,31 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
       return; // All other card types can't be played in reaction mode
     }
     
-    // Normal turn logic
+    // Handle wildcard cards - they need special treatment
+    if (card.type === 'wildcard' && card.wildcardType) {
+      console.log('🎴 Wildcard card clicked:', card.name, 'wildcardType:', card.wildcardType);
+      
+      // Get available types for this wildcard
+      const availableTypes = getAvailableCardTypes(card.wildcardType);
+      console.log('Available wildcard types:', availableTypes);
+      
+      // Check if any of the available types are targeting cards
+      const hasTargetingTypes = availableTypes.some(type => 
+        type === 'attack' || type === 'exploit' || type === 'counter-attack' || 
+        type === 'shield' || type === 'fortify' || type === 'response' || type === 'reaction'
+      );
+      
+      if (hasTargetingTypes) {
+        console.log('🎯 Wildcard has targeting types - selecting for throw');
+        onSelectCardToThrow(card);
+      } else {
+        console.log('🃏 Wildcard has no targeting types - playing directly');
+        onPlayCard(card, event);
+      }
+      return;
+    }
+
+    // Normal turn logic for non-wildcard cards
     if (isAttackerCard(card.type) && (card.type === 'attack' || card.type === 'exploit')) {
       console.log('🎯 Selected card for throwing:', card.name);
       onSelectCardToThrow(card);

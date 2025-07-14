@@ -12,6 +12,7 @@ interface CardDisplayProps {
   isDisabled?: boolean;
   showDetails?: boolean;
   className?: string;
+  effectiveCost?: number; // Added for cost reduction display
 }
 
 const CardDisplay: React.FC<CardDisplayProps> = ({
@@ -21,7 +22,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   isSelected = false,
   isDisabled = false,
   showDetails = true,
-  className = ''
+  className = '',
+  effectiveCost
 }) => {
   const handleClick = (event: React.MouseEvent) => {
     console.log('CardDisplay handleClick:', {
@@ -84,7 +86,12 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       data-card-type={card.type}
     >
       <div className="card-header">
-        <div className="card-cost">{card.cost}</div>
+        <div className="card-cost">
+          {effectiveCost !== undefined && effectiveCost < card.cost && (
+            <span className="original-cost">{card.cost}</span>
+          )}
+          <span className="effective-cost">{effectiveCost !== undefined ? effectiveCost : card.cost}</span>
+        </div>
         <div className="card-name">{card.name}</div>
         {attackVectorDisplay}
       </div>

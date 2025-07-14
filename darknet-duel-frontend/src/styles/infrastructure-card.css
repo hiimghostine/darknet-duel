@@ -4,13 +4,13 @@
   position: relative;
   width: 180px;
   height: 220px;
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: #1a1a1a;
   color: #e0e0e0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  margin: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  margin: 0 8px;
   transition: all 0.2s ease;
   overflow: hidden;
   border: 1px solid #333;
@@ -22,7 +22,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background-color: #9933cc;
+  color: white;
   border-bottom: 1px solid #444;
 }
 
@@ -37,10 +38,33 @@
 
 .infra-type {
   font-size: 0.7rem;
+  opacity: 0.7;
+  font-style: italic;
   background: #333;
   padding: 2px 6px;
   border-radius: 4px;
-  opacity: 0.8;
+}
+
+/* Critical infrastructure indicator */
+.critical-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #ff3434;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 4px;
+  z-index: 2;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Critical infrastructure styling */
+.infra-critical {
+  border: 2px solid #ff3434 !important;
+  box-shadow: 0 0 12px rgba(255, 52, 52, 0.4) !important;
 }
 
 .infra-body {
@@ -127,6 +151,9 @@
   background: rgba(0, 0, 0, 0.7);
   border-top: 1px solid #444;
   opacity: 0.8;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .infra-flavor {

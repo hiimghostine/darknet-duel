@@ -1,0 +1,152 @@
+/* Chain Effect UI Styles for Darknet Duel */
+
+.chain-effect-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.chain-effect-container {
+  background: #1a1a1a;
+  border: 2px solid #9933cc;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #e0e0e0;
+  box-shadow: 0 0 20px rgba(153, 51, 204, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chain-effect-container h3 {
+  color: #9933cc;
+  text-align: center;
+  font-size: 24px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.chain-effect-description {
+  font-size: 16px;
+  text-align: center;
+  margin: 0;
+  color: #cccccc;
+}
+
+.chain-source-card, .chain-valid-targets {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.chain-source-card h4, .chain-valid-targets h4 {
+  margin-top: 0;
+  color: #9933cc;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.source-card-container {
+  display: flex;
+  justify-content: center;
+}
+
+.chain-source-card-display {
+  transform: scale(0.9);
+  box-shadow: 0 0 10px rgba(153, 51, 204, 0.4);
+}
+
+.target-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.chain-target-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.chain-target-card:hover {
+  transform: scale(1);
+}
+
+.chain-target-infrastructure-card {
+  box-shadow: 0 0 10px rgba(51, 204, 51, 0.4);
+}
+
+.select-target-button {
+  background: #339933;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.chain-target-card:hover .select-target-button {
+  background: #44cc44;
+  transform: scale(1.05);
+}
+
+.no-targets-message {
+  text-align: center;
+  color: #cc3333;
+  font-style: italic;
+}
+
+.cancel-chain-button {
+  background: #333;
+  color: #e0e0e0;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background 0.2s ease;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.cancel-chain-button:hover {
+  background: #555;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chain-effect-container {
+    padding: 16px;
+    width: 95%;
+  }
+
+  .target-cards-container {
+    gap: 10px;
+  }
+
+  .chain-target-card {
+    transform: scale(0.8);
+  }
+}
