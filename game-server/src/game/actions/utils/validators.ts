@@ -7,7 +7,7 @@ import { TemporaryEffectsManager, TemporaryEffect } from '../temporaryEffectsMan
  * Also checks for temporary effects that might prevent certain actions
  */
 export function validateCardTargeting(
-  cardType: string, 
+  cardType: string,
   infrastructure: InfrastructureCard,
   attackVector?: AttackVector,
   gameState?: GameState,
@@ -16,6 +16,8 @@ export function validateCardTargeting(
 ): { valid: boolean, message?: string, bypassCost?: boolean } { // Added bypassCost flag
   // Default validation result
   const invalid = { valid: false, message: "Invalid target for this card" };
+  
+  console.log(`DEBUG VALIDATION: Card type: ${cardType}, Infrastructure: ${infrastructure.name} (${infrastructure.state}), Attack Vector: ${attackVector}`);
   
   // Check temporary effects that might prevent certain actions
   if (gameState) {
@@ -184,6 +186,11 @@ export function validateCardTargeting(
           message: "Reaction cards can only target vulnerable or compromised infrastructure" 
         };
       }
+      return { valid: true };
+      
+    case 'special':
+      // Special effect cards (like lateral movement) can generally target any infrastructure
+      // but prioritize compromised infrastructure for chain effects
       return { valid: true };
       
     // Handle legacy card types for backward compatibility

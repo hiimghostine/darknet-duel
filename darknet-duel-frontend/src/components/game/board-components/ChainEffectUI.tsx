@@ -17,7 +17,7 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
   onCancel
 }) => {
   // Extract properties from the chainEffect object
-  const { availableTargets, sourceCard } = pendingChainChoice;
+  const { availableTargets, sourceCardId } = pendingChainChoice;
   
   // Filter the infrastructure cards to only those that are valid targets
   const validTargets = useMemo(() => {
@@ -33,15 +33,10 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
         <h3>Chain Effect Triggered</h3>
         <div className="chain-effect-content">
           <div className="source-card-section">
-            <p>Source card:</p>
-            {sourceCard ? (
-              <CardDisplay 
-                card={sourceCard} 
-                showDetails={true}
-              />
-            ) : (
-              <div className="no-card">Card not found</div>
-            )}
+            <p>Source card: {sourceCardId}</p>
+            <div className="chain-effect-description">
+              Lateral Movement allows you to make another infrastructure vulnerable.
+            </div>
           </div>
         </div>
         
@@ -56,7 +51,7 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
                   onClick={() => onChooseTarget(target.id)}
                 >
                   <InfrastructureCardDisplay
-                    card={target}
+                    card={target as any}
                     isTargetable={true}
                     showDetails={false}
                     className="chain-target-infrastructure-card"

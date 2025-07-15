@@ -32,10 +32,12 @@ export class TemporaryEffectsManager {
   static processTurnStart(gameState: GameState): GameState {
     if (!gameState.temporaryEffects) return gameState;
     
-    const activeEffects = gameState.temporaryEffects.filter(effect => {
-      effect.duration--;
-      return effect.duration > 0;
-    });
+    const activeEffects = gameState.temporaryEffects
+      .map(effect => ({
+        ...effect,
+        duration: effect.duration - 1
+      }))
+      .filter(effect => effect.duration > 0);
     
     return {
       ...gameState,

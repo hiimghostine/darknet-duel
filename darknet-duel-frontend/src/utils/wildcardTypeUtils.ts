@@ -54,8 +54,8 @@ export function getEffectiveCardType(
  */
 function isValidCardType(type: string): boolean {
   const validTypes = [
-    'exploit', 'attack', 'counter-attack', 'wildcard', 
-    'shield', 'fortify', 'response', 'reaction', 'counter'
+    'exploit', 'attack', 'counter-attack', 'wildcard',
+    'shield', 'fortify', 'response', 'reaction', 'counter', 'special'
   ];
   return validTypes.includes(type);
 }
@@ -79,12 +79,28 @@ export function getAvailableCardTypes(wildcardType?: CardType[] | string): CardT
   // Handle string format
   switch (wildcardType) {
     case 'any':
-      return ['attack', 'exploit', 'counter-attack', 'counter', 
-              'shield', 'response', 'fortify', 'reaction'];
+      // For 'any' wildcards, return all possible card types in strategic order
+      // Prioritize types that are more likely to have valid targets
+      return ['special', 'exploit', 'attack', 'shield', 'fortify', 'response', 'reaction', 'counter-attack', 'counter'];
     case 'shield_or_fortify':
       return ['shield', 'fortify'];
     case 'exploit-attack':
       return ['exploit', 'attack'];
+    case 'special':
+      // Special effects cards - usually need targeting for chain effects
+      return ['special'];
+    case 'exploit':
+      return ['exploit'];
+    case 'attack':
+      return ['attack'];
+    case 'shield':
+      return ['shield'];
+    case 'fortify':
+      return ['fortify'];
+    case 'response':
+      return ['response'];
+    case 'reaction':
+      return ['reaction'];
     default:
       // Try to interpret as a single card type
       return isValidCardType(wildcardType) ? [wildcardType as CardType] : [];

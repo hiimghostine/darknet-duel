@@ -36,11 +36,13 @@ export function getEffectiveCardType(
       case 'exploit-attack':
         return 'exploit';
       case 'any':
+      case 'special':
         return 'wildcard'; // Keep as wildcard, will need special handling later
       default:
-        // Try to cast to a valid CardType
+        // For single card types like 'exploit', 'attack', etc., keep as wildcard
+        // This ensures they go through the wildcard system for proper processing
         if (isValidCardType(wildcardType)) {
-          return wildcardType as CardType;
+          return 'wildcard'; // Keep as wildcard to trigger proper wildcard processing
         }
     }
   }
@@ -54,8 +56,8 @@ export function getEffectiveCardType(
  */
 function isValidCardType(type: string): boolean {
   const validTypes = [
-    'exploit', 'attack', 'counter-attack', 'wildcard', 
-    'shield', 'fortify', 'response', 'reaction', 'counter'
+    'exploit', 'attack', 'counter-attack', 'wildcard',
+    'shield', 'fortify', 'response', 'reaction', 'counter', 'special'
   ];
   return validTypes.includes(type);
 }

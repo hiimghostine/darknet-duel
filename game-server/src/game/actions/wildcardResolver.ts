@@ -157,11 +157,34 @@ export class WildcardResolver {
             type: 'prevent_reactions',
             targetId: context.targetInfrastructure.id,
             playerId: context.playerID,
-            duration: 1,
+            duration: 2, // Lasts for a full round (both attacker and defender turns)
             sourceCardId: card.id
           });
           
-          updatedGameState.message = `${card.name} prevents reactions on this infrastructure`;
+          updatedGameState.message = `${card.name} prevents reactions on this infrastructure for 1 round`;
+        }
+        break;
+        
+      case 'A306': // AI-Powered Attack
+        // Look at top 3 cards of deck and choose 1 to add to hand
+        const isAttacker = context.playerRole === 'attacker';
+        const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
+        
+        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0 && context.playerID) {
+          // Get top 3 cards from deck (or all remaining if less than 3)
+          const cardsToShow = Math.min(3, currentPlayer.deck.length);
+          const topCards = currentPlayer.deck.slice(0, cardsToShow);
+          
+          // Set up pending card choice
+          updatedGameState.pendingCardChoice = {
+            playerId: context.playerID,
+            availableCards: topCards,
+            choiceType: 'deck_selection',
+            sourceCardId: card.id,
+            timestamp: Date.now()
+          };
+          
+          updatedGameState.message = `${card.name}: Choose a card from the top ${cardsToShow} cards of your deck`;
         }
         break;
         
@@ -174,15 +197,15 @@ export class WildcardResolver {
         
       case 'A304': // Privilege Escalation
         if (context.targetInfrastructure) {
-          // Prevents restoration of this infrastructure for 1 turn
+          // Prevents restoration of this infrastructure for 1 round
           updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
             type: 'prevent_restore',
             targetId: context.targetInfrastructure.id,
-            duration: 1,
+            duration: 2, // Lasts for a full round (both attacker and defender turns)
             sourceCardId: card.id
           });
           
-          updatedGameState.message = `${card.name} prevents restoration on this infrastructure`;
+          updatedGameState.message = `${card.name} prevents restoration on this infrastructure for 1 round`;
         }
         break;
         
@@ -204,25 +227,25 @@ export class WildcardResolver {
     if (card.specialEffect) {
       switch (card.specialEffect) {
         case 'prevent_reactions':
-          // Prevent reactions for 1 turn
+          // Prevent reactions for 1 round
           if (context.targetInfrastructure) {
             updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
               type: 'prevent_reactions',
               targetId: context.targetInfrastructure.id,
               playerId: context.playerID,
-              duration: 1,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
               sourceCardId: card.id
             });
           }
           break;
         
         case 'prevent_restore':
-          // Prevent restore effects for 1 turn
+          // Prevent restore effects for 1 round
           if (context.targetInfrastructure) {
             updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
               type: 'prevent_restore',
               targetId: context.targetInfrastructure.id,
-              duration: 1,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
               sourceCardId: card.id
             });
           }

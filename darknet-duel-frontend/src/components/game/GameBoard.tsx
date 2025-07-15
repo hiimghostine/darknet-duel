@@ -28,6 +28,7 @@ import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 import ChainEffectUI from './board-components/ChainEffectUI';
 import ChainTargetUI from './board-components/ChainTargetUI';
 import HandDisruptionUI from './board-components/HandDisruptionUI';
+import CardSelectionUI from './board-components/CardSelectionUI';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -223,7 +224,10 @@ const GameBoardComponent = (props: GameBoardProps) => {
           }}
         />
       );
-    }
+    };
+    
+    return surrender();
+  }
   
   // Create the handler for wildcard type choice - Phase 2
   const handleChooseWildcardType = useCallback((type: string) => {
@@ -245,6 +249,14 @@ const GameBoardComponent = (props: GameBoardProps) => {
     if (moves.chooseHandDiscard) {
       moves.chooseHandDiscard({ cardIds });
       console.log('Hand cards selected for discard:', cardIds);
+    }
+  }, [moves]);
+  
+  // Create the handler for card selection from deck - AI-Powered Attack
+  const handleChooseCardFromDeck = useCallback((cardId: string) => {
+    if (moves.chooseCardFromDeck) {
+      moves.chooseCardFromDeck({ cardId });
+      console.log('Card selected from deck:', cardId);
     }
   }, [moves]);
 
@@ -356,15 +368,6 @@ const GameBoardComponent = (props: GameBoardProps) => {
         />
       )}
       
-      {/* Chain Target UI - Alternative Phase 3 implementation */}
-      {/* Only show the ChainTargetUI if the player is the chooser */}
-      {G.pendingChainChoice && playerID === G.pendingChainChoice.playerId && (
-        <ChainTargetUI 
-          pendingChoice={G.pendingChainChoice}
-          playerId={playerID || ''}
-          onChooseTarget={handleChooseChainTarget}
-        />
-      )}
       
       {/* Hand Disruption UI - Phase 3 */}
       {/* Only show the HandDisruptionUI if the player is the target player who needs to discard cards */}
@@ -373,6 +376,14 @@ const GameBoardComponent = (props: GameBoardProps) => {
           pendingChoice={G.pendingHandChoice}
           playerId={playerID || ''}
           onChooseCards={handleChooseHandDiscard}
+        />
+      )}
+      
+      {/* Card Selection UI - AI-Powered Attack */}
+      {G.pendingCardChoice && playerID === G.pendingCardChoice.playerId && (
+        <CardSelectionUI
+          pendingChoice={G.pendingCardChoice}
+          onChooseCard={handleChooseCardFromDeck}
         />
       )}
     </div>

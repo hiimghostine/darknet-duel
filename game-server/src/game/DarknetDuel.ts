@@ -13,6 +13,7 @@ import { cycleCardMove, playCardMove, endTurnMove, throwCardMove } from './actio
 import { chooseWildcardTypeMove } from './moves/chooseWildcardType';
 import { chooseChainTargetMove } from './moves/chooseChainTarget';
 import { chooseHandDiscardMove } from './moves/chooseHandDiscard';
+import { chooseCardFromDeckMove } from './moves/chooseCardFromDeck';
 
 /**
  * Darknet Duel Game Definition
@@ -138,6 +139,13 @@ const DarknetDuel: Game<GameState> = {
       // Handle both formats: array of strings or object with cardIds
       const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
       return chooseHandDiscardMove(props.G, props.ctx, props.playerID, cardIds);
+    },
+    
+    // Choose a card from deck (AI-Powered Attack effect)
+    chooseCardFromDeck: (props, args) => {
+      // Handle both formats: direct string or object with cardId
+      const selectedCardId = typeof args === 'string' ? args : args?.cardId;
+      return chooseCardFromDeckMove(props.G, props.ctx, props.playerID, selectedCardId);
     },
     
     // Skip reaction during reaction stage

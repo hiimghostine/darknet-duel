@@ -21,13 +21,18 @@ interface WildcardChoiceUIProps {
 const formatCardType = (type: CardType): string => {
   const typeMap: Record<string, string> = {
     'attack': 'Attack',
-    'defense': 'Defense',
-    'utility': 'Utility',
+    'exploit': 'Exploit',
+    'counter-attack': 'Counter-Attack',
+    'shield': 'Shield',
+    'fortify': 'Fortify',
+    'response': 'Response',
+    'reaction': 'Reaction',
+    'counter': 'Counter',
     'special': 'Special',
     'wildcard': 'Wildcard'
   };
   
-  return typeMap[type] || 'Unknown';
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 /**

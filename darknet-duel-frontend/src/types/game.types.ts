@@ -296,6 +296,15 @@ export interface GameState {
   // PHASE 3: Hand disruption system
   pendingHandChoice?: HandDisruptionChoice;
   
+  // Card choice system (for deck selection, etc.)
+  pendingCardChoice?: {
+    playerId: string;
+    availableCards: Card[];
+    choiceType: 'deck_selection' | 'hand_selection' | 'discard_selection';
+    sourceCardId: string;
+    timestamp: number;
+  };
+  
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' | 

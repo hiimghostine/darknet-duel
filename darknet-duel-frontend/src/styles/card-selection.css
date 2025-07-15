@@ -1,0 +1,140 @@
+/* Card Selection UI Styles */
+.card-selection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.card-selection-container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #00ff88;
+  border-radius: 15px;
+  padding: 2rem;
+  max-width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+}
+
+.card-selection-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.card-selection-header h3 {
+  color: #00ff88;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-selection-description {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.source-card-info {
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.available-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.selectable-card {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.selectable-card:hover {
+  border-color: #00ff88;
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+}
+
+.card-selection-card {
+  width: 100%;
+  pointer-events: none;
+}
+
+.select-card-button {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #00ff88;
+  color: #000;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.selectable-card:hover .select-card-button {
+  opacity: 1;
+}
+
+.no-cards-message {
+  text-align: center;
+  color: #888;
+  font-size: 1.2rem;
+  padding: 2rem;
+}
+
+.cancel-selection-button {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.cancel-selection-button:hover {
+  background: #ff6666;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .card-selection-container {
+    max-width: 95%;
+    padding: 1rem;
+  }
+  
+  .available-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .card-selection-header h3 {
+    font-size: 1.5rem;
+  }
+  
+  .card-selection-description {
+    font-size: 1rem;
+  }
+}

@@ -23,6 +23,53 @@ export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pla
   
   const card = player.hand[cardIndex];
   
+  // IMMEDIATE WILDCARD CHECK - before any processing
+  if (card.type === 'wildcard' && card.wildcardType) {
+    console.log(`Wildcard card detected in playCardMove: ${card.name} with wildcardType: ${card.wildcardType}`);
+    
+    // Import and get available wildcard types
+    const availableTypes: CardType[] = Array.isArray(card.wildcardType) 
+      ? card.wildcardType
+      : typeof card.wildcardType === 'string' && card.wildcardType === 'special'
+        ? ['special' as CardType] // Handle special wildcard type with proper type casting
+        : [card.wildcardType as CardType];
+    
+    // Remove card from hand first
+    const newHand = [...player.hand];
+    newHand.splice(cardIndex, 1);
+    
+    // Create a deep copy of the card
+    const cardCopy = JSON.parse(JSON.stringify(card));
+    
+    const updatedPlayer = {
+      ...player,
+      hand: newHand,
+      discard: [...player.discard, cardCopy],
+      actionPoints: player.actionPoints - card.cost
+    };
+    
+    // Create pending wildcard choice
+    return {
+      ...G,
+      attacker: isAttacker ? updatedPlayer : G.attacker,
+      defender: !isAttacker ? updatedPlayer : G.defender,
+      pendingWildcardChoice: {
+        cardId: card.id,
+        playerId: playerID,
+        availableTypes: availableTypes,
+        targetInfrastructure: targetId, // Use provided targetId
+        timestamp: Date.now()
+      },
+      actions: [...G.actions, {
+        playerRole: isAttacker ? 'attacker' : 'defender',
+        actionType: 'playCard',
+        timestamp: Date.now(),
+        payload: { cardId, cardType: card.type }
+      }],
+      message: `Choose how to play ${card.name}`
+    };
+  }
+  
   // Handle wildcards - they can be played as other types using our utility function
   const extendedCard = hasCardFeatures(card) ? card : card;
   let effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);

@@ -34,6 +34,9 @@ export type CardType =
   | 'response'       // Recovers compromised infrastructure (1 AP)
   | 'reaction'       // Counters attacker cards reactively (1 AP)
   
+  // Special effect card types
+  | 'special'        // Special effect cards (chain effects, lateral movement, etc.)
+  
   // Legacy/Backend compatibility types
   | 'counter';       // Alias for 'counter-attack' used in backend code
 

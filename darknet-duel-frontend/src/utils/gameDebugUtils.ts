@@ -130,6 +130,40 @@ export function measurePerformance<T extends Function>(fn: T, name: string): (..
 }
 
 /**
+ * Debug wildcard targeting issues
+ */
+export function debugWildcardTargeting(card: any, gameState: any) {
+  if (!debugSettings.enabled) return;
+  
+  console.group(`🎴 Wildcard Targeting Debug: ${card.name}`);
+  console.log('Card type:', card.type);
+  console.log('Wildcard type:', card.wildcardType);
+  
+  if (gameState.infrastructure) {
+    console.log('Infrastructure states:');
+    gameState.infrastructure.forEach((infra: any) => {
+      console.log(`  ${infra.name}: ${infra.state}`);
+    });
+    
+    // Show what targets each card type would have
+    const states = gameState.infrastructure.map((i: any) => i.state);
+    console.log('Available states:', [...new Set(states)]);
+    
+    console.log('Potential targets by card type:');
+    console.log('  exploit:', gameState.infrastructure.filter((i: any) =>
+      i.state === 'secure' || i.state === 'fortified' || i.state === 'fortified_weaken').length);
+    console.log('  attack:', gameState.infrastructure.filter((i: any) =>
+      i.state === 'vulnerable').length);
+    console.log('  shield:', gameState.infrastructure.filter((i: any) =>
+      i.state !== 'shielded' && i.state !== 'fortified').length);
+    console.log('  response:', gameState.infrastructure.filter((i: any) =>
+      i.state === 'compromised').length);
+  }
+  
+  console.groupEnd();
+}
+
+/**
  * Export the debug settings for reference
  */
 export { debugSettings };
