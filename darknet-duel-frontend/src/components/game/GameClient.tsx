@@ -164,6 +164,10 @@ const DarknetDuelGame = {
         console.log('Client move registration - surrender');
         return {};
       }
+    },
+    chooseChainTarget: function chooseChainTarget(_G: any, _ctx: any, targetId: string): {} {
+      console.log('Client move registration - chooseChainTarget:', targetId);
+      return {};
     }
   },
   
@@ -220,6 +224,10 @@ const DarknetDuelGame = {
               console.log('Phase move - surrender');
               return {}; // Return empty object instead of G
             }
+          },
+          chooseChainTarget: function chooseChainTarget(_G: any, _ctx: any, targetId: string) {
+            console.log('Phase move - chooseChainTarget with targetId:', targetId);
+            return {}; // Return empty object instead of G
           }
         }
       }

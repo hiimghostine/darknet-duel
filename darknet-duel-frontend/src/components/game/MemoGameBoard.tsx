@@ -29,6 +29,7 @@ import GameControls from './board-components/GameControls';
 import PowerBar from './board-components/PowerBar';
 import RoundTracker from './board-components/RoundTracker';
 import WinnerLobby from './board-components/WinnerLobby';
+import ChainEffectUI from './board-components/ChainEffectUI';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -219,6 +220,21 @@ const GameBoardComponent = (props: GameBoardProps) => {
     }
   }, [moves, props.client]);
   
+  // Create the handler for chain target choice
+  const handleChooseChainTarget = useCallback((targetId: string) => {
+    console.log('🔥 Chain target handler called with:', targetId);
+    console.log('🔥 Available moves:', Object.keys(moves || {}));
+    console.log('🔥 chooseChainTarget function exists:', typeof moves.chooseChainTarget);
+    
+    if (moves.chooseChainTarget) {
+      console.log('🔥 Calling moves.chooseChainTarget with:', targetId);
+      moves.chooseChainTarget(targetId);
+      console.log('🔥 Chain target selected:', targetId);
+    } else {
+      console.error('🔥 moves.chooseChainTarget is not available!');
+    }
+  }, [moves]);
+  
   // Common props to pass to child components - memoized to prevent unnecessary re-renders
   const commonProps = useMemo(() => {
     return {
@@ -358,6 +374,15 @@ const GameBoardComponent = (props: GameBoardProps) => {
           targetMode={targetMode}
         />
       </div>
+      
+      {/* Chain Effect UI */}
+      {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && (
+        <ChainEffectUI
+          pendingChainChoice={memoizedG.pendingChainChoice}
+          infrastructureCards={memoizedG.infrastructure || []}
+          onChooseTarget={handleChooseChainTarget}
+        />
+      )}
     </div>
   );
 };
@@ -396,6 +421,12 @@ const MemoGameBoard = React.memo(GameBoardComponent, (prevProps, nextProps) => {
   // Check for changes in current player
   if (prevProps.ctx?.currentPlayer !== nextProps.ctx?.currentPlayer) {
     console.log('CLIENT: Re-rendering due to current player change');
+    return false;
+  }
+  
+  // Check for changes in pending choices
+  if (!isEqual(prevProps.G?.pendingChainChoice, nextProps.G?.pendingChainChoice)) {
+    console.log('CLIENT: Re-rendering due to pendingChainChoice change');
     return false;
   }
   

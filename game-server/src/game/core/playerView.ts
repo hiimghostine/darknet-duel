@@ -131,6 +131,11 @@ export const createPlayerView = ({ G, ctx, playerID }: {
     isAttacker: isAttacker,
     isDefender: isDefender,
     playerID: playerID,
+    // Include pending choices that the player needs to make
+    pendingChainChoice: G.pendingChainChoice,
+    pendingWildcardChoice: G.pendingWildcardChoice,
+    pendingCardChoice: G.pendingCardChoice,
+    pendingHandChoice: G.pendingHandChoice,
     // Add debug info that will be visible on the client
     debug: {
       attackerId: attackerId,
@@ -138,7 +143,7 @@ export const createPlayerView = ({ G, ctx, playerID }: {
       playerIdStr: playerIdStr,
       directIdMatch: directIdMatch,
       playOrderIndex: ctx.playOrder.indexOf(playerIdStr),
-      roleDetectionMethod: directIdMatch ? 'directIdMatch' : 
+      roleDetectionMethod: directIdMatch ? 'directIdMatch' :
                           ctx.playOrder.includes(playerIdStr) ? 'playOrder' : 'playerID'
     }
   };

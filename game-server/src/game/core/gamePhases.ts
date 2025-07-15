@@ -502,6 +502,15 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
             const { throwCardMove } = require('../actions/playerActions');
             const newG = throwCardMove({ G, ctx, playerID }, cardId, targetInfrastructureId);
             
+            // Check if there's a pending chain choice - if so, don't switch to reaction yet
+            if (newG.pendingChainChoice) {
+              console.log('DEBUG: Found pendingChainChoice, staying in action stage for chain selection');
+              return {
+                ...newG,
+                currentActionPlayer: playerID
+              };
+            }
+            
             // Always allow reaction to a throw card action
             // Store the action player's ID so we can return to them later
             const updatedG = {
@@ -577,6 +586,23 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
             
             // End the turn and move to the next player
             events.endTurn();
+            
+            return updatedG;
+          },
+          
+          // Add chain target selection move to action stage
+          chooseChainTarget: ({ G, ctx, playerID, events }, targetId) => {
+            const { chooseChainTargetMove } = require('../moves/chooseChainTarget');
+            const updatedG = chooseChainTargetMove(G, ctx, playerID, targetId);
+            
+            // After chain effect is resolved, transition to reaction phase
+            if (!updatedG.pendingChainChoice) {
+              // Chain effect completed, now allow reaction to the original card
+              const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+              if (opponentID) {
+                events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+              }
+            }
             
             return updatedG;
           }

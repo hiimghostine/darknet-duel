@@ -43,6 +43,11 @@ interface GameBoardProps extends BoardProps<GameState> {
 
 // The original non-memoized GameBoard component implementation
 const GameBoardComponent = (props: GameBoardProps) => {
+  // FORCE DEBUG AT VERY TOP
+  console.log('🚨 GameBoard ENTRY - props:', props);
+  console.log('🚨 GameBoard ENTRY - G:', props.G);
+  console.log('🚨 GameBoard ENTRY - pendingChainChoice:', props.G?.pendingChainChoice);
+  
   // Destructure props but keep the original props object accessible
   const {
     G,
@@ -261,6 +266,9 @@ const GameBoardComponent = (props: GameBoardProps) => {
   }, [moves]);
 
   // Otherwise show the regular game UI
+  console.log('🟡 GameBoard rendering with G:', G);
+  console.log('🟡 GameBoard pendingChainChoice:', G.pendingChainChoice);
+  
   return (
     <div className={containerClass}>
       
@@ -360,13 +368,31 @@ const GameBoardComponent = (props: GameBoardProps) => {
       )}
       
       {/* Chain Effect UI - Phase 3 */}
-      {G.pendingChainChoice && playerID === G.pendingChainChoice.playerId && (
-        <ChainEffectUI 
-          pendingChainChoice={G.pendingChainChoice}
-          infrastructureCards={G.infrastructure || []}
-          onChooseTarget={handleChooseChainTarget}
-        />
-      )}
+      {(() => {
+        // Force this to always run by adding a timestamp
+        const timestamp = Date.now();
+        console.log('🔴 DEBUG TIMESTAMP:', timestamp);
+        console.log('🔴 DEBUG: Full game state keys:', Object.keys(G));
+        console.log('🔴 DEBUG: Checking pendingChainChoice:', G.pendingChainChoice);
+        console.log('🔴 DEBUG: PlayerID:', playerID);
+        console.log('🔴 DEBUG: Chain choice playerId:', G.pendingChainChoice?.playerId);
+        console.log('🔴 DEBUG: Should show chain UI:', G.pendingChainChoice && playerID === G.pendingChainChoice.playerId);
+        console.log('🔴 DEBUG: Game message:', G.message);
+        
+        if (G.pendingChainChoice && playerID === G.pendingChainChoice.playerId) {
+          console.log('🟢 RENDERING ChainEffectUI with:', G.pendingChainChoice);
+          return (
+            <ChainEffectUI
+              pendingChainChoice={G.pendingChainChoice}
+              infrastructureCards={G.infrastructure || []}
+              onChooseTarget={handleChooseChainTarget}
+            />
+          );
+        } else {
+          console.log('🔴 NOT RENDERING ChainEffectUI');
+          return null;
+        }
+      })()}
       
       
       {/* Hand Disruption UI - Phase 3 */}
@@ -405,7 +431,11 @@ const GameBoard = React.memo(GameBoardComponent, (prevProps, nextProps) => {
     prevProps.G?.defenderScore === nextProps.G?.defenderScore &&
     prevProps.ctx?.phase === nextProps.ctx?.phase &&
     prevProps.ctx?.currentPlayer === nextProps.ctx?.currentPlayer &&
-    prevProps.isActive === nextProps.isActive
+    prevProps.isActive === nextProps.isActive &&
+    // CRITICAL: Also compare pending choices to ensure re-renders
+    isEqual(prevProps.G?.pendingChainChoice, nextProps.G?.pendingChainChoice) &&
+    isEqual(prevProps.G?.pendingWildcardChoice, nextProps.G?.pendingWildcardChoice) &&
+    isEqual(prevProps.G?.pendingCardChoice, nextProps.G?.pendingCardChoice)
   );
 });
 

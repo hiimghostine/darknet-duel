@@ -161,6 +161,14 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     console.log(`Living Off The Land cost reduction: ${originalCost} -> ${effectiveCost} (user systems target)`);
   }
   
+  // Check for card-specific cost reduction properties
+  const cardWithCostReduction = card as any;
+  if (cardWithCostReduction.costReduction && targetInfrastructure.type === cardWithCostReduction.costReduction.target.replace('_systems', '')) {
+    const originalCost = effectiveCost;
+    effectiveCost = Math.max(0, effectiveCost - cardWithCostReduction.costReduction.amount);
+    console.log(`Card-specific cost reduction: ${originalCost} -> ${effectiveCost} (${cardWithCostReduction.costReduction.target} target)`);
+  }
+  
   // Check for cost_reduction temporary effects
   if (TemporaryEffectsManager.hasEffect(G as GameState, 'cost_reduction', targetInfrastructure.id)) {
     const reduction = 1; // Default reduction amount
@@ -254,6 +262,14 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         console.log(`Living Off The Land cost reduction (auto-selection): ${originalCost} -> ${finalEffectiveCost} (user systems target)`);
       }
       
+      // Check for card-specific cost reduction properties in auto-selection path
+      const cardWithCostReduction = card as any;
+      if (cardWithCostReduction.costReduction && targetInfrastructure.type === cardWithCostReduction.costReduction.target.replace('_systems', '')) {
+        const originalCost = finalEffectiveCost;
+        finalEffectiveCost = Math.max(0, finalEffectiveCost - cardWithCostReduction.costReduction.amount);
+        console.log(`Card-specific cost reduction (auto-selection): ${originalCost} -> ${finalEffectiveCost} (${cardWithCostReduction.costReduction.target} target)`);
+      }
+      
       // Create the updated player state - we move the card from hand to discard
       const updatedPlayer = {
         ...player,
@@ -314,7 +330,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           return { ...infra };
         });
         
-        return {
+        // Check if we have a pending chain choice - if so, don't trigger reactions yet
+        const hasPendingChainChoice = gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice;
+        
+        const finalState = {
           ...G, // Use original game state as base
           attacker: isAttacker ? updatedPlayer : G.attacker,
           defender: !isAttacker ? updatedPlayer : G.defender,
@@ -329,6 +348,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           // Include chain choice (important for Lateral Movement) - prioritize the one from wildcard effects
           pendingChainChoice: gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
         };
+        
+        console.log(`DEBUG: Final state has pendingChainChoice: ${finalState.pendingChainChoice ? 'YES' : 'NO'}`);
+        
+        return finalState;
       } else {
         console.log(`Card effect failed or returned non-array result, continuing to fallback`);
       }
