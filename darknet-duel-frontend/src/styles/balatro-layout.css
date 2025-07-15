@@ -394,6 +394,163 @@
   51%, 100% { opacity: 0.3; }
 }
 
+/* Reaction mode button styling */
+.balatro-btn-accent {
+  @apply bg-accent text-accent-content;
+  box-shadow: 0 0 10px hsl(var(--ac) / 0.5);
+}
+
+.balatro-btn-accent:hover {
+  @apply bg-accent;
+  box-shadow: 0 0 15px hsl(var(--ac) / 0.7);
+  transform: scale(1.05);
+}
+
+/* Clean Balatro layout - work WITH the components, not against them */
+
+/* Simple flexbox layout structure */
+.balatro-layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.balatro-hand-wrapper {
+  order: 3;
+  margin-top: auto;
+  @apply bg-base-200 border border-primary/20 rounded-lg p-4;
+}
+
+.balatro-controls-wrapper {
+  order: 4;
+  @apply bg-base-100 border border-primary/20 rounded-lg p-2;
+}
+
+/* Style the working components naturally */
+.game-layout {
+  order: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.opponent-area {
+  order: 1;
+  @apply bg-base-200 border border-primary/20 rounded-lg p-4;
+  text-align: center;
+}
+
+.infrastructure-area {
+  order: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  @apply bg-base-300 border border-primary/20 rounded-lg p-4;
+}
+
+.player-area {
+  order: 3;
+  @apply bg-base-200 border border-primary/20 rounded-lg p-4;
+  text-align: center;
+}
+
+/* Infrastructure cards in a nice grid */
+.infrastructure-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+}
+
+.infrastructure-card {
+  width: 120px;
+  height: 140px;
+  @apply bg-base-300 border border-primary rounded-lg p-2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 0.625rem;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.infrastructure-card:hover {
+  transform: translateY(-5px) scale(1.05);
+  @apply border-accent;
+  box-shadow: 0 8px 16px hsl(var(--p) / 0.3);
+}
+
+/* Card styling */
+.card-display {
+  @apply bg-base-300 border border-primary rounded-lg p-2;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.card-display:hover {
+  transform: translateY(-5px) scale(1.05);
+  @apply border-accent;
+  box-shadow: 0 8px 16px hsl(var(--p) / 0.3);
+}
+
+.card-display.playable {
+  @apply border-success;
+  box-shadow: 0 0 10px hsl(var(--su) / 0.5);
+}
+
+.card-display.selected {
+  @apply border-warning;
+  box-shadow: 0 0 15px hsl(var(--wa) / 0.7);
+  transform: translateY(-10px) scale(1.1);
+}
+
+/* Hand layouts */
+.hand-section,
+.player-hand {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Game controls */
+.game-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.game-controls button {
+  @apply btn btn-primary;
+  font-family: 'Roboto Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Typography */
+.player-info,
+.opponent-info,
+.infrastructure-title {
+  font-family: 'Roboto Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--p));
+  font-weight: bold;
+}
+
 /* Player area (bottom) - cyberpunk panel style */
 .balatro-player-area {
   display: flex;

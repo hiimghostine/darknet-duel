@@ -12,15 +12,23 @@ import { useMemoizedValue, useMemoizedKeys } from '../../hooks/useMemoizedValue'
 import { useCardActions } from '../../hooks/useCardActions';
 import { useTurnActions } from '../../hooks/useTurnActions';
 import { useGameState } from '../../hooks/useGameState';
+import { useGameBoardData } from '../../hooks/useGameBoardData';
+import { useGameBoardCallbacks } from '../../hooks/useGameBoardCallbacks';
+
+// Import working board components that already handle all the logic
+import GameBoardLayout from './board-components/GameBoardLayout';
+import GameBoardHand from './board-components/GameBoardHand';
+import GameControls from './board-components/GameControls';
+import PendingChoicesOverlay from './board-components/PendingChoicesOverlay';
+import WinnerLobby from './board-components/WinnerLobby';
 
 // Import overlay components
 import ChainEffectUI from './board-components/ChainEffectUI';
 import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 import HandDisruptionUI from './board-components/HandDisruptionUI';
 import CardSelectionUI from './board-components/CardSelectionUI';
-import WinnerLobby from './board-components/WinnerLobby';
 
-// Import new layout CSS
+// Import Balatro layout CSS for styling
 import '../../styles/balatro-layout.css';
 
 // Extended interface for client properties
@@ -96,8 +104,35 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     handleSkipReaction
   } = useTurnActions(optimizedProps);
   
+  // Use extracted hooks for working components
+  const { infrastructureData, gameMetrics } = useGameBoardData(memoizedG, currentPhase);
+  const callbacks = useGameBoardCallbacks(props, moves);
+  
+  // Create common props for working components
+  const commonProps = useMemo(() => ({
+    G: memoizedG,
+    ctx: memoizedCtx,
+    playerID,
+    isActive,
+    moves,
+    isAttacker
+  }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
+  
   // Track processing state
   const isProcessingMove = cardProcessing || turnProcessing;
+
+  // Detect reaction mode - CRITICAL for proper UI behavior
+  const isInReactionMode = memoizedCtx.activePlayers && playerID && memoizedCtx.activePlayers[playerID] === 'reaction';
+  
+  // Debug reaction mode detection
+  console.log('🔍 BalatroGameBoard state:', {
+    playerID,
+    activePlayers: memoizedCtx.activePlayers,
+    isInReactionMode,
+    isActive,
+    currentPlayer: memoizedCtx.currentPlayer,
+    phase: memoizedCtx.phase
+  });
 
   // Handle ESC key to cancel targeting
   useEffect(() => {
@@ -112,292 +147,32 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [targetMode, cancelTargeting]);
-  
-  // Handle player surrender
-  const surrender = useCallback(() => {
-    const confirmed = window.confirm('Are you sure you want to surrender?');
-    if (!confirmed) return;
-    
-    if (moves && typeof moves.surrender === 'function') {
-      try {
-        moves.surrender();
-        return;
-      } catch (error) {
-        console.error('Error calling moves.surrender:', error);
-      }
-    }
-    
-    if (props.client && props.client.moves && typeof props.client.moves.surrender === 'function') {
-      try {
-        props.client.moves.surrender();
-        return;
-      } catch (error) {
-        console.error('Error calling client.moves.surrender:', error);
-      }
-    }
-    
-    try {
-      if (props.client) {
-        props.client.makeMove('surrender', []);
-      }
-    } catch (error) {
-      console.error('All surrender attempts failed:', error);
-      alert('Unable to surrender. Please try again or refresh the page.');
-    }
-  }, [moves, props.client]);
 
-  // Chat message helper
-  const sendChatMessage = useCallback((content: string) => {
-    if (!content.trim()) return;
-    
-    if (moves && typeof moves.sendChatMessage === 'function') {
-      try {
-        moves.sendChatMessage(content);
-        return;
-      } catch (error) {
-        console.error('Error calling moves.sendChatMessage:', error);
-      }
-    }
-    
-    if (props.client && props.client.moves && typeof props.client.moves.sendChatMessage === 'function') {
-      try {
-        props.client.moves.sendChatMessage(content);
-        return;
-      } catch (error) {
-        console.error('Error calling client.moves.sendChatMessage:', error);
-      }
-    }
-    
-    try {
-      if (props.client) {
-        props.client.makeMove('sendChatMessage', [content]);
-      }
-    } catch (error) {
-      console.error('All chat message attempts failed:', error);
-    }
-  }, [moves, props.client]);
-
-  // Rematch request helper
-  const requestRematch = useCallback(() => {
-    if (moves && typeof moves.requestRematch === 'function') {
-      try {
-        moves.requestRematch();
-      } catch (error) {
-        console.error('Error requesting rematch:', error);
-      }
-    } else if (props.client && props.client.moves && typeof props.client.moves.requestRematch === 'function') {
-      props.client.moves.requestRematch();
-    }
-  }, [moves, props.client]);
-  
-  // Choice handlers
-  const handleChooseChainTarget = useCallback((targetId: string) => {
-    if (moves.chooseChainTarget) {
-      moves.chooseChainTarget(targetId);
-    }
-  }, [moves]);
-  
-  const handleChooseWildcardType = useCallback((type: string) => {
-    if (moves.chooseWildcardType) {
-      moves.chooseWildcardType({ type });
-    }
-  }, [moves]);
-  
-  const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
-    if (moves.chooseHandDiscard) {
-      moves.chooseHandDiscard({ cardIds });
-    }
-  }, [moves]);
-  
-  const handleChooseCardFromDeck = useCallback((cardId: string) => {
-    if (moves.chooseCardFromDeck) {
-      moves.chooseCardFromDeck({ cardId });
-    }
-  }, [moves]);
-
-  // Loading state
+  // Early returns
   if (!G || !ctx) {
-    return (
-      <div className="balatro-game-container">
-        <div className="balatro-processing">
-          <div className="balatro-processing-content">
-            <div className="balatro-spinner"></div>
-            <div>Loading game...</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="loading">Loading game data...</div>;
   }
 
-  // Game over state
+  // If the game is over, show the winner lobby
   if (ctx.gameover || ctx.phase === 'gameOver' || G.gamePhase === 'gameOver') {
+    console.log('CLIENT: Rendering winner lobby. Phase:', ctx.phase, 'gamePhase:', G.gamePhase);
+    
     const winnerLobbyMoves = {
-      sendChatMessage,
-      requestRematch,
-      surrender
+      sendChatMessage: callbacks.sendChatMessage,
+      requestRematch: callbacks.requestRematch,
+      surrender: callbacks.surrender
     };
     
-    return (
-      <WinnerLobby
-        // @ts-expect-error - Missing gameConfig properties in local type
-        G={G}
-        playerID={playerID || undefined}
-        moves={winnerLobbyMoves}
-        isAttacker={isAttacker}
-      />
-    );
-  }
-
-  // Render opponent hand (card backs)
-  const renderOpponentHand = () => {
-    const handSize = opponent?.hand?.length || 0;
-    const cards = Array.from({ length: handSize }, (_, i) => (
-      <div key={i} className="balatro-card-back" />
-    ));
-    
-    return (
-      <div className="balatro-opponent-hand">
-        {cards}
-      </div>
-    );
-  };
-
-  // Render player hand (face-up cards) - DEBUGGING VERSION
-  const renderPlayerHand = () => {
-    const hand = currentPlayerObj?.hand || [];
-    
-    console.log('🐛 BalatroGameBoard renderPlayerHand DEBUG:', {
-      handLength: hand.length,
-      selectedCard,
-      targetMode,
-      isActive,
-      currentPhase: ctx.phase,
-      activePlayers: ctx.activePlayers,
-      playerID,
-      hasCardActions: {
-        playCard: !!playCard,
-        selectCardToThrow: !!selectCardToThrow,
-        cycleCard: !!cycleCard
-      }
-    });
-    
-    return (
-      <div className="balatro-player-hand">
-        {hand.map((card: any, index: number) => {
-          const isSelected = selectedCard === card.id;
-          const cardType = card.type || card.cardType; // Use 'type' from BoardGame.io, fallback to 'cardType'
-          const currentStage = ctx.activePlayers && playerID ? ctx.activePlayers[playerID] : null;
-          const isInActionOrReactionStage = currentStage === 'action' || currentStage === 'reaction';
-          const isPlayable = !targetMode && isActive && ctx.phase === 'playing' && isInActionOrReactionStage && card.playable;
-          
-          console.log('🐛 Card render debug:', {
-            cardName: card.name,
-            cardType: cardType,
-            cardId: card.id,
-            isSelected,
-            isPlayable,
-            targetMode,
-            isActive,
-            phase: ctx.phase,
-            currentStage: currentStage,
-            isInActionOrReactionStage: isInActionOrReactionStage,
-            activePlayers: ctx.activePlayers,
-            cardPlayableProperty: card.playable
-          });
-          
-                      return (
-              <div
-                key={card.id}
-                className={`balatro-player-card ${cardType} ${isSelected ? 'selected' : ''} ${isPlayable ? 'playable' : ''}`}
-                onClick={(event) => {
-                  console.log('🔔 BalatroGameBoard card clicked:', {
-                    cardName: card.name,
-                    cardType: cardType,
-                    cardId: card.id,
-                    isPlayable,
-                    targetMode,
-                    isActive,
-                    phase: ctx.phase
-                  });
-                  
-                  if (!isPlayable) {
-                    console.log('🚫 Card click blocked - not playable');
-                    return;
-                  }
-                  
-                  // DEBUG: Try all possible actions
-                  console.log('🎯 Attempting card action...');
-                  
-                  if (cardType === 'attack' || cardType === 'exploit') {
-                    console.log('🎯 Selecting attack/exploit card for throwing:', card.name);
-                    selectCardToThrow(card.id);
-                  } else if (cardType === 'attacker' || cardType === 'defender') {
-                    console.log('🎯 Selecting attacker/defender card for throwing:', card.name);
-                    selectCardToThrow(card.id);
-                  } else {
-                    console.log('🃏 Playing card directly:', card.name);
-                    playCard(card.id, event);
-                  }
-                }}
-            >
-              <div className="balatro-card-header">
-                <div className="balatro-card-cost">{card.cost}</div>
-              </div>
-              
-              <div className="balatro-card-name">{card.name}</div>
-              <div className="balatro-card-type">{cardType}</div>
-              <div className="balatro-card-description">{card.description}</div>
-              
-              {card.power && (
-                <div className="balatro-card-power">Power: {card.power}</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Render infrastructure grid
-  const renderInfrastructure = () => {
-    const infrastructure = memoizedG?.infrastructure || [];
-    
-    return (
-      <div className="balatro-infrastructure-grid">
-        {infrastructure.map((infra) => {
-          // Check if this infrastructure is a valid target
-          const isTargetable = targetMode && validTargets.includes(infra.id);
-          const isSelected = targetMode && targetedInfraId === infra.id;
-          
           return (
-            <div
-              key={infra.id}
-              className={`balatro-infrastructure-card ${infra.state} ${isTargetable ? 'targetable' : ''} ${isSelected ? 'selected' : ''}`}
-              onClick={() => {
-                if (targetMode && isTargetable) {
-                  handleInfrastructureTarget(infra.id);
-                }
-              }}
-              style={{
-                cursor: targetMode ? (isTargetable ? 'pointer' : 'not-allowed') : 'default',
-                opacity: targetMode && !isTargetable ? 0.5 : 1
-              }}
-            >
-              <div className="balatro-card-name">{infra.name}</div>
-              <div className="balatro-card-type">{infra.type}</div>
-              <div className="balatro-card-description">{infra.description}</div>
-              <div className="balatro-card-power">State: {infra.state}</div>
-              {targetMode && isTargetable && (
-                <div className="balatro-target-indicator">
-                  🎯 VALID TARGET
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+        <WinnerLobby
+          // @ts-expect-error - Type compatibility issue between frontend and shared types
+          G={G}
+          playerID={playerID || undefined}
+          moves={winnerLobbyMoves}
+          isAttacker={isAttacker}
+        />
+      );
+  }
 
   return (
     <div className="balatro-game-container relative overflow-hidden text-base-content">
@@ -425,41 +200,45 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         </div>
       )}
 
-      {/* Processing overlay */}
-      {isProcessingMove && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
-            <div className="bg-base-200 border border-primary/20 p-6 relative">
-              <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-              <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-              
-              <div className="flex items-center gap-4">
-                <div className="loading loading-spinner loading-md text-primary"></div>
-                <span className="font-mono text-primary">PROCESSING_MOVE...</span>
-              </div>
+      {/* Reaction mode overlay */}
+      {isInReactionMode && !targetMode && (
+        <div className="fixed inset-0 bg-accent/10 flex items-center justify-center z-40 pointer-events-none">
+          <div className="bg-base-200 border border-accent rounded-lg p-4 text-center max-w-md mx-4">
+            <div className="text-accent text-lg font-bold mb-2">⚡ REACTION MODE</div>
+            <div className="text-sm">
+              Play a defensive card to counter the attack or skip reaction
+            </div>
+            <div className="text-xs text-base-content/70 mt-2">
+              Only reactive cards (shield, counter, reaction) can be played
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
+      {/* Processing overlay */}
+      {isProcessingMove && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="balatro-processing-content">
+            <div className="balatro-spinner"></div>
+            <div>Processing move...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Balatro-styled header */}
       <header className="balatro-header">
-        <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
-          DARKNET_DUEL
-        </h1>
-        <div className="balatro-header-controls">
+        <h1 className="text-xl font-bold">DARKNET DUEL</h1>
+        <div className="flex items-center gap-4">
+          {/* Connection status indicator */}
+          <div className="connection-status">
+            <span className={`status-indicator ${opponentDisconnected ? 'disconnected' : 'connected'}`}>
+              {opponentDisconnected ? '⚠ Disconnected' : '✓ Connected'}
+            </span>
+          </div>
+          
           <button 
-            className="balatro-btn btn-cyberpunk"
-            onClick={handleEndTurn}
-            disabled={!isActive || isProcessingMove}
-          >
-            END_TURN
-          </button>
-          <button 
-            className="balatro-btn btn-cyberpunk"
-            onClick={surrender}
+            className="balatro-btn"
+            onClick={callbacks.surrender}
             disabled={isProcessingMove}
           >
             SURRENDER
@@ -467,99 +246,72 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         </div>
       </header>
 
-      {/* Main game area */}
+      {/* Main game area with Balatro layout but working components */}
       <main className="balatro-main">
-        {/* Opponent area */}
-        <div className={`balatro-opponent-area ${!isActive ? 'active-turn' : ''}`}>
-          <div className="balatro-opponent-info">
-            {opponent?.username || 'Opponent'} - {isAttacker ? 'Defender' : 'Attacker'}
-            {opponentDisconnected && ' (Disconnected)'}
-          </div>
-          {renderOpponentHand()}
+        {/* Use the working GameBoardLayout component with Balatro styling */}
+        <div className="balatro-layout-wrapper">
+          <GameBoardLayout
+            commonProps={commonProps}
+            currentPlayerObj={currentPlayerObj}
+            opponent={opponent}
+            infrastructureCards={infrastructureData.cards}
+            targetMode={targetMode}
+            targetedInfraId={targetedInfraId}
+            animatingThrow={animatingThrow}
+            handleInfrastructureTarget={handleInfrastructureTarget}
+          />
         </div>
 
-        {/* Game content wrapper */}
-        <div className="balatro-game-content">
-          {/* Left info panel */}
-          <div className="balatro-left-panel">
-            <div className="balatro-info-panel">
-              <h3>Game Info</h3>
-              <div>Round: {memoizedG.currentRound || 1}</div>
-              <div>Phase: {currentPhase}</div>
-              <div>Turn: {isActive ? 'Your Turn' : 'Waiting'}</div>
-            </div>
-            
-            <div className="balatro-info-panel">
-              <h3>Player Info</h3>
-              <div>You: {currentPlayerObj?.username || playerID}</div>
-              <div>Role: {isAttacker ? 'Attacker' : 'Defender'}</div>
-              <div>Hand: {currentPlayerObj?.hand?.length || 0} cards</div>
-            </div>
-          </div>
-
-          {/* Center column */}
-          <div className="balatro-center-column">
-            {/* Central infrastructure */}
-            <div className="balatro-infrastructure">
-              {renderInfrastructure()}
-            </div>
-          </div>
-
-          {/* Right info panel */}
-          <div className="balatro-right-panel">
-            <div className="balatro-info-panel">
-              <h3>Battle Status</h3>
-              <div className="balatro-score-display">
-                <div>
-                  <div className="balatro-score-value">{memoizedG?.attackerScore || 0}</div>
-                  <div>Attacker</div>
-                </div>
-                <div className="balatro-vs-divider">VS</div>
-                <div>
-                  <div className="balatro-score-value">{memoizedG?.defenderScore || 0}</div>
-                  <div>Defender</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="balatro-info-panel">
-              <h3>Infrastructure</h3>
-              <div>Total: {memoizedG?.infrastructure?.length || 0}</div>
-              <div>Compromised: {memoizedG?.infrastructure?.filter(i => i.state === 'compromised').length || 0}</div>
-              <div>Secured: {memoizedG?.infrastructure?.filter(i => i.state === 'fortified').length || 0}</div>
-            </div>
-          </div>
+        {/* Use the working GameBoardHand component */}
+        <div className="balatro-hand-wrapper">
+          <GameBoardHand
+            commonProps={commonProps}
+            currentPlayerObj={currentPlayerObj}
+            playCard={playCard}
+            cycleCard={cycleCard}
+            selectCardToThrow={selectCardToThrow}
+            targetMode={targetMode}
+          />
         </div>
 
-        {/* Player area */}
-        <div className={`balatro-player-area ${isActive ? 'active-turn' : ''}`}>
-          <div className="balatro-player-info">
-            {currentPlayerObj?.username || playerID} - {isAttacker ? 'Attacker' : 'Defender'}
-          </div>
-          {renderPlayerHand()}
-          
-          {/* Action buttons */}
-          <div className="balatro-actions">
-            {targetMode && (
-              <button className="balatro-btn" onClick={cancelTargeting}>
-                Cancel
-              </button>
-            )}
-            {ctx.phase === 'reaction' && isActive && (
-              <button className="balatro-btn" onClick={handleSkipReaction}>
-                Skip Reaction
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Use the working GameControls component */}
+                 <div className="balatro-controls-wrapper">
+           <GameControls
+             targetMode={targetMode}
+             selectedCard={selectedCard}
+             onEndTurn={handleEndTurn}
+             onCycleCard={cycleCard}
+             onCancelThrow={cancelTargeting}
+             onSkipReaction={handleSkipReaction}
+             onSurrender={callbacks.surrender}
+             isActive={isActive}
+             currentPlayerObj={currentPlayerObj}
+             ctx={memoizedCtx}
+             playerID={playerID}
+             G={memoizedG}
+             moves={moves}
+             isAttacker={isAttacker}
+           />
+         </div>
       </main>
 
-      {/* Overlay UIs for game choices */}
+      {/* Use the working PendingChoicesOverlay component */}
+      <PendingChoicesOverlay
+        memoizedG={memoizedG}
+        playerID={playerID}
+        infrastructureCards={infrastructureData.cards}
+        handleChooseWildcardType={callbacks.handleChooseWildcardType}
+        handleChooseChainTarget={callbacks.handleChooseChainTarget}
+        handleChooseHandDiscard={callbacks.handleChooseHandDiscard}
+        handleChooseCardFromDeck={callbacks.handleChooseCardFromDeck}
+      />
+
+      {/* Keep individual overlay components for specific choices */}
       {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && (
         <WildcardChoiceUI
           pendingChoice={memoizedG.pendingWildcardChoice}
           playerId={playerID || ''}
-          onChooseType={handleChooseWildcardType}
+          onChooseType={callbacks.handleChooseWildcardType}
         />
       )}
       
@@ -567,7 +319,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         <ChainEffectUI
           pendingChainChoice={memoizedG.pendingChainChoice}
           infrastructureCards={memoizedG?.infrastructure || []}
-          onChooseTarget={handleChooseChainTarget}
+          onChooseTarget={callbacks.handleChooseChainTarget}
         />
       )}
       
@@ -575,80 +327,91 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         <HandDisruptionUI
           pendingChoice={memoizedG.pendingHandChoice}
           playerId={playerID || ''}
-          onChooseCards={handleChooseHandDiscard}
+          onChooseCards={callbacks.handleChooseHandDiscard}
         />
       )}
       
       {memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId && (
         <CardSelectionUI
           pendingChoice={memoizedG.pendingCardChoice}
-          onChooseCard={handleChooseCardFromDeck}
+          onChooseCard={callbacks.handleChooseCardFromDeck}
         />
       )}
     </div>
   );
 };
 
-// Memoized version with optimized comparison
+// Optimized memo comparison function
 const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps) => {
   // Safety check
   if (!prevProps.G || !nextProps.G || !prevProps.ctx || !nextProps.ctx) {
+    console.log('CLIENT: Re-rendering due to missing props');
     return false;
   }
   
-  // Quick primitive checks
+  // Quick primitive checks first
   if (prevProps.isActive !== nextProps.isActive ||
       prevProps.playerID !== nextProps.playerID) {
+    console.log('CLIENT: Re-rendering due to player/active state change');
     return false;
   }
   
-  // Context changes
+  // Context changes including CRITICAL activePlayers for reaction mode
   if (prevProps.ctx.phase !== nextProps.ctx.phase ||
       prevProps.ctx.currentPlayer !== nextProps.ctx.currentPlayer ||
-      prevProps.ctx.gameover !== nextProps.ctx.gameover) {
+      prevProps.ctx.gameover !== nextProps.ctx.gameover ||
+      !isEqual(prevProps.ctx.activePlayers, nextProps.ctx.activePlayers)) {
+    console.log('CLIENT: Re-rendering due to context change');
     return false;
   }
   
-  // Check activePlayers for reaction mode
-  if (!isEqual(prevProps.ctx.activePlayers, nextProps.ctx.activePlayers)) {
-    return false;
-  }
-  
-  // Game state changes
+  // Game state primitive checks
   if (prevProps.G.gamePhase !== nextProps.G.gamePhase ||
       prevProps.G.message !== nextProps.G.message ||
       prevProps.G.attackerScore !== nextProps.G.attackerScore ||
       prevProps.G.defenderScore !== nextProps.G.defenderScore) {
+    console.log('CLIENT: Re-rendering due to game state change');
     return false;
   }
   
-  // Player objects - check hand lengths
-  if (prevProps.G?.attacker?.hand?.length !== nextProps.G?.attacker?.hand?.length ||
-      prevProps.G?.defender?.hand?.length !== nextProps.G?.defender?.hand?.length) {
+  // Chat messages - only check length and last message for performance
+  const prevMessages = prevProps.G?.chat?.messages || [];
+  const nextMessages = nextProps.G?.chat?.messages || [];
+  if (prevMessages.length !== nextMessages.length ||
+      (prevMessages.length > 0 && nextMessages.length > 0 &&
+       !isEqual(prevMessages[prevMessages.length - 1], nextMessages[nextMessages.length - 1]))) {
     return false;
   }
   
-  // Infrastructure changes
+  // Infrastructure state changes
   const prevInfra = prevProps.G?.infrastructure || [];
   const nextInfra = nextProps.G?.infrastructure || [];
-  if (prevInfra.length !== nextInfra.length) {
+  if (prevInfra.length !== nextInfra.length ||
+      !isEqual(prevInfra.map(i => ({id: i.id, state: i.state})), 
+               nextInfra.map(i => ({id: i.id, state: i.state})))) {
     return false;
   }
   
-  for (let i = 0; i < prevInfra.length; i++) {
-    if (prevInfra[i]?.state !== nextInfra[i]?.state) {
-      return false;
-    }
-  }
-  
-  // Pending choices
-  if (prevProps.G?.pendingChainChoice?.playerId !== nextProps.G?.pendingChainChoice?.playerId ||
-      prevProps.G?.pendingWildcardChoice?.playerId !== nextProps.G?.pendingWildcardChoice?.playerId ||
-      prevProps.G?.pendingHandChoice?.targetPlayerId !== nextProps.G?.pendingHandChoice?.targetPlayerId ||
-      prevProps.G?.pendingCardChoice?.playerId !== nextProps.G?.pendingCardChoice?.playerId) {
+  // Player state changes
+  if (!isEqual(prevProps.G?.attacker, nextProps.G?.attacker) ||
+      !isEqual(prevProps.G?.defender, nextProps.G?.defender)) {
     return false;
   }
   
+  // Pending choices (for overlays)
+  if (!isEqual(prevProps.G?.pendingWildcardChoice, nextProps.G?.pendingWildcardChoice) ||
+      !isEqual(prevProps.G?.pendingChainChoice, nextProps.G?.pendingChainChoice) ||
+      !isEqual(prevProps.G?.pendingHandChoice, nextProps.G?.pendingHandChoice) ||
+      !isEqual(prevProps.G?.pendingCardChoice, nextProps.G?.pendingCardChoice)) {
+    return false;
+  }
+  
+  // Rematch state
+  if (!isEqual(prevProps.G?.rematchRequested, nextProps.G?.rematchRequested)) {
+    return false;
+  }
+  
+  // No significant changes detected
   return true;
 });
 
