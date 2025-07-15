@@ -16,8 +16,8 @@ import type { GameState } from '../../types/game.types';
 import '../../styles/gameboard-v2.css'; // Import the main styles
 import '../../styles/card-throw.css'; // Import targeting styles
 
-// Import custom hook for deep memoization
-import { useMemoizedValue } from '../../hooks/useMemoizedValue';
+// Import custom hooks for memoization
+import { useMemoizedValue, useMemoizedKeys } from '../../hooks/useMemoizedValue';
 
 // Import all the extracted components
 import PlayerHand from './board-components/PlayerHand';
@@ -30,6 +30,9 @@ import PowerBar from './board-components/PowerBar';
 import RoundTracker from './board-components/RoundTracker';
 import WinnerLobby from './board-components/WinnerLobby';
 import ChainEffectUI from './board-components/ChainEffectUI';
+import WildcardChoiceUI from './board-components/WildcardChoiceUI';
+import HandDisruptionUI from './board-components/HandDisruptionUI';
+import CardSelectionUI from './board-components/CardSelectionUI';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -67,12 +70,16 @@ const GameBoardComponent = (props: GameBoardProps) => {
     isActive
   } = props;
   
-  // Use memoizedValue to prevent unnecessary re-renders caused by reference changes
+  // Use optimized memoization strategies
   const memoizedG = useMemoizedValue(G);
-  const memoizedCtx = useMemoizedValue(ctx);
+  const memoizedCtx = useMemoizedKeys(ctx, ['phase', 'currentPlayer', 'gameover']);
   
-  // No longer need memoizedMoves as we're using original moves for actions
-  // Removed unused refs
+  // Memoize only critical game state properties that affect rendering
+  const gameStateKeys = useMemoizedKeys(G, [
+    'gamePhase', 'message', 'attackerScore', 'defenderScore',
+    'infrastructure', 'attacker', 'defender', 'chat', 'rematchRequested',
+    'pendingChainChoice', 'pendingWildcardChoice', 'pendingHandChoice', 'pendingCardChoice'
+  ]);
 
   // Define containerClass to fix the reference error
   const containerClass = "game-container";
@@ -86,27 +93,32 @@ const GameBoardComponent = (props: GameBoardProps) => {
     isAttacker
   } = useGameState(memoizedG, memoizedCtx, playerID);
   
-  // Card actions hook with memoized props
-  const memoizedProps = useMemoizedValue(props);
-  const { 
-    selectedCard, 
-    targetMode, 
+  // Create optimized props object for hooks - use memoized values but maintain full interface
+  const optimizedProps = useMemo(() => ({
+    ...props,
+    G: memoizedG,
+    ctx: memoizedCtx
+  }), [props, memoizedG, memoizedCtx]);
+  
+  const {
+    selectedCard,
+    targetMode,
     targetedInfraId,
     animatingThrow,
     processing: cardProcessing,
-    playCard, 
-    cycleCard, 
-    selectCardToThrow, 
-    handleInfrastructureTarget, 
+    playCard,
+    cycleCard,
+    selectCardToThrow,
+    handleInfrastructureTarget,
     cancelTargeting
-  } = useCardActions(memoizedProps);
+  } = useCardActions(optimizedProps);
   
-  // Turn actions hook - also memoized
-  const { 
-    processing: turnProcessing, 
-    handleEndTurn, 
-    handleSkipReaction 
-  } = useTurnActions(memoizedProps);
+  // Turn actions hook - also optimized
+  const {
+    processing: turnProcessing,
+    handleEndTurn,
+    handleSkipReaction
+  } = useTurnActions(optimizedProps);
   
   // Track processing state for UI feedback
   const isProcessingMove = cardProcessing || turnProcessing;
@@ -235,17 +247,65 @@ const GameBoardComponent = (props: GameBoardProps) => {
     }
   }, [moves]);
   
-  // Common props to pass to child components - memoized to prevent unnecessary re-renders
-  const commonProps = useMemo(() => {
-    return {
-      G: memoizedG, // Use original G, child components will handle defaults as needed
-      ctx: memoizedCtx, 
-      playerID,
-      isActive,
-      moves, // Add moves to commonProps
-      isAttacker // Add isAttacker to commonProps
-    };
-  }, [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
+  // Create the handler for wildcard type choice - Phase 2
+  const handleChooseWildcardType = useCallback((type: string) => {
+    if (moves.chooseWildcardType) {
+      moves.chooseWildcardType({ type });
+    }
+  }, [moves]);
+  
+  // Create the handler for hand discard choice - Phase 3
+  const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
+    if (moves.chooseHandDiscard) {
+      moves.chooseHandDiscard({ cardIds });
+      console.log('Hand cards selected for discard:', cardIds);
+    }
+  }, [moves]);
+  
+  // Create the handler for card selection from deck - AI-Powered Attack
+  const handleChooseCardFromDeck = useCallback((cardId: string) => {
+    if (moves.chooseCardFromDeck) {
+      moves.chooseCardFromDeck({ cardId });
+      console.log('Card selected from deck:', cardId);
+    }
+  }, [moves]);
+  
+  // Optimized common props with performance utilities
+  const infrastructureData = useMemo(() => ({
+    cards: memoizedG?.infrastructure || [],
+    length: memoizedG?.infrastructure?.length || 0,
+    states: memoizedG?.infrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
+  }), [memoizedG?.infrastructure]);
+  
+  const playerData = useMemo(() => ({
+    attacker: {
+      id: memoizedG?.attacker?.id,
+      handSize: memoizedG?.attacker?.hand?.length || 0
+    },
+    defender: {
+      id: memoizedG?.defender?.id,
+      handSize: memoizedG?.defender?.hand?.length || 0
+    }
+  }), [memoizedG?.attacker?.id, memoizedG?.attacker?.hand?.length, memoizedG?.defender?.id, memoizedG?.defender?.hand?.length]);
+  
+  // Common props to pass to child components - selectively memoized
+  const commonProps = useMemo(() => ({
+    G: memoizedG,
+    ctx: memoizedCtx,
+    playerID,
+    isActive,
+    moves,
+    isAttacker
+  }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
+  
+  // Performance utilities for child components
+  const gameMetrics = useMemo(() => ({
+    attackerScore: memoizedG?.attackerScore || 0,
+    defenderScore: memoizedG?.defenderScore || 0,
+    totalInfrastructure: infrastructureData.length,
+    currentPhase,
+    messagePresent: Boolean(memoizedG?.message)
+  }), [memoizedG?.attackerScore, memoizedG?.defenderScore, infrastructureData.length, currentPhase, memoizedG?.message]);
 
   if (!G || !ctx) {
     return <div className="loading">Loading game data...</div>;
@@ -294,9 +354,9 @@ const GameBoardComponent = (props: GameBoardProps) => {
       
       {/* Power balance bar showing control status */}
       <PowerBar
-        attackerScore={memoizedG.attackerScore || 0}
-        defenderScore={memoizedG.defenderScore || 0}
-        totalInfrastructure={memoizedG.infrastructure?.length || 5}
+        attackerScore={gameMetrics.attackerScore}
+        defenderScore={gameMetrics.defenderScore}
+        totalInfrastructure={gameMetrics.totalInfrastructure}
       />
       
       {/* Top status bar with game info and controls */}
@@ -339,9 +399,9 @@ const GameBoardComponent = (props: GameBoardProps) => {
         {/* Infrastructure area - middle of the board */}
         <InfrastructureArea
           {...commonProps}
-          infrastructureCards={memoizedG.infrastructure}
+          infrastructureCards={infrastructureData.cards}
           targetMode={targetMode}
-          targetedInfraId={targetedInfraId} 
+          targetedInfraId={targetedInfraId}
           animatingThrow={animatingThrow}
           onTargetInfrastructure={handleInfrastructureTarget}
         />
@@ -375,19 +435,45 @@ const GameBoardComponent = (props: GameBoardProps) => {
         />
       </div>
       
+      {/* Wildcard Type Choice UI - Phase 2 */}
+      {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && (
+        <WildcardChoiceUI
+          pendingChoice={memoizedG.pendingWildcardChoice}
+          playerId={playerID || ''}
+          onChooseType={handleChooseWildcardType}
+        />
+      )}
+      
       {/* Chain Effect UI */}
       {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && (
         <ChainEffectUI
           pendingChainChoice={memoizedG.pendingChainChoice}
-          infrastructureCards={memoizedG.infrastructure || []}
+          infrastructureCards={infrastructureData.cards}
           onChooseTarget={handleChooseChainTarget}
+        />
+      )}
+      
+      {/* Hand Disruption UI - Phase 3 */}
+      {memoizedG.pendingHandChoice && playerID === memoizedG.pendingHandChoice.targetPlayerId && (
+        <HandDisruptionUI
+          pendingChoice={memoizedG.pendingHandChoice}
+          playerId={playerID || ''}
+          onChooseCards={handleChooseHandDiscard}
+        />
+      )}
+      
+      {/* Card Selection UI - AI-Powered Attack */}
+      {memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId && (
+        <CardSelectionUI
+          pendingChoice={memoizedG.pendingCardChoice}
+          onChooseCard={handleChooseCardFromDeck}
         />
       )}
     </div>
   );
 };
 
-// Create a memoized version of the GameBoard with custom comparison function
+// Create a memoized version of the GameBoard with optimized comparison function
 // This prevents re-renders when props haven't meaningfully changed
 const MemoGameBoard = React.memo(GameBoardComponent, (prevProps, nextProps) => {
   // Safety check - if any required props are missing, re-render to be safe
@@ -396,50 +482,83 @@ const MemoGameBoard = React.memo(GameBoardComponent, (prevProps, nextProps) => {
     return false;
   }
   
-  // First check for critical changes that should always trigger re-render
-  // If any of these have changed, return false to force a re-render
+  // Quick primitive checks first (fastest operations)
+  if (prevProps.isActive !== nextProps.isActive ||
+      prevProps.playerID !== nextProps.playerID) {
+    console.log('CLIENT: Re-rendering due to player/active state change');
+    return false;
+  }
   
-  // More specific chat changes check - only compare the actual messages
-  // This prevents unnecessary re-renders for other chat-related properties
-  if (!isEqual(prevProps.G?.chat?.messages, nextProps.G?.chat?.messages)) {
+  // Context changes (lightweight property checks)
+  if (prevProps.ctx.phase !== nextProps.ctx.phase ||
+      prevProps.ctx.currentPlayer !== nextProps.ctx.currentPlayer ||
+      prevProps.ctx.gameover !== nextProps.ctx.gameover) {
+    console.log('CLIENT: Re-rendering due to context change');
+    return false;
+  }
+  
+  // Game state primitive checks (lightweight)
+  if (prevProps.G.gamePhase !== nextProps.G.gamePhase ||
+      prevProps.G.message !== nextProps.G.message ||
+      prevProps.G.attackerScore !== nextProps.G.attackerScore ||
+      prevProps.G.defenderScore !== nextProps.G.defenderScore) {
+    console.log('CLIENT: Re-rendering due to game state change');
+    return false;
+  }
+  
+  // Chat messages - only check length and last message for performance
+  const prevMessages = prevProps.G?.chat?.messages || [];
+  const nextMessages = nextProps.G?.chat?.messages || [];
+  if (prevMessages.length !== nextMessages.length ||
+      (prevMessages.length > 0 && nextMessages.length > 0 &&
+       !isEqual(prevMessages[prevMessages.length - 1], nextMessages[nextMessages.length - 1]))) {
     console.log('CLIENT: Re-rendering due to chat message changes');
     return false;
   }
   
-  // Check for rematch requests - safely using optional chaining
-  if (!isEqual(prevProps.G?.rematchRequested, nextProps.G?.rematchRequested)) {
+  // Player objects - check IDs and hand lengths only (lightweight)
+  if (prevProps.G?.attacker?.id !== nextProps.G?.attacker?.id ||
+      prevProps.G?.defender?.id !== nextProps.G?.defender?.id ||
+      prevProps.G?.attacker?.hand?.length !== nextProps.G?.attacker?.hand?.length ||
+      prevProps.G?.defender?.hand?.length !== nextProps.G?.defender?.hand?.length) {
+    console.log('CLIENT: Re-rendering due to player changes');
+    return false;
+  }
+  
+  // Infrastructure - check length and states only (avoid deep equality)
+  const prevInfra = prevProps.G?.infrastructure || [];
+  const nextInfra = nextProps.G?.infrastructure || [];
+  if (prevInfra.length !== nextInfra.length) {
+    console.log('CLIENT: Re-rendering due to infrastructure count change');
+    return false;
+  }
+  
+  // Check infrastructure states (lightweight comparison)
+  for (let i = 0; i < prevInfra.length; i++) {
+    if (prevInfra[i]?.state !== nextInfra[i]?.state ||
+        prevInfra[i]?.id !== nextInfra[i]?.id) {
+      console.log('CLIENT: Re-rendering due to infrastructure state change');
+      return false;
+    }
+  }
+  
+  // Pending choices - check player IDs only (lightweight)
+  if (prevProps.G?.pendingChainChoice?.playerId !== nextProps.G?.pendingChainChoice?.playerId ||
+      prevProps.G?.pendingWildcardChoice?.playerId !== nextProps.G?.pendingWildcardChoice?.playerId ||
+      prevProps.G?.pendingHandChoice?.targetPlayerId !== nextProps.G?.pendingHandChoice?.targetPlayerId ||
+      prevProps.G?.pendingCardChoice?.playerId !== nextProps.G?.pendingCardChoice?.playerId) {
+    console.log('CLIENT: Re-rendering due to pending choice changes');
+    return false;
+  }
+  
+  // Rematch requests (lightweight check)
+  if (prevProps.G?.rematchRequested !== nextProps.G?.rematchRequested) {
     console.log('CLIENT: Re-rendering due to rematch request changes');
     return false;
   }
   
-  // Check for changes in game phase
-  if (prevProps.ctx?.phase !== nextProps.ctx?.phase) {
-    console.log('CLIENT: Re-rendering due to phase change');
-    return false;
-  }
-  
-  // Check for changes in current player
-  if (prevProps.ctx?.currentPlayer !== nextProps.ctx?.currentPlayer) {
-    console.log('CLIENT: Re-rendering due to current player change');
-    return false;
-  }
-  
-  // Check for changes in pending choices
-  if (!isEqual(prevProps.G?.pendingChainChoice, nextProps.G?.pendingChainChoice)) {
-    console.log('CLIENT: Re-rendering due to pendingChainChoice change');
-    return false;
-  }
-  
-  // For other game state changes, do deep comparisons only for visual components
-  return (
-    isEqual(prevProps.G?.infrastructure, nextProps.G?.infrastructure) &&
-    isEqual(prevProps.G?.attacker, nextProps.G?.attacker) &&
-    isEqual(prevProps.G?.defender, nextProps.G?.defender) &&
-    prevProps.G?.message === nextProps.G?.message &&
-    prevProps.G?.attackerScore === nextProps.G?.attackerScore &&
-    prevProps.G?.defenderScore === nextProps.G?.defenderScore &&
-    prevProps.isActive === nextProps.isActive
-  );
+  // If we reach here, no meaningful changes detected
+  return true;
 });
 
 // Export our memoized component as default

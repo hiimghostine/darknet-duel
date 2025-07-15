@@ -100,6 +100,24 @@ const DarknetDuelGame = {
               console.log('Stage move - surrender');
               return {}; // Return empty object instead of G
             }
+          },
+          chooseWildcardType: {
+            move: function chooseWildcardType(_G: any, _ctx: any, params: { type: string }) {
+              console.log('Stage move - chooseWildcardType with type:', params.type);
+              return {}; // Return empty object instead of G
+            }
+          },
+          chooseHandDiscard: {
+            move: function chooseHandDiscard(_G: any, _ctx: any, params: { cardIds: string[] }) {
+              console.log('Stage move - chooseHandDiscard with cardIds:', params.cardIds);
+              return {}; // Return empty object instead of G
+            }
+          },
+          chooseCardFromDeck: {
+            move: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }) {
+              console.log('Stage move - chooseCardFromDeck with cardId:', params.cardId);
+              return {}; // Return empty object instead of G
+            }
           }
         }
       }
@@ -168,6 +186,18 @@ const DarknetDuelGame = {
     chooseChainTarget: function chooseChainTarget(_G: any, _ctx: any, targetId: string): {} {
       console.log('Client move registration - chooseChainTarget:', targetId);
       return {};
+    },
+    chooseWildcardType: function chooseWildcardType(_G: any, _ctx: any, params: { type: string }): {} {
+      console.log('Client move registration - chooseWildcardType:', params.type);
+      return {};
+    },
+    chooseHandDiscard: function chooseHandDiscard(_G: any, _ctx: any, params: { cardIds: string[] }): {} {
+      console.log('Client move registration - chooseHandDiscard:', params.cardIds);
+      return {};
+    },
+    chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }): {} {
+      console.log('Client move registration - chooseCardFromDeck:', params.cardId);
+      return {};
     }
   },
   
@@ -227,6 +257,18 @@ const DarknetDuelGame = {
           },
           chooseChainTarget: function chooseChainTarget(_G: any, _ctx: any, targetId: string) {
             console.log('Phase move - chooseChainTarget with targetId:', targetId);
+            return {}; // Return empty object instead of G
+          },
+          chooseWildcardType: function chooseWildcardType(_G: any, _ctx: any, params: { type: string }) {
+            console.log('Phase move - chooseWildcardType with type:', params.type);
+            return {}; // Return empty object instead of G
+          },
+          chooseHandDiscard: function chooseHandDiscard(_G: any, _ctx: any, params: { cardIds: string[] }) {
+            console.log('Phase move - chooseHandDiscard with cardIds:', params.cardIds);
+            return {}; // Return empty object instead of G
+          },
+          chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }) {
+            console.log('Phase move - chooseCardFromDeck with cardId:', params.cardId);
             return {}; // Return empty object instead of G
           }
         }
