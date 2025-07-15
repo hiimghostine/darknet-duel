@@ -520,9 +520,23 @@ const GameBoardComponent = (props: GameBoardProps) => {
             </div>
           </div>
 
-          {/* Bottom section - Player hand */}
-          <div className="mt-4">
-            <div className="p-px bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+          {/* Game controls - moved out of player hand section */}
+          <div className="flex justify-end mb-4 w-full">
+            <GameControls
+              {...commonProps}
+              targetMode={targetMode}
+              selectedCard={selectedCard}
+              onEndTurn={handleEndTurn}
+              onCycleCard={cycleCard}
+              onCancelThrow={cancelTargeting}
+              onSkipReaction={handleSkipReaction}
+              onSurrender={surrender}
+            />
+          </div>
+          
+          {/* Player Arsenal Row - Added as part of main grid */}
+          <div className="grid grid-cols-1 gap-2 lg:gap-4 w-full mx-0 px-0">
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
               <div className="bg-base-200 border border-primary/20 p-3 relative">
                 <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
                 <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
@@ -531,21 +545,9 @@ const GameBoardComponent = (props: GameBoardProps) => {
                 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-mono text-primary text-lg">ARSENAL_ACCESS</h3>
-                  <div className="p-px w-full">
-                    <GameControls
-                      {...commonProps}
-                      targetMode={targetMode}
-                      selectedCard={selectedCard}
-                      onEndTurn={handleEndTurn}
-                      onCycleCard={cycleCard}
-                      onCancelThrow={cancelTargeting}
-                      onSkipReaction={handleSkipReaction}
-                      onSurrender={surrender}
-                    />
-                  </div>
                 </div>
                 
-                <div className="overflow-x-auto w-full">
+                <div className="arsenal-container w-full">
                   <PlayerHand
                     {...commonProps}
                     player={currentPlayerObj}

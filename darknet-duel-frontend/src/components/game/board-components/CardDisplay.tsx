@@ -101,6 +101,18 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
           <>
             <div className="card-type">{formatCardType(card.type)}</div>
             <div className="card-description">{card.description}</div>
+            {/* DEBUG: Check if flavor exists */}
+            {console.log('🐛 CardDisplay DEBUG:', {
+              cardName: card.name,
+              hasDescription: !!card.description,
+              hasFlavor: !!(card as any).flavor,
+              flavorContent: (card as any).flavor,
+              showDetails,
+              cardKeys: Object.keys(card)
+            })}
+            {(card as any).flavor && (
+              <div className="card-flavor">{(card as any).flavor}</div>
+            )}
             {card.power !== undefined && (
               <div className="card-power">Power: {card.power}</div>
             )}

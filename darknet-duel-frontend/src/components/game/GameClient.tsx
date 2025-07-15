@@ -4,7 +4,7 @@ import { Client } from 'boardgame.io/react';
 import { SocketIO } from 'boardgame.io/multiplayer';
 import { TurnOrder } from 'boardgame.io/core';
 // Import optimized version of GameBoard with memoization to prevent re-renders
-import GameBoard from './MemoGameBoard';
+import GameBoard from './BalatroGameBoard';
 import { useAuthStore } from '../../store/auth.store';
 import { useGameCredentials } from '../../hooks/useGameCredentials';
 import { useGameConnection } from '../../hooks/useGameConnection';

@@ -1,0 +1,525 @@
+/* Balatro-Inspired Layout for Darknet Duel */
+/* Clean, centered card game layout with cyberpunk aesthetics */
+
+.balatro-game-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0e17 0%, #141a26 50%, #0a0e17 100%);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Background effects */
+.balatro-game-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(54, 241, 205, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(199, 63, 57, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Header bar */
+.balatro-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(20, 26, 38, 0.95);
+  border-bottom: 1px solid #36f1cd20;
+  backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.balatro-header h1 {
+  color: #36f1cd;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(54, 241, 205, 0.5);
+  margin: 0;
+}
+
+.balatro-header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.balatro-btn {
+  padding: 6px 12px;
+  background: rgba(54, 241, 205, 0.1);
+  border: 1px solid rgba(54, 241, 205, 0.3);
+  border-radius: 4px;
+  color: #36f1cd;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.balatro-btn:hover {
+  background: rgba(54, 241, 205, 0.2);
+  box-shadow: 0 0 10px rgba(54, 241, 205, 0.3);
+}
+
+/* Main game area */
+.balatro-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 0; /* Important for flex children */
+}
+
+/* Game content wrapper */
+.balatro-game-content {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Opponent area (top) */
+.balatro-opponent-area {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(199, 63, 57, 0.05);
+  border: 1px solid rgba(199, 63, 57, 0.2);
+  border-radius: 8px;
+  position: relative;
+  height: 160px;
+  order: 1;
+}
+
+.balatro-opponent-info {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  color: #c73f39;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.balatro-opponent-hand {
+  display: flex;
+  align-items: flex-end;
+}
+
+.balatro-opponent-hand .balatro-card-back:not(:first-child) {
+  margin-left: -20px; /* Overlapping cards like Balatro */
+}
+
+.balatro-card-back {
+  width: 80px;
+  height: 110px;
+  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  border: 1px solid #c73f39;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transform: rotateY(0deg);
+  transition: all 0.3s ease;
+}
+
+.balatro-card-back:hover {
+  transform: translateY(-10px);
+  z-index: 10;
+}
+
+.balatro-card-back::before {
+  content: '?';
+  color: #c73f39;
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(199, 63, 57, 0.5);
+}
+
+/* Side panels */
+.balatro-left-panel,
+.balatro-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 250px;
+  flex-shrink: 0;
+}
+
+.balatro-info-panel {
+  background: rgba(20, 26, 38, 0.8);
+  border: 1px solid rgba(54, 241, 205, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(5px);
+}
+
+.balatro-info-panel h3 {
+  color: #36f1cd;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.balatro-score-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.balatro-score-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #36f1cd;
+  text-shadow: 0 0 5px rgba(54, 241, 205, 0.3);
+}
+
+.balatro-vs-divider {
+  color: #666;
+  font-size: 16px;
+}
+
+/* Central game area */
+.balatro-center-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Central infrastructure area */
+.balatro-infrastructure {
+  background: rgba(20, 26, 38, 0.6);
+  border: 1px solid rgba(54, 241, 205, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  order: 2;
+}
+
+.balatro-infrastructure::before {
+  content: 'NETWORK GRID';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 26, 38, 0.95);
+  color: #36f1cd;
+  padding: 4px 16px;
+  border: 1px solid rgba(54, 241, 205, 0.3);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.balatro-infrastructure-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+
+.balatro-infrastructure-card {
+  width: 120px;
+  height: 140px;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border: 1px solid #36f1cd;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.balatro-infrastructure-card:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(54, 241, 205, 0.3);
+  z-index: 5;
+}
+
+.balatro-infrastructure-card.compromised {
+  border-color: #c73f39;
+  box-shadow: 0 0 10px rgba(199, 63, 57, 0.3);
+}
+
+.balatro-infrastructure-card.fortified {
+  border-color: #2ea043;
+  box-shadow: 0 0 10px rgba(46, 160, 67, 0.3);
+}
+
+/* Player area (bottom) */
+.balatro-player-area {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(54, 241, 205, 0.05);
+  border: 1px solid rgba(54, 241, 205, 0.2);
+  border-radius: 8px;
+  position: relative;
+  height: 180px;
+  order: 3;
+}
+
+.balatro-player-info {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  color: #36f1cd;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.balatro-player-hand {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+}
+
+.balatro-player-card {
+  width: 100px;
+  height: 130px;
+  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  border: 1px solid #36f1cd;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 11px;
+  color: #e0e0e0;
+}
+
+.balatro-player-card:hover {
+  transform: translateY(-15px) scale(1.1);
+  box-shadow: 0 10px 20px rgba(54, 241, 205, 0.4);
+  z-index: 10;
+  border-color: #fff;
+}
+
+.balatro-player-card.selected {
+  transform: translateY(-10px) scale(1.05);
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.balatro-player-card.playable {
+  border-color: #2ea043;
+  box-shadow: 0 0 8px rgba(46, 160, 67, 0.3);
+}
+
+.balatro-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.balatro-card-cost {
+  width: 20px;
+  height: 20px;
+  background: #444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #36f1cd;
+}
+
+.balatro-card-name {
+  font-size: 9px;
+  font-weight: bold;
+  text-align: center;
+  margin: 4px 0;
+  color: #36f1cd;
+}
+
+.balatro-card-type {
+  font-size: 8px;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.balatro-card-description {
+  font-size: 8px;
+  color: #ccc;
+  flex: 1;
+  overflow: hidden;
+}
+
+.balatro-card-power {
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #36f1cd;
+  margin-top: 4px;
+}
+
+/* Card type colors */
+.balatro-player-card.attacker {
+  border-left: 3px solid #c73f39;
+}
+
+.balatro-player-card.defender {
+  border-left: 3px solid #36f1cd;
+}
+
+.balatro-player-card.wildcard {
+  border-left: 3px solid #ffd700;
+}
+
+/* Game actions */
+.balatro-actions {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Processing overlay */
+.balatro-processing {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.balatro-processing-content {
+  background: rgba(20, 26, 38, 0.95);
+  border: 1px solid #36f1cd;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  color: #36f1cd;
+}
+
+.balatro-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(54, 241, 205, 0.3);
+  border-top: 3px solid #36f1cd;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .balatro-left-panel,
+  .balatro-right-panel {
+    width: 200px;
+  }
+  
+  .balatro-player-card,
+  .balatro-card-back {
+    width: 80px;
+    height: 110px;
+  }
+}
+
+@media (max-width: 768px) {
+  .balatro-game-content {
+    flex-direction: column;
+  }
+  
+  .balatro-left-panel,
+  .balatro-right-panel {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    order: 4;
+  }
+  
+  .balatro-center-column {
+    order: 1;
+  }
+  
+  .balatro-player-hand {
+    gap: 4px;
+  }
+  
+  .balatro-player-card {
+    width: 70px;
+    height: 95px;
+    font-size: 9px;
+  }
+}
+
+/* Animation for card deals */
+@keyframes cardDeal {
+  0% {
+    opacity: 0;
+    transform: translateY(-100px) rotateX(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+}
+
+.balatro-player-card,
+.balatro-card-back {
+  animation: cardDeal 0.5s ease-out;
+}
+
+/* Pulse effect for active turn */
+@keyframes balatro-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(54, 241, 205, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(54, 241, 205, 0.6);
+  }
+}
+
+.balatro-player-area.active-turn {
+  animation: balatro-pulse 2s infinite;
+}
+
+.balatro-opponent-area.active-turn {
+  animation: balatro-pulse 2s infinite;
+} 
