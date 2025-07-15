@@ -30,8 +30,6 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
   };
 
-  // Format timestamp to HH:MM:SS (used by sub-components)
-  
   // Request rematch
   const handleRematchRequest = () => {
     if (moves.requestRematch) {
@@ -57,109 +55,141 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     playerID && G.rematchRequested.includes(playerID);
 
   return (
-    <div className="winner-lobby">
-      <div className="winner-lobby-content">
-        {/* Header section with game result */}
-        <div className="winner-announcement">
-          {isWinner ? (
-            <div className="winner-message">
-              <h1>VICTORY</h1>
-              <p>You have successfully {isAttacker ? 'hacked' : 'defended'} the network!</p>
-              {G.gameStats?.winReason && (
-                <p className="win-reason">{G.gameStats.winReason}</p>
-              )}
-            </div>
-          ) : (
-            <div className="loser-message">
-              <h1>DEFEAT</h1>
-              <p>Your {isAttacker ? 'attack' : 'defense'} has failed!</p>
-              {G.gameStats?.winReason && (
-                <p className="win-reason">{G.gameStats.winReason}</p>
-              )}
-            </div>
-          )}
+    <div className="winner-lobby-dashboard">
+      {/* Dashboard-style header */}
+      <div className="winner-lobby-header">
+        <div className="brand-section">
+          <h1 className="game-title">DARKNET DUEL</h1>
+          <span className="game-status">Match Complete</span>
         </div>
-
-        {/* Actions section */}
-        <div className="winner-lobby-actions">
+        <div className="header-actions">
           <button 
-            className={`rematch-button ${currentPlayerRequestedRematch ? 'requested' : ''}`}
+            className={`action-btn ${currentPlayerRequestedRematch ? 'requested' : 'primary'}`}
             onClick={handleRematchRequest}
             disabled={currentPlayerRequestedRematch || false}
           >
             {currentPlayerRequestedRematch ? 'Rematch Requested' : 'Request Rematch'}
           </button>
           
-          {/* Only show surrender button if the function is available */}
           {moves.surrender && (
             <button 
-              className="surrender-button"
+              className="action-btn secondary"
               onClick={handleSurrender}
             >
-              Surrender
+              Leave Game
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Dashboard-style content */}
+      <div className="winner-lobby-content">
+        
+        {/* Result panel - hero section */}
+        <div className="result-panel">
+          <div className={`result-announcement ${isWinner ? 'victory' : 'defeat'}`}>
+            <div className="result-icon">
+              {isWinner ? '🏆' : '💀'}
+            </div>
+            <h1 className="result-title">
+              {isWinner ? 'VICTORY' : 'DEFEAT'}
+            </h1>
+            <p className="result-subtitle">
+              {isWinner 
+                ? `You successfully ${isAttacker ? 'compromised' : 'defended'} the network!`
+                : `Your ${isAttacker ? 'attack' : 'defense'} has failed!`
+              }
+            </p>
+            {G.gameStats?.winReason && (
+              <p className="win-reason">{G.gameStats.winReason}</p>
+            )}
+          </div>
 
           {bothRequestedRematch && (
-            <div className="rematch-pending">
-              Both players requested a rematch! Starting new game...
+            <div className="rematch-status">
+              <div className="status-icon">⚡</div>
+              <div className="status-text">
+                <strong>Both players requested a rematch!</strong>
+                <p>Starting new game...</p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Game stats section - always visible in the full page layout */}
-        <div className="post-game-section">
-          <h2 className="section-title">Game Statistics</h2>
+        {/* Two-column layout like dashboard */}
+        <div className="content-grid">
           
-          {G.gameStats ? (
-            <div className="game-stats">
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <span className="stat-label">Duration</span>
-                  <span className="stat-value">{formatDuration(G.gameStats.gameDuration)}</span>
+          {/* Left column - Statistics */}
+          <div className="stats-section">
+            <div className="section-panel">
+              <h2 className="panel-title">Game Statistics</h2>
+              
+              {G.gameStats ? (
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-value">{formatDuration(G.gameStats.gameDuration)}</div>
+                    <div className="stat-label">Duration</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">{G.gameStats.cardsPlayed}</div>
+                    <div className="stat-label">Cards Played</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">{G.turnNumber}</div>
+                    <div className="stat-label">Turns</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-value">{G.gameStats.infrastructureChanged}</div>
+                    <div className="stat-label">Infrastructure Changes</div>
+                  </div>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Cards Played</span>
-                  <span className="stat-value">{G.gameStats.cardsPlayed}</span>
+              ) : (
+                <div className="loading-state">Loading statistics...</div>
+              )}
+            </div>
+
+            <div className="section-panel">
+              <h2 className="panel-title">Score Breakdown</h2>
+              <div className="score-grid">
+                <div className={`score-card ${isAttacker ? 'current-player' : ''}`}>
+                  <div className="score-value">{G.attackerScore}</div>
+                  <div className="score-label">Attacker Score</div>
+                  {isAttacker && <div className="player-indicator">You</div>}
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Infrastructure Changes</span>
-                  <span className="stat-value">{G.gameStats.infrastructureChanged}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Turns Played</span>
-                  <span className="stat-value">{G.turnNumber}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Attacker Score</span>
-                  <span className="stat-value">{G.attackerScore}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Defender Score</span>
-                  <span className="stat-value">{G.defenderScore}</span>
+                <div className="score-divider">vs</div>
+                <div className={`score-card ${!isAttacker ? 'current-player' : ''}`}>
+                  <div className="score-value">{G.defenderScore}</div>
+                  <div className="score-label">Defender Score</div>
+                  {!isAttacker && <div className="player-indicator">You</div>}
                 </div>
               </div>
             </div>
-          ) : (
-            <p>Loading game statistics...</p>
-          )}
-        </div>
-        
-        {/* Future analytics section placeholder */}
-        <div className="analytics-ready-section">
-          <h2 className="section-title">Performance Analytics</h2>
-          <p>This section will display detailed game analytics in future updates.</p>
-          {/* Will be populated with charts and detailed performance metrics */}
-        </div>
 
-        {/* Post-game chat section */}
-        <div className="post-game-section">
-          <h2 className="section-title">Post-Game Chat</h2>
-          <PostGameChat 
-            chat={G.chat || { messages: [], lastReadTimestamp: {} }}
-            playerID={playerID}
-            sendMessage={(content) => moves.sendChatMessage(content)}
-          />
+            {/* Future analytics placeholder */}
+            <div className="section-panel analytics-preview">
+              <h2 className="panel-title">Performance Analytics</h2>
+              <div className="analytics-placeholder">
+                <div className="placeholder-icon">📊</div>
+                <p>Detailed analytics coming soon</p>
+                <span className="placeholder-subtitle">Charts, insights, and performance metrics will be available in future updates</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right column - Chat */}
+          <div className="chat-section">
+            <div className="section-panel chat-panel">
+              <h2 className="panel-title">Post-Game Chat</h2>
+              <div className="chat-container">
+                <PostGameChat 
+                  chat={G.chat || { messages: [], lastReadTimestamp: {} }}
+                  playerID={playerID}
+                  sendMessage={(content) => moves.sendChatMessage(content)}
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
