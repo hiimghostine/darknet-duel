@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
 import LobbyDetail from '../components/lobby/LobbyDetail';
@@ -11,6 +11,7 @@ import logo from '../assets/logo.png';
 const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
@@ -28,8 +29,28 @@ const LobbyPage: React.FC = () => {
       // Clear loading after animation
       const timer = setTimeout(() => setIsLoading(false), 2500);
       return () => clearTimeout(timer);
+    } else {
+      // Ensure loading is false for subsequent visits
+      setIsLoading(false);
     }
   }, [isAuthenticated]);
+
+  // Reset loading state when component unmounts or route changes
+  useEffect(() => {
+    return () => {
+      // Clear any ongoing loading timers when component unmounts
+      setIsLoading(false);
+    };
+  }, []);
+
+  // Reset loading state when navigating between lobby sub-pages
+  useEffect(() => {
+    // Only reset loading if we're already past the initial visit
+    const hasVisited = sessionStorage.getItem('lobbies_visited') === 'true';
+    if (hasVisited) {
+      setIsLoading(false);
+    }
+  }, [location.pathname]);
 
   // Get theme from localStorage
   useEffect(() => {
@@ -88,7 +109,7 @@ const LobbyPage: React.FC = () => {
         <div className={`relative z-10 transition-opacity duration-500 ${isLoading || isLoggingOut ? 'opacity-0' : 'opacity-100'} scanline`}>
           <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
             <div className="container mx-auto flex justify-between items-center">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => navigate('/dashboard')}>
                 <img src={logo} alt="Darknet Duel Logo" className="h-8" />
                 <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
                   DARKNET_DUEL

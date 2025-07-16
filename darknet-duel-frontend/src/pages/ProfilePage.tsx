@@ -248,7 +248,7 @@ const ProfilePage: React.FC = () => {
       <div className={`relative z-10 transition-opacity duration-500 ${isLoading || showLogoutScreen ? 'opacity-0' : 'opacity-100'} scanline`}>
         <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
           <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => navigate('/dashboard')}>
               <img src={logo} alt="Darknet Duel Logo" className="h-8" />
               <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
                 DARKNET_DUEL

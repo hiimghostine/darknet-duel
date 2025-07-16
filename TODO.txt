@@ -5,7 +5,7 @@ Accounts (ignore this):
 
 Issues:
 / - No "Wrong password" message
-- Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
+/ - Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
 / - Lobbies poll too fast
 - Can't restart game because of duplicate ids, might wanna automatically create a new lobby
 - Xendit polling even after the payment's done? Need to investigate
@@ -13,7 +13,7 @@ Issues:
 Later to add:
 ASAP:
 - Hacker stats in front (add more cool shit)
-- Recent activity in dashboard, and View Full History button
+/ - Recent activity in dashboard, and View Full History button
 
 Mid game:
 - Clickable profiles
