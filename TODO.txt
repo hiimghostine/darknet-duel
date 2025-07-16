@@ -11,15 +11,24 @@ Issues:
 - Xendit polling even after the payment's done? Need to investigate
 
 Later to add:
+ASAP:
 - Hacker stats in front (add more cool shit)
 - Recent activity in dashboard, and View Full History button
-- Dynamic system updates in dashboard
-- Shop for cosmetics
+
+Mid game:
+- Clickable profiles
 - Chat in lobbies 
+- Shop for cosmetics (PULL FROM STEAM OR DISCORD)
+- Friend system...
 - DMs?
+
+Late game:
+- Dynamic system updates in dashboard
 - Admin panel (once everything is gucci)
+- Add bonuses to first-time purchases
 - Reporting system aaaaaaaaaaaaaaaaaaaaaa
 - Moderators pud??? We need tags (OMG ANOTHER COSMETIC????)
+
 
 
 Missing:

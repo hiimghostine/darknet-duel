@@ -411,6 +411,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: 'Payment',
         description: 'Payment processing via Xendit for purchasing crypts'
+      },
+      {
+        name: 'Games',
+        description: 'Game history and statistics endpoints'
       }
     ]
   },

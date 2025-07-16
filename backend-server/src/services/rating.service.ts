@@ -3,6 +3,7 @@ import { AppDataSource } from '../utils/database';
 import { PlayerRating } from '../entities/player-rating.entity';
 import { RatingHistory } from '../entities/rating-history.entity';
 import { Account } from '../entities/account.entity';
+import { GamePlayer } from '../entities/game-player.entity';
 
 // Interface to match data sent from game-server
 interface RatingData {
@@ -36,9 +37,16 @@ export class RatingService {
     await queryRunner.startTransaction();
     
     try {
-      console.log('Updating player ratings for game:', ratingData.gameId);
+      console.log('🔍 RATING SERVICE DEBUG: Updating player ratings for game:', ratingData.gameId);
+      console.log('🔍 RATING SERVICE DEBUG: Received rating data:', JSON.stringify(ratingData, null, 2));
+      
       const { gameId, gameMode, players } = ratingData;
       const results = [];
+      
+      // Log each player's win/loss status
+      players.forEach((player, index) => {
+        console.log(`🔍 Player ${index + 1}: ID=${player.id}, Role=${player.role}, IsWinner=${player.isWinner}`);
+      });
       
       // Get current ratings for all players
       const playerRatingsMap = new Map<string, PlayerRating>();
@@ -75,6 +83,11 @@ export class RatingService {
         const playerRating = playerRatingsMap.get(accountId)!;
         const currentRating = playerRating.rating;
         
+        console.log(`\n🔍 CALCULATING for Player ${accountId}:`);
+        console.log(`   - Current Rating: ${currentRating}`);
+        console.log(`   - Role: ${player.role}`);
+        console.log(`   - Is Winner: ${isWinner}`);
+        
         // Find opponents (everyone else in the game)
         const opponents = players.filter(p => p.id !== accountId);
         
@@ -86,6 +99,8 @@ export class RatingService {
           const opponentRating = playerRatingsMap.get(opponentId)!;
           const opponentRatingValue = opponentRating.rating;
           
+          console.log(`   - vs Opponent ${opponentId}: Rating ${opponentRatingValue}, Their Win Status: ${opponent.isWinner}`);
+          
           // Calculate rating change based on ELO formula
           const matchupChange = this.calculateEloChange(
             currentRating,
@@ -93,22 +108,32 @@ export class RatingService {
             isWinner ? 1 : 0  // 1 for win, 0 for loss
           );
           
+          console.log(`   - Raw ELO change vs ${opponentId}: ${matchupChange.toFixed(2)}`);
+          
           // Adjust rating based on game mode
           const modeMultiplier = this.getModeMultiplier(gameMode);
           ratingChange += matchupChange * modeMultiplier;
+          
+          console.log(`   - Mode multiplier (${gameMode}): ${modeMultiplier}`);
+          console.log(`   - Adjusted change: ${(matchupChange * modeMultiplier).toFixed(2)}`);
         }
         
         // Round the rating change
         const roundedRatingChange = Math.round(ratingChange);
         const newRating = Math.max(1, currentRating + roundedRatingChange); // Prevent ratings below 1
         
+        console.log(`   - Total Rating Change: ${roundedRatingChange > 0 ? '+' : ''}${roundedRatingChange}`);
+        console.log(`   - New Rating: ${currentRating} → ${newRating}`);
+        
         // Update player rating entity
         playerRating.rating = newRating;
         playerRating.gamesPlayed += 1;
         if (isWinner) {
           playerRating.wins += 1;
+          console.log(`   - ✅ Incremented wins`);
         } else {
           playerRating.losses += 1;
+          console.log(`   - ❌ Incremented losses`);
         }
         
         // Save updated rating
@@ -140,6 +165,21 @@ export class RatingService {
             account.gamesLost += 1;
           }
           await queryRunner.manager.save(account);
+        }
+
+        // Update the game_players table with rating information
+        const gamePlayer = await queryRunner.manager.findOne(GamePlayer, {
+          where: { 
+            gameId: gameId,
+            accountId: accountId 
+          }
+        });
+        
+        if (gamePlayer) {
+          gamePlayer.ratingBefore = currentRating;
+          gamePlayer.ratingAfter = newRating;
+          gamePlayer.ratingChange = roundedRatingChange;
+          await queryRunner.manager.save(gamePlayer);
         }
         
         // Add to results

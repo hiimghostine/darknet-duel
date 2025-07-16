@@ -10,6 +10,7 @@ import accountRoutes from './routes/account.routes';
 import filesRoutes from './routes/files.routes';
 import currencyRoutes from './routes/currency.routes';
 import paymentRoutes from './routes/payment.routes';
+import gamesRoutes from './routes/games.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 // Load environment variables
@@ -77,6 +78,9 @@ app.use('/api/currency', currencyRoutes);
 
 // Payment processing routes
 app.use('/api/payment', paymentRoutes);
+
+// Game routes for user-facing game history
+app.use('/api/games', gamesRoutes);
 
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));

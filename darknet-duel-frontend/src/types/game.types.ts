@@ -148,3 +148,48 @@ export interface GameResult {
   duration: number;
   timestamp: number;
 }
+
+export interface GameHistoryItem {
+  gameId: string;
+  gameMode: string;
+  startTime: string;
+  endTime: string;
+  turnCount: number;
+  isWinner: boolean;
+  playerRole: string;
+  ratingChange: number | null;
+  ratingBefore: number | null;
+  ratingAfter: number | null;
+  opponent: {
+    id: string;
+    username: string;
+    role: string;
+  } | null;
+  abandonReason: string | null;
+}
+
+export interface GameHistoryResponse {
+  games: GameHistoryItem[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface GameDetails {
+  gameId: string;
+  gameMode: string;
+  startTime: string;
+  endTime: string;
+  turnCount: number;
+  winnerId: string | null;
+  winnerRole: string | null;
+  abandonReason: string | null;
+  players: {
+    accountId: string;
+    username: string;
+    playerRole: string;
+    isWinner: boolean;
+    ratingBefore: number | null;
+    ratingAfter: number | null;
+    ratingChange: number | null;
+  }[];
+}

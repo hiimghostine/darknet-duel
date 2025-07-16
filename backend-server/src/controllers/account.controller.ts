@@ -407,6 +407,7 @@ export class AccountController {
         gamesWon: account.gamesWon,
         gamesLost: account.gamesLost,
         rating: account.rating,
+        bio: account.bio,
         createdAt: account.createdAt
       };
 

@@ -398,7 +398,10 @@ const DashboardPage: React.FC = () => {
                     ))}
                   </div>
                   
-                  <button className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk">
+                  <button 
+                    onClick={() => navigate('/history')}
+                    className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk"
+                  >
                     VIEW_FULL_HISTORY
                   </button>
                 </div>
