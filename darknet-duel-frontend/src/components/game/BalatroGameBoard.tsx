@@ -29,6 +29,7 @@ import PlayerInfo from './board-components/PlayerInfo';
 import PowerBar from './board-components/PowerBar';
 import InfrastructureArea from './board-components/InfrastructureArea';
 import DevCheatPanel from './board-components/DevCheatPanel';
+import TemporaryEffectsDisplay from './board-components/TemporaryEffectsDisplay';
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
@@ -64,7 +65,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   useMemoizedKeys(G, [
     'gamePhase', 'message', 'attackerScore', 'defenderScore',
     'infrastructure', 'attacker', 'defender', 'chat', 'rematchRequested',
-    'pendingChainChoice', 'pendingWildcardChoice', 'pendingHandChoice', 'pendingCardChoice'
+    'pendingChainChoice', 'pendingWildcardChoice', 'pendingHandChoice', 'pendingCardChoice',
+    'temporaryEffects', 'persistentEffects'
   ]);
 
   // Use custom hooks for game state and actions
@@ -628,19 +630,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   const getInfraStateClasses = (state: string) => {
     switch (state) {
       case 'secure':
-        return 'bg-green-900/20 border-green-500 text-green-100 shadow-green-500/30';
+        return 'bg-green-900/70 border-green-500 text-green-100 shadow-green-500/30';
       case 'vulnerable':
-        return 'bg-amber-900/20 border-amber-500 text-amber-100 shadow-amber-500/40 animate-pulse';
+        return 'bg-amber-900/70 border-amber-500 text-amber-100 shadow-amber-500/40 animate-pulse';
       case 'compromised':
-        return 'bg-red-900/30 border-red-500 text-red-100 shadow-red-500/50 animate-pulse';
+        return 'bg-red-900/80 border-red-500 text-red-100 shadow-red-500/50 animate-pulse';
       case 'fortified':
-        return 'bg-blue-900/20 border-blue-500 text-blue-100 shadow-blue-500/40';
+        return 'bg-blue-900/70 border-blue-500 text-blue-100 shadow-blue-500/40';
       case 'shielded':
-        return 'bg-purple-900/20 border-purple-500 text-purple-100 shadow-purple-500/40';
+        return 'bg-purple-900/70 border-purple-500 text-purple-100 shadow-purple-500/40';
       default:
         return isAttacker 
-          ? 'bg-red-900/10 border-red-600 text-red-200' 
-          : 'bg-blue-900/10 border-blue-600 text-blue-200';
+          ? 'bg-red-900/60 border-red-600 text-red-200' 
+          : 'bg-blue-900/60 border-blue-600 text-blue-200';
     }
   };
 
@@ -674,11 +676,36 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   const renderInfrastructure = () => {
     const infrastructure = optimizedInfrastructureData.cards;
     
+    // Get temporary effects from game state
+    const temporaryEffects = G.temporaryEffects || [];
+    
+    // Get persistent effects from game state
+    const persistentEffects = G.persistentEffects || [];
+    
+    // Debug persistent effects
+    if (persistentEffects.length > 0) {
+      console.log('🎯 PERSISTENT EFFECTS DEBUG:', persistentEffects);
+      console.log('🎯 Current player ID:', playerID);
+    }
+    
     return (
       <div className="flex flex-wrap gap-3 justify-center items-center max-w-full">
         {infrastructure.map((infra) => {
           const isTargetable = targetMode && validTargets.includes(infra.id);
           const isSelected = targetMode && targetedInfraId === infra.id;
+          
+          // Filter effects that apply to this specific infrastructure card
+          const infraEffects = temporaryEffects.filter((effect: any) => effect.targetId === infra.id);
+          
+          // Filter persistent effects that apply to this infrastructure
+          const infraPersistentEffects = persistentEffects.filter((effect: any) =>
+            effect.targetId === infra.id && effect.playerId === playerID
+          );
+          
+          // Check if this infrastructure has any monitoring effects
+          const hasMonitoringEffects = infraPersistentEffects.length > 0;
+          const hasActiveEffects = infraEffects.length > 0;
+          const totalEffectsCount = infraEffects.length + infraPersistentEffects.length;
           
           return (
             <div
@@ -692,6 +719,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
                 ${targetMode && !isTargetable ? 'opacity-50 cursor-not-allowed' : ''}
                 ${!targetMode ? 'hover:scale-150 hover:z-60 hover:shadow-2xl transform-gpu' : ''}
+                ${hasMonitoringEffects ? 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100' : ''}
               `}
               onClick={() => {
                 if (targetMode && isTargetable) {
@@ -699,6 +727,104 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 }
               }}
             >
+              {/* Monitoring & Effects Indicators - Top overlay */}
+              {(hasMonitoringEffects || hasActiveEffects) && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-70 group/effects flex gap-1">
+                  {/* Monitoring Indicator */}
+                  {hasMonitoringEffects && (
+                    <div className="lg:text-[9px] text-[8px] bg-orange-600 text-orange-100 rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-orange-400 cursor-help">
+                      🎯 MONITORED
+                    </div>
+                  )}
+                  
+                  {/* Active Effects Indicator */}
+                  {hasActiveEffects && (
+                    <div className="lg:text-[9px] text-[8px] bg-purple-600 text-purple-100 rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-purple-400 cursor-help">
+                      ⚡ AFFECTED
+                    </div>
+                  )}
+                  
+                  {/* Effects Magnification on Hover */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-slate-400 z-80 transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-none">
+                    <div className="text-center mb-2">
+                      <div className="font-bold text-sm text-slate-100 mb-1">Effects & Monitoring</div>
+                      <div className="text-xs text-slate-200">on {infra.name}</div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {/* Persistent Effects Section */}
+                      {infraPersistentEffects.length > 0 && (
+                        <div>
+                          <div className="text-xs font-bold text-orange-300 mb-2 uppercase flex items-center gap-1">
+                            <span>🎯</span> Monitoring Effects
+                          </div>
+                          {infraPersistentEffects.map((effect, idx) => (
+                            <div key={`persistent-${idx}`} className="bg-orange-800/50 rounded-lg p-2 border border-orange-600/30 mb-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="text-xs font-bold text-orange-100 capitalize">
+                                  Multi-Stage Malware
+                                </div>
+                                <div className="text-xs text-orange-300">
+                                  {effect.triggered ? 'TRIGGERED' : 'ACTIVE'}
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-orange-200 mb-1">
+                                Condition: {effect.condition.fromState || 'any'} → {effect.condition.toState}
+                              </div>
+                              <div className="text-[10px] text-orange-200 mb-1">
+                                Reward: +{effect.reward.amount} AP when compromised
+                              </div>
+                              <div className="text-[10px] text-orange-300 italic">
+                                Watching for infrastructure compromise...
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Temporary Effects Section */}
+                      {infraEffects.length > 0 && (
+                        <div>
+                          <div className="text-xs font-bold text-purple-300 mb-2 uppercase flex items-center gap-1">
+                            <span>⚡</span> Active Effects
+                          </div>
+                          {infraEffects.map((effect, idx) => (
+                            <div key={`temporary-${idx}`} className="bg-purple-800/50 rounded-lg p-2 border border-purple-600/30 mb-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="text-xs font-bold text-purple-100 capitalize">
+                                  {effect.type.replace('_', ' ')}
+                                </div>
+                                <div className="text-xs text-purple-300">
+                                  {effect.duration} turn{effect.duration !== 1 ? 's' : ''}
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-purple-200">
+                                Source: {effect.sourceCardId}
+                              </div>
+                              {effect.type === 'prevent_reactions' && (
+                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                  Blocks reaction cards from targeting this infrastructure
+                                </div>
+                              )}
+                              {effect.type === 'prevent_restore' && (
+                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                  Prevents restoration effects on this infrastructure
+                                </div>
+                              )}
+                              {effect.type === 'cost_reduction' && (
+                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                  Reduces action point costs when targeting this
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Compact Infrastructure Card View */}
               <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
                 {/* Top section - ID and Type Icon */}
@@ -879,10 +1005,42 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   <div className="text-center text-[10px] bg-gray-600 text-gray-100 py-0.5 px-1.5 rounded">
                     Category: {infra.type.charAt(0).toUpperCase() + infra.type.slice(1)}
                   </div>
+                  
+                  {/* Effects Display for detailed view */}
+                  {(infraEffects.length > 0 || infraPersistentEffects.length > 0) && (
+                    <div className="mt-2 pt-2 border-t border-current/20">
+                      {/* Persistent Effects */}
+                      {infraPersistentEffects.length > 0 && (
+                        <div className="mb-2">
+                          <div className="text-[10px] font-bold text-orange-300 mb-1 uppercase flex items-center gap-1">
+                            <span>🎯</span> Monitoring:
+                          </div>
+                          <div className="space-y-1">
+                            {infraPersistentEffects.map((effect, idx) => (
+                              <div key={`persist-${idx}`} className="text-[9px] text-orange-200 bg-orange-900/30 rounded px-1.5 py-0.5">
+                                <span className="font-semibold">Multi-Stage Malware:</span> +{effect.reward.amount} AP on compromise
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Temporary Effects */}
+                      {infraEffects.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-bold text-purple-300 mb-1 uppercase flex items-center gap-1">
+                            <span>⚡</span> Active Effects:
+                          </div>
+                          <TemporaryEffectsDisplay
+                            effects={infraEffects}
+                            targetInfrastructure={infra}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-
-
             </div>
           );
         })}
@@ -1481,6 +1639,24 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   // Rematch requests
   if (prevProps.G?.rematchRequested !== nextProps.G?.rematchRequested) {
     console.log('CLIENT: Re-rendering due to rematch request changes');
+    return false;
+  }
+  
+  // Persistent effects - check arrays for changes
+  const prevPersistentEffects = prevProps.G?.persistentEffects || [];
+  const nextPersistentEffects = nextProps.G?.persistentEffects || [];
+  if (prevPersistentEffects.length !== nextPersistentEffects.length ||
+      !isEqual(prevPersistentEffects, nextPersistentEffects)) {
+    console.log('CLIENT: Re-rendering due to persistent effects changes');
+    return false;
+  }
+  
+  // Temporary effects - check arrays for changes
+  const prevTemporaryEffects = prevProps.G?.temporaryEffects || [];
+  const nextTemporaryEffects = nextProps.G?.temporaryEffects || [];
+  if (prevTemporaryEffects.length !== nextTemporaryEffects.length ||
+      !isEqual(prevTemporaryEffects, nextTemporaryEffects)) {
+    console.log('CLIENT: Re-rendering due to temporary effects changes');
     return false;
   }
   

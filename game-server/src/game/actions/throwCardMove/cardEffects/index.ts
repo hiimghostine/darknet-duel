@@ -1,4 +1,4 @@
-import { InfrastructureCard, GameState } from 'shared-types/game.types';
+import { InfrastructureCard, GameState, InfrastructureState } from 'shared-types/game.types';
 import { AttackVector, Card, CardType } from 'shared-types/card.types';
 import { exploitEffect } from './exploitEffect';
 import { attackEffect } from './attackEffect';
@@ -9,6 +9,7 @@ import { reactionEffect } from './reactionEffect';
 import { counterEffect } from './counterEffect';
 import { WildcardResolver, WildcardPlayContext } from '../../wildcardResolver';
 import { handleChainVulnerability } from '../../chainEffects';
+import { TemporaryEffectsManager } from '../../temporaryEffectsManager';
 
 /**
  * Apply card effect based on card type
@@ -154,6 +155,42 @@ function handleSpecialEffect(
 }
 
 /**
+ * Process persistent effects after infrastructure state changes
+ * This should be called whenever infrastructure state changes
+ */
+function processInfrastructureStateChange(
+  gameState: GameState,
+  oldInfrastructure: InfrastructureCard[],
+  newInfrastructure: InfrastructureCard[]
+): GameState {
+  if (!gameState.persistentEffects || gameState.persistentEffects.length === 0) {
+    return gameState;
+  }
+
+  let updatedGameState = { ...gameState };
+
+  // Check each infrastructure for state changes
+  for (let i = 0; i < Math.min(oldInfrastructure.length, newInfrastructure.length); i++) {
+    const oldInfra = oldInfrastructure[i];
+    const newInfra = newInfrastructure[i];
+
+    if (oldInfra.state !== newInfra.state) {
+      console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+      
+      // Process persistent effects for this state change
+      updatedGameState = TemporaryEffectsManager.processPersistentEffects(
+        updatedGameState,
+        newInfra.id,
+        oldInfra.state,
+        newInfra.state
+      );
+    }
+  }
+
+  return updatedGameState;
+}
+
+/**
  * Apply card effect based on card type
  * Returns updated infrastructure array or special result
  */
@@ -168,40 +205,58 @@ export function applyCardEffect(
   gameState?: GameState,
   chosenType?: CardType
 ): InfrastructureCard[] | null | { victory: true } | { pendingChoice: true } {
+  // Store original infrastructure state for persistent effect checking
+  const originalInfrastructure = [...allInfrastructure];
+  
+  let result: InfrastructureCard[] | null | { victory: true } | { pendingChoice: true };
+
   if (cardType === 'wildcard') {
-    return handleWildcardEffect(card, currentInfra, infraIndex, allInfrastructure, gameState, playerID, chosenType);
+    result = handleWildcardEffect(card, currentInfra, infraIndex, allInfrastructure, gameState, playerID, chosenType);
+  } else {
+    switch (cardType) {
+      case 'exploit':
+        result = exploitEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
+        break;
+        
+      case 'attack':
+        result = attackEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
+        break;
+        
+      case 'shield':
+        result = shieldEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
+        break;
+        
+      case 'fortify':
+        result = fortifyEffect(currentInfra, infraIndex, allInfrastructure, card);
+        break;
+        
+      case 'response':
+        result = responseEffect(currentInfra, infraIndex, allInfrastructure, card);
+        break;
+        
+      case 'reaction':
+        result = reactionEffect(currentInfra, infraIndex, allInfrastructure, card);
+        break;
+        
+      case 'counter-attack':
+      case 'counter':
+        result = counterEffect(currentInfra, infraIndex, allInfrastructure, card);
+        break;
+        
+      case 'special':
+        // Handle special effect cards (chain effects, lateral movement, etc.)
+        result = handleSpecialEffect(card, currentInfra, infraIndex, allInfrastructure, gameState, playerID, attackVector);
+        break;
+        
+      default:
+        result = allInfrastructure; // No change
+    }
   }
 
-  switch (cardType) {
-    case 'exploit':
-      return exploitEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
-      
-    case 'attack':
-      return attackEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
-      
-    case 'shield':
-      return shieldEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
-      
-    case 'fortify':
-      return fortifyEffect(currentInfra, infraIndex, allInfrastructure, card);
-      
-    case 'response':
-      return responseEffect(currentInfra, infraIndex, allInfrastructure, card);
-      
-    case 'reaction':
-      return reactionEffect(currentInfra, infraIndex, allInfrastructure, card);
-      
-    case 'counter-attack':
-    case 'counter':
-      return counterEffect(currentInfra, infraIndex, allInfrastructure, card);
-      
-    case 'special':
-      // Handle special effect cards (chain effects, lateral movement, etc.)
-      return handleSpecialEffect(card, currentInfra, infraIndex, allInfrastructure, gameState, playerID, attackVector);
-      
-    default:
-      return allInfrastructure; // No change
-  }
+  // Note: Persistent effects processing is now handled at the throwCardMove level
+  // to avoid Immer violations (can't both mutate draft AND return new value)
+  
+  return result;
 }
 
 // Re-export all effect handlers for direct access

@@ -307,13 +307,31 @@ export interface GameState {
   
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
-    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' | 
-          'restrict_targeting' | 'quantum_protection' | 'honeypot'; 
+    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
+          'restrict_targeting' | 'quantum_protection' | 'honeypot';
     targetId?: string;
     playerId?: string;
     duration: number;
     sourceCardId: string;
     metadata?: Record<string, unknown>;
+  }[];
+  
+  // NEW: Persistent conditional effects (watch for state changes)
+  persistentEffects?: {
+    type: 'on_compromise' | 'on_vulnerability' | 'on_restore' | 'on_shield' | 'on_fortify';
+    targetId: string;           // Infrastructure being watched
+    playerId: string;           // Player who gets the benefit
+    sourceCardId: string;       // Card that created this effect
+    condition: {
+      fromState?: InfrastructureState | 'any';
+      toState: InfrastructureState;
+    };
+    reward: {
+      effect: 'gain_ap' | 'draw_card' | 'gain_resource';
+      amount: number;
+    };
+    autoRemove: boolean;        // Remove after triggering once
+    triggered: boolean;         // Whether this effect has been triggered
   }[];
   
   // Game configuration

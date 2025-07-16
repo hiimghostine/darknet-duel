@@ -8,7 +8,7 @@ import { Card, CardType, AttackVector } from 'shared-types/card.types';
 import { GameState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
-import { TemporaryEffectsManager, TemporaryEffect } from './temporaryEffectsManager';
+import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
 
 export interface WildcardPlayContext {
   gameState: GameState;
@@ -283,7 +283,38 @@ export class WildcardResolver {
       // Logic to look at top cards would go here
     }
     
-    // Handle on compromise effects
+    // Handle specific card effects - check for A305 (Multi-Stage Malware) with flexible ID matching
+    console.log(`🔍 Checking A305 condition: card.id="${card.id}", startsWith A305: ${card.id.startsWith('A305')}, hasTarget: ${!!context.targetInfrastructure}, hasPlayerID: ${!!context.playerID}`);
+    
+    if (card.id.startsWith('A305') && context.targetInfrastructure && context.playerID) {
+      console.log(`✅ A305 Multi-Stage Malware detected! Creating persistent effect for ${context.targetInfrastructure.name}`);
+      
+      // Multi-Stage Malware: Create persistent effect to watch for compromise
+      const persistentEffect: PersistentEffect = {
+        type: 'on_compromise',
+        targetId: context.targetInfrastructure.id,
+        playerId: context.playerID,
+        sourceCardId: card.id,
+        condition: {
+          fromState: 'vulnerable',  // Only trigger when going from vulnerable to compromised
+          toState: 'compromised'
+        },
+        reward: {
+          effect: 'gain_ap',
+          amount: card.onCompromise?.amount || 1
+        },
+        autoRemove: true,  // Remove after triggering once
+        triggered: false
+      };
+      
+      updatedGameState = TemporaryEffectsManager.addPersistentEffect(updatedGameState, persistentEffect);
+      updatedGameState.message = `${card.name} is monitoring ${context.targetInfrastructure.name} for compromise...`;
+      
+      console.log(`🎯 Persistent effect created for A305. Total persistent effects: ${updatedGameState.persistentEffects?.length || 0}`);
+      console.log(`🎯 Persistent effects array:`, updatedGameState.persistentEffects);
+    }
+
+    // Handle on compromise effects (legacy support for other cards)
     if (card.onCompromise && context.targetInfrastructure?.state === 'compromised') {
       // Apply on compromise effects
       if (card.onCompromise.effect === 'gain_ap' && card.onCompromise.amount) {

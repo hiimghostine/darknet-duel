@@ -246,13 +246,31 @@ export interface GameState {
   
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
-    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' | 
+    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
           'restrict_targeting' | 'quantum_protection' | 'honeypot'; // Added Phase 2 & 3 effect types
     targetId?: string;
     playerId?: string;
     duration: number;
     sourceCardId: string;
     metadata?: any; // For complex effect data
+  }[];
+  
+  // NEW: Persistent conditional effects (watch for state changes)
+  persistentEffects?: {
+    type: 'on_compromise' | 'on_vulnerability' | 'on_restore' | 'on_shield' | 'on_fortify';
+    targetId: string;           // Infrastructure being watched
+    playerId: string;           // Player who gets the benefit
+    sourceCardId: string;       // Card that created this effect
+    condition: {
+      fromState?: InfrastructureState | 'any';
+      toState: InfrastructureState;
+    };
+    reward: {
+      effect: 'gain_ap' | 'draw_card' | 'gain_resource';
+      amount: number;
+    };
+    autoRemove: boolean;        // Remove after triggering once
+    triggered: boolean;         // Whether this effect has been triggered
   }[];
   
   // Game configuration (required by backend)

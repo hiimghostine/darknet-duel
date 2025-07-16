@@ -289,8 +289,9 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           message: gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType} on ${targetInfrastructure.name}`,
           attackerScore,
           defenderScore,
-          // Only include specific wildcard effects properties
+          // Include all wildcard effects properties
           temporaryEffects: gameStateWithWildcardEffects.temporaryEffects || G.temporaryEffects,
+          persistentEffects: gameStateWithWildcardEffects.persistentEffects || G.persistentEffects,
           pendingCardChoice: gameStateWithWildcardEffects.pendingCardChoice || G.pendingCardChoice,
           // Include chain choice (important for Lateral Movement) - prioritize the one from wildcard effects
           pendingChainChoice: gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
@@ -410,8 +411,28 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   // Normal case - card effect applied successfully
   const newInfrastructure = effectResult;
   
+  // Process persistent effects for infrastructure state changes
+  let gameStateWithPersistentEffects = G;
+  if (G.infrastructure && newInfrastructure !== G.infrastructure) {
+    console.log(`🎯 Checking persistent effects after card effect`);
+    // Check each infrastructure for state changes
+    for (let i = 0; i < Math.min(G.infrastructure.length, newInfrastructure.length); i++) {
+      const oldInfra = G.infrastructure[i];
+      const newInfra = newInfrastructure[i];
+      if (oldInfra.state !== newInfra.state) {
+        console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+        gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+          gameStateWithPersistentEffects,
+          newInfra.id,
+          oldInfra.state,
+          newInfra.state
+        );
+      }
+    }
+  }
+  
   // Check if this card should trigger reaction phase
-  const shouldTriggerReaction = !extendedCard.preventReaction && 
+  const shouldTriggerReaction = !extendedCard.preventReaction &&
                               (effectiveCardType === 'attack' || effectiveCardType === 'exploit');
   
   // Calculate scores based on infrastructure states
@@ -421,25 +442,25 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   
   // Check if there's a pending chain choice from the card effect
   const finalGameState = {
-    ...G,
-    attacker: isAttacker ? updatedPlayer : G.attacker,
-    defender: !isAttacker ? updatedPlayer : G.defender,
+    ...gameStateWithPersistentEffects, // Use the game state with persistent effects applied
+    attacker: isAttacker ? updatedPlayer : gameStateWithPersistentEffects.attacker,
+    defender: !isAttacker ? updatedPlayer : gameStateWithPersistentEffects.defender,
     infrastructure: newInfrastructure,
-    actions: [...G.actions, newAction],
-    message: G.message || `${card!.name} thrown at ${targetInfrastructure.name}`,
+    actions: [...gameStateWithPersistentEffects.actions, newAction],
+    message: gameStateWithPersistentEffects.message || `${card!.name} thrown at ${targetInfrastructure.name}`,
     attackerScore,
     defenderScore,
     // Add pending reaction if needed
     pendingReactions: shouldTriggerReaction ? [
-      ...(G.pendingReactions || []),
+      ...(gameStateWithPersistentEffects.pendingReactions || []),
       {
         card: cardCopy,
         source: playerID,
-        target: isAttacker ? G.defender?.id || '' : G.attacker?.id || ''
+        target: isAttacker ? gameStateWithPersistentEffects.defender?.id || '' : gameStateWithPersistentEffects.attacker?.id || ''
       }
-    ] : G.pendingReactions,
+    ] : gameStateWithPersistentEffects.pendingReactions,
     // Include any pending chain choice that might have been set
-    pendingChainChoice: G.pendingChainChoice
+    pendingChainChoice: gameStateWithPersistentEffects.pendingChainChoice
   } as GameState;
   
   console.log(`Final game state - pendingChainChoice: ${finalGameState.pendingChainChoice ? 'YES' : 'NO'}`);

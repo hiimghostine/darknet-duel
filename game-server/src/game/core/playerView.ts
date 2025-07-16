@@ -136,6 +136,9 @@ export const createPlayerView = ({ G, ctx, playerID }: {
     pendingWildcardChoice: G.pendingWildcardChoice,
     pendingCardChoice: G.pendingCardChoice,
     pendingHandChoice: G.pendingHandChoice,
+    // Include effects data
+    temporaryEffects: G.temporaryEffects,
+    persistentEffects: G.persistentEffects,
     // Add debug info that will be visible on the client
     debug: {
       attackerId: attackerId,
@@ -167,7 +170,10 @@ const filterGameStateForSpectators = (G: GameState): GameState => {
     ...G,
     attacker: filteredAttacker,
     defender: filteredDefender,
-    playerRole: 'spectator' // Flag as spectator view
+    playerRole: 'spectator', // Flag as spectator view
+    // Include effects data for spectators
+    temporaryEffects: G.temporaryEffects,
+    persistentEffects: G.persistentEffects
   };
 };
 
