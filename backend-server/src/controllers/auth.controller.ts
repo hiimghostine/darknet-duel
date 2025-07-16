@@ -8,6 +8,65 @@ const authService = new AuthService();
 
 export class AuthController {
   
+  /**
+   * @swagger
+   * /api/auth/register:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: Register a new user account
+   *     description: Creates a new user account in the Darknet Duel system
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/RegisterRequest'
+   *           example:
+   *             email: "hacker@darknet.com"
+   *             username: "CyberNinja"
+   *             password: "securepassword123"
+   *     responses:
+   *       201:
+   *         description: User successfully registered
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
+   *             example:
+   *               message: "User registered successfully"
+   *               user:
+   *                 id: "550e8400-e29b-41d4-a716-446655440000"
+   *                 email: "hacker@darknet.com"
+   *                 username: "CyberNinja"
+   *                 isActive: true
+   *                 gamesPlayed: 0
+   *                 gamesWon: 0
+   *                 gamesLost: 0
+   *                 rating: 1200
+   *               token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   *       400:
+   *         description: Bad request - validation errors
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Email and username are required"
+   *       409:
+   *         description: Conflict - email or username already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Email or username already exists"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Register a new user
   async register(req: Request, res: Response) {
     try {
@@ -63,6 +122,64 @@ export class AuthController {
     }
   }
   
+  /**
+   * @swagger
+   * /api/auth/login:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: Login a user
+   *     description: Authenticates a user and returns a JWT token
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/LoginRequest'
+   *           example:
+   *             email: "hacker@darknet.com"
+   *             password: "securepassword123"
+   *     responses:
+   *       200:
+   *         description: User successfully logged in
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
+   *             example:
+   *               message: "Login successful"
+   *               user:
+   *                 id: "550e8400-e29b-41d4-a716-446655440000"
+   *                 email: "hacker@darknet.com"
+   *                 username: "CyberNinja"
+   *                 isActive: true
+   *                 gamesPlayed: 15
+   *                 gamesWon: 9
+   *                 gamesLost: 6
+   *                 rating: 1350
+   *               token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   *       400:
+   *         description: Bad request - missing email or password
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Email and password are required"
+   *       401:
+   *         description: Unauthorized - invalid credentials or disabled account
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Invalid credentials"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Login user
   async login(req: Request, res: Response) {
     try {
@@ -81,7 +198,11 @@ export class AuthController {
       
       // Check if account is active
       if (!user.isActive) {
-        return res.status(401).json({ message: 'Account is disabled' });
+        return res.status(401).json({ 
+          message: 'This account is inactive!',
+          inactiveReason: user.inactiveReason || 'Account has been deactivated',
+          isInactive: true
+        });
       }
       
       // Verify password
@@ -98,7 +219,7 @@ export class AuthController {
       const expiryValue = process.env.JWT_EXPIRY || '7d';
       const options: SignOptions = { expiresIn: expiryValue as any };
       const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
+        { id: user.id, email: user.email, username: user.username, type: user.type },
         secret,
         options
       );
@@ -117,6 +238,61 @@ export class AuthController {
     }
   }
   
+  /**
+   * @swagger
+   * /api/auth/profile:
+   *   get:
+   *     tags: [Authentication]
+   *     summary: Get current user profile
+   *     description: Retrieves the authenticated user's profile information
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: User profile retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 user:
+   *                   $ref: '#/components/schemas/User'
+   *             example:
+   *               user:
+   *                 id: "550e8400-e29b-41d4-a716-446655440000"
+   *                 email: "hacker@darknet.com"
+   *                 username: "CyberNinja"
+   *                 isActive: true
+   *                 lastLogin: "2023-12-01T10:30:00Z"
+   *                 gamesPlayed: 15
+   *                 gamesWon: 9
+   *                 gamesLost: 6
+   *                 rating: 1350
+   *                 createdAt: "2023-11-01T08:00:00Z"
+   *                 updatedAt: "2023-12-01T10:30:00Z"
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Authentication required. No token provided."
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "User not found"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Get current user profile
   async getProfile(req: Request, res: Response) {
     try {

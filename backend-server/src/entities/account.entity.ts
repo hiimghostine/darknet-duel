@@ -1,5 +1,11 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
+export enum AccountType {
+  USER = 'user',
+  MOD = 'mod',
+  ADMIN = 'admin'
+}
+
 @Entity({ name: "accounts" })
 export class Account {
   @PrimaryGeneratedColumn("uuid")
@@ -11,11 +17,21 @@ export class Account {
   @Column({ unique: true })
   username: string;
 
+  @Column({ 
+    type: 'enum', 
+    enum: AccountType, 
+    default: AccountType.USER 
+  })
+  type: AccountType;
+
   @Column()
   password: string; // Will store hashed password, not plaintext
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ nullable: true, type: 'text' })
+  inactiveReason: string | null;
 
   @Column({ nullable: true })
   lastLogin: Date;
@@ -31,6 +47,21 @@ export class Account {
   
   @Column({ default: 1200 })
   rating: number;
+
+  @Column({ nullable: true, length: 30 })
+  bio: string;
+
+  @Column({ type: 'longblob', nullable: true })
+  avatar: Buffer;
+
+  @Column({ nullable: true, length: 100 })
+  avatarMimeType: string;
+
+  @Column({ default: 0 })
+  creds: number;
+
+  @Column({ default: 0 })
+  crypts: number;
 
   @CreateDateColumn()
   createdAt: Date;

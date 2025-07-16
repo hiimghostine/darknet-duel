@@ -15,6 +15,7 @@ export interface User {
   id: string;
   email: string;
   username: string;
+  type: 'user' | 'mod' | 'admin';
   isActive: boolean;
   lastLogin: string | null;
   gamesPlayed: number;
@@ -22,6 +23,8 @@ export interface User {
   gamesLost: number;
   points: number;
   level: number;
+  creds: number;
+  crypts: number;
   createdAt: string;
   updatedAt: string;
 }

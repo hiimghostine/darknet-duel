@@ -18,6 +18,7 @@ type LoginFormData = z.infer<typeof LoginSchema>;
 
 const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
+  const [showAuthErrorFlash, setShowAuthErrorFlash] = useState(false);
   const { login, isLoading, error, clearError } = useAuthStore();
   
   const {
@@ -49,6 +50,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
+      
+      // Show auth error flash animation (red flash + vibration for 500ms)
+      setShowAuthErrorFlash(true);
+      setTimeout(() => setShowAuthErrorFlash(false), 500);
+      
       // Note: The actual error handling is managed by the auth store
       console.error('Authentication error:', error);
     }
@@ -62,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           <div className="mr-2 text-base">!</div>
           <div>
             <div className="font-bold mb-0.5">AUTHENTICATION_ERROR</div>
-            <div>{error}</div>
+            <div className="whitespace-pre-line">{error}</div>
           </div>
         </div>
       )}
@@ -77,7 +83,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
               <input
                 type="email"
                 placeholder="Enter your email"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
                 {...register('email')}
                 disabled={isLoading}
               />
@@ -98,7 +104,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
               <input
                 type="password"
                 placeholder="Enter your password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
                 {...register('password')}
                 disabled={isLoading}
               />
@@ -114,7 +120,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           <div className="form-control mt-4">
             <button 
               type="submit" 
-              className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''}`}
+              className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
               disabled={isLoading}
             >
               <div className="relative z-10 flex items-center justify-center gap-2">
