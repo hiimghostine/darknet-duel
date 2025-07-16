@@ -24,7 +24,7 @@ Mid game:
 
 Late game:
 - Dynamic system updates in dashboard
-- Admin panel (once everything is gucci)
+/ - Admin panel (once everything is gucci) ongoing
 - Add bonuses to first-time purchases
 - Reporting system aaaaaaaaaaaaaaaaaaaaaa
 - Moderators pud??? We need tags (OMG ANOTHER COSMETIC????)

@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import bossingImage from '../assets/bossing.png';
 
 import { FaUsers, FaGamepad, FaComments, FaCogs, FaShieldAlt, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 
@@ -91,8 +92,17 @@ const AdminPage: React.FC = () => {
           
           {/* Admin-specific typography */}
           <div className="absolute top-40 left-10 opacity-5 text-9xl font-mono text-error">ADM</div>
-          <div className="absolute bottom-40 right-10 opacity-5 text-9xl font-mono text-error">SYS</div>
+          <div className="absolute bottom-40 right-10 opacity-5 text-9xl font-mono text-error">BOSS?</div>
           <div className="absolute top-1/4 right-20 opacity-5 text-7xl font-mono text-error rotate-12">ROOT</div>
+          
+          {/* Bossing image in bottom-right */}
+          <div className="absolute bottom-4 right-4 opacity-20 pointer-events-none">
+            <img 
+              src={bossingImage} 
+              alt="Admin Bossing" 
+              className="w-48 h-auto"
+            />
+          </div>
         </div>
 
         {/* Main content */}
