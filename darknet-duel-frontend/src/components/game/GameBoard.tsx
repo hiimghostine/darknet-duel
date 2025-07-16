@@ -128,7 +128,7 @@ const GameBoardComponent = (props: GameBoardProps) => {
       console.error('CLIENT: All surrender attempts failed:', error);
       alert('Unable to surrender. Please try again or refresh the page.');
     }
-  };
+  }, [moves, props.client]);
 
   if (!G || !ctx) {
     return <div className="loading">Loading game data...</div>;
@@ -195,23 +195,14 @@ const GameBoardComponent = (props: GameBoardProps) => {
 
   // If game is over, show only the winner lobby page
   if (currentPhase === 'gameOver' || G.winner) {
-    // Make sure we have these move functions available and properly defined
-    const surrender = () => {
-      console.log('CLIENT: Available moves:', moves);
-      
-      if (typeof moves.surrender === 'function') {
-        try {
-          console.log('CLIENT: Executing surrender move');
-          moves.surrender();
-        } catch (error) {
-          console.error('CLIENT: Error surrendering:', error);
-        }
+    // Helper to make the chat message move - memoized to maintain referential equality
+    const sendChatMessage = useCallback((content: string) => {
       console.log('CLIENT: Trying to send chat message:', content);
       // Debug what moves are available
-      console.log('CLIENT: Available moves:', Object.keys(moves));
+      console.log('CLIENT: Available moves:', Object.keys(moves || {}));
       
       // Execute the move with explicit parameters
-      if (typeof moves.sendChatMessage === 'function') {
+      if (moves && typeof moves.sendChatMessage === 'function') {
         try {
           console.log('CLIENT: Executing sendChatMessage move with content:', content);
           // Important: Pass the content directly as required by the move function
@@ -222,7 +213,7 @@ const GameBoardComponent = (props: GameBoardProps) => {
       } else {
         console.error('CLIENT: sendChatMessage move is not defined or not a function');
         // Try using the client's makeMove function as a fallback
-        if (props.client && typeof props.client.moves.sendChatMessage === 'function') {
+        if (props.client && typeof props.client.moves?.sendChatMessage === 'function') {
           console.log('CLIENT: Attempting to use client.moves.sendChatMessage as fallback');
           props.client.moves.sendChatMessage(content);
         }
@@ -233,9 +224,9 @@ const GameBoardComponent = (props: GameBoardProps) => {
     const requestRematch = useCallback(() => {
       console.log('CLIENT: Trying to request rematch');
       // Debug what moves are available
-      console.log('CLIENT: Available moves for rematch:', Object.keys(moves));
+      console.log('CLIENT: Available moves for rematch:', Object.keys(moves || {}));
       
-      if (typeof moves.requestRematch === 'function') {
+      if (moves && typeof moves.requestRematch === 'function') {
         try {
           console.log('CLIENT: Executing requestRematch move');
           moves.requestRematch();
@@ -245,12 +236,26 @@ const GameBoardComponent = (props: GameBoardProps) => {
       } else {
         console.error('CLIENT: requestRematch move is not defined or not a function');
         // Try using the client's makeMove function as a fallback
-        if (props.client && typeof props.client.moves.requestRematch === 'function') {
+        if (props.client && typeof props.client.moves?.requestRematch === 'function') {
           console.log('CLIENT: Attempting to use client.moves.requestRematch as fallback');
           props.client.moves.requestRematch();
         }
       }
-    };
+    }, [moves, props.client]);
+
+    // Make sure we have the surrender function available
+    const surrender = useCallback(() => {
+      console.log('CLIENT: Available moves:', moves);
+      
+      if (moves && typeof moves.surrender === 'function') {
+        try {
+          console.log('CLIENT: Executing surrender move');
+          moves.surrender();
+        } catch (error) {
+          console.error('CLIENT: Error surrendering:', error);
+        }
+      }
+    }, [moves]);
 
     return (
       <WinnerLobby
@@ -365,8 +370,6 @@ const GameBoardComponent = (props: GameBoardProps) => {
       </div>
     </div>
   );
-};
-
 };
 
 // Create a memoized version of the GameBoard with custom comparison function

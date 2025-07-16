@@ -2,17 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
-import { FaPaperPlane, FaUsers, FaComments } from 'react-icons/fa';
+import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
 
 interface LobbyChatProps {
   chatId?: string;
   className?: string;
+  lobbyId?: string; // Optional lobby ID for per-lobby chat
+  showChannelSwitcher?: boolean; // Whether to show channel switching UI
 }
 
 const LobbyChat: React.FC<LobbyChatProps> = ({ 
   chatId = 'global-lobby', 
-  className = '' 
+  className = '',
+  lobbyId,
+  showChannelSwitcher = false
 }) => {
   const { user } = useAuthStore();
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -25,6 +29,36 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Channel switching state
+  const [currentChannel, setCurrentChannel] = useState<'global' | 'lobby'>('global');
+  const [channels] = useState(() => {
+    const channelList = [
+      { id: 'global', name: 'darknet_lobby', chatId: 'global-lobby' }
+    ];
+    
+    if (lobbyId && showChannelSwitcher) {
+      channelList.push({
+        id: 'lobby',
+        name: `lobby_${lobbyId.substring(0, 8)}`,
+        chatId: `lobby_${lobbyId}`
+      });
+    }
+    
+    return channelList;
+  });
+
+  // Get current channel info
+  const getCurrentChannelInfo = () => {
+    if (showChannelSwitcher && lobbyId) {
+      return currentChannel === 'global' 
+        ? { name: 'darknet_lobby', chatId: 'global-lobby' }
+        : { name: `lobby_${lobbyId.substring(0, 8)}`, chatId: `lobby_${lobbyId}` };
+    }
+    return { name: 'darknet_lobby', chatId: chatId };
+  };
+
+  const channelInfo = getCurrentChannelInfo();
   
   // Profile popup state
   const [profilePopup, setProfilePopup] = useState<{
@@ -76,8 +110,8 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
       setIsConnected(true);
       setError(null);
       
-      // Join the chat room
-      socketInstance.emit('join_chat', { chatId });
+      // Join the current chat room
+      socketInstance.emit('join_chat', { chatId: channelInfo.chatId });
     });
 
     socketInstance.on('disconnect', () => {
@@ -128,16 +162,38 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     setSocket(socketInstance);
 
     return () => {
-      socketInstance.emit('leave_chat', { chatId });
+      socketInstance.emit('leave_chat', { chatId: channelInfo.chatId });
       socketInstance.disconnect();
     };
-  }, [user, chatId]);
+  }, [user, channelInfo.chatId]);
+
+  // Handle channel switching
+  const switchChannel = (newChannel: 'global' | 'lobby') => {
+    if (!socket || newChannel === currentChannel) return;
+    
+    // Leave current channel
+    socket.emit('leave_chat', { chatId: channelInfo.chatId });
+    
+    // Update current channel
+    setCurrentChannel(newChannel);
+    
+    // Clear messages for smooth transition
+    setMessages([]);
+    setConnectedUsers(new Set());
+    
+    // Join new channel
+    const newChannelInfo = newChannel === 'global' 
+      ? { chatId: 'global-lobby' }
+      : { chatId: `lobby_${lobbyId}` };
+    
+    socket.emit('join_chat', newChannelInfo);
+  };
 
   const sendMessage = () => {
     if (!socket || !newMessage.trim()) return;
 
     socket.emit('send_message', {
-      chatId,
+      chatId: channelInfo.chatId,
       message: newMessage.trim()
     });
 
@@ -199,9 +255,33 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
           <div className="p-4 pb-2">
             <div className="font-mono">
               <div className="flex items-baseline justify-between mb-1">
-                <h3 className="text-xl font-bold font-mono">
-                  #DARKNET_LOBBY
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold font-mono">
+                    #{channelInfo.name.toUpperCase()}
+                  </h3>
+                  
+                  {/* Channel switcher */}
+                  {showChannelSwitcher && lobbyId && channels.length > 1 && (
+                    <div className="flex items-center gap-1 ml-3">
+                      <FaExchangeAlt className="text-primary/60 text-xs" />
+                      {channels.map(channel => (
+                        <button
+                          key={channel.id}
+                          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
+                          className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
+                            currentChannel === channel.id
+                              ? 'bg-primary/20 text-primary border border-primary/40'
+                              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10'
+                          }`}
+                        >
+                          <FaHashtag className="inline mr-1" />
+                          {channel.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <div className="text-xs text-base-content/70">
                   {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>

@@ -123,15 +123,18 @@ const LobbyPage: React.FC = () => {
             {/* Main content area */}
             <div>
               <Routes>
-                <Route path="/" element={<LobbyBrowser />} />
+                <Route path="/" element={
+                  <>
+                    <LobbyBrowser />
+                    {/* IRC-style chat at bottom - only for main lobby browser */}
+                    <div className="mt-8">
+                      <LobbyChat chatId="global-lobby" className="" />
+                    </div>
+                  </>
+                } />
                 <Route path="/create" element={<CreateLobby />} />
                 <Route path="/:matchID" element={<LobbyDetail />} />
               </Routes>
-            </div>
-            
-            {/* IRC-style chat at bottom - fixed height to prevent page jumping */}
-            <div className="mt-8">
-              <LobbyChat chatId="global-lobby" className="" />
             </div>
           </div>
         </main>
