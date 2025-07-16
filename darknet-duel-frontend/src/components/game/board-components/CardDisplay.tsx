@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ExtendedCard } from './types';
-// Import helpers from frontend types (these are UI-specific functions)
 import { isAttackerCard, isDefenderCard, isReactiveCardObject } from '../../../types/card.types';
+import { getWildcardTypeDisplay } from '../../../utils/wildcardTypeUtils';
 import '../../../styles/card.css';
 
 interface CardDisplayProps {
@@ -12,6 +12,7 @@ interface CardDisplayProps {
   isDisabled?: boolean;
   showDetails?: boolean;
   className?: string;
+  effectiveCost?: number; // Added for cost reduction display
 }
 
 const CardDisplay: React.FC<CardDisplayProps> = ({
@@ -21,7 +22,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
   isSelected = false,
   isDisabled = false,
   showDetails = true,
-  className = ''
+  className = '',
+  effectiveCost
 }) => {
   const handleClick = (event: React.MouseEvent) => {
     console.log('CardDisplay handleClick:', {
@@ -84,7 +86,12 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       data-card-type={card.type}
     >
       <div className="card-header">
-        <div className="card-cost">{card.cost}</div>
+        <div className="card-cost">
+          {effectiveCost !== undefined && effectiveCost < card.cost && (
+            <span className="original-cost">{card.cost}</span>
+          )}
+          <span className="effective-cost">{effectiveCost !== undefined ? effectiveCost : card.cost}</span>
+        </div>
         <div className="card-name">{card.name}</div>
         {attackVectorDisplay}
       </div>
@@ -94,6 +101,18 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
           <>
             <div className="card-type">{formatCardType(card.type)}</div>
             <div className="card-description">{card.description}</div>
+            {/* DEBUG: Check if flavor exists */}
+            {console.log('🐛 CardDisplay DEBUG:', {
+              cardName: card.name,
+              hasDescription: !!card.description,
+              hasFlavor: !!(card as any).flavor,
+              flavorContent: (card as any).flavor,
+              showDetails,
+              cardKeys: Object.keys(card)
+            })}
+            {(card as any).flavor && (
+              <div className="card-flavor">{(card as any).flavor}</div>
+            )}
             {card.power !== undefined && (
               <div className="card-power">Power: {card.power}</div>
             )}
@@ -111,7 +130,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             <div className="card-special" title={card.specialEffect}>✦</div>
           )}
           {card.wildcardType && (
-            <div className="card-wildcard" title={`Can be played as: ${Array.isArray(card.wildcardType) ? card.wildcardType.join(', ') : card.wildcardType}`}>W</div>
+            <div className="card-wildcard" title={`Can be played as: ${getWildcardTypeDisplay(card.wildcardType)}`}>W</div>
           )}
         </div>
       </div>

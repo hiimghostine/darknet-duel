@@ -4,7 +4,7 @@
  * used by both frontend and backend.
  */
 
-import type { Card, AttackVector, Shield, Vulnerability } from './card.types';
+import type { Card, AttackVector, Shield, Vulnerability, CardType } from './card.types';
 
 /**
  * Player role in the game
@@ -67,6 +67,7 @@ export interface InfrastructureCard {
   damaged?: boolean;     // Track if card has been damaged
   state: InfrastructureState;
   effects?: InfrastructureCardEffect[];
+  critical?: boolean;    // Whether this is a critical infrastructure (added for Phase 3)
   // For backend compatibility
   shields?: Shield[];
 }
@@ -128,6 +129,26 @@ export interface PendingReaction {
   card?: Card;
   source?: string; // Player ID of the card player
   target?: string; // Player ID of the reaction target
+}
+
+/**
+ * Chain effect type - used for lateral movement across infrastructure (Phase 3)
+ */
+export interface ChainEffect {
+  type: 'chain_vulnerability' | 'chain_compromise';
+  sourceCardId: string;
+  playerId: string;
+  availableTargets: string[];
+}
+
+/**
+ * Hand disruption choice - used for hand disruption effects (Phase 3)
+ */
+export interface HandDisruptionChoice {
+  type: 'discard_from_hand';
+  targetPlayerId: string;
+  revealedHand: Card[];
+  count?: number; // Number of cards to discard
 }
 
 /**
@@ -198,6 +219,59 @@ export interface GameState {
     infrastructureChanged: number; // How many times infra cards changed state
     winReason: string;         // Reason for winning
   };
+  
+  // NEW: Wildcard choice system
+  pendingWildcardChoice?: {
+    cardId: string;
+    playerId: string;
+    availableTypes: CardType[];
+    targetInfrastructure?: string;
+    timestamp: number;
+  };
+  
+  // PHASE 3: Chain effect system (lateral movement)
+  pendingChainChoice?: ChainEffect;
+  
+  // PHASE 3: Hand disruption system
+  pendingHandChoice?: HandDisruptionChoice;
+  
+  // Card choice system (for deck selection, etc.)
+  pendingCardChoice?: {
+    playerId: string;
+    availableCards: Card[];
+    choiceType: 'deck_selection' | 'hand_selection' | 'discard_selection';
+    sourceCardId: string;
+    timestamp: number;
+  };
+  
+  // NEW: Temporary effects for wildcard specials
+  temporaryEffects?: {
+    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
+          'restrict_targeting' | 'quantum_protection' | 'honeypot'; // Added Phase 2 & 3 effect types
+    targetId?: string;
+    playerId?: string;
+    duration: number;
+    sourceCardId: string;
+    metadata?: any; // For complex effect data
+  }[];
+  
+  // NEW: Persistent conditional effects (watch for state changes)
+  persistentEffects?: {
+    type: 'on_compromise' | 'on_vulnerability' | 'on_restore' | 'on_shield' | 'on_fortify';
+    targetId: string;           // Infrastructure being watched
+    playerId: string;           // Player who gets the benefit
+    sourceCardId: string;       // Card that created this effect
+    condition: {
+      fromState?: InfrastructureState | 'any';
+      toState: InfrastructureState;
+    };
+    reward: {
+      effect: 'gain_ap' | 'draw_card' | 'gain_resource';
+      amount: number;
+    };
+    autoRemove: boolean;        // Remove after triggering once
+    triggered: boolean;         // Whether this effect has been triggered
+  }[];
   
   // Game configuration (required by backend)
   gameConfig: {

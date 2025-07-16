@@ -2,8 +2,9 @@ import { useState, useCallback } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { ExtendedCard } from '../components/game/board-components/types';
 import { isAttackerCard } from '../types/card.types';
-import { logMoveAttempt } from '../utils/gameDebugUtils';
+import { logMoveAttempt, debugWildcardTargeting } from '../utils/gameDebugUtils';
 import type { InfrastructureCard } from '../types/game.types';
+import { getAvailableCardTypes } from '../utils/wildcardTypeUtils';
 
 /**
  * Hook for card action management in the game
@@ -26,8 +27,26 @@ export function useCardActions(props: BoardProps) {
    * Determine if a card requires targeting based on its type and properties
    */
   const cardNeedsTarget = useCallback((card: ExtendedCard): boolean => {
+    // REMOVED: The early return that was preventing reaction cards from targeting
+    // All reaction cards DO need targeting, regardless of reaction mode
+    
     // Check if the card inherently requires targeting
     if (card.requiresTarget) return true;
+    
+    // Handle wildcard cards specially
+    if (card.type === 'wildcard' && card.wildcardType) {
+      console.log('Checking if wildcard needs target:', card.name, card.wildcardType);
+      // Get available types for this wildcard
+      const availableTypes = getAvailableCardTypes(card.wildcardType);
+      console.log('Wildcard available types:', availableTypes);
+      
+      // Check if any available type requires targeting
+      return availableTypes.some(type => 
+        type === 'attack' || type === 'exploit' || type === 'counter-attack' || 
+        type === 'shield' || type === 'fortify' || type === 'response' || 
+        type === 'reaction' || type === 'counter' || type === 'special'
+      );
+    }
     
     // Check based on card type
     if (isAttackerCard(card.type)) {
@@ -44,7 +63,7 @@ export function useCardActions(props: BoardProps) {
     
     // Return false for cards that don't need targeting
     return false;
-  }, []);
+  }, [props.ctx?.activePlayers, props.playerID]);
   
   /**
    * Determine valid targets for a card
@@ -57,50 +76,144 @@ export function useCardActions(props: BoardProps) {
       return card.validTargets;
     }
     
+    // Handle wildcard cards differently
+    let effectiveCardType = card.type;
+    if (card.type === 'wildcard' && card.wildcardType) {
+      console.log('Getting targets for wildcard:', card.name, card.wildcardType);
+      
+      // Debug wildcard targeting
+      debugWildcardTargeting(card, G);
+      
+      // Get the potential types this wildcard can be played as
+      const availableTypes = getAvailableCardTypes(card.wildcardType);
+      
+      // For wildcards, we'll find the first type that has valid targets
+      // Priority order: exploit, attack, shield, fortify, response, reaction, special
+      // NOTE: exploit comes before attack because exploit can target 'secure' infrastructure
+      // while attack can only target 'vulnerable' infrastructure (which may not exist initially)
+      // NOTE: special comes last because it's less common and should be used only when needed
+      
+      console.log('Available infrastructure states:', G.infrastructure?.map((i: InfrastructureCard) => `${i.name}: ${i.state}`));
+      
+      // Try each type in priority order and pick the first one that has valid targets
+      const typeToTry = ['exploit', 'attack', 'shield', 'fortify', 'response', 'reaction', 'special'];
+      
+      for (const type of typeToTry) {
+        if (availableTypes.includes(type as any)) {
+          // Test if this type would have valid targets by checking infrastructure states
+          let potentialTargets: string[] = [];
+          
+          if (G.infrastructure) {
+            switch (type) {
+              case 'special':
+                // Special cards can target compromised infrastructure, fallback to all
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) => infra.state === 'compromised')
+                  .map((infra: InfrastructureCard) => infra.id);
+                if (potentialTargets.length === 0) {
+                  potentialTargets = G.infrastructure.map((infra: InfrastructureCard) => infra.id);
+                }
+                break;
+              case 'exploit':
+                // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) =>
+                    infra.state === 'secure' ||
+                    infra.state === 'fortified' ||
+                    infra.state === 'fortified_weaken'
+                  )
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              case 'attack':
+                // Attack cards can only target vulnerable infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) => infra.state === 'vulnerable')
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              case 'shield':
+                // Shield cards can target non-shielded/fortified infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) =>
+                    infra.state !== 'shielded' && infra.state !== 'fortified'
+                  )
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              case 'fortify':
+                // Fortify cards can only target shielded infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) => infra.state === 'shielded')
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              case 'response':
+                // Response cards can only target compromised infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) => infra.state === 'compromised')
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              case 'reaction':
+                // Reaction cards can target vulnerable or compromised infrastructure
+                potentialTargets = G.infrastructure
+                  .filter((infra: InfrastructureCard) =>
+                    infra.state === 'vulnerable' || infra.state === 'compromised'
+                  )
+                  .map((infra: InfrastructureCard) => infra.id);
+                break;
+              default:
+                potentialTargets = G.infrastructure.map((infra: InfrastructureCard) => infra.id);
+            }
+          }
+          
+          console.log(`Testing ${type} type: ${potentialTargets.length} potential targets`);
+          
+          if (potentialTargets.length > 0) {
+            effectiveCardType = type as any;
+            console.log(`Selected ${type} as effective card type (${potentialTargets.length} targets available)`);
+            break;
+          }
+        }
+      }
+      
+      console.log('Using effective card type for targeting:', effectiveCardType);
+    }
+    
     // Otherwise determine targets based on card type
     let targets: string[] = [];
     
     if (G.infrastructure) {
+      // For special cards like Lateral Movement, prioritize compromised infrastructure
+      if (effectiveCardType === 'special') {
+        // For special effect cards (like lateral movement), prioritize compromised infrastructure
+        const compromisedTargets = G.infrastructure
+          .filter((infra: InfrastructureCard) => infra.state === 'compromised')
+          .map((infra: InfrastructureCard) => infra.id);
+          
+        // If there are compromised targets, only use those (for lateral movement)
+        if (compromisedTargets.length > 0) {
+          targets = compromisedTargets;
+        } else {
+          // Fall back to other infrastructure as targets
+          targets = G.infrastructure.map((infra: InfrastructureCard) => infra.id);
+        }
+      }
       // For attack cards, only vulnerable infrastructure is a valid target
-      if (isAttackerCard(card.type) && card.type === 'attack') {
+      else if ((isAttackerCard(effectiveCardType) && effectiveCardType === 'attack') || 
+          (card.type === 'wildcard' && card.wildcardType === 'attack')) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => infra.state === 'vulnerable')
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For exploit cards, target secure, fortified, or fortified_weaken infrastructure
-      else if (isAttackerCard(card.type) && card.type === 'exploit') {
+      // For exploit cards, target secure or shielded infrastructure
+      else if ((isAttackerCard(effectiveCardType) && effectiveCardType === 'exploit') || 
+               (card.type === 'wildcard' && card.wildcardType === 'exploit')) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => 
             infra.state === 'secure' || 
-            infra.state === 'fortified' || 
-            infra.state === 'fortified_weaken'
+            infra.state === 'shielded'
           )
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For shield cards, only secure infrastructure is a valid target
-      else if (card.type === 'shield') {
-        targets = G.infrastructure
-          .filter((infra: InfrastructureCard) => infra.state === 'secure')
-          .map((infra: InfrastructureCard) => infra.id);
-      }
-      // For fortify cards, only shielded infrastructure is a valid target
-      else if (card.type === 'fortify') {
-        targets = G.infrastructure
-          .filter((infra: InfrastructureCard) => infra.state === 'shielded')
-          .map((infra: InfrastructureCard) => infra.id);
-      }
-      // For response/reaction cards, target compromised or vulnerable infrastructure
-      else if (card.type === 'response' || card.type === 'reaction') {
-        targets = G.infrastructure
-          .filter((infra: InfrastructureCard) => 
-            infra.state === 'compromised' || 
-            infra.state === 'vulnerable' || 
-            infra.vulnerabilities?.length > 0
-          )
-          .map((infra: InfrastructureCard) => infra.id);
-      }
-      // For counter-attack and counter cards, all infrastructure are valid targets
-      else if (card.type === 'counter-attack' || card.type === 'counter') {
+      // For all other card types, provide all infrastructure as targets
+      else {
         targets = G.infrastructure
           .map((infra: InfrastructureCard) => infra.id);
       }
@@ -172,10 +285,9 @@ export function useCardActions(props: BoardProps) {
     if (!card || !isActive) return;
     if (targetMode) return;
     
-    // If it's a card that needs targeting (any card that requires infrastructure targeting)
-    if ((isAttackerCard(card.type) && (card.type === 'attack' || card.type === 'exploit' || card.type === 'counter-attack' || card.type === 'counter')) || 
-        (card.type === 'shield' || card.type === 'fortify' || card.type === 'response' || card.type === 'reaction')) {
-      console.log(`Throwing ${card.type} card:`, card.name);
+    // Check if this card needs targeting - handles both regular and wildcard cards
+    if (cardNeedsTarget(card)) {
+      console.log(`Throwing card:`, card.name, card.type, card.wildcardType);
       const targets = getValidTargets(card);
       
       if (targets.length > 0) {
@@ -183,7 +295,7 @@ export function useCardActions(props: BoardProps) {
         setTargetMode(true);
         setValidTargets(targets);
       } else {
-        console.log(`No valid targets found for ${card.type} card`);
+        console.log(`No valid targets found for ${card.name} card`);
       }
     }
   };
@@ -209,6 +321,7 @@ export function useCardActions(props: BoardProps) {
     setTimeout(() => {
       // Use throwCard for targeted card plays instead of playCard
       // throwCard properly handles both the card and infrastructure target
+      console.log(`DEBUG: Calling moves.throwCard with cardId: ${selectedCard.id}, infraId: ${infraId}`);
       moves.throwCard(selectedCard.id, infraId);
       resetTargeting();
     }, 300);

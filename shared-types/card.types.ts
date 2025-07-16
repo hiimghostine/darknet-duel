@@ -34,6 +34,9 @@ export type CardType =
   | 'response'       // Recovers compromised infrastructure (1 AP)
   | 'reaction'       // Counters attacker cards reactively (1 AP)
   
+  // Special effect card types
+  | 'special'        // Special effect cards (chain effects, lateral movement, etc.)
+  
   // Legacy/Backend compatibility types
   | 'counter';       // Alias for 'counter-attack' used in backend code
 
@@ -76,6 +79,10 @@ export interface Card {
   lookAt?: number;        // Number of cards to look at
   specialEffect?: string; // Special effect identifier
   preventReaction?: boolean; // Whether card prevents reactions
+  onCompromise?: {        // Effects triggered when a target becomes compromised
+    effect: string;       // Effect type (e.g., 'gain_ap')
+    amount?: number;      // Amount for numeric effects
+  }
   
   // Additional properties
   leadsTo?: string[];     // Cards this can lead to

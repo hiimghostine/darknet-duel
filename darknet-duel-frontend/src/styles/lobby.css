@@ -515,7 +515,7 @@ button:disabled {
   max-width: 100vw;
   color: #e6e6e6;
   display: flex;
-  justify-content: center;
+  justify-content: stretch;
   overflow: hidden;
 }
 

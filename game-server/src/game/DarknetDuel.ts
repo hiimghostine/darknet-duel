@@ -10,6 +10,11 @@ import { setupPhase, playingPhase, gameOverPhase } from './core/gamePhases';
 
 // Import actions
 import { cycleCardMove, playCardMove, endTurnMove, throwCardMove } from './actions/playerActions';
+import { chooseWildcardTypeMove } from './moves/chooseWildcardType';
+import { chooseChainTargetMove } from './moves/chooseChainTarget';
+import { chooseHandDiscardMove } from './moves/chooseHandDiscard';
+import { chooseCardFromDeckMove } from './moves/chooseCardFromDeck';
+import { devCheatAddCardMove } from './moves/devCheatAddCard';
 
 /**
  * Darknet Duel Game Definition
@@ -115,6 +120,53 @@ const DarknetDuel: Game<GameState> = {
     
     // End the current player's turn
     endTurn: (props) => endTurnMove(props),
+    
+    // Choose a type for a wildcard card
+    chooseWildcardType: (props, args) => {
+      // Handle both formats: direct type or object with type property
+      const chosenType = typeof args === 'string' ? args : args?.type;
+      return chooseWildcardTypeMove(props, chosenType);
+    },
+    
+    // Choose target for chain effect (lateral movement)
+    chooseChainTarget: (props, args) => {
+      // Handle both formats: direct string or object with targetId
+      const targetInfrastructureId = typeof args === 'string' ? args : args?.targetId;
+      return chooseChainTargetMove(props.G, props.ctx, props.playerID, targetInfrastructureId);
+    },
+    
+    // Choose cards to discard from opponent's hand (hand disruption)
+    chooseHandDiscard: (props, args) => {
+      // Handle both formats: array of strings or object with cardIds
+      const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+      return chooseHandDiscardMove(props.G, props.ctx, props.playerID, cardIds);
+    },
+    
+    // Choose a card from deck (AI-Powered Attack effect)
+    chooseCardFromDeck: (props, args) => {
+      // Handle both formats: direct string or object with cardId
+      const selectedCardId = typeof args === 'string' ? args : args?.cardId;
+      return chooseCardFromDeckMove(props.G, props.ctx, props.playerID, selectedCardId);
+    },
+    
+    // DEVELOPER CHEAT MOVE - Add any card to player's hand (development only)
+    devCheatAddCard: (props, args) => {
+      // Enhanced debugging: Log what we received
+      console.log('🔧 CHEAT WRAPPER: Raw args received:', args);
+      console.log('🔧 CHEAT WRAPPER: Args type:', typeof args);
+      console.log('🔧 CHEAT WRAPPER: Args keys:', Object.keys(args || {}));
+      console.log('🔧 CHEAT WRAPPER: Props playerID:', props.playerID);
+      
+      // Handle card object passed from frontend
+      const card = typeof args === 'object' ? args : null;
+      if (!card) {
+        console.error('devCheatAddCard: Invalid card object provided - args was:', args);
+        return props.G;
+      }
+      
+      console.log('🔧 CHEAT WRAPPER: Calling devCheatAddCardMove with card:', card);
+      return devCheatAddCardMove(props.G, props.ctx, props.playerID, card);
+    },
     
     // Skip reaction during reaction stage
     skipReaction: (props) => {

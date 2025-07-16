@@ -131,6 +131,14 @@ export const createPlayerView = ({ G, ctx, playerID }: {
     isAttacker: isAttacker,
     isDefender: isDefender,
     playerID: playerID,
+    // Include pending choices that the player needs to make
+    pendingChainChoice: G.pendingChainChoice,
+    pendingWildcardChoice: G.pendingWildcardChoice,
+    pendingCardChoice: G.pendingCardChoice,
+    pendingHandChoice: G.pendingHandChoice,
+    // Include effects data
+    temporaryEffects: G.temporaryEffects,
+    persistentEffects: G.persistentEffects,
     // Add debug info that will be visible on the client
     debug: {
       attackerId: attackerId,
@@ -138,7 +146,7 @@ export const createPlayerView = ({ G, ctx, playerID }: {
       playerIdStr: playerIdStr,
       directIdMatch: directIdMatch,
       playOrderIndex: ctx.playOrder.indexOf(playerIdStr),
-      roleDetectionMethod: directIdMatch ? 'directIdMatch' : 
+      roleDetectionMethod: directIdMatch ? 'directIdMatch' :
                           ctx.playOrder.includes(playerIdStr) ? 'playOrder' : 'playerID'
     }
   };
@@ -162,7 +170,10 @@ const filterGameStateForSpectators = (G: GameState): GameState => {
     ...G,
     attacker: filteredAttacker,
     defender: filteredDefender,
-    playerRole: 'spectator' // Flag as spectator view
+    playerRole: 'spectator', // Flag as spectator view
+    // Include effects data for spectators
+    temporaryEffects: G.temporaryEffects,
+    persistentEffects: G.persistentEffects
   };
 };
 

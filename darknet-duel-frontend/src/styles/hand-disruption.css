@@ -1,0 +1,130 @@
+/* Hand Disruption UI Styles for Darknet Duel */
+
+.hand-disruption-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.hand-disruption-container {
+  background: #1a1a1a;
+  border: 2px solid #cc3333;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #e0e0e0;
+  box-shadow: 0 0 20px rgba(204, 51, 51, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hand-disruption-container h3 {
+  color: #cc3333;
+  text-align: center;
+  font-size: 24px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.disruption-description {
+  font-size: 16px;
+  text-align: center;
+  margin: 0;
+  color: #cccccc;
+}
+
+.disruption-cards-section {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.player-hand-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 10px;
+}
+
+.discard-card-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.discard-card-option:hover {
+  transform: scale(1);
+}
+
+.disruption-card-display {
+  box-shadow: 0 0 10px rgba(204, 51, 51, 0.4);
+}
+
+.discard-button {
+  background: #cc3333;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.discard-card-option:hover .discard-button {
+  background: #ee4444;
+  transform: scale(1.05);
+}
+
+.no-cards-message {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+}
+
+.disruption-counter {
+  background: rgba(204, 51, 51, 0.2);
+  border: 1px solid #cc3333;
+  border-radius: 4px;
+  padding: 10px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #cc3333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hand-disruption-container {
+    padding: 16px;
+    width: 95%;
+  }
+
+  .player-hand-selection {
+    gap: 10px;
+  }
+
+  .discard-card-option {
+    transform: scale(0.8);
+  }
+}

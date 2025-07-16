@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { logGameState } from '../utils/gameDebugUtils';
 
 /**
@@ -16,6 +16,16 @@ export function useGameState(
   const [currentPlayerObj, setCurrentPlayerObj] = useState<any>(null);
   const [opponent, setOpponent] = useState<any>(null);
   const [currentPhase, setCurrentPhase] = useState<string>('');
+  
+  // Memoize key values to prevent unnecessary callback recreation
+  const memoizedDependencies = useMemo(() => ({
+    attackerId: G?.attacker?.id,
+    defenderId: G?.defender?.id,
+    isAttacker: G?.isAttacker,
+    phase: ctx?.phase,
+    playerInfo: ctx?.playerInfo,
+    playerID
+  }), [G?.attacker?.id, G?.defender?.id, G?.isAttacker, ctx?.phase, ctx?.playerInfo, playerID]);
   
   // Helper to extract player objects based on role and connection
   const updatePlayerObjects = useCallback(() => {
@@ -50,14 +60,29 @@ export function useGameState(
         setOpponentDisconnected(!opponentInfo.isConnected);
       }
     }
-  }, [G, ctx, playerID]);
+  }, [
+    // Use specific dependencies instead of entire G/ctx objects
+    memoizedDependencies.attackerId,
+    memoizedDependencies.defenderId,
+    memoizedDependencies.isAttacker,
+    memoizedDependencies.phase,
+    memoizedDependencies.playerInfo,
+    memoizedDependencies.playerID,
+    G?.attacker,
+    G?.defender,
+    ctx?.playerInfo
+  ]);
   
-  // Update player objects when the game state changes
+  // Update player objects when the key dependencies change
   useEffect(() => {
-    if (G && ctx) {
-      updatePlayerObjects();
-    }
-  }, [G, ctx, updatePlayerObjects]);
+    updatePlayerObjects();
+  }, [updatePlayerObjects]);
+  
+  // Memoize role calculations to prevent recalculation
+  const roleFlags = useMemo(() => ({
+    isAttacker: G?.isAttacker !== undefined ? G.isAttacker : G?.attacker?.id === playerID,
+    isDefender: G?.isDefender !== undefined ? G.isDefender : G?.defender?.id === playerID
+  }), [G?.isAttacker, G?.isDefender, G?.attacker?.id, G?.defender?.id, playerID]);
   
   return {
     currentPlayerObj,
@@ -65,8 +90,8 @@ export function useGameState(
     opponentDisconnected,
     currentPhase,
     
-    // Check if the player is attacker or defender
-    isAttacker: G?.isAttacker !== undefined ? G.isAttacker : G?.attacker?.id === playerID,
-    isDefender: G?.isDefender !== undefined ? G.isDefender : G?.defender?.id === playerID
+    // Use memoized role flags
+    isAttacker: roleFlags.isAttacker,
+    isDefender: roleFlags.isDefender
   };
 }

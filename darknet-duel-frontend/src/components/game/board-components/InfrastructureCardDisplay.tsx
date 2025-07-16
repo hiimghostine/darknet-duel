@@ -2,6 +2,16 @@ import React from 'react';
 // Import from shared types directly using the main module
 import type { InfrastructureCard, AttackVector, Vulnerability } from 'shared-types';
 import '../../../styles/infrastructure-card.css';
+import TemporaryEffectsDisplay from './TemporaryEffectsDisplay';
+
+interface TemporaryEffect {
+  type: string;
+  targetId?: string;
+  playerId?: string;
+  duration: number;
+  sourceCardId: string;
+  metadata?: Record<string, unknown>;
+}
 
 interface InfrastructureCardDisplayProps {
   card: InfrastructureCard;
@@ -12,6 +22,7 @@ interface InfrastructureCardDisplayProps {
   animatingAttack?: boolean;
   showDetails?: boolean;
   className?: string;
+  temporaryEffects?: TemporaryEffect[];
 }
 
 const InfrastructureCardDisplay: React.FC<InfrastructureCardDisplayProps> = ({
@@ -22,7 +33,8 @@ const InfrastructureCardDisplay: React.FC<InfrastructureCardDisplayProps> = ({
   isTargeted = false,
   animatingAttack = false,
   showDetails = true,
-  className = ''
+  className = '',
+  temporaryEffects = []
 }) => {
   const handleClick = () => {
     if (isTargetable && onClick) {
@@ -37,10 +49,14 @@ const InfrastructureCardDisplay: React.FC<InfrastructureCardDisplayProps> = ({
   const damagedClass = card.damaged ? 'infra-damaged' : '';
   const targetedClass = isTargeted ? 'infra-targeted' : '';
   const animatingClass = animatingAttack ? 'animating-attack' : '';
+  const criticalClass = card.critical ? 'infra-critical' : '';
+  
+  // Filter effects that apply to this card
+  const cardEffects = temporaryEffects.filter(effect => effect.targetId === card.id);
 
   return (
     <div 
-      className={`infrastructure-card ${stateClass} ${targetableClass} ${selectedClass} ${damagedClass} ${targetedClass} ${animatingClass} ${className}`}
+      className={`infrastructure-card ${stateClass} ${targetableClass} ${selectedClass} ${damagedClass} ${targetedClass} ${animatingClass} ${criticalClass} ${className}`}
       onClick={handleClick}
       data-card-id={card.id}
       data-card-type={card.type}
@@ -48,6 +64,7 @@ const InfrastructureCardDisplay: React.FC<InfrastructureCardDisplayProps> = ({
       <div className="infra-header">
         <div className="infra-name">{card.name}</div>
         <div className="infra-type">{formatInfraType(card.type)}</div>
+        {card.critical && <div className="critical-indicator">CRITICAL</div>}
       </div>
       
       {showDetails && (
@@ -94,6 +111,14 @@ const InfrastructureCardDisplay: React.FC<InfrastructureCardDisplayProps> = ({
       
       <div className="infra-footer">
         {card.flavor && <div className="infra-flavor">"{card.flavor}"</div>}
+        
+        {/* Display temporary effects active on this infrastructure */}
+        {cardEffects.length > 0 && (
+          <TemporaryEffectsDisplay 
+            effects={cardEffects} 
+            targetInfrastructure={card}
+          />
+        )}
       </div>
     </div>
   );

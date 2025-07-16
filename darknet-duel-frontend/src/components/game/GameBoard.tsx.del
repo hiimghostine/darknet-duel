@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import isEqual from 'lodash/isEqual';
 // Import both shared and local types
@@ -7,6 +7,8 @@ import type { GameState } from '../../types/game.types';
 import { useMemoizedValue } from '../../hooks/useMemoizedValue';
 import '../../styles/gameboard-v2.css'; // Import the main styles
 import '../../styles/card-throw.css'; // Import targeting styles
+import '../../styles/chain-effect.css'; // Import chain effect styles
+import '../../styles/hand-disruption.css'; // Import hand disruption styles
 
 // Import all the extracted components
 import PlayerHand from './board-components/PlayerHand';
@@ -15,9 +17,18 @@ import GameStatus from './board-components/GameStatus';
 import InfrastructureArea from './board-components/InfrastructureArea';
 import PlayerInfo from './board-components/PlayerInfo';
 import GameControls from './board-components/GameControls';
-import PowerBar from './board-components/PowerBar';
-import RoundTracker from './board-components/RoundTracker';
 import WinnerLobby from './board-components/WinnerLobby';
+
+// Import individual components
+import RoundTracker from './board-components/RoundTracker';
+import PowerBar from './board-components/PowerBar';
+
+// Phase 2 and 3 UI components
+import WildcardChoiceUI from './board-components/WildcardChoiceUI';
+import ChainEffectUI from './board-components/ChainEffectUI';
+import ChainTargetUI from './board-components/ChainTargetUI';
+import HandDisruptionUI from './board-components/HandDisruptionUI';
+import CardSelectionUI from './board-components/CardSelectionUI';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -32,6 +43,11 @@ interface GameBoardProps extends BoardProps<GameState> {
 
 // The original non-memoized GameBoard component implementation
 const GameBoardComponent = (props: GameBoardProps) => {
+  // FORCE DEBUG AT VERY TOP
+  console.log('🚨 GameBoard ENTRY - props:', props);
+  console.log('🚨 GameBoard ENTRY - G:', props.G);
+  console.log('🚨 GameBoard ENTRY - pendingChainChoice:', props.G?.pendingChainChoice);
+  
   // Destructure props but keep the original props object accessible
   const {
     G,
@@ -70,7 +86,6 @@ const GameBoardComponent = (props: GameBoardProps) => {
     targetMode, 
     targetedInfraId,
     animatingThrow,
-    processing: cardProcessing,
     playCard, 
     cycleCard, 
     selectCardToThrow, 
@@ -80,13 +95,11 @@ const GameBoardComponent = (props: GameBoardProps) => {
   
   // Turn actions hook
   const { 
-    processing: turnProcessing, 
     handleEndTurn, 
     handleSkipReaction 
   } = useTurnActions(props);
   
-  // Track processing state for UI feedback
-  const isProcessingMove = cardProcessing || turnProcessing;
+  // We're tracking card and turn processing individually as needed
   
   // Handle player surrender - memoize the function to maintain referential equality
   const surrender = useCallback(() => {
@@ -94,29 +107,16 @@ const GameBoardComponent = (props: GameBoardProps) => {
     const confirmed = window.confirm('Are you sure you want to surrender? This will end the game and count as a loss.');
     if (!confirmed) return;
     
-    console.log('CLIENT: Executing surrender move');
-    
-    // First try using the moves.surrender function
-    if (typeof moves.surrender === 'function') {
-      try {
+    try {
+      if (moves.surrender && typeof moves.surrender === 'function') {
         moves.surrender();
-        return; // If this succeeds, we're done
-      } catch (error) {
-        console.error('CLIENT: Error calling moves.surrender:', error);
-        // Continue to try the fallbacks
-      }
-    } else {
-      console.log('CLIENT: surrender move not available in moves, trying alternatives');
-    }
-    
-    // Try using the client's makeMove function as a fallback
-    if (props.client && typeof props.client.moves.surrender === 'function') {
-      try {
+        return;
+      } else if (props.client && props.client.moves && props.client.moves.surrender) {
         props.client.moves.surrender();
         return;
-      } catch (error) {
-        console.error('CLIENT: Error calling client.moves.surrender:', error);
       }
+    } catch (error) {
+      console.error('CLIENT: Error calling surrender:', error);
     }
     
     // As a last resort, try manual move
@@ -195,59 +195,11 @@ const GameBoardComponent = (props: GameBoardProps) => {
 
   // If game is over, show only the winner lobby page
   if (currentPhase === 'gameOver' || G.winner) {
-    // Helper to make the chat message move - memoized to maintain referential equality
-    const sendChatMessage = useCallback((content: string) => {
-      console.log('CLIENT: Trying to send chat message:', content);
-      // Debug what moves are available
-      console.log('CLIENT: Available moves:', Object.keys(moves || {}));
-      
-      // Execute the move with explicit parameters
-      if (moves && typeof moves.sendChatMessage === 'function') {
-        try {
-          console.log('CLIENT: Executing sendChatMessage move with content:', content);
-          // Important: Pass the content directly as required by the move function
-          moves.sendChatMessage(content);
-        } catch (error) {
-          console.error('CLIENT: Error sending chat message:', error);
-        }
-      } else {
-        console.error('CLIENT: sendChatMessage move is not defined or not a function');
-        // Try using the client's makeMove function as a fallback
-        if (props.client && typeof props.client.moves?.sendChatMessage === 'function') {
-          console.log('CLIENT: Attempting to use client.moves.sendChatMessage as fallback');
-          props.client.moves.sendChatMessage(content);
-        }
-      }
-    }, [moves, props.client]);
-
-    // Helper to make the rematch request move - memoized to maintain referential equality
-    const requestRematch = useCallback(() => {
-      console.log('CLIENT: Trying to request rematch');
-      // Debug what moves are available
-      console.log('CLIENT: Available moves for rematch:', Object.keys(moves || {}));
-      
-      if (moves && typeof moves.requestRematch === 'function') {
-        try {
-          console.log('CLIENT: Executing requestRematch move');
-          moves.requestRematch();
-        } catch (error) {
-          console.error('CLIENT: Error requesting rematch:', error);
-        }
-      } else {
-        console.error('CLIENT: requestRematch move is not defined or not a function');
-        // Try using the client's makeMove function as a fallback
-        if (props.client && typeof props.client.moves?.requestRematch === 'function') {
-          console.log('CLIENT: Attempting to use client.moves.requestRematch as fallback');
-          props.client.moves.requestRematch();
-        }
-      }
-    }, [moves, props.client]);
-
-    // Make sure we have the surrender function available
-    const surrender = useCallback(() => {
+    // Make sure we have these move functions available and properly defined
+    const surrender = () => {
       console.log('CLIENT: Available moves:', moves);
       
-      if (moves && typeof moves.surrender === 'function') {
+      if (typeof moves.surrender === 'function') {
         try {
           console.log('CLIENT: Executing surrender move');
           moves.surrender();
@@ -255,33 +207,70 @@ const GameBoardComponent = (props: GameBoardProps) => {
           console.error('CLIENT: Error surrendering:', error);
         }
       }
-    }, [moves]);
-
-    return (
-      <WinnerLobby
-        G={memoizedG as unknown as SharedGameState}
-        playerID={playerID || undefined}
-        moves={useMemo(() => ({
-          sendChatMessage,
-          requestRematch,
-          surrender
-        }), [sendChatMessage, requestRematch, surrender])}
-        isAttacker={isAttacker}
-      />
-    );
+      
+      // Create empty functions for required moves props that aren't implemented yet
+      const sendChatMessage = useCallback((content: string) => {
+        console.log('Chat message would be sent:', content);
+      }, []);
+      
+      const requestRematch = useCallback(() => {
+        console.log('Rematch would be requested');
+      }, []);
+      
+      return (
+        <WinnerLobby
+          G={memoizedG as unknown as SharedGameState}
+          playerID={playerID || undefined}
+          isAttacker={isAttacker}
+          moves={{
+            sendChatMessage,
+            requestRematch,
+            surrender
+          }}
+        />
+      );
+    };
+    
+    return surrender();
   }
   
+  // Create the handler for wildcard type choice - Phase 2
+  const handleChooseWildcardType = useCallback((type: string) => {
+    if (moves.chooseWildcardType) {
+      moves.chooseWildcardType({ type });
+    }
+  }, [moves]);
+  
+  // Create the handler for chain target choice - Phase 3
+  const handleChooseChainTarget = useCallback((targetId: string) => {
+    if (moves.chooseChainTarget) {
+      moves.chooseChainTarget({ targetId });
+      console.log('Chain target selected:', targetId);
+    }
+  }, [moves]);
+  
+  // Create the handler for hand discard choice - Phase 3
+  const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
+    if (moves.chooseHandDiscard) {
+      moves.chooseHandDiscard({ cardIds });
+      console.log('Hand cards selected for discard:', cardIds);
+    }
+  }, [moves]);
+  
+  // Create the handler for card selection from deck - AI-Powered Attack
+  const handleChooseCardFromDeck = useCallback((cardId: string) => {
+    if (moves.chooseCardFromDeck) {
+      moves.chooseCardFromDeck({ cardId });
+      console.log('Card selected from deck:', cardId);
+    }
+  }, [moves]);
+
   // Otherwise show the regular game UI
+  console.log('🟡 GameBoard rendering with G:', G);
+  console.log('🟡 GameBoard pendingChainChoice:', G.pendingChainChoice);
+  
   return (
     <div className={containerClass}>
-      {isProcessingMove && <div className="move-indicator">Processing move...</div>}
-      
-      {/* Connection status indicator */}
-      <div className="connection-status">
-        <span className={`status-indicator ${opponentDisconnected ? 'disconnected' : 'connected'}`}>
-          {opponentDisconnected ? ' Opponent Disconnected' : ' Connected'}
-        </span>
-      </div>
       
       {/* Round tracker showing game progress */}
       <RoundTracker gameState={G} />
@@ -368,6 +357,61 @@ const GameBoardComponent = (props: GameBoardProps) => {
           targetMode={targetMode}
         />
       </div>
+
+      {/* Wildcard Type Choice UI - Phase 2 */}
+      {G.pendingWildcardChoice && playerID === G.pendingWildcardChoice.playerId && (
+        <WildcardChoiceUI 
+          pendingChoice={G.pendingWildcardChoice}
+          playerId={playerID || ''}
+          onChooseType={handleChooseWildcardType}
+        />
+      )}
+      
+      {/* Chain Effect UI - Phase 3 */}
+      {(() => {
+        // Force this to always run by adding a timestamp
+        const timestamp = Date.now();
+        console.log('🔴 DEBUG TIMESTAMP:', timestamp);
+        console.log('🔴 DEBUG: Full game state keys:', Object.keys(G));
+        console.log('🔴 DEBUG: Checking pendingChainChoice:', G.pendingChainChoice);
+        console.log('🔴 DEBUG: PlayerID:', playerID);
+        console.log('🔴 DEBUG: Chain choice playerId:', G.pendingChainChoice?.playerId);
+        console.log('🔴 DEBUG: Should show chain UI:', G.pendingChainChoice && playerID === G.pendingChainChoice.playerId);
+        console.log('🔴 DEBUG: Game message:', G.message);
+        
+        if (G.pendingChainChoice && playerID === G.pendingChainChoice.playerId) {
+          console.log('🟢 RENDERING ChainEffectUI with:', G.pendingChainChoice);
+          return (
+            <ChainEffectUI
+              pendingChainChoice={G.pendingChainChoice}
+              infrastructureCards={G.infrastructure || []}
+              onChooseTarget={handleChooseChainTarget}
+            />
+          );
+        } else {
+          console.log('🔴 NOT RENDERING ChainEffectUI');
+          return null;
+        }
+      })()}
+      
+      
+      {/* Hand Disruption UI - Phase 3 */}
+      {/* Only show the HandDisruptionUI if the player is the target player who needs to discard cards */}
+      {G.pendingHandChoice && playerID === G.pendingHandChoice.targetPlayerId && (
+        <HandDisruptionUI
+          pendingChoice={G.pendingHandChoice}
+          playerId={playerID || ''}
+          onChooseCards={handleChooseHandDiscard}
+        />
+      )}
+      
+      {/* Card Selection UI - AI-Powered Attack */}
+      {G.pendingCardChoice && playerID === G.pendingCardChoice.playerId && (
+        <CardSelectionUI
+          pendingChoice={G.pendingCardChoice}
+          onChooseCard={handleChooseCardFromDeck}
+        />
+      )}
     </div>
   );
 };
@@ -387,7 +431,11 @@ const GameBoard = React.memo(GameBoardComponent, (prevProps, nextProps) => {
     prevProps.G?.defenderScore === nextProps.G?.defenderScore &&
     prevProps.ctx?.phase === nextProps.ctx?.phase &&
     prevProps.ctx?.currentPlayer === nextProps.ctx?.currentPlayer &&
-    prevProps.isActive === nextProps.isActive
+    prevProps.isActive === nextProps.isActive &&
+    // CRITICAL: Also compare pending choices to ensure re-renders
+    isEqual(prevProps.G?.pendingChainChoice, nextProps.G?.pendingChainChoice) &&
+    isEqual(prevProps.G?.pendingWildcardChoice, nextProps.G?.pendingWildcardChoice) &&
+    isEqual(prevProps.G?.pendingCardChoice, nextProps.G?.pendingCardChoice)
   );
 });
 
