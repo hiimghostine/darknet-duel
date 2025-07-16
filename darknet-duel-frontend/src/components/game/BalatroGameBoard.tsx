@@ -127,20 +127,29 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Handle player surrender
   const surrender = useCallback(() => {
     console.log('CLIENT: Surrender button clicked!');
+    console.log('CLIENT: Player ID:', playerID);
+    console.log('CLIENT: Is attacker:', isAttacker);
+    console.log('CLIENT: Is active:', isActive);
+    console.log('CLIENT: Current phase:', ctx.phase);
+    console.log('CLIENT: Current activePlayers:', ctx.activePlayers);
     
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to surrender? This will end the game and count as a loss.');
+    // Show confirmation dialog - surrender should be allowed even when not active
+    const confirmed = window.confirm(`Are you sure you want to surrender? This will end the game and count as a loss.\n\nNote: It's currently ${isActive ? 'your' : "your opponent's"} turn, but you can surrender at any time.`);
     if (!confirmed) {
       console.log('CLIENT: Surrender cancelled by user');
       return;
     }
     
+    console.log('CLIENT: Surrender confirmed by user!');
+    
     console.log('CLIENT: Executing surrender move');
     console.log('CLIENT: Available moves:', Object.keys(moves || {}));
+    console.log('CLIENT: Surrender move available:', !!moves?.surrender);
     console.log('CLIENT: Current phase:', ctx.phase);
     console.log('CLIENT: Current game phase:', G.gamePhase);
     console.log('CLIENT: Player ID:', playerID);
     console.log('CLIENT: Is active:', isActive);
+    console.log('CLIENT: Active players:', ctx.activePlayers);
     
     // First try using the moves.surrender function - use non-memoized moves
     if (moves && typeof moves.surrender === 'function') {
@@ -397,13 +406,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             <div
               key={card.id}
               className={`
-                lg:w-24 lg:h-32 w-20 h-28 bg-base-300 border border-primary rounded-lg lg:p-2 p-1
-                flex flex-col justify-between transition-all duration-300 cursor-pointer
-                font-mono lg:text-xs text-[10px] text-base-content relative
+                group relative lg:w-28 lg:h-40 w-24 h-32 border-2 rounded-xl lg:p-3 p-2
+                flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
+                font-mono lg:text-sm text-xs overflow-visible
+                ${getPlayerCardClasses(cardType, isAttacker)}
                 ${borderColorClass} border-l-4
                 ${reactionModeClass}
-                ${isSelected ? 'border-warning shadow-lg shadow-warning/50 -translate-y-2 scale-105 z-10' : ''}
-                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:-translate-y-4 hover:scale-110 hover:z-20 hover:shadow-lg hover:shadow-primary/40' : ''}
+                ${isSelected ? 'border-warning shadow-lg shadow-warning/50 -translate-y-2 scale-105 z-30' : ''}
+                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu' : ''}
                 ${!isPlayable && !targetMode ? 'opacity-60 cursor-not-allowed' : ''}
               `}
               onClick={(event) => {
@@ -433,68 +443,169 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 }
               }}
             >
-              {/* Card header with cost */}
-              <div className="flex justify-between items-center mb-1">
-                <div className="lg:w-5 lg:h-5 w-4 h-4 bg-base-100 border border-primary rounded-full flex items-center justify-center lg:text-[10px] text-[8px] font-bold text-primary">
-                  {card.cost}
-                </div>
-                {/* Attack vector indicator */}
-                {(card as any).attackVector && (
-                  <div className="lg:w-4 lg:h-4 w-3 h-3 bg-warning text-warning-content rounded-full flex items-center justify-center lg:text-[8px] text-[6px] font-bold">
-                    {(card as any).attackVector.charAt(0).toUpperCase()}
+              {/* Compact Card View */}
+              <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
+                {/* Top section - Cost and Type Icon */}
+                <div className="flex items-center justify-between w-full">
+                  <div className="lg:w-6 lg:h-6 w-5 h-5 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center lg:text-xs text-[9px] font-bold">
+                    {card.cost}
                   </div>
-                )}
-              </div>
-              
-              {/* Card name */}
-              <div className="text-primary font-bold lg:text-[10px] text-[8px] text-center mb-1 leading-tight">
-                {card.name}
-              </div>
-              
-              {/* Card type */}
-              <div className="text-base-content/60 lg:text-[8px] text-[6px] uppercase text-center mb-1">
-                {cardType}
-              </div>
-              
-              {/* Card description */}
-              <div className="text-base-content/80 lg:text-[8px] text-[6px] flex-1 overflow-hidden leading-tight">
-                {card.description}
-              </div>
-              
-              {/* Card power */}
-              {card.power && (
-                <div className="text-primary font-bold lg:text-[10px] text-[8px] text-center mt-1">
-                  PWR: {card.power}
+                  <div className="lg:text-xl text-lg">
+                    {cardType === 'attack' ? '⚔️' : 
+                     cardType === 'exploit' ? '🔓' : 
+                     cardType === 'counter-attack' || cardType === 'counter' ? '🛡️' : 
+                     cardType === 'reaction' ? '⚡' : 
+                     cardType === 'shield' ? '🔒' : 
+                     cardType === 'fortify' ? '🏰' : 
+                     cardType === 'wildcard' ? '🃏' : '🔧'}
+                  </div>
                 </div>
-              )}
-              
+                
+                {/* Middle section - Card name */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="font-bold lg:text-[11px] text-[9px] leading-tight px-1">
+                    {card.name.length > 10 ? card.name.substring(0, 10) + '...' : card.name}
+                  </div>
+                </div>
+                
+                {/* Bottom section - Type and Category */}
+                <div className="space-y-1">
+                  <div className="lg:text-[9px] text-[8px] font-semibold uppercase text-gray-300">
+                    {cardType}
+                  </div>
+                  {card.metadata?.category && (
+                    <div className={`
+                      inline-block lg:text-[7px] text-[6px] rounded-full px-1.5 py-0.5 font-bold uppercase tracking-wide
+                      ${card.metadata.category === 'network' ? 'bg-blue-500 text-blue-100' :
+                        card.metadata.category === 'web' ? 'bg-green-500 text-green-100' :
+                        card.metadata.category === 'social' ? 'bg-purple-500 text-purple-100' :
+                        card.metadata.category === 'physical' ? 'bg-orange-500 text-orange-100' :
+                        card.metadata.category === 'malware' ? 'bg-red-500 text-red-100' :
+                        'bg-gray-500 text-gray-100'}
+                    `}>
+                      {card.metadata.category}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              
-              {/* Card category */}
-              {card.metadata?.category && (
-                <div className="text-base-content/60 lg:text-[8px] text-[6px] text-center mt-1 uppercase">
-                  {card.metadata.category}
+              {/* Expanded Card View (on hover) - Card-like proportions */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-current z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
+                {/* Card Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center text-xs font-bold">
+                      {card.cost}
+                    </div>
+                    {card.power && (
+                      <div className="w-6 h-6 bg-blue-600 text-blue-100 rounded-full flex items-center justify-center text-xs font-bold">
+                        {card.power}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xl">
+                    {cardType === 'attack' ? '⚔️' : 
+                     cardType === 'exploit' ? '🔓' : 
+                     cardType === 'counter-attack' || cardType === 'counter' ? '🛡️' : 
+                     cardType === 'reaction' ? '⚡' : 
+                     cardType === 'shield' ? '🔒' : 
+                     cardType === 'fortify' ? '🏰' : 
+                     cardType === 'wildcard' ? '🃏' : '🔧'}
+                  </div>
                 </div>
-              )}
-              
-              {/* Reactive card marker (always visible for reactive cards) */}
+
+                {/* Card Name and Type */}
+                <div className="text-center mb-2 border-b border-current/30 pb-2">
+                  <div className="font-bold text-sm text-white leading-tight mb-1">
+                    {card.name}
+                  </div>
+                  <div className="text-xs opacity-70 uppercase text-gray-300 font-semibold">
+                    {cardType}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1 justify-center">
+                    {(card as any).attackVector && (
+                      <span className="inline-block bg-orange-600 text-orange-100 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                        {(card as any).attackVector}
+                      </span>
+                    )}
+                    {card.metadata?.category && (
+                      <span className={`
+                        inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase
+                        ${card.metadata.category === 'network' ? 'bg-blue-600 text-blue-100' :
+                          card.metadata.category === 'web' ? 'bg-green-600 text-green-100' :
+                          card.metadata.category === 'social' ? 'bg-purple-600 text-purple-100' :
+                          card.metadata.category === 'physical' ? 'bg-orange-600 text-orange-100' :
+                          card.metadata.category === 'malware' ? 'bg-red-600 text-red-100' :
+                          'bg-gray-600 text-gray-200'}
+                      `}>
+                        {card.metadata.category}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Description */}
+                <div className="flex-1 mb-2">
+                  <div className="text-xs text-gray-200 leading-tight mb-2">
+                    {card.description}
+                  </div>
+                  
+                  {/* Effects */}
+                  {(card as any).effects && (card as any).effects.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-bold text-cyan-300 mb-1 uppercase">Effects:</div>
+                      {(card as any).effects.map((effect: any, idx: number) => (
+                        <div key={idx} className="text-[10px] text-cyan-200 bg-cyan-900/30 rounded px-1.5 py-0.5 mb-1">
+                          <span className="font-semibold">{effect.type}:</span> {effect.description}
+                          {effect.value && <span className="ml-1 text-cyan-100 font-bold">({effect.value})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Flavor Text */}
+                  {card.metadata?.flavor && (
+                    <div className="border-t border-current/20 pt-1.5">
+                      <div className="text-[10px] italic text-amber-200 leading-tight">
+                        "{card.metadata.flavor}"
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card Footer - Special Properties */}
+                <div className="space-y-1">
+                  {(card as any).isReactive && (
+                    <div className="text-center text-[10px] font-bold bg-cyan-600 text-cyan-100 py-0.5 px-1.5 rounded">
+                      REACTIVE
+                    </div>
+                  )}
+                  
+                  {(card as any).preventReaction && (
+                    <div className="text-center text-[10px] font-bold bg-red-600 text-red-100 py-0.5 px-1.5 rounded">
+                      NO REACTIONS
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Special indicators */}
               {isReactiveCard && (
-                <div className="absolute top-1 left-1 bg-accent/80 text-accent-content rounded px-1 text-[6px] font-bold">
-                  R
+                <div className="absolute top-1 left-1 bg-cyan-600/90 text-cyan-100 rounded px-1 text-[6px] font-bold z-60">
+                  REACTIVE
                 </div>
               )}
               
-              {/* Reactive indicator in reaction mode */}
               {isInReactionMode && isReactiveCard && (
-                <div className="absolute -top-1 -right-1 bg-accent text-accent-content rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold animate-pulse">
+                <div className="absolute -top-1 -right-1 bg-cyan-500 text-cyan-100 rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold animate-pulse z-60">
                   ⚡
                 </div>
               )}
               
-              {/* Per-card cycle button - only show in action mode, not during targeting or reaction */}
+              {/* Per-card cycle button */}
               {!targetMode && !isInReactionMode && isInActionMode && (
                 <button 
-                  className="absolute -top-1 -left-1 bg-secondary text-secondary-content rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-10"
+                  className="absolute -top-1 -left-1 bg-orange-600 text-orange-100 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-60"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -513,6 +624,52 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     );
   };
 
+  // Helper function to get infrastructure state classes
+  const getInfraStateClasses = (state: string) => {
+    switch (state) {
+      case 'secure':
+        return 'bg-green-900/20 border-green-500 text-green-100 shadow-green-500/30';
+      case 'vulnerable':
+        return 'bg-amber-900/20 border-amber-500 text-amber-100 shadow-amber-500/40 animate-pulse';
+      case 'compromised':
+        return 'bg-red-900/30 border-red-500 text-red-100 shadow-red-500/50 animate-pulse';
+      case 'fortified':
+        return 'bg-blue-900/20 border-blue-500 text-blue-100 shadow-blue-500/40';
+      case 'shielded':
+        return 'bg-purple-900/20 border-purple-500 text-purple-100 shadow-purple-500/40';
+      default:
+        return isAttacker 
+          ? 'bg-red-900/10 border-red-600 text-red-200' 
+          : 'bg-blue-900/10 border-blue-600 text-blue-200';
+    }
+  };
+
+  // Helper function to get player card classes
+  const getPlayerCardClasses = (cardType: string, isAttacker: boolean) => {
+    const baseClasses = isAttacker 
+      ? 'bg-red-900/30 border-red-600 text-red-100' 
+      : 'bg-blue-900/30 border-blue-600 text-blue-100';
+    
+    switch (cardType) {
+      case 'attack':
+        return `${baseClasses} shadow-red-500/40`;
+      case 'exploit':
+        return `${baseClasses} shadow-orange-500/40`;
+      case 'counter-attack':
+      case 'counter':
+        return `${baseClasses} shadow-purple-500/40`;
+      case 'reaction':
+        return `${baseClasses} shadow-cyan-500/40`;
+      case 'shield':
+      case 'fortify':
+        return `${baseClasses} shadow-blue-500/40`;
+      case 'wildcard':
+        return 'bg-purple-900/30 border-purple-600 text-purple-100 shadow-purple-500/40';
+      default:
+        return baseClasses;
+    }
+  };
+
   // Render infrastructure grid
   const renderInfrastructure = () => {
     const infrastructure = optimizedInfrastructureData.cards;
@@ -523,23 +680,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           const isTargetable = targetMode && validTargets.includes(infra.id);
           const isSelected = targetMode && targetedInfraId === infra.id;
           
-          // State-based styling
-          const stateClass = infra.state === 'compromised' ? 'border-error shadow-error/30' :
-                           infra.state === 'fortified' ? 'border-success shadow-success/30' :
-                           'border-primary';
-          
           return (
             <div
               key={infra.id}
               className={`
-                lg:w-32 lg:h-36 w-28 h-32 bg-base-300 border rounded-lg lg:p-2 p-1
-                flex flex-col justify-between transition-all duration-300
-                font-mono lg:text-xs text-[10px] text-base-content relative
-                ${stateClass}
-                ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 cursor-pointer animate-pulse' : ''}
-                ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-10' : ''}
+                group relative lg:w-44 lg:h-56 w-40 h-48 border-2 rounded-xl lg:p-4 p-3
+                flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
+                font-mono lg:text-base text-sm overflow-visible
+                ${getInfraStateClasses(infra.state)}
+                ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40' : ''}
+                ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
                 ${targetMode && !isTargetable ? 'opacity-50 cursor-not-allowed' : ''}
-                ${!targetMode ? 'hover:-translate-y-1 hover:scale-105 hover:shadow-lg hover:shadow-primary/30' : ''}
+                ${!targetMode ? 'hover:scale-150 hover:z-60 hover:shadow-2xl transform-gpu' : ''}
               `}
               onClick={() => {
                 if (targetMode && isTargetable) {
@@ -547,56 +699,190 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 }
               }}
             >
-              {/* Infrastructure name */}
-              <div className="text-primary font-bold lg:text-[10px] text-[8px] text-center mb-1">
-                {infra.name}
-              </div>
-              
-              {/* Infrastructure type */}
-              <div className="text-base-content/60 lg:text-[8px] text-[6px] uppercase text-center mb-1">
-                {infra.type}
-              </div>
-              
-              {/* Infrastructure description */}
-              <div className="text-base-content/80 lg:text-[8px] text-[6px] flex-1 overflow-hidden leading-tight">
-                {infra.description}
-              </div>
-              
-              {/* Infrastructure state */}
-              <div className="text-center lg:text-[10px] text-[8px] font-bold mt-1">
-                <span className={infra.state === 'compromised' ? 'text-error' : 
-                               infra.state === 'fortified' ? 'text-success' : 'text-primary'}>
-                  {infra.state.toUpperCase()}
-                </span>
-              </div>
-              
-              {/* Vulnerability indicators */}
-              {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0 && (
-                <div className="mt-1">
-                  <div className="lg:text-[8px] text-[6px] text-warning font-bold mb-1">VULNERABLE TO:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {(infra as any).vulnerableVectors.map((vector: any, idx: number) => {
-                      const vectorType = typeof vector === 'string' ? vector : 
-                                       (vector?.vector || vector?.type || 'unknown');
-                      return (
-                        <span 
-                          key={idx}
-                          className="bg-warning/20 text-warning border border-warning/40 rounded px-1 lg:text-[6px] text-[5px] font-bold uppercase"
-                        >
-                          {vectorType}
-                        </span>
-                      );
-                    })}
+              {/* Compact Infrastructure Card View */}
+              <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
+                {/* Top section - ID and Type Icon */}
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="lg:text-xs text-[10px] bg-gray-600 text-gray-200 rounded px-1.5 py-1 font-semibold">
+                    {infra.id}
+                  </div>
+                  <div className="lg:text-3xl text-2xl">
+                    {infra.type === 'network' ? '🌐' : 
+                     infra.type === 'data' ? '💾' : 
+                     infra.type === 'web' ? '🖥️' : 
+                     infra.type === 'user' ? '👤' : 
+                     infra.type === 'critical' ? '🔧' : '⚙️'}
                   </div>
                 </div>
-              )}
-              
-              {/* Target indicator */}
-              {targetMode && isTargetable && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-warning text-warning-content lg:px-2 px-1 py-1 rounded lg:text-[8px] text-[6px] font-bold animate-bounce">
-                  🎯 TARGET
+                
+                {/* Middle section - Infrastructure name */}
+                <div className="flex-1 flex items-center justify-center mb-2">
+                  <div className="font-bold lg:text-sm text-xs leading-tight px-1 text-center">
+                    {infra.name.length > 16 ? infra.name.substring(0, 16) + '...' : infra.name}
+                  </div>
                 </div>
-              )}
+                
+                {/* Bottom section - Type and Vulnerabilities */}
+                <div className="space-y-2">
+                  <div className="lg:text-xs text-[10px] font-semibold uppercase text-gray-300 text-center">
+                    {infra.type} Infra
+                  </div>
+                  
+                  {/* Vulnerability categories - show all vectors */}
+                  {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0 && (
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {(infra as any).vulnerableVectors.slice(0, 3).map((vector: string, idx: number) => (
+                        <div key={idx} className={`
+                          inline-block lg:text-[9px] text-[8px] rounded-full px-2 py-1 font-bold uppercase tracking-wide
+                          ${vector === 'network' ? 'bg-blue-500 text-blue-100' :
+                            vector === 'web' ? 'bg-green-500 text-green-100' :
+                            vector === 'social' ? 'bg-purple-500 text-purple-100' :
+                            vector === 'physical' ? 'bg-orange-500 text-orange-100' :
+                            vector === 'malware' ? 'bg-red-500 text-red-100' :
+                            'bg-gray-500 text-gray-100'}
+                        `}>
+                          {vector}
+                        </div>
+                      ))}
+                      {(infra as any).vulnerableVectors.length > 3 && (
+                        <div className="inline-block lg:text-[9px] text-[8px] bg-gray-400 text-gray-100 rounded-full px-2 py-1 font-bold">
+                          +{(infra as any).vulnerableVectors.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* State indicator */}
+                  <div className={`
+                    lg:text-[10px] text-[9px] font-bold px-2 py-1 rounded uppercase text-center
+                    ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
+                      infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
+                      infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
+                      infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
+                      'bg-green-600 text-green-100'}
+                  `}>
+                    {infra.state}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Infrastructure Card View (on hover) - Card-like proportions */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-current z-60 transform scale-125 origin-center shadow-2xl w-48 h-72 p-2.5 flex flex-col pointer-events-none">
+                {/* Infrastructure Card Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`
+                      w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                      ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
+                        infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
+                        infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
+                        infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
+                        'bg-green-600 text-green-100'}
+                    `}>
+                      {infra.state === 'compromised' ? '💥' : 
+                       infra.state === 'fortified' ? '🛡️' : 
+                       infra.state === 'vulnerable' ? '⚠️' :
+                       infra.state === 'shielded' ? '🔒' :
+                       '✅'}
+                    </div>
+                    <div className="text-xs bg-gray-600 text-gray-200 rounded px-1.5 py-0.5 font-semibold uppercase">
+                      {infra.id}
+                    </div>
+                  </div>
+                  <div className="text-xl">
+                    {infra.type === 'network' ? '🌐' : 
+                     infra.type === 'data' ? '💾' : 
+                     infra.type === 'web' ? '🖥️' : 
+                     infra.type === 'user' ? '👤' : 
+                     infra.type === 'critical' ? '🔧' : '⚙️'}
+                  </div>
+                </div>
+
+                {/* Infrastructure Name and Type */}
+                <div className="text-center mb-2 border-b border-current/30 pb-2">
+                  <div className="font-bold text-sm text-white leading-tight mb-1">
+                    {infra.name}
+                  </div>
+                  <div className="text-xs opacity-70 uppercase text-gray-300 font-semibold">
+                    {infra.type} Infrastructure
+                  </div>
+                  <div className={`
+                    mt-1 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase
+                    ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
+                      infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
+                      infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
+                      infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
+                      'bg-green-600 text-green-100'}
+                  `}>
+                    {infra.state}
+                  </div>
+                </div>
+
+                {/* Infrastructure Description */}
+                <div className="flex-1 mb-2">
+                  <div className="text-xs text-gray-200 leading-tight mb-2">
+                    {infra.description}
+                  </div>
+                  
+                  {/* Vulnerabilities Section */}
+                  {((infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0) || ((infra as any).vulnerabilities && (infra as any).vulnerabilities.length > 0) && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-bold text-red-300 mb-1 uppercase">Vulnerable To:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {/* Show vulnerableVectors if available */}
+                        {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.map((vector: string, idx: number) => (
+                          <span key={`vector-${idx}`} className="text-[10px] text-red-200 bg-red-900/30 rounded px-1.5 py-0.5">
+                            {vector.toUpperCase()}
+                          </span>
+                        ))}
+                        {/* Show vulnerabilities if available and different from vulnerableVectors */}
+                        {(infra as any).vulnerabilities && (infra as any).vulnerabilities.map((vuln: string, idx: number) => (
+                          <span key={`vuln-${idx}`} className="text-[10px] text-red-200 bg-red-900/30 rounded px-1.5 py-0.5">
+                            {vuln.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Flavor Text */}
+                  {(infra as any).flavor && (
+                    <div className="border-t border-current/20 pt-1.5">
+                      <div className="text-[10px] italic text-amber-200 leading-tight">
+                        "{(infra as any).flavor}"
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Infrastructure Footer - Additional Info */}
+                <div className="space-y-1">
+                  {/* Security Level Indicator */}
+                  <div className="text-center">
+                    <div className={`
+                      text-[10px] font-bold py-0.5 px-1.5 rounded
+                      ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
+                        infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
+                        infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
+                        infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
+                        'bg-green-600 text-green-100'}
+                    `}>
+                      Security: {infra.state === 'compromised' ? 'BREACHED' : 
+                                infra.state === 'fortified' ? 'FORTIFIED' : 
+                                infra.state === 'vulnerable' ? 'AT RISK' :
+                                infra.state === 'shielded' ? 'SHIELDED' :
+                                'SECURE'}
+                    </div>
+                  </div>
+
+                  {/* Infrastructure Type Category */}
+                  <div className="text-center text-[10px] bg-gray-600 text-gray-100 py-0.5 px-1.5 rounded">
+                    Category: {infra.type.charAt(0).toUpperCase() + infra.type.slice(1)}
+                  </div>
+                </div>
+              </div>
+
+
             </div>
           );
         })}
@@ -606,27 +892,59 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   return (
     <div className={`
-      min-h-screen w-full bg-base-100 text-base-content flex flex-col relative overflow-hidden font-mono
+      min-h-screen w-full flex flex-col relative overflow-hidden font-mono transition-all duration-1000
+      ${isAttacker 
+        ? 'bg-red-950 text-red-50' 
+        : 'bg-blue-950 text-blue-50'
+      }
       ${targetMode ? 'ring-4 ring-warning/60 ring-inset shadow-[inset_0_0_50px_rgba(255,204,0,0.2)] animate-pulse' : ''}
+      ${isActive 
+        ? isAttacker 
+          ? 'ring-2 ring-red-400/50 ring-inset shadow-[inset_0_0_100px_rgba(239,68,68,0.15)]' 
+          : 'ring-2 ring-blue-400/50 ring-inset shadow-[inset_0_0_100px_rgba(59,130,246,0.15)]'
+        : ''
+      }
     `}>
-      {/* Cyberpunk background grid */}
+      {/* Team-colored cyberpunk background grid */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-5"
+        className={`absolute inset-0 pointer-events-none opacity-5 ${
+          isAttacker ? 'bg-red-grid' : 'bg-blue-grid'
+        }`}
         style={{
           backgroundImage: `
-            linear-gradient(to right, hsl(var(--p)) 1px, transparent 1px),
-            linear-gradient(to bottom, hsl(var(--p)) 1px, transparent 1px)
+            linear-gradient(to right, ${isAttacker ? '#ef4444' : '#3b82f6'} 1px, transparent 1px),
+            linear-gradient(to bottom, ${isAttacker ? '#ef4444' : '#3b82f6'} 1px, transparent 1px)
           `,
           backgroundSize: '20px 20px'
         }}
       />
 
-      {/* Decorative corner elements */}
-      <div className="absolute top-0 left-0 w-32 h-1 bg-gradient-to-r from-primary to-transparent pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-24 h-1 bg-gradient-to-l from-primary to-transparent pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-1 bg-gradient-to-r from-primary to-transparent pointer-events-none"></div>
-      <div className="absolute top-0 right-24 w-1 h-32 bg-gradient-to-b from-primary to-transparent pointer-events-none"></div>
-      <div className="absolute bottom-0 left-32 w-1 h-48 bg-gradient-to-t from-primary to-transparent pointer-events-none"></div>
+      {/* Team-colored decorative corner elements */}
+      <div className={`absolute top-0 left-0 w-32 h-1 pointer-events-none ${
+        isAttacker 
+          ? 'bg-gradient-to-r from-red-500 to-transparent' 
+          : 'bg-gradient-to-r from-blue-500 to-transparent'
+      }`}></div>
+      <div className={`absolute top-0 right-0 w-24 h-1 pointer-events-none ${
+        isAttacker 
+          ? 'bg-gradient-to-l from-red-500 to-transparent' 
+          : 'bg-gradient-to-l from-blue-500 to-transparent'
+      }`}></div>
+      <div className={`absolute bottom-0 left-0 w-48 h-1 pointer-events-none ${
+        isAttacker 
+          ? 'bg-gradient-to-r from-red-500 to-transparent' 
+          : 'bg-gradient-to-r from-blue-500 to-transparent'
+      }`}></div>
+      <div className={`absolute top-0 right-24 w-1 h-32 pointer-events-none ${
+        isAttacker 
+          ? 'bg-gradient-to-b from-red-500 to-transparent' 
+          : 'bg-gradient-to-b from-blue-500 to-transparent'
+      }`}></div>
+      <div className={`absolute bottom-0 left-32 w-1 h-48 pointer-events-none ${
+        isAttacker 
+          ? 'bg-gradient-to-t from-red-500 to-transparent' 
+          : 'bg-gradient-to-t from-blue-500 to-transparent'
+      }`}></div>
 
       {/* Target mode notification - top-right corner */}
       {targetMode && (
@@ -693,24 +1011,48 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       )}
 
       {/* Header */}
-      <header className="flex justify-between items-center p-4 bg-base-200/80 border-b border-primary/20 backdrop-blur-sm z-10">
-        <h1 className="text-xl font-bold font-mono text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 uppercase tracking-wide">
+      <header className={`
+        flex justify-between items-center p-4 border-b backdrop-blur-sm z-10
+        ${isAttacker 
+          ? 'bg-red-900/80 border-red-700/30' 
+          : 'bg-blue-900/80 border-blue-700/30'
+        }
+      `}>
+        <h1 className={`
+          text-xl font-bold font-mono uppercase tracking-wide
+          ${isAttacker 
+            ? 'text-red-300 bg-clip-text text-transparent bg-gradient-to-r from-red-300 to-red-500' 
+            : 'text-blue-300 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500'
+          }
+        `}>
           DARKNET_DUEL
         </h1>
         <div className="flex gap-2">
           <button 
-            className="btn btn-sm bg-base-300/80 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:shadow-md hover:shadow-primary/30 font-mono font-bold uppercase"
-            onClick={handleEndTurn}
+            className={`
+              btn btn-sm font-mono font-bold uppercase transition-all duration-200
+              ${isAttacker 
+                ? 'bg-red-800/80 border-red-600/50 text-red-100 hover:bg-red-700/90 hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30' 
+                : 'bg-blue-800/80 border-blue-600/50 text-blue-100 hover:bg-blue-700/90 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/30'
+              }
+            `}
+            onClick={ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? handleSkipReaction : handleEndTurn}
             disabled={!isActive || isProcessingMove}
           >
-            END_TURN
+            {ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? 'PASS' : 'END_TURN'}
           </button>
           
           {/* Cycle Card Button - only show in action mode when player has cards */}
           {isActive && !isProcessingMove && currentPlayerObj?.hand?.length > 0 && 
            ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'action' && (
             <button 
-              className="btn btn-sm bg-base-300/80 border-secondary/30 text-secondary hover:bg-secondary/10 hover:border-secondary hover:shadow-md hover:shadow-secondary/30 font-mono font-bold uppercase"
+              className={`
+                btn btn-sm font-mono font-bold uppercase transition-all duration-200
+                ${isAttacker 
+                  ? 'bg-orange-800/80 border-orange-600/50 text-orange-100 hover:bg-orange-700/90 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/30' 
+                  : 'bg-cyan-800/80 border-cyan-600/50 text-cyan-100 hover:bg-cyan-700/90 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/30'
+                }
+              `}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -723,7 +1065,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           )}
           
           <button 
-            className="btn btn-sm bg-base-300/80 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:shadow-md hover:shadow-primary/30 font-mono font-bold uppercase"
+            className={`
+              btn btn-sm font-mono font-bold uppercase transition-all duration-200
+              ${isAttacker 
+                ? 'bg-red-900/80 border-red-700/50 text-red-200 hover:bg-red-800/90 hover:border-red-600 hover:shadow-lg hover:shadow-red-600/30' 
+                : 'bg-blue-900/80 border-blue-700/50 text-blue-200 hover:bg-blue-800/90 hover:border-blue-600 hover:shadow-lg hover:shadow-blue-600/30'
+              }
+            `}
             onClick={surrender}
             disabled={isProcessingMove}
           >
@@ -732,13 +1080,74 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         </div>
       </header>
 
-      {/* Connection status indicator */}
-      <div className="px-4 py-2 bg-base-300/50 border-b border-primary/10">
-        <div className="flex items-center justify-center max-w-7xl mx-auto">
-          <span className={`text-xs font-mono flex items-center gap-2 ${opponentDisconnected ? 'text-error' : 'text-success'}`}>
-            <div className={`w-2 h-2 rounded-full ${opponentDisconnected ? 'bg-error' : 'bg-success'} animate-pulse`}></div>
+      {/* Enhanced status bar with turn indicator */}
+      <div className={`
+        px-4 py-3 border-b transition-all duration-500
+        ${isActive 
+          ? isAttacker
+            ? 'bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border-red-500/50' 
+            : 'bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-blue-600/20 border-blue-500/50'
+          : isAttacker
+            ? 'bg-red-900/50 border-red-800/30'
+            : 'bg-blue-900/50 border-blue-800/30'
+        }
+      `}>
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          {/* Connection status */}
+          <span className={`
+            text-xs font-mono flex items-center gap-2 
+            ${opponentDisconnected 
+              ? 'text-red-400' 
+              : isAttacker 
+                ? 'text-red-300' 
+                : 'text-blue-300'
+            }
+          `}>
+            <div className={`
+              w-2 h-2 rounded-full animate-pulse
+              ${opponentDisconnected 
+                ? 'bg-red-500' 
+                : isAttacker 
+                  ? 'bg-red-400' 
+                  : 'bg-blue-400'
+              }
+            `}></div>
             {opponentDisconnected ? 'OPPONENT_DISCONNECTED' : 'CONNECTION_ACTIVE'}
           </span>
+          
+          {/* Turn status in header */}
+          {isActive && (
+            <div className="flex items-center gap-2">
+              <div className={`
+                badge gap-2 animate-pulse
+                ${isAttacker 
+                  ? 'badge-error bg-red-600 text-red-100 border-red-400' 
+                  : 'badge-info bg-blue-600 text-blue-100 border-blue-400'
+                }
+              `}>
+                <span className={`
+                  w-2 h-2 rounded-full animate-ping
+                  ${isAttacker ? 'bg-red-100' : 'bg-blue-100'}
+                `}></span>
+                YOUR TURN - TAKE ACTION
+              </div>
+            </div>
+          )}
+          
+          {!isActive && (
+            <div className="flex items-center gap-2">
+              <div className={`
+                badge gap-2
+                ${isAttacker 
+                  ? 'badge-ghost bg-red-800/50 text-red-300 border-red-700' 
+                  : 'badge-ghost bg-blue-800/50 text-blue-300 border-blue-700'
+                }
+              `}>
+                <span className="loading loading-dots loading-xs"></span>
+                WAITING FOR OPPONENT
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -748,15 +1157,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       <main className="flex-1 flex flex-col gap-4 p-4 w-full">
         {/* Opponent area */}
         <div className={`
-          flex justify-center items-end gap-4 p-4 
-          bg-error/5 border border-error/20 rounded-lg relative h-40
-          ${!isActive ? 'ring-2 ring-error/50 shadow-lg shadow-error/20' : ''}
+          flex justify-center items-end gap-4 p-4 rounded-lg relative h-40
+          ${isAttacker ? 'defender-area' : 'attacker-area'}
+          ${!isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
         `}>
           {/* Corner brackets */}
-          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-error"></div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-error"></div>
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-current"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-current"></div>
           
-          <div className="absolute top-2 left-4 text-error font-bold text-sm font-mono uppercase tracking-wide">
+          <div className="absolute top-2 left-4 font-bold text-sm font-mono uppercase tracking-wide team-label">
             <div className="flex items-center gap-2">
               <span>{isAttacker ? '🛡️' : '🎯'}</span>
               <span>{opponent?.username || 'OPPONENT'} - {isAttacker ? 'DEFENDER' : 'ATTACKER'}</span>
@@ -777,15 +1186,35 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         <div className="flex gap-4 flex-1 min-h-0 lg:flex-row flex-col">
           {/* Left info panel */}
           <div className="flex flex-col gap-4 lg:w-64 w-full flex-shrink-0 lg:order-1 order-2">
-            <div className="bg-base-200 border border-primary/20 rounded-lg p-4 relative backdrop-blur-sm">
-              <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+            <div className={`
+              rounded-lg p-4 relative backdrop-blur-sm border
+              ${isAttacker 
+                ? 'bg-red-900/60 border-red-700/40' 
+                : 'bg-blue-900/60 border-blue-700/40'
+              }
+            `}>
+              <div className={`
+                absolute top-0 left-0 w-3 h-3 border-t border-l
+                ${isAttacker ? 'border-red-500' : 'border-blue-500'}
+              `}></div>
+              <div className={`
+                absolute bottom-0 right-0 w-3 h-3 border-b border-r
+                ${isAttacker ? 'border-red-500' : 'border-blue-500'}
+              `}></div>
               
-              <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">GAME_INFO</h3>
+              <h3 className={`
+                font-bold text-sm mb-3 font-mono uppercase tracking-wide
+                ${isAttacker ? 'text-red-300' : 'text-blue-300'}
+              `}>GAME_INFO</h3>
               <div className="space-y-2 text-sm">
                 <div>Round: {memoizedG.currentRound || 1}</div>
                 <div>Phase: {currentPhase}</div>
-                <div>Turn: {isActive ? 'YOUR_TURN' : 'WAITING'}</div>
+                <div className="flex items-center gap-2">
+                  <span>AP:</span>
+                  <span className="text-accent font-bold">
+                    {currentPlayerObj?.actionPoints || 0}/{memoizedG?.gameConfig?.maxActionPoints || 10}
+                  </span>
+                </div>
               </div>
             </div>
             
@@ -884,15 +1313,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
         {/* Player area */}
         <div className={`
-          flex justify-center items-start gap-4 p-4 
-          bg-primary/5 border border-primary/20 rounded-lg relative h-44
-          ${isActive ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/20' : ''}
+          flex justify-center items-start gap-4 p-4 rounded-lg relative h-44
+          ${isAttacker ? 'attacker-area' : 'defender-area'}
+          ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
         `}>
           {/* Corner brackets */}
-          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-current"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-current"></div>
           
-          <div className="absolute top-2 left-4 text-primary font-bold text-sm font-mono uppercase tracking-wide">
+          <div className="absolute top-2 left-4 font-bold text-sm font-mono uppercase tracking-wide team-label">
             <div className="flex items-center gap-2">
               <span>{isAttacker ? '🎯' : '🛡️'}</span>
               <span>{currentPlayerObj?.username || playerID} - {isAttacker ? 'ATTACKER' : 'DEFENDER'}</span>
@@ -900,7 +1329,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           </div>
           
           {/* Hand peek indicator */}
-          <div className="absolute top-2 right-4 text-primary/60 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label">
             TACTICAL_HAND • {currentPlayerObj?.hand?.length || 0} CARDS
           </div>
           
@@ -916,15 +1345,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 CANCEL
               </button>
             )}
-            {/* Skip reaction button - check for player stage, not phase */}
-            {!targetMode && isActive && ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' && (
-              <button 
-                className="btn btn-sm bg-base-300/80 border-accent/30 text-accent hover:bg-accent/10 font-mono font-bold uppercase"
-                onClick={handleSkipReaction}
-              >
-                SKIP_REACTION
-              </button>
-            )}
+
           </div>
         </div>
       </main>

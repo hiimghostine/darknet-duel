@@ -1,6 +1,7 @@
 import { FnContext } from 'boardgame.io/dist/types/src/types';
 import { GameState, GameAction, PlayerRole } from 'shared-types/game.types';
 import { drawCard } from '../playerManager';
+import { handleSurrender } from './surrenderMoveHandler';
 
 // Import the common types
 export type MoveParams<T> = {
@@ -66,29 +67,8 @@ export const actionStageMoves = {
     // This fixes the Immer error
   },
 
-  // Surrender functionality
-  surrender: ({ G, ctx, playerID, events }) => {
-    console.log('Player surrendered:', playerID);
-    
-    // Determine which player surrendered and set the other as winner
-    const winner = playerID === G.attacker?.id ? 'defender' as PlayerRole : 'attacker' as PlayerRole;
-    const surrenderer = playerID === G.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
-    
-    // Create updated game state
-    const updatedG = {
-      ...G,
-      gamePhase: 'gameOver' as const,
-      gameEnded: true,
-      winner,
-      message: `${surrenderer} has surrendered! ${winner} wins the game!`
-    };
-    
-    // CRITICAL: Transition to the gameOver phase in boardgame.io
-    // This is needed so the chat functionality works properly
-    events.setPhase('gameOver');
-    
-    return updatedG;
-  },
+  // Surrender functionality - use centralized handler
+  surrender: handleSurrender,
   
   // Play card functionality
   playCard: function playCard({ G, ctx, playerID, events }, cardId) {
