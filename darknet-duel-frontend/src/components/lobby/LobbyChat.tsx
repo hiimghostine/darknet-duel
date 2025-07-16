@@ -160,14 +160,14 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   // Handle username click to show profile popup
   const handleUsernameClick = (event: React.MouseEvent, message: LobbyChatMessage) => {
-    // Don't show popup for own messages or system messages
-    if (isOwnMessage(message) || message.messageType === 'system') return;
+    // Don't show popup for system messages
+    if (message.messageType === 'system') return;
     
     // Get the user ID from the message
     const userId = message.senderUuid;
     const username = message.metadata?.username || 'ANON';
     
-    if (!userId || userId === user?.id) return;
+    if (!userId) return;
 
     setProfilePopup({
       isVisible: true,
