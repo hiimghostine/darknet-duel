@@ -24,7 +24,14 @@ export interface ProfileInfo {
   user: {
     id: string;
     username: string;
-    email: string;
+    email?: string; // Only available for own profile
+    isActive: boolean;
+    gamesPlayed: number;
+    gamesWon: number;
+    gamesLost: number;
+    rating: number;
+    bio: string | null;
+    createdAt: string;
   };
 }
 
@@ -96,6 +103,20 @@ class InfoService {
     
     return response.data.data.profileStats;
   }
-}
 
-export default new InfoService(); 
+  /**
+   * Get profile information for any user by their ID
+   * @param userId - The user's ID
+   * @param limit - Optional limit for number of recent activities (default: 10)
+   */
+  async getProfileByUserId(userId: string, limit?: number): Promise<ProfileInfo> {
+    const params = limit ? { limit: limit.toString() } : {};
+    const response = await api.get<ProfileResponse>(`/info/profile/${userId}`, { params });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch profile information');
+    }
+    
+    return response.data.data;
+  }
+}

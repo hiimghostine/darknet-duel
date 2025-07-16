@@ -141,4 +141,3 @@ export class InfoService {
       throw new Error('Failed to fetch profile statistics');
     }
   }
-} 

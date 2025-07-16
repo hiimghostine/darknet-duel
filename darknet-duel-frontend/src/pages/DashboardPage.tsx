@@ -25,7 +25,7 @@ const DashboardPage: React.FC = () => {
         await loadUser();
         
         // Fetch profile information from our new API
-        const profileInfo = await infoService.getProfile(5); // Get last 5 activities
+        const profileInfo = await infoService.getProfile(3); // Get last 3 activities
         setRecentActivity(profileInfo.recentActivity);
         setProfileStats(profileInfo.profileStats);
         
@@ -98,8 +98,8 @@ const DashboardPage: React.FC = () => {
     { label: 'ELO', value: '0' }
   ];
   
-  // Use real activities data from API or show placeholder if empty
-  const activitiesData = recentActivity.length > 0 ? recentActivity : [
+  // Use real activities data from API or show placeholder if empty (limit to 3 activities)
+  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [
     { type: 'WIN' as const, opponent: 'No recent games', time: 'Play a game to see activity', pointsChange: '+0 PTS' },
   ];
 
@@ -148,7 +148,7 @@ const DashboardPage: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => navigate('/profile')} 
+                onClick={() => navigate(`/profile/${user?.id}`)} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Profile"
               >
@@ -214,6 +214,33 @@ const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Left column - Main content */}
             <div className="md:col-span-2 space-y-8">
+              {/* System Updates */}
+              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-primary/20 p-4 relative">
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-mono text-primary text-lg">SYSTEM_UPDATES</h3>
+                    <div className="text-xs text-base-content/70 font-mono">SOURCE: ADMIN</div>
+                  </div>
+                  
+                  <div className="font-mono text-sm border border-primary/30 bg-base-300/50 p-3">
+                    <div className="flex">
+                      <span className="text-primary mr-2">&gt;</span>
+                      <span className="typing-animation">Welcome to Darknet Duel v0.0.1. The system is currently in alpha testing.</span>
+                    </div>
+                    <div className="flex mt-2">
+                      <span className="text-primary mr-2">&gt;</span>
+                      <span>New features will be deployed soon. Stay connected for updates.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Stats panel */}
               <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
                 <div className="bg-base-200 border border-primary/20 p-4 relative">
@@ -406,33 +433,7 @@ const DashboardPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              
-              {/* News and updates */}
-              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
-                <div className="bg-base-200 border border-primary/20 p-4 relative">
-                  {/* Corner accents */}
-                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
-                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-                  
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-mono text-primary text-lg">SYSTEM_UPDATES</h3>
-                    <div className="text-xs text-base-content/70 font-mono">SOURCE: ADMIN</div>
-                  </div>
-                  
-                  <div className="font-mono text-sm border border-primary/30 bg-base-300/50 p-3">
-                    <div className="flex">
-                      <span className="text-primary mr-2">&gt;</span>
-                      <span className="typing-animation">Welcome to Darknet Duel v0.0.1. The system is currently in alpha testing.</span>
-                    </div>
-                    <div className="flex mt-2">
-                      <span className="text-primary mr-2">&gt;</span>
-                      <span>New features will be deployed soon. Stay connected for updates.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </main>

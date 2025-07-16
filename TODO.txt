@@ -17,7 +17,7 @@ ASAP:
 
 Mid game:
 - Clickable profiles
-- Chat in lobbies 
+/ - Chat in lobbies 
 - Shop for cosmetics (PULL FROM STEAM OR DISCORD)
 - Friend system...
 - DMs?

@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
 import { FaPaperPlane, FaUsers, FaComments } from 'react-icons/fa';
+import UserProfilePopup from '../UserProfilePopup';
 
 interface LobbyChatProps {
   chatId?: string;
@@ -23,6 +24,19 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Profile popup state
+  const [profilePopup, setProfilePopup] = useState<{
+    isVisible: boolean;
+    userId: string;
+    username: string;
+    position: { x: number; y: number };
+  }>({
+    isVisible: false,
+    userId: '',
+    username: '',
+    position: { x: 0, y: 0 }
+  });
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -144,6 +158,29 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     return message.senderUuid === user?.id;
   };
 
+  // Handle username click to show profile popup
+  const handleUsernameClick = (event: React.MouseEvent, message: LobbyChatMessage) => {
+    // Don't show popup for system messages
+    if (message.messageType === 'system') return;
+    
+    // Get the user ID from the message
+    const userId = message.senderUuid;
+    const username = message.metadata?.username || user?.username || 'ANON';
+    
+    if (!userId) return;
+
+    setProfilePopup({
+      isVisible: true,
+      userId,
+      username,
+      position: { x: event.clientX, y: event.clientY }
+    });
+  };
+
+  const closeProfilePopup = () => {
+    setProfilePopup(prev => ({ ...prev, isVisible: false }));
+  };
+
   return (
     <div className={`${className}`}>
       {/* Chat banner with same styling as lobbies banner */}
@@ -201,7 +238,12 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   return (
                     <div key={message.id} className="text-xs mb-1 break-words">
                       <span className="text-base-content/50">[{timestamp}]</span>{' '}
-                      <span className={`font-bold ${isOwnMessage(message) ? 'text-primary data-corrupt' : 'text-secondary'}`}>
+                      <span 
+                        className={`font-bold cursor-pointer hover:opacity-80 transition-opacity ${
+                          isOwnMessage(message) ? 'text-primary data-corrupt' : 'text-secondary hover:text-secondary/80'
+                        }`}
+                        onClick={(e) => handleUsernameClick(e, message)}
+                      >
                         &lt;{username}&gt;
                       </span>{' '}
                       <span className="text-base-content">{message.messageContent}</span>
@@ -245,7 +287,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
               </div>
               
               {/* Status line with cyberpunk styling */}
-              <div className="px-2 pb-2 text-xs text-base-content/50 font-mono border-t border-primary/20">
+              <div className="px-2 pb-2 text-xs text-base-content/50 font-mono">
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-1">
                     <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
@@ -260,6 +302,66 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Profile Popup */}
+      <UserProfilePopup
+        userId={profilePopup.userId}
+        username={profilePopup.username}
+        isVisible={profilePopup.isVisible}
+        position={profilePopup.position}
+        onClose={closeProfilePopup}
+      />
+    </div>
+  );
+};
+
+export default LobbyChat; 
+                  ref={inputRef}
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    setIsTyping(e.target.value.length > 0);
+                  }}
+                  onKeyPress={handleKeyPress}
+                  placeholder="ENTER_TRANSMISSION..."
+                  disabled={!isConnected}
+                  maxLength={500}
+                  className="flex-1 bg-transparent border-none outline-none text-base-content text-sm font-mono
+                           placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {newMessage.length > 450 && (
+                  <span className="text-warning text-xs ml-2 font-mono">
+                    {500 - newMessage.length}
+                  </span>
+                )}
+              </div>
+              
+              {/* Status line with cyberpunk styling */}
+              <div className="px-2 pb-2 text-xs text-base-content/50 font-mono">
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1">
+                    <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
+                    {isTyping ? 'TRANSMITTING...' : 'STANDBY'}
+                  </span>
+                  <span>
+                    ENTER→SEND • {newMessage.length}/500 CHARS
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Profile Popup */}
+      <UserProfilePopup
+        userId={profilePopup.userId}
+        username={profilePopup.username}
+        isVisible={profilePopup.isVisible}
+        position={profilePopup.position}
+        onClose={closeProfilePopup}
+      />
     </div>
   );
 };

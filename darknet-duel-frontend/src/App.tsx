@@ -32,6 +32,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/topup" element={<TopUpPage />} />
           <Route path="/history" element={<GameHistoryPage />} />
           <Route path="/lobbies/*" element={<LobbyPage />} />
@@ -46,3 +47,4 @@ function App() {
 }
 
 export default App;
+

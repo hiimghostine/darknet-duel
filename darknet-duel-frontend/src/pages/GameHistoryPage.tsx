@@ -166,7 +166,7 @@ const GameHistoryPage: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => navigate('/profile')} 
+                onClick={() => navigate(`/profile/${user?.id}`)} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Profile"
               >
