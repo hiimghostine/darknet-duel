@@ -23,6 +23,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const [connectedUsers, setConnectedUsers] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
   // Profile popup state
@@ -38,9 +39,11 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     position: { x: 0, y: 0 }
   });
 
-  // Scroll to bottom when new messages arrive
+  // Scroll to bottom when new messages arrive - only within the message container
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -215,7 +218,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
           {/* IRC-style message area with cyberpunk styling */}
           <div className="px-4 pb-4">
-            <div className="bg-base-300/50 border border-primary/30 p-3 font-mono text-sm h-48 overflow-y-auto">
+            <div ref={messageContainerRef} className="bg-base-300/50 border border-primary/30 p-3 font-mono text-sm h-48 overflow-y-auto">
               {messages.length === 0 ? (
                 <div className="text-base-content/50 text-xs space-y-1">
                   <div className="text-primary">*** NEURAL LINK ESTABLISHED TO #DARKNET_LOBBY</div>
