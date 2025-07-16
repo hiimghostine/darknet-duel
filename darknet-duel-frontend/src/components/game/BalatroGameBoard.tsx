@@ -26,6 +26,8 @@ import WinnerLobby from './board-components/WinnerLobby';
 import PostGameChat from './board-components/PostGameChat';
 import PlayerBoard from './board-components/PlayerBoard';
 import PlayerInfo from './board-components/PlayerInfo';
+import PowerBar from './board-components/PowerBar';
+import InfrastructureArea from './board-components/InfrastructureArea';
 
 
 
@@ -75,7 +77,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   } = useGameState(memoizedG, memoizedCtx, playerID);
   
   // Extract game board data with performance utilities
-  const { infrastructureData, gameMetrics } = useGameBoardData(memoizedG, currentPhase);
+  const { infrastructureData } = useGameBoardData(memoizedG, currentPhase);
   
   // Create optimized props object for hooks
   const optimizedProps = useMemo(() => ({
@@ -245,6 +247,23 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       moves.chooseCardFromDeck({ cardId });
     }
   }, [moves]);
+
+  // Optimized common props with performance utilities
+  const optimizedInfrastructureData = useMemo(() => ({
+    cards: memoizedG?.infrastructure || [],
+    length: memoizedG?.infrastructure?.length || 0,
+    states: memoizedG?.infrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
+  }), [memoizedG?.infrastructure]);
+
+  // Common props to pass to child components
+  const commonProps = useMemo(() => ({
+    G: memoizedG,
+    ctx: memoizedCtx,
+    playerID,
+    isActive,
+    moves,
+    isAttacker
+  }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
   // Loading state
   if (!G || !ctx) {
@@ -467,7 +486,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // Render infrastructure grid
   const renderInfrastructure = () => {
-    const infrastructure = infrastructureData.cards;
+    const infrastructure = optimizedInfrastructureData.cards;
     
     return (
       <div className="flex flex-wrap gap-3 justify-center items-center max-w-full">
@@ -746,20 +765,12 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
               
               <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">PLAYER_INFO</h3>
-              <div className="space-y-2 text-sm">
-                <div>You: {currentPlayerObj?.username || playerID}</div>
-                <div>Role: {isAttacker ? 'ATTACKER' : 'DEFENDER'}</div>
-                <div>Hand: {currentPlayerObj?.hand?.length || 0} cards</div>
-                {/* Action Points Display */}
-                <div className="flex items-center gap-2">
-                  <span>AP:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-accent">⚡</span>
-                    <span className="font-bold text-accent">
-                      {(currentPlayerObj as any)?.actionPoints || 0}/{memoizedG?.gameConfig?.maxActionPoints || 10}
-                    </span>
-                  </div>
-                </div>
+              <div className="space-y-3">
+                <PlayerInfo
+                  {...commonProps}
+                  player={currentPlayerObj}
+                  isOpponent={false}
+                />
               </div>
             </div>
             
@@ -772,12 +783,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">PLAYED_CARDS</h3>
                 <div className="max-h-40 overflow-y-auto">
                   <PlayerBoard
-                    G={memoizedG}
-                    ctx={memoizedCtx}
-                    moves={moves}
-                    playerID={playerID}
-                    isActive={isActive}
-                    isAttacker={isAttacker}
+                    {...commonProps}
                     player={currentPlayerObj}
                     isCurrentPlayer={true}
                   />
@@ -808,15 +814,24 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
               
               <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">BATTLE_STATUS</h3>
-              <div className="flex justify-between items-center">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary font-mono">{memoizedG?.attackerScore || 0}</div>
+              
+              <PowerBar
+                attackerScore={memoizedG?.attackerScore || 0}
+                defenderScore={memoizedG?.defenderScore || 0}
+                totalInfrastructure={optimizedInfrastructureData.length}
+              />
+              
+              <div className="flex justify-between items-center mt-3">
+                <div className={`text-center ${isAttacker ? 'border-success bg-success/10 p-2 rounded' : ''}`}>
+                  <div className="text-xl font-bold text-primary font-mono">{memoizedG?.attackerScore || 0}</div>
                   <div className="text-xs">ATTACKER</div>
+                  {isAttacker && <div className="text-xs text-success font-mono mt-1">YOU</div>}
                 </div>
                 <div className="text-base-content/50 font-mono">VS</div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary font-mono">{memoizedG?.defenderScore || 0}</div>
+                <div className={`text-center ${!isAttacker ? 'border-success bg-success/10 p-2 rounded' : ''}`}>
+                  <div className="text-xl font-bold text-primary font-mono">{memoizedG?.defenderScore || 0}</div>
                   <div className="text-xs">DEFENDER</div>
+                  {!isAttacker && <div className="text-xs text-success font-mono mt-1">YOU</div>}
                 </div>
               </div>
             </div>
@@ -827,9 +842,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               
               <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">INFRASTRUCTURE</h3>
               <div className="space-y-2 text-sm">
-                <div>Total: {infrastructureData.length}</div>
-                <div>Compromised: {infrastructureData.cards.filter(i => i.state === 'compromised').length}</div>
-                <div>Secured: {infrastructureData.cards.filter(i => i.state === 'fortified').length}</div>
+                <div>Total: {optimizedInfrastructureData.length}</div>
+                <div>Compromised: {optimizedInfrastructureData.cards.filter(i => i.state === 'compromised').length}</div>
+                <div>Secured: {optimizedInfrastructureData.cards.filter(i => i.state === 'fortified').length}</div>
               </div>
             </div>
             
@@ -911,7 +926,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && (
         <ChainEffectUI
           pendingChainChoice={memoizedG.pendingChainChoice}
-          infrastructureCards={infrastructureData.cards}
+          infrastructureCards={optimizedInfrastructureData.cards}
           onChooseTarget={handleChooseChainTarget}
         />
       )}
@@ -938,12 +953,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps) => {
   // Safety check
   if (!prevProps.G || !nextProps.G || !prevProps.ctx || !nextProps.ctx) {
+    console.log('CLIENT: Re-rendering due to missing props');
     return false;
   }
   
   // Quick primitive checks
   if (prevProps.isActive !== nextProps.isActive ||
       prevProps.playerID !== nextProps.playerID) {
+    console.log('CLIENT: Re-rendering due to player/active state change');
     return false;
   }
   
@@ -951,49 +968,77 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   if (prevProps.ctx.phase !== nextProps.ctx.phase ||
       prevProps.ctx.currentPlayer !== nextProps.ctx.currentPlayer ||
       prevProps.ctx.gameover !== nextProps.ctx.gameover) {
+    console.log('CLIENT: Re-rendering due to context change');
     return false;
   }
   
-  // Check activePlayers for reaction mode
+  // CRITICAL: Check activePlayers for reaction mode detection
   if (!isEqual(prevProps.ctx.activePlayers, nextProps.ctx.activePlayers)) {
+    console.log('CLIENT: Re-rendering due to activePlayers change (reaction mode)');
     return false;
   }
   
-  // Game state changes
+  // Game state primitive checks
   if (prevProps.G.gamePhase !== nextProps.G.gamePhase ||
       prevProps.G.message !== nextProps.G.message ||
       prevProps.G.attackerScore !== nextProps.G.attackerScore ||
       prevProps.G.defenderScore !== nextProps.G.defenderScore) {
+    console.log('CLIENT: Re-rendering due to game state change');
     return false;
   }
   
-  // Player objects - check hand lengths
-  if (prevProps.G?.attacker?.hand?.length !== nextProps.G?.attacker?.hand?.length ||
+  // Chat messages - only check length and last message for performance
+  const prevMessages = prevProps.G?.chat?.messages || [];
+  const nextMessages = nextProps.G?.chat?.messages || [];
+  if (prevMessages.length !== nextMessages.length ||
+      (prevMessages.length > 0 && nextMessages.length > 0 &&
+       !isEqual(prevMessages[prevMessages.length - 1], nextMessages[nextMessages.length - 1]))) {
+    console.log('CLIENT: Re-rendering due to chat message changes');
+    return false;
+  }
+  
+  // Player objects - check IDs and hand lengths only
+  if (prevProps.G?.attacker?.id !== nextProps.G?.attacker?.id ||
+      prevProps.G?.defender?.id !== nextProps.G?.defender?.id ||
+      prevProps.G?.attacker?.hand?.length !== nextProps.G?.attacker?.hand?.length ||
       prevProps.G?.defender?.hand?.length !== nextProps.G?.defender?.hand?.length) {
+    console.log('CLIENT: Re-rendering due to player changes');
     return false;
   }
   
-  // Infrastructure changes
+  // Infrastructure - check length and states only
   const prevInfra = prevProps.G?.infrastructure || [];
   const nextInfra = nextProps.G?.infrastructure || [];
   if (prevInfra.length !== nextInfra.length) {
+    console.log('CLIENT: Re-rendering due to infrastructure count change');
     return false;
   }
   
+  // Check infrastructure states
   for (let i = 0; i < prevInfra.length; i++) {
-    if (prevInfra[i]?.state !== nextInfra[i]?.state) {
+    if (prevInfra[i]?.state !== nextInfra[i]?.state ||
+        prevInfra[i]?.id !== nextInfra[i]?.id) {
+      console.log('CLIENT: Re-rendering due to infrastructure state change');
       return false;
     }
   }
   
-  // Pending choices
+  // Pending choices - check player IDs only
   if (prevProps.G?.pendingChainChoice?.playerId !== nextProps.G?.pendingChainChoice?.playerId ||
       prevProps.G?.pendingWildcardChoice?.playerId !== nextProps.G?.pendingWildcardChoice?.playerId ||
       prevProps.G?.pendingHandChoice?.targetPlayerId !== nextProps.G?.pendingHandChoice?.targetPlayerId ||
       prevProps.G?.pendingCardChoice?.playerId !== nextProps.G?.pendingCardChoice?.playerId) {
+    console.log('CLIENT: Re-rendering due to pending choice changes');
     return false;
   }
   
+  // Rematch requests
+  if (prevProps.G?.rematchRequested !== nextProps.G?.rematchRequested) {
+    console.log('CLIENT: Re-rendering due to rematch request changes');
+    return false;
+  }
+  
+  // If we reach here, no meaningful changes detected
   return true;
 });
 
