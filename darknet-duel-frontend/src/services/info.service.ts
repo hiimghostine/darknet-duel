@@ -120,3 +120,5 @@ class InfoService {
     return response.data.data;
   }
 }
+
+export default new InfoService(); 

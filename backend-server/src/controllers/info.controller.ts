@@ -287,3 +287,141 @@ export class InfoController {
       });
     }
   };
+
+  /**
+   * @swagger
+   * /api/info/profile/{userId}:
+   *   get:
+   *     tags: [Profile & Info]
+   *     summary: Get any user's profile information by ID
+   *     description: Retrieves user profile including recent activity and statistics for any user
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: userId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: The UUID of the user to get profile information for
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 50
+   *           default: 10
+   *         description: Maximum number of recent activities to return
+   *     responses:
+   *       200:
+   *         description: Profile information retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     recentActivity:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/RecentActivityItem'
+   *                     profileStats:
+   *                       $ref: '#/components/schemas/ProfileStats'
+   *                     user:
+   *                       $ref: '#/components/schemas/PublicUser'
+   *       400:
+   *         description: Bad request - invalid UUID format
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
+  getProfileByUserId = async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+
+      // Basic UUID format validation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid UUID format'
+        });
+      }
+
+      // Get query parameters for pagination
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 50); // Max 50 activities
+
+      // Fetch user info first to check if user exists
+      const user = await this.infoService.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Fetch recent activity and profile stats in parallel
+      const [recentActivity, profileStats] = await Promise.all([
+        this.infoService.getRecentActivity(userId, limit),
+        this.infoService.getProfileStats(userId)
+      ]);
+
+      const responseData = {
+        recentActivity,
+        profileStats,
+        user: {
+          id: user.id,
+          username: user.username,
+          isActive: user.isActive,
+          gamesPlayed: user.gamesPlayed,
+          gamesWon: user.gamesWon,
+          gamesLost: user.gamesLost,
+          rating: user.rating,
+          bio: user.bio,
+          createdAt: user.createdAt
+        }
+      };
+
+      console.log('Profile API Response for user:', userId);
+      console.log('User data being sent:', JSON.stringify(responseData.user, null, 2));
+
+      return res.status(200).json({
+        success: true,
+        data: responseData
+      });
+
+    } catch (error) {
+      console.error('Get profile by user ID error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch profile information',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
+} 

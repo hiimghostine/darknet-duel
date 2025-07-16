@@ -160,14 +160,14 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   // Handle username click to show profile popup
   const handleUsernameClick = (event: React.MouseEvent, message: LobbyChatMessage) => {
-    // Don't show popup for system messages
-    if (message.messageType === 'system') return;
+    // Don't show popup for own messages or system messages
+    if (isOwnMessage(message) || message.messageType === 'system') return;
     
     // Get the user ID from the message
     const userId = message.senderUuid;
-    const username = message.metadata?.username || user?.username || 'ANON';
+    const username = message.metadata?.username || 'ANON';
     
-    if (!userId) return;
+    if (!userId || userId === user?.id) return;
 
     setProfilePopup({
       isVisible: true,
@@ -265,57 +265,6 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
               <div className="flex items-center p-2">
                 <span className="text-primary font-mono text-sm mr-2 text-flicker">&gt;</span>
                 <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    setIsTyping(e.target.value.length > 0);
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder="ENTER_TRANSMISSION..."
-                  disabled={!isConnected}
-                  maxLength={500}
-                  className="flex-1 bg-transparent border-none outline-none text-base-content text-sm font-mono
-                           placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                {newMessage.length > 450 && (
-                  <span className="text-warning text-xs ml-2 font-mono">
-                    {500 - newMessage.length}
-                  </span>
-                )}
-              </div>
-              
-              {/* Status line with cyberpunk styling */}
-              <div className="px-2 pb-2 text-xs text-base-content/50 font-mono">
-                <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1">
-                    <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
-                    {isTyping ? 'TRANSMITTING...' : 'STANDBY'}
-                  </span>
-                  <span>
-                    ENTER→SEND • {newMessage.length}/500 CHARS
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Profile Popup */}
-      <UserProfilePopup
-        userId={profilePopup.userId}
-        username={profilePopup.username}
-        isVisible={profilePopup.isVisible}
-        position={profilePopup.position}
-        onClose={closeProfilePopup}
-      />
-    </div>
-  );
-};
-
-export default LobbyChat; 
                   ref={inputRef}
                   type="text"
                   value={newMessage}

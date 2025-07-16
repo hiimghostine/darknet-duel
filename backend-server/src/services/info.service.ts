@@ -141,3 +141,22 @@ export class InfoService {
       throw new Error('Failed to fetch profile statistics');
     }
   }
+
+  /**
+   * Get user by ID for profile info
+   * @param accountId - The user's account ID
+   * @returns User data or null if not found
+   */
+  async getUserById(accountId: string) {
+    try {
+      const user = await this.accountRepository.findOne({
+        where: { id: accountId }
+      });
+
+      return user;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      throw new Error('Failed to fetch user data');
+    }
+  }
+} 
