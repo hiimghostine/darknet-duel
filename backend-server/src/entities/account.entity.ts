@@ -30,6 +30,9 @@ export class Account {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true, type: 'text' })
+  inactiveReason: string | null;
+
   @Column({ nullable: true })
   lastLogin: Date;
 

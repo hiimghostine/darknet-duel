@@ -198,7 +198,11 @@ export class AuthController {
       
       // Check if account is active
       if (!user.isActive) {
-        return res.status(401).json({ message: 'Account is disabled' });
+        return res.status(401).json({ 
+          message: 'This account is inactive!',
+          inactiveReason: user.inactiveReason || 'Account has been deactivated',
+          isInactive: true
+        });
       }
       
       // Verify password

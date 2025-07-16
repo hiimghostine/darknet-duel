@@ -68,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           <div className="mr-2 text-base">!</div>
           <div>
             <div className="font-bold mb-0.5">AUTHENTICATION_ERROR</div>
-            <div>{error}</div>
+            <div className="whitespace-pre-line">{error}</div>
           </div>
         </div>
       )}

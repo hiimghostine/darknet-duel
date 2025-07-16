@@ -16,6 +16,10 @@ router.get('/users/:id', adminController.getUserById);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 
+// Ban management routes
+router.post('/users/:id/ban', adminController.banUser);
+router.post('/users/:id/unban', adminController.unbanUser);
+
 // Statistics routes
 router.get('/stats', adminController.getUserStats);
 

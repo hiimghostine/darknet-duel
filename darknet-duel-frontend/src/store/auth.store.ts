@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import authService from '../services/auth.service';
 import type { User, LoginCredentials, RegisterData } from '../services/auth.service';
+import { showToast } from './toast.store';
 
 interface AuthState {
   user: User | null;
@@ -34,7 +35,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      const errorData = error.response?.data;
+      
+      // Handle inactive account with toast notification
+      if (errorData?.isInactive) {
+        const inactiveMessage = `Reason: ${errorData.inactiveReason}\n\nFor any help, please contact a mod or admin.`;
+        
+        // Show toast notification for inactive account
+        showToast.error(
+          'Account Inactive',
+          inactiveMessage,
+          10000 // Show for 10 seconds
+        );
+        
+        set({ isLoading: false, error: null });
+        return; // Don't throw error, just show toast
+      }
+      
+      const errorMessage = errorData?.message || 'Login failed. Please try again.';
       set({ isLoading: false, error: errorMessage });
       throw new Error(errorMessage);
     }

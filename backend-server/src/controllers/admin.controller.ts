@@ -389,4 +389,168 @@ export class AdminController {
       });
     }
   };
+
+  /**
+   * @swagger
+   * /api/admin/users/{id}/ban:
+   *   post:
+   *     tags: [Admin]
+   *     summary: Ban user account
+   *     description: Deactivate a user account with a ban reason
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: User ID to ban
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reason
+   *             properties:
+   *               reason:
+   *                 type: string
+   *                 description: Reason for banning the user
+   *                 example: "Violated community guidelines"
+   *     responses:
+   *       200:
+   *         description: User banned successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/AdminUser'
+   *                 message:
+   *                   type: string
+   *                   example: "User banned successfully"
+   *       400:
+   *         description: Invalid request or cannot ban admin accounts
+   *       404:
+   *         description: User not found
+   *       401:
+   *         description: Unauthorized - not an admin
+   */
+  banUser = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ban reason is required'
+        });
+      }
+
+      const bannedUser = await this.adminService.banUser(id, reason.trim());
+
+      return res.status(200).json({
+        success: true,
+        data: bannedUser,
+        message: 'User banned successfully'
+      });
+    } catch (error) {
+      console.error('Admin ban user error:', error);
+      
+      if ((error as Error).message === 'User not found') {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      if ((error as Error).message === 'Cannot ban admin accounts') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot ban admin accounts'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to ban user',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
+
+  /**
+   * @swagger
+   * /api/admin/users/{id}/unban:
+   *   post:
+   *     tags: [Admin]
+   *     summary: Unban user account
+   *     description: Reactivate a banned user account
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: User ID to unban
+   *     responses:
+   *       200:
+   *         description: User unbanned successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/AdminUser'
+   *                 message:
+   *                   type: string
+   *                   example: "User unbanned successfully"
+   *       404:
+   *         description: User not found
+   *       401:
+   *         description: Unauthorized - not an admin
+   */
+  unbanUser = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const unbannedUser = await this.adminService.unbanUser(id);
+
+      return res.status(200).json({
+        success: true,
+        data: unbannedUser,
+        message: 'User unbanned successfully'
+      });
+    } catch (error) {
+      console.error('Admin unban user error:', error);
+      
+      if ((error as Error).message === 'User not found') {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to unban user',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
 } 

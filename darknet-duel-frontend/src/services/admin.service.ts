@@ -6,6 +6,7 @@ export interface AdminUser {
   username: string;
   type: 'user' | 'mod' | 'admin';
   isActive: boolean;
+  inactiveReason: string | null;
   lastLogin: string | null;
   gamesPlayed: number;
   gamesWon: number;
@@ -103,6 +104,22 @@ class AdminService {
     regularUsers: number;
   }> {
     const response = await api.get('/admin/stats');
+    return response.data.data;
+  }
+
+  /**
+   * Ban a user with a reason
+   */
+  async banUser(id: string, reason: string): Promise<AdminUser> {
+    const response = await api.post(`/admin/users/${id}/ban`, { reason });
+    return response.data.data;
+  }
+
+  /**
+   * Unban a user (reactivate account)
+   */
+  async unbanUser(id: string): Promise<AdminUser> {
+    const response = await api.post(`/admin/users/${id}/unban`);
     return response.data.data;
   }
 }

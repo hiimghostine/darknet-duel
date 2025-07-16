@@ -3,6 +3,8 @@ import './App.css';
 import './styles/lobby.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
+import { useToastStore } from './store/toast.store';
+import ToastContainer from './components/ToastContainer';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
@@ -17,6 +19,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
   const { loadUser } = useAuthStore();
+  const { toasts, removeToast } = useToastStore();
   
   useEffect(() => {
     // Check authentication status when app loads
@@ -46,6 +49,9 @@ function App() {
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onCloseToast={removeToast} />
     </Router>
   );
 }

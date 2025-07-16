@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import adminService, { type AdminUser, type UserFilters, type PaginatedUsersResponse } from '../../services/admin.service';
 import UserProfilePopup from '../UserProfilePopup';
 import UserEditModal from './UserEditModal';
+import BanUserModal from './BanUserModal';
 
 interface UserManagementProps {
   onError?: (message: string) => void;
@@ -26,8 +27,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
   // UI state
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [banningUser, setBanningUser] = useState<AdminUser | null>(null);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [profilePopupPosition, setProfilePopupPosition] = useState({ x: 0, y: 0 });
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [banLoading, setBanLoading] = useState(false);
 
   // Load users
   const loadUsers = useCallback(async (filters: UserFilters = {}) => {
@@ -105,20 +109,52 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
     setEditingUser(user);
   };
 
-  // Handle delete user
-  const handleDeleteUser = async (user: AdminUser) => {
-    if (!confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) {
+  // Handle ban user
+  const handleBanUser = (user: AdminUser) => {
+    setBanningUser(user);
+    setShowBanModal(true);
+  };
+
+  // Handle ban confirmation
+  const handleBanConfirm = async (reason: string) => {
+    if (!banningUser) return;
+
+    setBanLoading(true);
+    try {
+      await adminService.banUser(banningUser.id, reason);
+      onSuccess?.(`User "${banningUser.username}" banned successfully`);
+      setShowBanModal(false);
+      setBanningUser(null);
+      loadUsers(); // Reload users list
+    } catch (error) {
+      console.error('Failed to ban user:', error);
+      onError?.('Failed to ban user');
+    } finally {
+      setBanLoading(false);
+    }
+  };
+
+  // Handle unban user
+  const handleUnbanUser = async (user: AdminUser) => {
+    if (!confirm(`Are you sure you want to unban user "${user.username}"?`)) {
       return;
     }
 
     try {
-      await adminService.deleteUser(user.id);
-      onSuccess?.(`User "${user.username}" deleted successfully`);
+      await adminService.unbanUser(user.id);
+      onSuccess?.(`User "${user.username}" unbanned successfully`);
       loadUsers(); // Reload users list
     } catch (error) {
-      console.error('Failed to delete user:', error);
-      onError?.('Failed to delete user');
+      console.error('Failed to unban user:', error);
+      onError?.('Failed to unban user');
     }
+  };
+
+  // Handle ban modal close
+  const handleBanModalClose = () => {
+    setShowBanModal(false);
+    setBanningUser(null);
+    setBanLoading(false);
   };
 
   // Handle user update from edit modal
@@ -302,8 +338,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
 
                     {/* Status */}
                     <td>
-                      <div className={`badge ${user.isActive ? 'badge-success' : 'badge-error'} badge-sm`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
+                      <div className="flex flex-col gap-1">
+                        <div className={`badge ${user.isActive ? 'badge-success' : 'badge-error'} badge-sm`}>
+                          {user.isActive ? 'Active' : 'Banned'}
+                        </div>
+                        {!user.isActive && user.inactiveReason && (
+                          <div className="text-xs text-error/70 font-mono max-w-32 truncate" title={user.inactiveReason}>
+                            {user.inactiveReason}
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -333,13 +376,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
                         >
                           ✏️
                         </button>
-                        <button
-                          className="btn btn-error btn-xs"
-                          onClick={() => handleDeleteUser(user)}
-                          title="Delete User"
-                        >
-                          🗑️
-                        </button>
+                        {user.isActive ? (
+                          <button
+                            className="btn btn-warning btn-xs"
+                            onClick={() => handleBanUser(user)}
+                            title="Ban User"
+                          >
+                            🚫
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-success btn-xs"
+                            onClick={() => handleUnbanUser(user)}
+                            title="Unban User"
+                          >
+                            ✅
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -414,6 +467,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
           onError={onError}
         />
       )}
+
+      {/* Ban User Modal */}
+      <BanUserModal
+        user={banningUser}
+        isOpen={showBanModal}
+        onClose={handleBanModalClose}
+        onConfirm={handleBanConfirm}
+        isLoading={banLoading}
+      />
     </div>
   );
 };

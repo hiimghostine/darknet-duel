@@ -27,6 +27,7 @@ export interface AdminUserData {
   username: string;
   type: AccountType;
   isActive: boolean;
+  inactiveReason: string | null;
   lastLogin: Date | null;
   gamesPlayed: number;
   gamesWon: number;
@@ -88,6 +89,7 @@ export class AdminService {
       username: user.username,
       type: user.type,
       isActive: user.isActive,
+      inactiveReason: user.inactiveReason,
       lastLogin: user.lastLogin,
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
@@ -129,6 +131,7 @@ export class AdminService {
       username: user.username,
       type: user.type,
       isActive: user.isActive,
+      inactiveReason: user.inactiveReason,
       lastLogin: user.lastLogin,
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
@@ -267,6 +270,87 @@ export class AdminService {
       adminUsers,
       modUsers,
       regularUsers
+    };
+  }
+
+  /**
+   * Ban a user with a reason
+   */
+  async banUser(id: string, reason: string): Promise<AdminUserData | null> {
+    const user = await this.accountRepository.findOne({ where: { id } });
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Don't allow banning admin accounts
+    if (user.type === AccountType.ADMIN) {
+      throw new Error('Cannot ban admin accounts');
+    }
+
+    // Update user to inactive with reason
+    user.isActive = false;
+    user.inactiveReason = reason;
+    user.updatedAt = new Date();
+
+    const updatedUser = await this.accountRepository.save(user);
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      username: updatedUser.username,
+      type: updatedUser.type,
+      isActive: updatedUser.isActive,
+      inactiveReason: updatedUser.inactiveReason,
+      lastLogin: updatedUser.lastLogin,
+      gamesPlayed: updatedUser.gamesPlayed,
+      gamesWon: updatedUser.gamesWon,
+      gamesLost: updatedUser.gamesLost,
+      rating: updatedUser.rating,
+      bio: updatedUser.bio,
+      creds: updatedUser.creds,
+      crypts: updatedUser.crypts,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+      hasAvatar: !!updatedUser.avatar
+    };
+  }
+
+  /**
+   * Unban a user (reactivate account)
+   */
+  async unbanUser(id: string): Promise<AdminUserData | null> {
+    const user = await this.accountRepository.findOne({ where: { id } });
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Reactivate user and clear inactive reason
+    user.isActive = true;
+    user.inactiveReason = null;
+    user.updatedAt = new Date();
+
+    const updatedUser = await this.accountRepository.save(user);
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      username: updatedUser.username,
+      type: updatedUser.type,
+      isActive: updatedUser.isActive,
+      inactiveReason: updatedUser.inactiveReason,
+      lastLogin: updatedUser.lastLogin,
+      gamesPlayed: updatedUser.gamesPlayed,
+      gamesWon: updatedUser.gamesWon,
+      gamesLost: updatedUser.gamesLost,
+      rating: updatedUser.rating,
+      bio: updatedUser.bio,
+      creds: updatedUser.creds,
+      crypts: updatedUser.crypts,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+      hasAvatar: !!updatedUser.avatar
     };
   }
 } 
