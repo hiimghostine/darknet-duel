@@ -9,9 +9,7 @@ const CreateLobby: React.FC = () => {
   const { user } = useAuthStore();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Remove role selection as roles will be auto-assigned in the lobby
-  // Only standard mode is currently available
-  // No need for game settings state variables as we're only using standard mode
+  const [selectedMode, setSelectedMode] = useState<'standard' | 'blitz' | 'custom'>('standard');
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
@@ -106,35 +104,58 @@ const CreateLobby: React.FC = () => {
         <div className="grid md:grid-cols-3 gap-3 mt-4">
           <button 
             type="button"
-            className="p-4 border border-primary bg-base-900/80 hover:bg-primary/20 transition-all duration-300 text-primary font-mono rounded group relative overflow-hidden"
+            onClick={() => setSelectedMode('standard')}
+            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+              selectedMode === 'standard' 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
+            }`}
           >
-            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary"></div>
-            <span className="text-base font-bold block">STANDARD</span>
-            <span className="text-xs text-primary-300">[ ACTIVE ]</span>
+            <div className={`absolute inset-0 transition-opacity duration-300 ${
+              selectedMode === 'standard' ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
+            }`}></div>
+            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
+              selectedMode === 'standard' ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
+              selectedMode === 'standard' ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <span className="text-base font-bold block relative z-10">STANDARD</span>
+            <span className={`text-xs relative z-10 ${
+              selectedMode === 'standard' ? 'text-primary/90' : 'text-primary/70'
+            }`}>[ {selectedMode === 'standard' ? 'SELECTED' : 'AVAILABLE'} ]</span>
           </button>
           
           <button 
             type="button"
-            className="p-4 border border-gray-500/30 bg-base-900/60 text-gray-500 font-mono rounded opacity-60 cursor-not-allowed relative"
+            onClick={() => setSelectedMode('blitz')}
+            className={`p-4 border font-mono rounded relative transition-all duration-300 ${
+              selectedMode === 'blitz'
+                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-2 ring-base-content/30'
+                : 'border-base-content/30 bg-base-900/60 text-base-content/60 opacity-60 cursor-not-allowed'
+            }`}
             disabled
           >
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-gray-500/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-gray-500/50"></div>
-            <span className="text-base font-bold block">BLITZ</span>
-            <span className="text-xs">[ COMING SOON ]</span>
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
+            <span className="text-base font-bold block relative z-10">BLITZ</span>
+            <span className="text-xs relative z-10">[ COMING SOON ]</span>
           </button>
           
           <button 
             type="button"
-            className="p-4 border border-gray-500/30 bg-base-900/60 text-gray-500 font-mono rounded opacity-60 cursor-not-allowed relative"
+            onClick={() => setSelectedMode('custom')}
+            className={`p-4 border font-mono rounded relative transition-all duration-300 ${
+              selectedMode === 'custom'
+                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-2 ring-base-content/30'
+                : 'border-base-content/30 bg-base-900/60 text-base-content/60 opacity-60 cursor-not-allowed'
+            }`}
             disabled
           >
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-gray-500/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-gray-500/50"></div>
-            <span className="text-base font-bold block">CUSTOM</span>
-            <span className="text-xs">[ COMING SOON ]</span>
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
+            <span className="text-base font-bold block relative z-10">CUSTOM</span>
+            <span className="text-xs relative z-10">[ COMING SOON ]</span>
           </button>
         </div>
       </div>
@@ -180,9 +201,10 @@ const CreateLobby: React.FC = () => {
       <div className="flex justify-between items-center pt-4 border-t border-primary/20">
         <button 
           type="button" 
-          className="px-6 py-2 bg-base-800 border border-base-300/30 text-base-300 hover:text-primary hover:border-primary transition-colors duration-200 rounded font-mono text-sm flex items-center" 
+          className="px-6 py-2 bg-base-200/10 border border-base-content/30 text-base-content hover:text-error hover:border-error hover:bg-error/10 transition-colors duration-200 rounded font-mono text-sm flex items-center" 
           onClick={handleCancel}
         >
+          <span className="mr-2">✕</span>
           ABORT OPERATION
         </button>
         

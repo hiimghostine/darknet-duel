@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import logo from '../assets/logo.png';
 import coverPhoto from '../assets/Cover Photo.png';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
   
   useEffect(() => {
@@ -20,6 +21,13 @@ const HomePage: React.FC = () => {
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+  };
+
+  const handleLogoClick = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+    // If not authenticated, stay on homepage (do nothing)
   };
 
   return (
@@ -39,7 +47,7 @@ const HomePage: React.FC = () => {
       {/* Header */}
       <header className="relative z-10">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="flex items-center">
+          <div className={`flex items-center ${isAuthenticated ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''}`} onClick={handleLogoClick}>
             <img src={logo} alt="Darknet Duel Logo" className="h-10 mr-3" />
             <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-content/80">
               DARKNET<span className="opacity-80">_DUEL</span>

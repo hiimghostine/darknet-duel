@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
+import accountService from '../services/account.service';
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout, loadUser } = useAuthStore();
@@ -11,18 +14,47 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [userBio, setUserBio] = useState<string | null>(null);
   
   useEffect(() => {
-    // Refresh user data on dashboard load and simulate loading
-    loadUser();
-    
-    // Simulate loading data on mount with a delay for aesthetic purposes
-    // Using a longer delay to ensure the loading animation completes fully
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
-    
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        // Refresh user data on dashboard load
+        await loadUser();
+        
+        // Fetch profile information from our new API
+        const profileInfo = await infoService.getProfile(3); // Get last 3 activities
+        setRecentActivity(profileInfo.recentActivity);
+        setProfileStats(profileInfo.profileStats);
+        
+        // Fetch account details to get bio
+        try {
+          const accountData = await accountService.getMyAccount();
+          setUserBio(accountData.bio);
+        } catch (error) {
+          console.error('Failed to fetch account bio:', error);
+          setUserBio(null);
+        }
+        
+        setDataError(null);
+      } catch (error) {
+        console.error('Failed to fetch profile data:', error);
+        setDataError('Failed to load profile data');
+        // Fallback to empty arrays if API fails
+        setRecentActivity([]);
+        setProfileStats(null);
+      } finally {
+        // Simulate loading for aesthetic purposes but reduce delay
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 2000);
+      }
+    };
+
+    fetchData();
   }, [loadUser]);
   
   // Get theme from localStorage
@@ -54,20 +86,22 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/auth" replace />;
   }
   
-  // Stats data
-  const statsData = [
-    { label: 'WINS', value: user?.gamesWon || '0' },
-    { label: 'LOSSES', value: user?.gamesLost || '0' },
-    { label: 'RATIO', value: user?.gamesPlayed ? 
-      ((user.gamesWon / user.gamesPlayed) * 100).toFixed(1) + '%' : '0%' },
-    { label: 'ELO', value: user?.rating || '0' }
+  // Stats data - now using profileStats from API instead of user object
+  const statsData = profileStats ? [
+    { label: 'WINS', value: profileStats.wins.toString() },
+    { label: 'LOSSES', value: profileStats.losses.toString() },
+    { label: 'RATIO', value: profileStats.winRate },
+    { label: 'ELO', value: profileStats.rating.toString() }
+  ] : [
+    { label: 'WINS', value: '0' },
+    { label: 'LOSSES', value: '0' },
+    { label: 'RATIO', value: '0%' },
+    { label: 'ELO', value: '0' }
   ];
   
-  // Activities data - could be replaced with actual activity data
-  const activitiesData = [
-    { type: 'WIN', opponent: 'ByteRunner', time: '2h ago' },
-    { type: 'LOSS', opponent: 'NeonHex', time: '5h ago' },
-    { type: 'WIN', opponent: 'Cyph3rPunk', time: '1d ago' }
+  // Use real activities data from API or show placeholder if empty (limit to 3 activities)
+  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [
+    { type: 'WIN' as const, opponent: 'No recent games', time: 'Play a game to see activity', pointsChange: '+0 PTS' },
   ];
 
   return (
@@ -96,52 +130,12 @@ const DashboardPage: React.FC = () => {
 
       {/* Main content - hide immediately when logging out */}
       <div className={`relative z-10 transition-opacity duration-500 ${isLoading || isLoggingOut ? 'opacity-0' : 'opacity-100'} scanline`}>
-        <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Darknet Duel Logo" className="h-8" />
-              <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
-                DARKNET_DUEL
-              </h1>
-            </div>
-        
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => navigate('/lobbies')} 
-                className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-              >
-                <span className="mr-1">🎮</span> 
-                <span className="hidden sm:inline">LOBBY</span>
-              </button>
-              
-              <button 
-                onClick={() => navigate('/profile')} 
-                className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                aria-label="Profile"
-              >
-                <span className="mr-1">👤</span>
-                <span className="hidden sm:inline">PROFILE</span>
-              </button>
-              
-              <button
-                onClick={toggleTheme}
-                className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                aria-label="Toggle Theme"
-              >
-                {theme === 'cyberpunk' ? '🌙' : '☀️'}
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                aria-label="Logout"
-              >
-                <span className="mr-1">🚪</span>
-                <span className="hidden sm:inline">EXIT</span>
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppBar 
+          currentPage="dashboard"
+          theme={theme}
+          onThemeToggle={toggleTheme}
+          onLogout={handleLogout}
+        />
 
         <main className="container mx-auto p-4">
           {/* Welcome banner */}
@@ -171,6 +165,33 @@ const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Left column - Main content */}
             <div className="md:col-span-2 space-y-8">
+              {/* System Updates */}
+              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-primary/20 p-4 relative">
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-mono text-primary text-lg">SYSTEM_UPDATES</h3>
+                    <div className="text-xs text-base-content/70 font-mono">SOURCE: ADMIN</div>
+                  </div>
+                  
+                  <div className="font-mono text-sm border border-primary/30 bg-base-300/50 p-3">
+                    <div className="flex">
+                      <span className="text-primary mr-2">&gt;</span>
+                      <span className="typing-animation">Welcome to Darknet Duel v0.0.1. The system is currently in alpha testing.</span>
+                    </div>
+                    <div className="flex mt-2">
+                      <span className="text-primary mr-2">&gt;</span>
+                      <span>New features will be deployed soon. Stay connected for updates.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Stats panel */}
               <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
                 <div className="bg-base-200 border border-primary/20 p-4 relative">
@@ -182,7 +203,7 @@ const DashboardPage: React.FC = () => {
                   
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-mono text-primary text-lg">HACKER_STATS</h3>
-                    <div className="text-xs text-base-content/70 font-mono">LEVEL: {user?.level || 1}</div>
+                    <div className="text-xs text-base-content/70 font-mono">LEVEL: {profileStats?.level || 1}</div>
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -235,8 +256,86 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Right column - Activity & Updates */}
+            {/* Right column - Profile & Activity */}
             <div className="space-y-8">
+              {/* User Profile */}
+              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-primary/20 p-4 relative">
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-mono text-primary text-lg">USER_PROFILE</h3>
+                    <Link
+                      to="/profile"
+                      className="text-xs text-base-content/70 font-mono hover:text-primary transition-colors cursor-pointer"
+                    >
+                      [EDIT]
+                    </Link>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    {/* Profile Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 border-2 border-primary/50 bg-base-300/50 rounded-full overflow-hidden relative">
+                        <img
+                          src={user?.id ? accountService.getAvatarUrl(user.id) : logo}
+                          alt={`${user?.username}'s avatar`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to logo if avatar fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = logo;
+                          }}
+                        />
+                        {/* Online indicator */}
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-base-200 rounded-full"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Profile Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono">
+                        <div className="text-lg font-bold text-primary truncate">
+                          {user?.username}
+                        </div>
+                        <div className="text-xs text-base-content/70 mb-2">
+                          RATING: {profileStats?.rating || 1000}
+                        </div>
+                        <div className="text-sm text-base-content/90 mb-3">
+                          {userBio ? (
+                            <div className="italic border-l-2 border-primary/30 pl-2">
+                              "{userBio}"
+                            </div>
+                          ) : (
+                            <div className="text-base-content/50 italic">
+                              Click [EDIT] to add your bio
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Currency Display */}
+                        <div className="flex items-center gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-400">💰</span>
+                            <span className="text-yellow-400 font-bold">CREDS:</span>
+                            <span className="text-yellow-300 font-mono">{user?.creds || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-purple-400">💎</span>
+                            <span className="text-purple-400 font-bold">CRYPTS:</span>
+                            <span className="text-purple-300 font-mono">{user?.crypts || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Recent Activity */}
               <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
                 <div className="bg-base-200 border border-primary/20 p-4 relative">
@@ -251,6 +350,13 @@ const DashboardPage: React.FC = () => {
                     <div className="text-xs text-base-content/70 font-mono">LAST_UPDATE: NOW</div>
                   </div>
                   
+                  {dataError && (
+                    <div className="border border-error/50 bg-error/10 p-3 rounded mb-3">
+                      <div className="text-error font-mono text-sm">⚠️ {dataError}</div>
+                      <div className="text-error/70 font-mono text-xs mt-1">Check your connection and try refreshing</div>
+                    </div>
+                  )}
+                  
                   <div className="space-y-3">
                     {activitiesData.map((activity, index) => (
                       <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
@@ -264,44 +370,21 @@ const DashboardPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-xs font-mono text-primary">
-                          {activity.type === 'WIN' ? '+125 PTS' : '-75 PTS'}
+                          {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                         </div>
                       </div>
                     ))}
                   </div>
                   
-                  <button className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk">
+                  <button 
+                    onClick={() => navigate('/history')}
+                    className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk"
+                  >
                     VIEW_FULL_HISTORY
                   </button>
                 </div>
               </div>
-              
-              {/* News and updates */}
-              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
-                <div className="bg-base-200 border border-primary/20 p-4 relative">
-                  {/* Corner accents */}
-                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
-                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-                  
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-mono text-primary text-lg">SYSTEM_UPDATES</h3>
-                    <div className="text-xs text-base-content/70 font-mono">SOURCE: ADMIN</div>
-                  </div>
-                  
-                  <div className="font-mono text-sm border border-primary/30 bg-base-300/50 p-3">
-                    <div className="flex">
-                      <span className="text-primary mr-2">&gt;</span>
-                      <span className="typing-animation">Welcome to Darknet Duel v0.0.1. The system is currently in alpha testing.</span>
-                    </div>
-                    <div className="flex mt-2">
-                      <span className="text-primary mr-2">&gt;</span>
-                      <span>New features will be deployed soon. Stay connected for updates.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </main>

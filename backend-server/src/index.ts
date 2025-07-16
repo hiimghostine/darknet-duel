@@ -2,9 +2,19 @@ import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
+import infoRoutes from './routes/info.routes';
+import accountRoutes from './routes/account.routes';
+import filesRoutes from './routes/files.routes';
+import currencyRoutes from './routes/currency.routes';
+import paymentRoutes from './routes/payment.routes';
+import gamesRoutes from './routes/games.routes';
+import adminRoutes from './routes/admin.routes';
+import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
+import { ChatSocketService } from './services/chat-socket.service';
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +31,9 @@ const PORT = parseInt(process.env.PORT || '8000', 10);
 const HOST = process.env.HOST || 'localhost';
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 const publicUrl = process.env.PUBLIC_URL || `http://${HOST}:${PORT}`;
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
 
 // Log CORS configuration
 console.log('CORS allowed origins:', allowedOrigins);
@@ -54,8 +67,37 @@ app.use(cors({
 // Routes
 app.use('/api/auth', authRoutes);
 
+// Account management routes
+app.use('/api/account', accountRoutes);
+
+// File management routes
+app.use('/api/files', filesRoutes);
+
 // Server-to-server routes for game-server communication
 app.use('/api/server', serverRoutes);
+
+// Info routes for user profile and activity data
+app.use('/api/info', infoRoutes);
+
+// Currency management routes
+app.use('/api/currency', currencyRoutes);
+
+// Payment processing routes
+app.use('/api/payment', paymentRoutes);
+
+// Game routes for user-facing game history
+app.use('/api/games', gamesRoutes);
+
+// Admin routes for user management (admin access only)
+app.use('/api/admin', adminRoutes);
+
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+
+// Redirect /docs to /api-docs for convenience
+app.get('/docs', (req, res) => {
+  res.redirect('/api-docs');
+});
 
 // Game-related routes that use normal authentication
 app.get('/api/games/:id', (req, res) => {
@@ -68,6 +110,22 @@ app.get('/api/players/:id/rating', (req, res) => {
   res.status(200).json({ playerId: req.params.id, rating: 1200 });
 });
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags: [Health]
+ *     summary: Health check endpoint
+ *     description: Returns server status for monitoring and health checks
+ *     responses:
+ *       200:
+ *         description: Server is running normally
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "Server is running"
+ */
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).send('Server is running');
@@ -78,10 +136,15 @@ AppDataSource.initialize()
   .then(() => {
     console.log('Database connection established successfully');
     
-    // Start the server
-    app.listen(PORT, HOST, () => {
+    // Initialize Socket.io chat service
+    const chatSocketService = new ChatSocketService(httpServer);
+    console.log('Chat Socket.io service initialized');
+    
+    // Start the HTTP server (which includes both Express and Socket.io)
+    httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on ${HOST}:${PORT}`);
       console.log(`Public URL: ${publicUrl}`);
+      console.log(`Chat WebSocket available at: ${publicUrl}/socket.io`);
     });
   })
   .catch((error: Error) => {

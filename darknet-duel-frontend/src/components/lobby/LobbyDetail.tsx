@@ -4,6 +4,7 @@ import { lobbyService } from '../../services/lobby.service';
 import type { GameMatch } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
 import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt } from 'react-icons/fa';
+import LobbyChat from './LobbyChat';
 
 const LobbyDetail: React.FC = () => {
   const { matchID = '' } = useParams();
@@ -473,6 +474,15 @@ const LobbyDetail: React.FC = () => {
             <span>DISCONNECT</span>
           </button>
         </div>
+      </div>
+
+      {/* Chat section with channel switching */}
+      <div className="mt-8">
+        <LobbyChat 
+          lobbyId={matchID} 
+          showChannelSwitcher={true}
+          className="" 
+        />
       </div>
     </div>
     </>

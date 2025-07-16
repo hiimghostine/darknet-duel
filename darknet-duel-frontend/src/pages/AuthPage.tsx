@@ -9,7 +9,7 @@ import logo from '../assets/logo.png';
 const AuthPage: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -32,13 +32,15 @@ const AuthPage: React.FC = () => {
   // Handle delayed navigation after transition is shown
   useEffect(() => {
     let navigationTimer: NodeJS.Timeout;
-    if (showTransition) {
+    if (showTransition && user) {
       navigationTimer = setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        // Redirect admins to admin panel, others to dashboard
+        const redirectTo = user.type === 'admin' ? '/admin' : '/dashboard';
+        navigate(redirectTo, { replace: true });
       }, 3000); // 3 seconds delay to match the dashboard loading time
     }
     return () => clearTimeout(navigationTimer);
-  }, [showTransition, navigate]);
+  }, [showTransition, navigate, user]);
 
   // Toggle between login and register forms
   const toggleForm = () => {
@@ -47,8 +49,9 @@ const AuthPage: React.FC = () => {
 
   // If user is already authenticated but we're not showing the transition,
   // we'll immediately redirect (this handles refreshes and direct navigation)
-  if (isAuthenticated && !isLoading && !showTransition) {
-    return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated && !isLoading && !showTransition && user) {
+    const redirectTo = user.type === 'admin' ? '/admin' : '/dashboard';
+    return <Navigate to={redirectTo} replace />;
   }
 
   // Apply transition classes when showing/hiding content

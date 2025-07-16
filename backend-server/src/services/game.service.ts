@@ -176,6 +176,7 @@ export class GameService {
         .createQueryBuilder('game')
         .where('game.gameId = :gameId', { gameId })
         .leftJoinAndSelect('game.players', 'players')
+        .leftJoinAndSelect('players.account', 'account')
         .getOne();
       
       return game;
@@ -210,12 +211,31 @@ export class GameService {
         .createQueryBuilder('game')
         .where('game.gameId IN (:...gameIds)', { gameIds })
         .leftJoinAndSelect('game.players', 'players')
+        .leftJoinAndSelect('players.account', 'account')
         .orderBy('game.endTime', 'DESC')
         .getMany();
       
       return games;
     } catch (error) {
       console.error('Error in getPlayerGames:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the total count of games for a player (for pagination)
+   */
+  async getPlayerGameCount(accountId: string): Promise<number> {
+    try {
+      const gamePlayerRepo = AppDataSource.getRepository(GamePlayer);
+      const count = await gamePlayerRepo
+        .createQueryBuilder('gp')
+        .where('gp.accountId = :accountId', { accountId })
+        .getCount();
+      
+      return count;
+    } catch (error) {
+      console.error('Error in getPlayerGameCount:', error);
       throw error;
     }
   }

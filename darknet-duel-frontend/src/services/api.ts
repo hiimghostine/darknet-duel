@@ -28,7 +28,12 @@ api.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized errors
     if (error.response && error.response.status === 401) {
-      // Clear local storage and redirect to login if needed
+      // Don't auto-redirect for inactive accounts - let the auth store handle the error message
+      if (error.response.data?.isInactive) {
+        return Promise.reject(error);
+      }
+      
+      // Clear local storage and redirect to login for other 401 errors
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       

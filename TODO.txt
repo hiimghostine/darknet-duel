@@ -2,22 +2,35 @@ Accounts (ignore this):
 - Notshige1!
 - Notshige2!
 
-To add:
-
 
 Issues:
-- No "Wrong password" message
-- Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
+/ - No "Wrong password" message
+/ - Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
 / - Lobbies poll too fast
-- Can't restart game because of duplicate ids
-
+- Can't restart game because of duplicate ids, might wanna automatically create a new lobby
+- Xendit polling even after the payment's done? Need to investigate
 
 Later to add:
-- Hacker stats in front
-- Recent activity in dashboard, and View Full History button
+ASAP:
+/ - Hacker stats in front (add more cool shit)
+/ - Recent activity in dashboard, and View Full History button
+
+Mid game:
+/ - Clickable profiles
+/ - Chat in lobbies 
+- Shop for cosmetics (PULL FROM STEAM OR DISCORD)
+- Friend system...
+- DMs?
+
+Late game:
 - Dynamic system updates in dashboard
+/ - Admin panel (once everything is gucci) ongoing
+- Add bonuses to first-time purchases
+- Reporting system aaaaaaaaaaaaaaaaaaaaaa
+- Moderators pud??? We need tags (OMG ANOTHER COSMETIC????)
+
 
 
 Missing:
 Dashboard:
-    - Profile
+/     - Profile

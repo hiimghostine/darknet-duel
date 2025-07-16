@@ -17,6 +17,40 @@ export interface ChatMessage {
 }
 
 /**
+ * Lobby Chat Message - for lobby/pre-game chat
+ */
+export interface LobbyChatMessage {
+  id: string;
+  chatId: string;
+  senderUuid: string;
+  messageContent: string;
+  messageType: 'user' | 'system' | 'admin';
+  createdAt: Date;
+  metadata?: {
+    username?: string;
+    avatar?: string;
+    [key: string]: any;
+  };
+}
+
+/**
+ * Socket events for lobby chat
+ */
+export interface LobbychatSocketEvents {
+  // Client to Server
+  join_chat: (data: { chatId: string }) => void;
+  leave_chat: (data: { chatId: string }) => void;
+  send_message: (data: { chatId: string; message: string }) => void;
+  
+  // Server to Client
+  chat_history: (data: { messages: LobbyChatMessage[] }) => void;
+  new_message: (message: LobbyChatMessage) => void;
+  user_joined: (data: { userId: string; username: string }) => void;
+  user_left: (data: { userId: string; username: string }) => void;
+  chat_error: (data: { message: string }) => void;
+}
+
+/**
  * System message types that can be automatically generated
  */
 export enum SystemMessageType {
