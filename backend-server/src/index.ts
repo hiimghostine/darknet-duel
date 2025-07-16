@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
@@ -12,6 +13,7 @@ import currencyRoutes from './routes/currency.routes';
 import paymentRoutes from './routes/payment.routes';
 import gamesRoutes from './routes/games.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
+import { ChatSocketService } from './services/chat-socket.service';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +30,9 @@ const PORT = parseInt(process.env.PORT || '8000', 10);
 const HOST = process.env.HOST || 'localhost';
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 const publicUrl = process.env.PUBLIC_URL || `http://${HOST}:${PORT}`;
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
 
 // Log CORS configuration
 console.log('CORS allowed origins:', allowedOrigins);
@@ -127,10 +132,15 @@ AppDataSource.initialize()
   .then(() => {
     console.log('Database connection established successfully');
     
-    // Start the server
-    app.listen(PORT, HOST, () => {
+    // Initialize Socket.io chat service
+    const chatSocketService = new ChatSocketService(httpServer);
+    console.log('Chat Socket.io service initialized');
+    
+    // Start the HTTP server (which includes both Express and Socket.io)
+    httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on ${HOST}:${PORT}`);
       console.log(`Public URL: ${publicUrl}`);
+      console.log(`Chat WebSocket available at: ${publicUrl}/socket.io`);
     });
   })
   .catch((error: Error) => {

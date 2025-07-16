@@ -5,6 +5,7 @@ import { GameResult } from "../entities/game-result.entity";
 import { GamePlayer } from "../entities/game-player.entity";
 import { PlayerRating } from "../entities/player-rating.entity";
 import { RatingHistory } from "../entities/rating-history.entity";
+import { LobbyChat } from '../entities/lobby-chat.entity';
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +19,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || "darknet_duel",
   synchronize: process.env.NODE_ENV === "development", // Only use in development
   logging: process.env.NODE_ENV === "development",
-  entities: [Account, GameResult, GamePlayer, PlayerRating, RatingHistory],
+  entities: [Account, GameResult, GamePlayer, PlayerRating, RatingHistory, LobbyChat],
   migrations: [],
   subscribers: [],
 });

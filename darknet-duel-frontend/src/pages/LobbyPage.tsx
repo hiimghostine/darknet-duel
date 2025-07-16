@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
 import LobbyDetail from '../components/lobby/LobbyDetail';
+import LobbyChat from '../components/lobby/LobbyChat';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
@@ -189,13 +190,23 @@ const LobbyPage: React.FC = () => {
               </div>
             </div>
           
-            {/* Content section */}
-            <Routes>
-              <Route path="/" element={<LobbyBrowser />} />
-              <Route path="/create" element={<CreateLobby />} />
-              <Route path="/:matchID" element={<LobbyDetail />} />
-            </Routes>
-          </main>
+          {/* Content section */}
+          <div className="space-y-6">
+            {/* Main content area */}
+            <div>
+              <Routes>
+                <Route path="/" element={<LobbyBrowser />} />
+                <Route path="/create" element={<CreateLobby />} />
+                <Route path="/:matchID" element={<LobbyDetail />} />
+              </Routes>
+            </div>
+            
+            {/* IRC-style chat at bottom */}
+            <div className="mt-8">
+              <LobbyChat chatId="global-lobby" className="h-80" />
+            </div>
+          </div>
+        </main>
         </div>
       </div>
       
