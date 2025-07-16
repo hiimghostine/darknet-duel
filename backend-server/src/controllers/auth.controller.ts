@@ -215,7 +215,7 @@ export class AuthController {
       const expiryValue = process.env.JWT_EXPIRY || '7d';
       const options: SignOptions = { expiresIn: expiryValue as any };
       const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
+        { id: user.id, email: user.email, username: user.username, type: user.type },
         secret,
         options
       );

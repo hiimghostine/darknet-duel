@@ -12,11 +12,11 @@ Issues:
 
 Later to add:
 ASAP:
-- Hacker stats in front (add more cool shit)
+/ - Hacker stats in front (add more cool shit)
 / - Recent activity in dashboard, and View Full History button
 
 Mid game:
-- Clickable profiles
+/ - Clickable profiles
 / - Chat in lobbies 
 - Shop for cosmetics (PULL FROM STEAM OR DISCORD)
 - Friend system...
