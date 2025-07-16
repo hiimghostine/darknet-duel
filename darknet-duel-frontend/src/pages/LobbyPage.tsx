@@ -4,10 +4,10 @@ import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
 import LobbyDetail from '../components/lobby/LobbyDetail';
 import LobbyChat from '../components/lobby/LobbyChat';
+import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
-import logo from '../assets/logo.png';
 
 const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -17,41 +17,19 @@ const LobbyPage: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
   
-  // Add loading animation only for initial login transition
+  // Simplified loading logic - only show loading on first visit
   useEffect(() => {
-    // Check if this is first visit after login
     const isFirstVisit = sessionStorage.getItem('lobbies_visited') !== 'true';
     
     if (isFirstVisit && isAuthenticated) {
-      // Set loading state to true only on first visit
       setIsLoading(true);
-      // Mark that user has visited lobbies
       sessionStorage.setItem('lobbies_visited', 'true');
-      // Clear loading after animation
-      const timer = setTimeout(() => setIsLoading(false), 2500);
+      const timer = setTimeout(() => setIsLoading(false), 2000);
       return () => clearTimeout(timer);
     } else {
-      // Ensure loading is false for subsequent visits
       setIsLoading(false);
     }
   }, [isAuthenticated]);
-
-  // Reset loading state when component unmounts or route changes
-  useEffect(() => {
-    return () => {
-      // Clear any ongoing loading timers when component unmounts
-      setIsLoading(false);
-    };
-  }, []);
-
-  // Reset loading state when navigating between lobby sub-pages
-  useEffect(() => {
-    // Only reset loading if we're already past the initial visit
-    const hasVisited = sessionStorage.getItem('lobbies_visited') === 'true';
-    if (hasVisited) {
-      setIsLoading(false);
-    }
-  }, [location.pathname]);
 
   // Get theme from localStorage
   useEffect(() => {
@@ -108,62 +86,12 @@ const LobbyPage: React.FC = () => {
 
         {/* Main content */}
         <div className={`relative z-10 transition-opacity duration-500 ${isLoading || isLoggingOut ? 'opacity-0' : 'opacity-100'} scanline`}>
-          <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
-            <div className="container mx-auto flex justify-between items-center">
-              <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => navigate('/dashboard')}>
-                <img src={logo} alt="Darknet Duel Logo" className="h-8" />
-                <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
-                  DARKNET_DUEL
-                </h1>
-              </div>
-          
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => navigate('/dashboard')} 
-                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                >
-                  <span className="mr-1">🏠</span> 
-                  <span className="hidden sm:inline">DASHBOARD</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate(`/profile/${user?.id}`)} 
-                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                  aria-label="Profile"
-                >
-                  <span className="mr-1">👤</span>
-                  <span className="hidden sm:inline">PROFILE</span>
-                </button>
-                
-                <button 
-                  onClick={() => navigate('/topup')} 
-                  className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
-                  aria-label="Top Up"
-                >
-                  <span className="mr-1">💎</span>
-                  <span className="hidden sm:inline text-flicker">TOP-UP</span>
-                  <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                </button>
-                
-                <button
-                  onClick={toggleTheme}
-                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                  aria-label="Toggle Theme"
-                >
-                  {theme === 'cyberpunk' ? '🌙' : '☀️'}
-                </button>
-                
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
-                  aria-label="Logout"
-                >
-                  <span className="mr-1">🚪</span>
-                  <span className="hidden sm:inline">EXIT</span>
-                </button>
-              </div>
-            </div>
-          </header>
+          <AppBar 
+            currentPage="lobbies"
+            theme={theme}
+            onThemeToggle={toggleTheme}
+            onLogout={handleLogout}
+          />
 
           <main className="container mx-auto p-4">
             {/* Lobbies banner */}
@@ -201,9 +129,9 @@ const LobbyPage: React.FC = () => {
               </Routes>
             </div>
             
-            {/* IRC-style chat at bottom */}
+            {/* IRC-style chat at bottom - fixed height to prevent page jumping */}
             <div className="mt-8">
-              <LobbyChat chatId="global-lobby" className="h-80" />
+              <LobbyChat chatId="global-lobby" className="" />
             </div>
           </div>
         </main>

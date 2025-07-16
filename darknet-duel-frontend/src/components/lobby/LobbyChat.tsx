@@ -215,7 +215,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
           {/* IRC-style message area with cyberpunk styling */}
           <div className="px-4 pb-4">
-            <div className="bg-base-300/50 border border-primary/30 p-3 font-mono text-sm min-h-[200px] max-h-64 overflow-y-auto">
+            <div className="bg-base-300/50 border border-primary/30 p-3 font-mono text-sm h-48 overflow-y-auto">
               {messages.length === 0 ? (
                 <div className="text-base-content/50 text-xs space-y-1">
                   <div className="text-primary">*** NEURAL LINK ESTABLISHED TO #DARKNET_LOBBY</div>
