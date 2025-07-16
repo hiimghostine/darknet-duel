@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import accountService, { type AccountData } from '../services/account.service';
-import infoService, { type ProfileStats } from '../services/info.service';
+import { type ProfileStats } from '../services/info.service';
 import logo from '../assets/logo.png';
 
 interface UserProfilePopupProps {
@@ -59,18 +59,27 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
         setError(null);
         
         try {
-          // Fetch user account data
+          // Fetch user account data (contains all the stats we need)
           const accountData = await accountService.getAccountByUuid(userId);
           setUserData(accountData);
-
-          // Try to fetch stats (might fail for other users)
-          try {
-            const stats = await infoService.getProfileStats();
-            setProfileStats(stats);
-          } catch {
-            // Stats might not be available for other users
-            setProfileStats(null);
-          }
+          
+          // Calculate win rate from account data
+          const gamesPlayed = accountData.gamesPlayed || 0;
+          const gamesWon = accountData.gamesWon || 0;
+          const gamesLost = accountData.gamesLost || 0;
+          
+          const winRate = gamesPlayed > 0 
+            ? ((gamesWon / gamesPlayed) * 100).toFixed(1) + '%'
+            : '0.0%';
+            
+          setProfileStats({
+            wins: gamesWon,
+            losses: gamesLost,
+            totalGames: gamesPlayed,
+            winRate: winRate,
+            rating: accountData.rating || 1200,
+            level: 1 // Default level since we don't have this data
+          });
         } catch (err) {
           console.error('Failed to fetch user data:', err);
           setError('Failed to load user profile');
@@ -94,24 +103,37 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
 
     // Check if popup would go off-screen and adjust
     const popupWidth = 320;
-    const popupHeight = 280;
-    const padding = 10;
+    const popupHeight = 400; // Increased to account for actual content height
+    const padding = 15;
+    const cursorOffset = 15;
 
-    let left = position.x;
-    let top = position.y + 10; // Offset below cursor
+    let left = position.x + cursorOffset;
+    let top = position.y + cursorOffset;
 
     // Adjust horizontal position
     if (left + popupWidth > window.innerWidth - padding) {
-      left = window.innerWidth - popupWidth - padding;
+      // Try positioning to the left of cursor instead
+      left = position.x - popupWidth - cursorOffset;
+      // If still doesn't fit, align to right edge of viewport
+      if (left < padding) {
+        left = window.innerWidth - popupWidth - padding;
+      }
     }
+    // Ensure minimum left position
     if (left < padding) {
       left = padding;
     }
 
     // Adjust vertical position
     if (top + popupHeight > window.innerHeight - padding) {
-      top = position.y - popupHeight - 10; // Show above cursor
+      // Try positioning above cursor instead
+      top = position.y - popupHeight - cursorOffset;
+      // If still doesn't fit, align to bottom edge of viewport
+      if (top < padding) {
+        top = window.innerHeight - popupHeight - padding;
+      }
     }
+    // Ensure minimum top position
     if (top < padding) {
       top = padding;
     }
@@ -133,7 +155,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
     <div
       ref={popupRef}
       style={getPopupStyle()}
-      className="w-80 bg-base-200 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/20 rounded-lg overflow-hidden"
+      className="w-80 max-h-96 bg-base-200 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/20 rounded-lg overflow-hidden flex flex-col"
     >
       {/* Header */}
       <div className="bg-primary/10 border-b border-primary/20 p-3">
@@ -149,7 +171,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 overflow-y-auto flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-primary font-mono text-sm">LOADING...</div>

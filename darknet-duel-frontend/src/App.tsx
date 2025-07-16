@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage';
 import TopUpPage from './pages/TopUpPage';
 import GameHistoryPage from './pages/GameHistoryPage';
 import AdminPage from './pages/AdminPage';
+import UserManagementPage from './pages/UserManagementPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/user-management" element={<UserManagementPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/topup" element={<TopUpPage />} />

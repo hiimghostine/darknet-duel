@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
-import { FaUsers, FaGamepad, FaComments, FaCogs, FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
+
+import { FaUsers, FaGamepad, FaComments, FaCogs, FaShieldAlt, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 
 const AdminPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -11,6 +12,8 @@ const AdminPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Check authentication and admin permissions
   useEffect(() => {
@@ -47,6 +50,14 @@ const AdminPage: React.FC = () => {
       navigate('/auth', { replace: true });
     }, 1500);
   };
+
+  // Handle notifications
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
@@ -124,8 +135,18 @@ const AdminPage: React.FC = () => {
           </header>
 
           <main className="container mx-auto p-4">
-            {/* Admin banner */}
-            <div className="p-1 bg-gradient-to-br from-error/20 via-error/10 to-transparent backdrop-blur-sm mb-8">
+            {/* Notification */}
+            {notification && (
+              <div className={`alert ${notification.type === 'success' ? 'alert-success' : 'alert-error'} mb-4`}>
+                <span>{notification.message}</span>
+                <button onClick={() => setNotification(null)} className="btn btn-sm btn-ghost">×</button>
+              </div>
+            )}
+
+            {/* Admin Dashboard */}
+            <div>
+                {/* Admin banner */}
+                <div className="p-1 bg-gradient-to-br from-error/20 via-error/10 to-transparent backdrop-blur-sm mb-8">
               <div className="bg-base-200 border border-error/20 p-4 relative">
                 {/* Corner accents */}
                 <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-error"></div>
@@ -155,7 +176,10 @@ const AdminPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               
               {/* User Management */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
+              <div 
+                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
+                onClick={() => navigate('/admin/user-management')}
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <FaUsers className="text-2xl text-error" />
                   <h3 className="text-lg font-mono font-bold text-error">USER_MANAGEMENT</h3>
@@ -163,8 +187,8 @@ const AdminPage: React.FC = () => {
                 <p className="text-base-content/70 text-sm font-mono mb-4">
                   Manage user accounts, permissions, and access levels
                 </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
+                <div className="text-xs text-green-500 font-mono">
+                  STATUS: ACTIVE
                 </div>
               </div>
 
@@ -243,6 +267,7 @@ const AdminPage: React.FC = () => {
                   <span className="text-green-500">ACTIVE</span>
                 </div>
               </div>
+            </div>
             </div>
           </main>
         </div>

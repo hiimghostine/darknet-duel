@@ -415,6 +415,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: 'Games',
         description: 'Game history and statistics endpoints'
+      },
+      {
+        name: 'Admin',
+        description: 'Administrative endpoints for user management (admin access only)'
       }
     ]
   },
