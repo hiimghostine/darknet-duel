@@ -55,6 +55,12 @@ export const setupPhase = {
     // Use extracted chat handler
     sendChatMessage: handleChatMessageImmutable,
     
+    // Developer cheat move
+    devCheatAddCard: ({ G, ctx, playerID }: { G: GameState, ctx: Ctx, playerID: string }, card: any) => {
+      const { devCheatAddCardMove } = require('../moves/devCheatAddCard');
+      return devCheatAddCardMove(G, ctx, playerID, card);
+    },
+    
     // Forward game moves to player actions
     playCard: ({ G, ctx, playerID }: { G: GameState, ctx: Ctx, playerID: string }, cardId: string) => {
       const { playCardMove } = require('../actions/playerActions');
@@ -157,6 +163,11 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
   moves: {
     sendChatMessage: handleChatMessageImmutable,
     surrender: handleSurrender,
+    devCheatAddCard: ({ G, ctx, playerID, events }, card) => {
+      // Import and forward to the main devCheatAddCardMove function
+      const { devCheatAddCardMove } = require('../../moves/devCheatAddCard');
+      return devCheatAddCardMove(G, ctx, playerID, card);
+    },
   },
   
   turn: {

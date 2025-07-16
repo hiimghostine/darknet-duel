@@ -9,6 +9,7 @@ import { sendGameResults, recordGameHistory, updatePlayerRatings, GameResultData
 import bodyParser from 'koa-bodyparser';
 import { LobbyCleanupService } from '../services/lobbyCleanupService';
 import { GameState } from 'shared-types/game.types';
+import cardDataRouter from './cardDataRoutes';
 
 // Environment variables
 const PORT = parseInt(process.env.GAME_SERVER_PORT || '8001');
@@ -262,6 +263,9 @@ router.post('/game-results', async (ctx: any) => {
 
 // Add custom routes to server
 server.app.use(router.routes()).use(router.allowedMethods());
+
+// Add card data API routes for dev cheat panel
+server.app.use(cardDataRouter.routes()).use(cardDataRouter.allowedMethods());
 
 // Set up game event listeners
 server.app.on('upgrade', (request, socket, head) => {

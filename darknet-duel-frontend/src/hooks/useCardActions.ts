@@ -27,15 +27,8 @@ export function useCardActions(props: BoardProps) {
    * Determine if a card requires targeting based on its type and properties
    */
   const cardNeedsTarget = useCallback((card: ExtendedCard): boolean => {
-    // Check if we're in reaction mode - reactive cards don't need targeting in reaction mode
-    const isInReactionMode = props.ctx?.activePlayers && props.playerID && 
-                           props.ctx.activePlayers[props.playerID] === 'reaction';
-    
-    // In reaction mode, reactive cards are played directly without targeting
-    if (isInReactionMode && (card.type === 'reaction' || card.type === 'counter-attack' || card.type === 'counter')) {
-      console.log('Reactive card in reaction mode - no targeting needed:', card.name);
-      return false;
-    }
+    // REMOVED: The early return that was preventing reaction cards from targeting
+    // All reaction cards DO need targeting, regardless of reaction mode
     
     // Check if the card inherently requires targeting
     if (card.requiresTarget) return true;

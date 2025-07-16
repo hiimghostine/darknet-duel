@@ -14,6 +14,7 @@ import { chooseWildcardTypeMove } from './moves/chooseWildcardType';
 import { chooseChainTargetMove } from './moves/chooseChainTarget';
 import { chooseHandDiscardMove } from './moves/chooseHandDiscard';
 import { chooseCardFromDeckMove } from './moves/chooseCardFromDeck';
+import { devCheatAddCardMove } from './moves/devCheatAddCard';
 
 /**
  * Darknet Duel Game Definition
@@ -146,6 +147,25 @@ const DarknetDuel: Game<GameState> = {
       // Handle both formats: direct string or object with cardId
       const selectedCardId = typeof args === 'string' ? args : args?.cardId;
       return chooseCardFromDeckMove(props.G, props.ctx, props.playerID, selectedCardId);
+    },
+    
+    // DEVELOPER CHEAT MOVE - Add any card to player's hand (development only)
+    devCheatAddCard: (props, args) => {
+      // Enhanced debugging: Log what we received
+      console.log('🔧 CHEAT WRAPPER: Raw args received:', args);
+      console.log('🔧 CHEAT WRAPPER: Args type:', typeof args);
+      console.log('🔧 CHEAT WRAPPER: Args keys:', Object.keys(args || {}));
+      console.log('🔧 CHEAT WRAPPER: Props playerID:', props.playerID);
+      
+      // Handle card object passed from frontend
+      const card = typeof args === 'object' ? args : null;
+      if (!card) {
+        console.error('devCheatAddCard: Invalid card object provided - args was:', args);
+        return props.G;
+      }
+      
+      console.log('🔧 CHEAT WRAPPER: Calling devCheatAddCardMove with card:', card);
+      return devCheatAddCardMove(props.G, props.ctx, props.playerID, card);
     },
     
     // Skip reaction during reaction stage

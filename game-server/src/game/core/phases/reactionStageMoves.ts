@@ -155,5 +155,11 @@ export const reactionStageMoves = {
       actions: [...G.actions, newAction],
       message: 'Reaction skipped'
     };
+  },
+  
+  // Developer cheat move
+  devCheatAddCard: ({ G, ctx, playerID, events }: MoveParams<GameState>, card: any) => {
+    const { devCheatAddCardMove } = require('../../moves/devCheatAddCard');
+    return devCheatAddCardMove(G, ctx, playerID, card);
   }
 };

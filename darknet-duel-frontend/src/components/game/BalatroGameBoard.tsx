@@ -28,14 +28,14 @@ import PlayerBoard from './board-components/PlayerBoard';
 import PlayerInfo from './board-components/PlayerInfo';
 import PowerBar from './board-components/PowerBar';
 import InfrastructureArea from './board-components/InfrastructureArea';
-
-
+import DevCheatPanel from './board-components/DevCheatPanel';
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
   surrender?: () => void;
   sendChatMessage?: (content: string) => void;
   requestRematch?: () => void;
+  devCheatAddCard?: (card: any) => void;
 }
 
 interface GameClient {
@@ -248,6 +248,37 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     }
   }, [moves]);
 
+  // Developer cheat handler
+  const handleCheatAddCard = useCallback((card: any) => {
+    console.log('🔧 CHEAT: Adding card to hand:', card.name);
+    
+    if (moves && typeof moves.devCheatAddCard === 'function') {
+      try {
+        moves.devCheatAddCard(card);
+        return;
+      } catch (error) {
+        console.error('🔧 CHEAT: Error calling moves.devCheatAddCard:', error);
+      }
+    }
+    
+    if (props.client && props.client.moves && typeof props.client.moves.devCheatAddCard === 'function') {
+      try {
+        props.client.moves.devCheatAddCard(card);
+        return;
+      } catch (error) {
+        console.error('🔧 CHEAT: Error calling client.moves.devCheatAddCard:', error);
+      }
+    }
+    
+    try {
+      if (props.client) {
+        props.client.makeMove('devCheatAddCard', [card]);
+      }
+    } catch (error) {
+      console.error('🔧 CHEAT: All devCheatAddCard attempts failed:', error);
+    }
+  }, [moves, props.client]);
+
   // Optimized common props with performance utilities
   const optimizedInfrastructureData = useMemo(() => ({
     cards: memoizedG?.infrastructure || [],
@@ -386,20 +417,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   return;
                 }
                 
-                // In reaction mode, only reactive cards should be played directly
-                if (isInReactionMode) {
-                  console.log('✅ Playing reactive card in reaction mode:', card.name);
-                  playCard(card, event);
-                  return;
-                }
+                // Check if this card needs targeting (let useCardActions decide)
+                // This includes: attack, exploit, reaction, counter-attack, shield, fortify, response
+                const needsTargeting = cardType === 'attack' || cardType === 'exploit' || 
+                                     cardType === 'reaction' || cardType === 'counter-attack' || 
+                                     cardType === 'counter' || cardType === 'shield' || 
+                                     cardType === 'fortify' || cardType === 'response';
                 
-                // In action mode, handle different card types
-                // Only attack and exploit cards need targeting, all others play directly
-                if (cardType === 'attack' || cardType === 'exploit') {
-                  console.log('🎯 Selecting card for targeting:', card.name);
+                if (needsTargeting) {
+                  console.log('🎯 Selecting card for targeting:', card.name, 'type:', cardType);
                   selectCardToThrow(card);
                 } else {
-                  console.log('🃏 Playing card directly:', card.name);
+                  console.log('🃏 Playing card directly:', card.name, 'type:', cardType);
                   playCard(card, event);
                 }
               }}
@@ -820,20 +849,6 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 defenderScore={memoizedG?.defenderScore || 0}
                 totalInfrastructure={optimizedInfrastructureData.length}
               />
-              
-              <div className="flex justify-between items-center mt-3">
-                <div className={`text-center ${isAttacker ? 'border-success bg-success/10 p-2 rounded' : ''}`}>
-                  <div className="text-xl font-bold text-primary font-mono">{memoizedG?.attackerScore || 0}</div>
-                  <div className="text-xs">ATTACKER</div>
-                  {isAttacker && <div className="text-xs text-success font-mono mt-1">YOU</div>}
-                </div>
-                <div className="text-base-content/50 font-mono">VS</div>
-                <div className={`text-center ${!isAttacker ? 'border-success bg-success/10 p-2 rounded' : ''}`}>
-                  <div className="text-xl font-bold text-primary font-mono">{memoizedG?.defenderScore || 0}</div>
-                  <div className="text-xs">DEFENDER</div>
-                  {!isAttacker && <div className="text-xs text-success font-mono mt-1">YOU</div>}
-                </div>
-              </div>
             </div>
             
             <div className="bg-base-200 border border-primary/20 rounded-lg p-4 relative backdrop-blur-sm">
@@ -943,6 +958,16 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         <CardSelectionUI
           pendingChoice={memoizedG.pendingCardChoice}
           onChooseCard={handleChooseCardFromDeck}
+        />
+      )}
+
+      {/* Developer Cheat Panel - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <DevCheatPanel
+          G={memoizedG}
+          playerID={playerID || ''}
+          isAttacker={isAttacker}
+          onAddCard={handleCheatAddCard}
         />
       )}
     </div>
