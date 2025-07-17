@@ -226,8 +226,8 @@
     {
       "id": "D201",
       "name": "Incident Response Team",
-      "type": "Response",
-      "category": "Network",
+      "type": "response",
+      "category": "network",
       "cost": 1,
       "description": "Specialized security breach handlers",
       "flavor": "The cybersecurity SWAT team",
