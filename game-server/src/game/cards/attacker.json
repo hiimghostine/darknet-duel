@@ -10,12 +10,13 @@
       "cost": 1,
       "description": "Identifies open network services",
       "flavor": "Finding the doors before trying the locks",
-      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks. Look at the top card of your deck - if it's an Attack card, draw it.",
       "img": "port_scan",
       "isReactive": false,
       "target": "infrastructure",
       "vulnerability": "network",
-      "leadsTo": ["A101", "A102"]
+      "leadsTo": ["A101", "A102"],
+      "specialEffect": "conditional_draw"
     },
     {
       "id": "A002",
@@ -25,12 +26,13 @@
       "cost": 1,
       "description": "Captures and analyzes network traffic",
       "flavor": "Listening to conversations that weren't meant for you",
-      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks. Look at defender's hand and choose 1 card for them to reveal to you.",
       "img": "packet_sniffer",
       "isReactive": false,
       "target": "infrastructure",
       "vulnerability": "network",
-      "leadsTo": ["A101", "A102"]
+      "leadsTo": ["A101", "A102"],
+      "specialEffect": "peek_hand"
     },
     {
       "id": "A003",
@@ -40,12 +42,13 @@
       "cost": 1,
       "description": "Remote code execution in Java logging",
       "flavor": "One line of code that shook the internet",
-      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+      "effect": "Target 1 infrastructure card. It becomes vulnerable to Network attacks. If target infrastructure is adjacent to another infrastructure, that adjacent infrastructure becomes vulnerable to any attack vector.",
       "img": "log4shell",
       "isReactive": false,
       "target": "infrastructure",
       "vulnerability": "network",
-      "leadsTo": ["A101", "A102"]
+      "leadsTo": ["A101", "A102"],
+      "specialEffect": "adjacent_spread"
     },
     {
       "id": "A004",
@@ -85,12 +88,13 @@
       "cost": 1,
       "description": "Creates fake login pages to steal credentials",
       "flavor": "It looks just like the real thing...",
-      "effect": "Target 1 infrastructure card. It becomes vulnerable to Social Engineering attacks.",
+      "effect": "Target 1 infrastructure card. It becomes vulnerable to Social Engineering attacks. Force defender to discard 1 random card.",
       "img": "phishing",
       "isReactive": false,
       "target": "infrastructure",
       "vulnerability": "social",
-      "leadsTo": ["A107", "A108"]
+      "leadsTo": ["A107", "A108"],
+      "specialEffect": "force_discard"
     },
     {
       "id": "A007",
@@ -115,12 +119,13 @@
       "cost": 1,
       "description": "Delivers malicious payload disguised as legitimate software",
       "flavor": "The gift horse nobody checked the mouth of",
-      "effect": "Target 1 infrastructure card. It becomes vulnerable to Malware attacks.",
+      "effect": "Target 1 infrastructure card. It becomes vulnerable to Malware attacks. This exploit cannot be blocked by reactive cards.",
       "img": "trojan",
       "isReactive": false,
       "target": "infrastructure",
       "vulnerability": "malware",
-      "leadsTo": ["A109", "A110"]
+      "leadsTo": ["A109", "A110"],
+      "specialEffect": "unblockable"
     },
     {
       "id": "A009",
@@ -145,12 +150,13 @@
       "cost": 1,
       "description": "Floods target with traffic to disrupt service",
       "flavor": "Like trying to enter a stadium where all seats are taken by ghosts",
-      "effect": "Target 1 infrastructure with a Network exploit. It becomes compromised.",
+      "effect": "Target 1 infrastructure with a Network exploit. It becomes compromised. All other Network infrastructure becomes vulnerable to Network attacks for 1 turn.",
       "img": "ddos",
       "isReactive": false,
       "target": "vulnerable",
       "attackValue": 1,
-      "requires": "A001"
+      "requires": "A001",
+      "specialEffect": "network_cascade"
     },
     {
       "id": "A102",
@@ -160,10 +166,11 @@
       "cost": 1,
       "description": "Intercepts and alters communications",
       "flavor": "I'm not a man or a middle, I'm the man in the middle",
-      "effect": "Target 1 vulnerable infrastructure. It becomes compromised.",
+      "effect": "Target 1 vulnerable infrastructure. It becomes compromised. Look at defender's hand and choose 1 card for them to discard.",
       "img": "mitm",
       "isReactive": false,
-      "target": "vulnerable"
+      "target": "vulnerable",
+      "specialEffect": "hand_disruption"
     },
     {
       "id": "A103",
@@ -255,11 +262,14 @@
       "cost": 1,
       "description": "Kills security processes and services",
       "flavor": "Security software can't protect what it can't see",
-      "effect": "Cancel a Shield card being played on infrastructure.",
+      "effect": "REACTIVE MODE: Cancel a Shield card being played on infrastructure. ACTIVE MODE: Remove all Network shields from target infrastructure and gain 1 AP.",
       "img": "service_terminator",
       "isReactive": true,
       "target": "shield",
-      "counterType": "cancel"
+      "counterType": "cancel",
+      "dualMode": true,
+      "activeEffect": "remove_shield",
+      "activeApGain": 1
     },
     {
       "id": "A202",
@@ -464,6 +474,157 @@
       "target": "opponent_hand",
       "wildcardType": "special",
       "specialEffect": "discard_redraw"
+    },
+    {
+      "id": "A308",
+      "name": "Exploit Chaining Framework",
+      "type": "wildcard",
+      "category": "any",
+      "cost": 2,
+      "description": "Links multiple vulnerabilities into devastating attack chains",
+      "flavor": "One vulnerability leads to another, and another...",
+      "effect": "Apply 2 different attack vector exploits to the same infrastructure simultaneously. If it becomes compromised, immediately make an adjacent infrastructure vulnerable.",
+      "img": "exploit_chain",
+      "isReactive": false,
+      "target": "infrastructure",
+      "wildcardType": "special",
+      "specialEffect": "multi_vector_chain",
+      "exploitCount": 2
+    },
+    {
+      "id": "A309",
+      "name": "Shield Overload Generator",
+      "type": "counter-attack",
+      "category": "any",
+      "cost": 1,
+      "description": "Overwhelms defensive systems with rapid attacks",
+      "flavor": "Even the strongest shields have breaking points",
+      "effect": "Reactive: When defender plays a shield card, force them to discard 2 cards. If they can't, the shield effect is cancelled and infrastructure becomes vulnerable.",
+      "img": "shield_overload",
+      "isReactive": true,
+      "target": "shield",
+      "specialEffect": "shield_stress_test",
+      "discardRequirement": 2
+    },
+    {
+      "id": "A310",
+      "name": "Dependency Mapper",
+      "type": "exploit",
+      "category": "any",
+      "cost": 1,
+      "description": "Identifies critical system dependencies",
+      "flavor": "Understanding the web of connections before pulling the strings",
+      "effect": "Target infrastructure becomes vulnerable to ALL attack vectors. Additionally, look at defender's hand and choose 1 card for them to discard.",
+      "img": "dependency_map",
+      "isReactive": false,
+      "target": "infrastructure",
+      "specialEffect": "universal_vulnerability_plus_disrupt",
+      "handDisruption": true
+    },
+    {
+      "id": "A311",
+      "name": "Redundancy Killer",
+      "type": "attack",
+      "category": "any",
+      "cost": 1,
+      "description": "Systematically destroys backup systems",
+      "flavor": "Why hit one system when you can hit all its backups too?",
+      "effect": "Attack vulnerable infrastructure. If successful, remove all shields from 2 other infrastructure and prevent them from being shielded for 2 turns.",
+      "img": "redundancy_killer",
+      "isReactive": false,
+      "target": "vulnerable",
+      "specialEffect": "anti_redundancy",
+      "shieldPrevention": 2,
+      "targetCount": 2
+    },
+    {
+      "id": "A312",
+      "name": "Cascading System Failure",
+      "type": "wildcard",
+      "category": "any",
+      "cost": 2,
+      "description": "Triggers domino effect across infrastructure",
+      "flavor": "When one falls, they all fall",
+      "effect": "Compromise target vulnerable infrastructure. For each infrastructure you control, make 1 random secure infrastructure vulnerable. Cannot be countered by reactive cards.",
+      "img": "cascade_failure",
+      "isReactive": false,
+      "target": "vulnerable",
+      "wildcardType": "special",
+      "specialEffect": "domino_effect",
+      "preventReaction": true
+    },
+    {
+      "id": "A313",
+      "name": "State Confusion Attack",
+      "type": "wildcard",
+      "category": "any",
+      "cost": 2,
+      "description": "Corrupts infrastructure state tracking",
+      "flavor": "Making systems forget what they're supposed to be protecting",
+      "effect": "Choose any infrastructure. Reset its state to secure, then immediately apply 2 random exploits to it. Defender cannot play reactive cards during this process.",
+      "img": "state_confusion",
+      "isReactive": false,
+      "target": "any_infrastructure",
+      "wildcardType": "special",
+      "specialEffect": "state_reset_exploit",
+      "preventReaction": true,
+      "randomExploits": 2
+    },
+    {
+      "id": "A314",
+      "name": "Shield Destroyer",
+      "type": "attack",
+      "category": "any",
+      "cost": 1,
+      "description": "Systematic dismantling of defensive systems",
+      "flavor": "Every wall can be broken with the right hammer",
+      "effect": "Attack target shielded infrastructure. Additionally, remove all shields from this infrastructure.",
+      "img": "shield_destroy",
+      "isReactive": false,
+      "target": "shielded",
+      "effectModules": ["attack", "remove_shields"]
+    },
+    {
+      "id": "A315",
+      "name": "Defense Bypass",
+      "type": "counter-attack",
+      "category": "any",
+      "cost": 1,
+      "description": "Circumvents protective measures entirely",
+      "flavor": "Why break down the door when you can walk through the wall?",
+      "effect": "Cancel target shield card. Additionally, draw 1 card.",
+      "img": "defense_bypass",
+      "isReactive": true,
+      "target": "shield_play",
+      "effectModules": ["cancel_shield", "draw_card"]
+    },
+    {
+      "id": "A316",
+      "name": "Vulnerability Scanner",
+      "type": "exploit",
+      "category": "any",
+      "cost": 1,
+      "description": "Advanced reconnaissance tools",
+      "flavor": "Know thy enemy's weaknesses",
+      "effect": "Make target infrastructure vulnerable. Additionally, look at opponent's hand.",
+      "img": "vuln_scanner",
+      "isReactive": false,
+      "target": "infrastructure",
+      "effectModules": ["exploit", "peek_hand"]
+    },
+    {
+      "id": "A317",
+      "name": "Emergency Breach",
+      "type": "exploit",
+      "category": "any",
+      "cost": 1,
+      "description": "Rapid exploitation when systems are overwhelmed",
+      "flavor": "Strike when defenses are spread thin",
+      "effect": "Make target infrastructure vulnerable. Cost is reduced by 1 for each shielded infrastructure opponent controls.",
+      "img": "emergency_breach",
+      "isReactive": false,
+      "target": "infrastructure",
+      "effectModules": ["exploit", "cost_reduction_per_shield"]
     }
   ]
 }
