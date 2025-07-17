@@ -18,6 +18,7 @@ import {
 import GameLoading from '../ui/GameLoading';
 import GameError from '../ui/GameError';
 import GameControls from '../ui/GameControls';
+import GameInitializationScreen from './GameInitializationScreen';
 import './GameClient.css';
 
 // Type declarations for debugging
@@ -121,8 +122,8 @@ const DarknetDuelGame = {
             }
           },
           chooseCardFromDeck: {
-            move: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }) {
-              console.log('Stage move - chooseCardFromDeck with cardId:', params.cardId);
+            move: function chooseCardFromDeck(_G: any, _ctx: any, selectedCardId: string) {
+              console.log('Stage move - chooseCardFromDeck with cardId:', selectedCardId);
               return {}; // Return empty object instead of G
             }
           }
@@ -202,8 +203,8 @@ const DarknetDuelGame = {
       console.log('Client move registration - chooseHandDiscard:', params.cardIds);
       return {};
     },
-    chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }): {} {
-      console.log('Client move registration - chooseCardFromDeck:', params.cardId);
+    chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, selectedCardId: string): {} {
+      console.log('Client move registration - chooseCardFromDeck:', selectedCardId);
       return {};
     },
     // DEVELOPER CHEAT MOVE - Only works in development mode
@@ -287,8 +288,8 @@ const DarknetDuelGame = {
             console.log('Phase move - chooseHandDiscard with cardIds:', params.cardIds);
             return {}; // Return empty object instead of G
           },
-          chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, params: { cardId: string }) {
-            console.log('Phase move - chooseCardFromDeck with cardId:', params.cardId);
+          chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, selectedCardId: string) {
+            console.log('Phase move - chooseCardFromDeck with cardId:', selectedCardId);
             return {}; // Return empty object instead of G
           }
         }
@@ -366,6 +367,7 @@ const GameClient: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [clientComponent, setClientComponent] = useState<React.ReactNode>(null);
+  const [playerRole, setPlayerRole] = useState<'attacker' | 'defender'>('attacker');
   
   /**
    * Handle leaving the game and clean up resources
@@ -463,20 +465,27 @@ const GameClient: React.FC = () => {
       if (storedPlayerID && storedCredentials) {
         logConnectionEvent(`Found stored credentials for player: ${storedPlayerID}`);
         
+        // Determine player role based on player ID (0 = attacker, 1 = defender)
+        const role = storedPlayerID === '0' ? 'attacker' : 'defender';
+        setPlayerRole(role);
+        
         try {
           // Create the client component
           const BGClient = createBoardgameClient(matchID, storedPlayerID, storedCredentials);
           
-          // Set the client component and render it
-          setClientComponent(
-            <BGClient 
-              playerID={storedPlayerID} 
-              matchID={matchID} 
-              credentials={storedCredentials} 
-            />
-          );
-          setLoading(false);
-          logConnectionEvent('Boardgame.io client component mounted');
+          // Add a 3-second delay to show the game initialization screen
+          setTimeout(() => {
+            // Set the client component and render it
+            setClientComponent(
+              <BGClient 
+                playerID={storedPlayerID} 
+                matchID={matchID} 
+                credentials={storedCredentials} 
+              />
+            );
+            setLoading(false);
+            logConnectionEvent('Boardgame.io client component mounted');
+          }, 3000);  // 3 second delay for the initialization screen
           
         } catch (clientErr) {
           console.error('Error creating boardgame.io client:', clientErr);
@@ -508,7 +517,12 @@ const GameClient: React.FC = () => {
   // Render component
   return (
     <div className="game-client-container">
-      {loading && <GameLoading message="Loading game..." />}
+      {loading && (
+        <GameInitializationScreen 
+          matchID={matchID} 
+          playerRole={playerRole}
+        />
+      )}
       {error && <GameError message={error || 'Unknown error'} />}
       {connectionError && <GameError message="Connection Error" details={connectionError} />}
       

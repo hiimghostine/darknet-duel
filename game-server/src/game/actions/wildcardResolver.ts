@@ -165,29 +165,6 @@ export class WildcardResolver {
         }
         break;
         
-      case 'A306': // AI-Powered Attack
-        // Look at top 3 cards of deck and choose 1 to add to hand
-        const isAttacker = context.playerRole === 'attacker';
-        const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
-        
-        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0 && context.playerID) {
-          // Get top 3 cards from deck (or all remaining if less than 3)
-          const cardsToShow = Math.min(3, currentPlayer.deck.length);
-          const topCards = currentPlayer.deck.slice(0, cardsToShow);
-          
-          // Set up pending card choice
-          updatedGameState.pendingCardChoice = {
-            playerId: context.playerID,
-            availableCards: topCards,
-            choiceType: 'deck_selection',
-            sourceCardId: card.id,
-            timestamp: Date.now()
-          };
-          
-          updatedGameState.message = `${card.name}: Choose a card from the top ${cardsToShow} cards of your deck`;
-        }
-        break;
-        
       case 'A302': // Living Off The Land
         // Cost reduction is handled in the throwCardMove logic
         if (context.targetInfrastructure?.type === 'user') {
@@ -220,6 +197,31 @@ export class WildcardResolver {
         // This needs special UI for hand viewing and selection
         // For now, just add a message
         updatedGameState.message = `${card.name} reveals attacker's hand`;
+        break;
+        
+      case 'A307': // Memory Corruption Attack
+        console.log(`🔥 Memory Corruption Attack (A307) detected! Applying discard_redraw effect`);
+        
+        // Import the hand disruption handler
+        const { handleHandDisruption } = require('../handDisruption');
+        
+        // Determine target player (opponent)
+        const targetPlayerId = context.playerRole === 'attacker' ?
+          updatedGameState.defender?.id :
+          updatedGameState.attacker?.id;
+        
+        if (targetPlayerId) {
+          console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
+          updatedGameState = handleHandDisruption(
+            updatedGameState,
+            'discard_redraw',
+            targetPlayerId
+          );
+          console.log(`✅ Memory Corruption Attack applied successfully`);
+        } else {
+          console.error(`❌ Memory Corruption Attack failed: Could not determine target player`);
+          updatedGameState.message = `Memory Corruption Attack failed: Invalid target`;
+        }
         break;
     }
     
@@ -262,8 +264,29 @@ export class WildcardResolver {
           break;
         
         case 'discard_redraw':
-          // Handle discard and redraw effect
-          // This would normally be handled by a separate move
+          // Handle Memory Corruption Attack effect
+          console.log(`🔥 Memory Corruption Attack (${card.id}) detected! Applying discard_redraw effect`);
+          
+          // Import the hand disruption handler
+          const { handleHandDisruption } = require('./handDisruption');
+          
+          // Determine target player (opponent)
+          const targetPlayerId = context.playerRole === 'attacker' ?
+            updatedGameState.defender?.id :
+            updatedGameState.attacker?.id;
+          
+          if (targetPlayerId) {
+            console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
+            updatedGameState = handleHandDisruption(
+              updatedGameState,
+              'discard_redraw',
+              targetPlayerId
+            );
+            console.log(`✅ Memory Corruption Attack applied successfully`);
+          } else {
+            console.error(`❌ Memory Corruption Attack failed: Could not determine target player`);
+            updatedGameState.message = `Memory Corruption Attack failed: Invalid target`;
+          }
           break;
           
         default:
@@ -312,6 +335,47 @@ export class WildcardResolver {
       
       console.log(`🎯 Persistent effect created for A305. Total persistent effects: ${updatedGameState.persistentEffects?.length || 0}`);
       console.log(`🎯 Persistent effects array:`, updatedGameState.persistentEffects);
+    }
+
+    // Handle A306 - AI-Powered Attack (with flexible ID matching)
+    if (card.id.startsWith('A306') && context.playerID) {
+      console.log(`🎯 A306 AI-Powered Attack detected! Card ID: ${card.id}`);
+      
+      // Look at top 3 cards of deck and choose 1 to add to hand
+      const isAttacker = context.playerRole === 'attacker';
+      const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
+      
+      console.log(`🎯 A306: Player role: ${context.playerRole}, isAttacker: ${isAttacker}`);
+      console.log(`🎯 A306: Current player exists: ${!!currentPlayer}`);
+      console.log(`🎯 A306: Deck exists: ${!!currentPlayer?.deck}`);
+      console.log(`🎯 A306: Deck length: ${currentPlayer?.deck?.length || 0}`);
+      console.log(`🎯 A306: Player ID: ${context.playerID}`);
+      
+      if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
+        // Get top 3 cards from deck (or all remaining if less than 3)
+        const cardsToShow = Math.min(3, currentPlayer.deck.length);
+        const topCards = currentPlayer.deck.slice(0, cardsToShow);
+        
+        console.log(`🎯 A306: Cards to show: ${cardsToShow}`);
+        console.log(`🎯 A306: Top cards:`, topCards.map(c => c.name));
+        
+        // Set up pending card choice
+        updatedGameState.pendingCardChoice = {
+          playerId: context.playerID,
+          availableCards: topCards,
+          choiceType: 'deck_selection' as const,
+          sourceCardId: card.id,
+          timestamp: Date.now()
+        };
+        
+        console.log(`🎯 A306: Created pendingCardChoice for player ${context.playerID}`);
+        updatedGameState.message = `${card.name}: Choose a card from the top ${cardsToShow} cards of your deck`;
+      } else {
+        console.log(`🎯 A306: Failed to create card choice - missing requirements`);
+        if (!currentPlayer) console.log(`🎯 A306: No current player`);
+        if (!currentPlayer?.deck) console.log(`🎯 A306: No deck`);
+        if (currentPlayer?.deck?.length === 0) console.log(`🎯 A306: Empty deck`);
+      }
     }
 
     // Handle on compromise effects (legacy support for other cards)

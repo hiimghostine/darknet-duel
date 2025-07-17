@@ -69,26 +69,33 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   console.log(`Card ${card!.name} (${card!.id}) has attack vector: ${attackVector || 'NONE'}`);
 
   // Phase 3: Final targeting validation with resolved attack vector
-  const targetingValidation = validateCardTargeting(
-    validationCardType!,
-    targetInfrastructure,
-    attackVector,
-    G,
-    card!,
-    playerID
-  );
+  // Skip targeting validation for hand-targeting cards (they don't have infrastructure targets)
+  let targetingValidation: any = { valid: true, bypassCost: false };
+  
+  if (targetInfrastructure) {
+    targetingValidation = validateCardTargeting(
+      validationCardType!,
+      targetInfrastructure,
+      attackVector,
+      G,
+      card!,
+      playerID
+    );
 
-  if (!targetingValidation.valid) {
-    console.log(`VALIDATION FAILED: ${targetingValidation.message}`);
-    console.log(`Card: ${card!.name}, Type: ${card!.type}, Effective Type: ${effectiveCardType}`);
-    console.log(`Target: ${targetInfrastructure.name}, State: ${targetInfrastructure.state}`);
-    return {
-      ...G,
-      message: targetingValidation.message || "Invalid target for this card"
-    };
+    if (!targetingValidation.valid) {
+      console.log(`VALIDATION FAILED: ${targetingValidation.message}`);
+      console.log(`Card: ${card!.name}, Type: ${card!.type}, Effective Type: ${effectiveCardType}`);
+      console.log(`Target: ${targetInfrastructure.name}, State: ${targetInfrastructure.state}`);
+      return {
+        ...G,
+        message: targetingValidation.message || "Invalid target for this card"
+      };
+    }
+
+    console.log(`VALIDATION PASSED: ${card!.name} -> ${targetInfrastructure.name}`);
+  } else {
+    console.log(`VALIDATION SKIPPED: ${card!.name} targets opponent's hand directly`);
   }
-
-  console.log(`VALIDATION PASSED: ${card!.name} -> ${targetInfrastructure.name}`);
 
   // Phase 4: Calculate effective card cost (PRESERVED COMPLETE LOGIC FROM ORIGINAL)
   let effectiveCost = card!.cost;
@@ -101,7 +108,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   }
   
   // Additional cost reduction check for Living Off The Land (A302)
-  if (card!.id === 'A302' && targetInfrastructure.type === 'user') {
+  if (card!.id === 'A302' && targetInfrastructure && targetInfrastructure.type === 'user') {
     const originalCost = effectiveCost;
     effectiveCost = Math.max(0, effectiveCost - 1);
     console.log(`Living Off The Land cost reduction: ${originalCost} -> ${effectiveCost} (user systems target)`);
@@ -109,14 +116,29 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   
   // Check for card-specific cost reduction properties
   const cardWithCostReduction = card as any;
-  if (cardWithCostReduction.costReduction && targetInfrastructure.type === cardWithCostReduction.costReduction.target.replace('_systems', '')) {
-    const originalCost = effectiveCost;
-    effectiveCost = Math.max(0, effectiveCost - cardWithCostReduction.costReduction.amount);
-    console.log(`Card-specific cost reduction: ${originalCost} -> ${effectiveCost} (${cardWithCostReduction.costReduction.target} target)`);
+  const costReductionData = cardWithCostReduction.costReduction || cardWithCostReduction.metadata?.costReduction;
+  console.log(`🔍 Checking cost reduction for card ${card!.name} (${card!.id})`);
+  console.log(`🔍 Card costReduction property:`, costReductionData);
+  console.log(`🔍 Target infrastructure type:`, targetInfrastructure ? targetInfrastructure.type : 'none (hand targeting)');
+  
+  if (costReductionData && targetInfrastructure) {
+    const expectedTargetType = costReductionData.target.replace('_systems', '');
+    console.log(`🔍 Expected target type after replace: "${expectedTargetType}"`);
+    console.log(`🔍 Match check: "${targetInfrastructure.type}" === "${expectedTargetType}" = ${targetInfrastructure.type === expectedTargetType}`);
+    
+    if (targetInfrastructure.type === expectedTargetType) {
+      const originalCost = effectiveCost;
+      effectiveCost = Math.max(0, effectiveCost - costReductionData.amount);
+      console.log(`✅ Card-specific cost reduction: ${originalCost} -> ${effectiveCost} (${costReductionData.target} target)`);
+    } else {
+      console.log(`❌ No cost reduction: infrastructure type mismatch`);
+    }
+  } else {
+    console.log(`❌ No costReduction property on card or no infrastructure target`);
   }
   
   // Check for cost_reduction temporary effects
-  if (TemporaryEffectsManager.hasEffect(G as GameState, 'cost_reduction', targetInfrastructure.id)) {
+  if (targetInfrastructure && TemporaryEffectsManager.hasEffect(G as GameState, 'cost_reduction', targetInfrastructure.id)) {
     const reduction = 1; // Default reduction amount
     effectiveCost = Math.max(0, effectiveCost - reduction);
     console.log(`Cost reduction effect applied: Cost reduced to ${effectiveCost}`);
@@ -139,6 +161,41 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   if (card!.type === 'wildcard' && card!.wildcardType) {
     console.log(`Wildcard card detected at source: ${card!.name} with wildcardType: ${card!.wildcardType}`);
     
+    // Special handling for Memory Corruption Attack and other hand-targeting cards
+    if (card!.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
+      console.log(`🔥 Memory Corruption Attack detected! Applying immediate hand disruption`);
+      
+      // Create the updated player state - we move the card from hand to discard
+      const updatedPlayer = {
+        ...player,
+        hand: newHand,
+        discard: [...player!.discard, JSON.parse(JSON.stringify(card))],
+        actionPoints: player!.actionPoints - effectiveCost
+      };
+      
+      // Apply wildcard effects directly (this handles the hand disruption)
+      const { WildcardResolver } = require('../wildcardResolver');
+      const wildcardContext = {
+        gameState: G,
+        playerRole: isAttacker ? 'attacker' : 'defender',
+        card: extendedCard,
+        targetInfrastructure: null, // No infrastructure target for hand-targeting cards
+        chosenType: 'special',
+        playerID: playerID
+      };
+      
+      console.log(`Applying Memory Corruption Attack wildcard effects`);
+      const gameStateWithWildcardEffects = WildcardResolver.applyWildcardEffects(extendedCard, wildcardContext);
+      
+      return {
+        ...gameStateWithWildcardEffects,
+        attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker,
+        defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender,
+        actions: [...gameStateWithWildcardEffects.actions, newAction],
+        message: gameStateWithWildcardEffects.message || `${card!.name} corrupts opponent's memory!`
+      };
+    }
+    
     // Get available types for this wildcard
     const availableTypes = getAvailableCardTypes(card!.wildcardType);
     console.log(`Available wildcard types:`, availableTypes);
@@ -147,7 +204,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     let autoSelectedType: CardType | null = null;
     
     // Handle auto-selection logic (PRESERVED FROM ORIGINAL)
-    if (targetInfrastructure && availableTypes.length >= 1) {
+    if (availableTypes.length >= 1) {
       // For special wildcards with only one type, auto-select it
       if (card!.wildcardType === 'special' && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
@@ -159,7 +216,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         // Handle single-type wildcards by auto-selecting the only available type
         autoSelectedType = availableTypes[0];
         console.log(`Single-type wildcard ${card!.name} - auto-selecting ${autoSelectedType}`);
-      } else {
+      } else if (targetInfrastructure) {
         // Multi-type wildcard - use smart selection based on infrastructure state
         switch (targetInfrastructure.state) {
           case 'secure':
@@ -196,14 +253,14 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     
     // If we have an auto-selected type, use it directly (PRESERVED COMPLEX LOGIC)
     if (autoSelectedType) {
-      console.log(`Auto-selected wildcard type: ${autoSelectedType} for ${targetInfrastructure.state} infrastructure`);
+      console.log(`Auto-selected wildcard type: ${autoSelectedType} for ${targetInfrastructure ? targetInfrastructure.state + ' infrastructure' : 'hand targeting'}`);
       
       // Create a deep copy of the card to ensure all properties are preserved
       const cardCopy = JSON.parse(JSON.stringify(card));
       
       // Additional cost reduction check for Living Off The Land (A302) in auto-selection path
       let finalEffectiveCost = effectiveCost;
-      if (card!.id === 'A302' && targetInfrastructure.type === 'user') {
+      if (card!.id === 'A302' && targetInfrastructure && targetInfrastructure.type === 'user') {
         const originalCost = finalEffectiveCost;
         finalEffectiveCost = Math.max(0, finalEffectiveCost - 1);
         console.log(`Living Off The Land cost reduction (auto-selection): ${originalCost} -> ${finalEffectiveCost} (user systems target)`);
@@ -211,10 +268,25 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       
       // Check for card-specific cost reduction properties in auto-selection path
       const cardWithCostReduction = card as any;
-      if (cardWithCostReduction.costReduction && targetInfrastructure.type === cardWithCostReduction.costReduction.target.replace('_systems', '')) {
-        const originalCost = finalEffectiveCost;
-        finalEffectiveCost = Math.max(0, finalEffectiveCost - cardWithCostReduction.costReduction.amount);
-        console.log(`Card-specific cost reduction (auto-selection): ${originalCost} -> ${finalEffectiveCost} (${cardWithCostReduction.costReduction.target} target)`);
+      const costReductionData = cardWithCostReduction.costReduction || cardWithCostReduction.metadata?.costReduction;
+      console.log(`🔍 AUTO-SELECTION: Checking cost reduction for card ${card!.name} (${card!.id})`);
+      console.log(`🔍 AUTO-SELECTION: Card costReduction property:`, costReductionData);
+      console.log(`🔍 AUTO-SELECTION: Target infrastructure type:`, targetInfrastructure ? targetInfrastructure.type : 'none (hand targeting)');
+      
+      if (costReductionData && targetInfrastructure) {
+        const expectedTargetType = costReductionData.target.replace('_systems', '');
+        console.log(`🔍 AUTO-SELECTION: Expected target type after replace: "${expectedTargetType}"`);
+        console.log(`🔍 AUTO-SELECTION: Match check: "${targetInfrastructure.type}" === "${expectedTargetType}" = ${targetInfrastructure.type === expectedTargetType}`);
+        
+        if (targetInfrastructure.type === expectedTargetType) {
+          const originalCost = finalEffectiveCost;
+          finalEffectiveCost = Math.max(0, finalEffectiveCost - costReductionData.amount);
+          console.log(`✅ AUTO-SELECTION: Card-specific cost reduction: ${originalCost} -> ${finalEffectiveCost} (${costReductionData.target} target)`);
+        } else {
+          console.log(`❌ AUTO-SELECTION: No cost reduction: infrastructure type mismatch`);
+        }
+      } else {
+        console.log(`❌ AUTO-SELECTION: No costReduction property on card or no infrastructure target`);
       }
       
       // Create the updated player state - we move the card from hand to discard
@@ -226,7 +298,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       };
       
       // Apply the card effect directly with the auto-selected type
-      console.log(`Applying auto-selected card effect: ${autoSelectedType} on ${targetInfrastructure.name}`);
+      console.log(`Applying auto-selected card effect: ${autoSelectedType} on ${targetInfrastructure ? targetInfrastructure.name : 'opponent hand'}`);
       
       // First, apply wildcard-specific effects
       const { WildcardResolver } = require('../wildcardResolver');
@@ -244,16 +316,24 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       
       console.log(`DEBUG: pendingChainChoice after wildcard effects: ${gameStateWithWildcardEffects.pendingChainChoice ? 'YES' : 'NO'}`);
       
-      const effectResult = applyCardEffect(
-        autoSelectedType,
-        targetInfrastructure,
-        G.infrastructure?.findIndex(infra => infra.id === targetInfrastructureId) || 0,
-        G.infrastructure ? [...G.infrastructure] : [],
-        extendedCard,
-        attackVector,
-        playerID,
-        gameStateWithWildcardEffects // Use the updated game state with wildcard effects
-      );
+      // Only apply infrastructure card effects if we have a target infrastructure
+      let effectResult = null;
+      if (targetInfrastructure) {
+        effectResult = applyCardEffect(
+          autoSelectedType,
+          targetInfrastructure,
+          G.infrastructure?.findIndex(infra => infra.id === targetInfrastructureId) || 0,
+          G.infrastructure ? [...G.infrastructure] : [],
+          extendedCard,
+          attackVector,
+          playerID,
+          gameStateWithWildcardEffects // Use the updated game state with wildcard effects
+        );
+      } else {
+        // For hand-targeting cards, we already applied the effect via wildcard resolver
+        // Just return the current infrastructure unchanged
+        effectResult = G.infrastructure ? [...G.infrastructure] : [];
+      }
       
       console.log(`DEBUG: pendingChainChoice after applyCardEffect: ${gameStateWithWildcardEffects.pendingChainChoice ? 'YES' : 'NO'}`);
       
@@ -286,7 +366,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           defender: !isAttacker ? updatedPlayer : G.defender,
           infrastructure: cleanInfrastructure,
           actions: [...G.actions, newAction],
-          message: gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType} on ${targetInfrastructure.name}`,
+          message: gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType}${targetInfrastructure ? ` on ${targetInfrastructure.name}` : ' targeting opponent hand'}`,
           attackerScore,
           defenderScore,
           // Include all wildcard effects properties
@@ -412,7 +492,13 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   const newInfrastructure = effectResult;
   
   // Process persistent effects for infrastructure state changes
-  let gameStateWithPersistentEffects = G;
+  // Start with game state that already has the card cost deducted
+  let gameStateWithPersistentEffects: GameState = {
+    ...G,
+    attacker: isAttacker ? updatedPlayer : G.attacker!,
+    defender: !isAttacker ? updatedPlayer : G.defender!
+  };
+  
   if (G.infrastructure && newInfrastructure !== G.infrastructure) {
     console.log(`🎯 Checking persistent effects after card effect`);
     // Check each infrastructure for state changes
@@ -442,9 +528,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   
   // Check if there's a pending chain choice from the card effect
   const finalGameState = {
-    ...gameStateWithPersistentEffects, // Use the game state with persistent effects applied
-    attacker: isAttacker ? updatedPlayer : gameStateWithPersistentEffects.attacker,
-    defender: !isAttacker ? updatedPlayer : gameStateWithPersistentEffects.defender,
+    ...gameStateWithPersistentEffects, // Use the game state with persistent effects applied (already has correct player data)
     infrastructure: newInfrastructure,
     actions: [...gameStateWithPersistentEffects.actions, newAction],
     message: gameStateWithPersistentEffects.message || `${card!.name} thrown at ${targetInfrastructure.name}`,

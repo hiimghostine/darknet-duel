@@ -18,6 +18,12 @@ export const loadAttackerCards = (): Card[] => {
     
     // Convert AttackerCard to standard Card format
     return cardData.cards.map((attackerCard: AttackerCard): Card => {
+      // Debug logging for A302 specifically
+      if (attackerCard.id === 'A302') {
+        console.log(`🔧 CARD LOADER: Processing A302 - Living Off The Land`);
+        console.log(`🔧 CARD LOADER: Original attackerCard:`, attackerCard);
+        console.log(`🔧 CARD LOADER: costReduction property:`, (attackerCard as any).costReduction);
+      }
       // Ensure type is a valid CardType
       const cardType = attackerCard.type as CardType;
       
@@ -72,7 +78,9 @@ export const loadAttackerCards = (): Card[] => {
           ...(attackerCard.leadsTo && { leadsTo: attackerCard.leadsTo }),
           ...(attackerCard.wildcardType && { wildcardType: attackerCard.wildcardType }),
           ...(attackerCard.counterType && { counterType: attackerCard.counterType }),
-          ...(attackerCard.requires && { requires: attackerCard.requires })
+          ...(attackerCard.requires && { requires: attackerCard.requires }),
+          // Include cost reduction property if it exists
+          ...((attackerCard as any).costReduction && { costReduction: (attackerCard as any).costReduction })
         }
       };
     });

@@ -382,12 +382,12 @@
       "cost": 2,
       "description": "Uses legitimate system tools for attacks",
       "flavor": "Why bring your own weapons when the target provides them?",
-      "effect": "Can be played as any Exploit, Attack, or Counter-Attack card. Costs 1 AP less if targeting User Systems infrastructure.",
+      "effect": "Can be played as any Exploit, Attack, or Counter-Attack card. FREE when targeting User Systems infrastructure (Employee Workstations).",
       "img": "lotl",
       "isReactive": false,
       "target": "any",
       "wildcardType": "any",
-      "costReduction": {"target": "user_systems", "amount": 1}
+      "costReduction": {"target": "user_systems", "amount": 2}
     },
     {
       "id": "A303",

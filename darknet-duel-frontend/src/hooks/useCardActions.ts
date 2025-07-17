@@ -30,6 +30,12 @@ export function useCardActions(props: BoardProps) {
     // REMOVED: The early return that was preventing reaction cards from targeting
     // All reaction cards DO need targeting, regardless of reaction mode
     
+    // Special handling for Memory Corruption Attack and other hand-targeting cards
+    if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
+      console.log('🎯 Hand-targeting card detected, no infrastructure target needed:', card.name);
+      return false; // These cards don't need infrastructure targeting
+    }
+    
     // Check if the card inherently requires targeting
     if (card.requiresTarget) return true;
     
@@ -41,9 +47,9 @@ export function useCardActions(props: BoardProps) {
       console.log('Wildcard available types:', availableTypes);
       
       // Check if any available type requires targeting
-      return availableTypes.some(type => 
-        type === 'attack' || type === 'exploit' || type === 'counter-attack' || 
-        type === 'shield' || type === 'fortify' || type === 'response' || 
+      return availableTypes.some(type =>
+        type === 'attack' || type === 'exploit' || type === 'counter-attack' ||
+        type === 'shield' || type === 'fortify' || type === 'response' ||
         type === 'reaction' || type === 'counter' || type === 'special'
       );
     }
@@ -233,6 +239,14 @@ export function useCardActions(props: BoardProps) {
     if (!card || !isActive) return;
     if (event) event.stopPropagation();
     if (targetMode) return;
+    
+    // Special handling for Memory Corruption Attack - use throwCard with dummy target
+    if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
+      console.log("🔥 Playing Memory Corruption Attack directly");
+      // Use throwCard with a dummy target since validation will skip infrastructure checks
+      moves.throwCard(card.id, 'dummy_target');
+      return;
+    }
     
     // Check if the card requires targeting
     if (cardNeedsTarget(card)) {

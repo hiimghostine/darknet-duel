@@ -86,14 +86,21 @@ export function validatePlayerAndCard(G: GameState, playerID: string, cardId: st
 /**
  * Validates target infrastructure exists
  */
-export function validateTargetInfrastructure(G: GameState, targetInfrastructureId: string): {
+export function validateTargetInfrastructure(G: GameState, targetInfrastructureId: string, card?: Card): {
   valid: boolean;
   message?: string;
   targetInfrastructure?: any;
 } {
+  // Special handling for Memory Corruption Attack and other hand-targeting cards
+  if (card && (card.id.startsWith('A307') || (card as any).target === 'opponent_hand')) {
+    console.log(`🎯 Hand-targeting card detected: ${card.name} (${card.id})`);
+    // For hand-targeting cards, we don't need infrastructure validation
+    return { valid: true, targetInfrastructure: null };
+  }
+  
   const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
   if (!targetInfrastructure) {
-    return { 
+    return {
       valid: false,
       message: "Target infrastructure not found"
     };
@@ -112,6 +119,15 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
   // Use our type guard to handle the Card interface properties
   const extendedCard = hasCardFeatures(card) ? card : card;
   
+  // Special handling for Memory Corruption Attack and other hand-targeting cards
+  if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
+    console.log(`🎯 Hand-targeting card ${card.name} uses special validation`);
+    return {
+      effectiveCardType: 'special',
+      validationCardType: 'special'
+    };
+  }
+  
   // Handle card type-specific targeting validation
   // For wildcard cards, determine the effective card type using our utility function
   const effectiveCardType = getEffectiveCardType(card.type, extendedCard.wildcardType);
@@ -125,7 +141,7 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
     if (card.wildcardType === 'special') {
       validationCardType = 'special'; // Special cards like Lateral Movement
       console.log(`Special wildcard validation: Using special type for ${card.name}`);
-    } else {
+    } else if (targetInfrastructure) {
       // For other wildcards, determine the intended type based on target infrastructure
       if (targetInfrastructure.state === 'secure') {
         validationCardType = 'exploit'; // exploit can target secure infrastructure
@@ -204,7 +220,7 @@ export function validateThrowCardMove(context: ValidationContext): ValidationRes
   }
   
   // Step 3: Validate target infrastructure
-  const infraValidation = validateTargetInfrastructure(G, targetInfrastructureId);
+  const infraValidation = validateTargetInfrastructure(G, targetInfrastructureId, playerCardValidation.card);
   if (!infraValidation.valid) {
     return { valid: false, message: infraValidation.message };
   }

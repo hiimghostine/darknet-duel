@@ -255,7 +255,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   const handleChooseCardFromDeck = useCallback((cardId: string) => {
     if (moves.chooseCardFromDeck) {
-      moves.chooseCardFromDeck({ cardId });
+      moves.chooseCardFromDeck(cardId);
     }
   }, [moves]);
 
@@ -698,8 +698,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           const infraEffects = temporaryEffects.filter((effect: any) => effect.targetId === infra.id);
           
           // Filter persistent effects that apply to this infrastructure
+          // Show monitoring indicators to BOTH players, but rewards only go to the effect owner
           const infraPersistentEffects = persistentEffects.filter((effect: any) =>
-            effect.targetId === infra.id && effect.playerId === playerID
+            effect.targetId === infra.id
           );
           
           // Check if this infrastructure has any monitoring effects
@@ -773,6 +774,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                               </div>
                               <div className="text-[10px] text-orange-200 mb-1">
                                 Reward: +{effect.reward.amount} AP when compromised
+                              </div>
+                              <div className="text-[10px] text-orange-200 mb-1">
+                                Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
                               </div>
                               <div className="text-[10px] text-orange-300 italic">
                                 Watching for infrastructure compromise...
@@ -1019,6 +1023,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                             {infraPersistentEffects.map((effect, idx) => (
                               <div key={`persist-${idx}`} className="text-[9px] text-orange-200 bg-orange-900/30 rounded px-1.5 py-0.5">
                                 <span className="font-semibold">Multi-Stage Malware:</span> +{effect.reward.amount} AP on compromise
+                                <div className="text-[8px] text-orange-300 mt-0.5">
+                                  Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1525,7 +1532,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         />
       )}
       
-      {memoizedG.pendingHandChoice && playerID === memoizedG.pendingHandChoice.targetPlayerId && (
+      {memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId && (
         <HandDisruptionUI
           pendingChoice={memoizedG.pendingHandChoice}
           playerId={playerID || ''}

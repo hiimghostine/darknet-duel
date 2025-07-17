@@ -226,12 +226,26 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     
     stages: {
       action: {
-        moves: actionStageMoves,
+        moves: {
+          ...actionStageMoves,
+          // Add hand disruption move for Memory Corruption Attack
+          chooseHandDiscard: ({ G, ctx, playerID }, { cardIds }) => {
+            const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
+            return chooseHandDiscardMove(G, ctx, playerID, cardIds);
+          }
+        },
         next: 'reaction'
       },
       
       reaction: {
-        moves: reactionStageMoves,
+        moves: {
+          ...reactionStageMoves,
+          // Add hand disruption move for Memory Corruption Attack
+          chooseHandDiscard: ({ G, ctx, playerID }, { cardIds }) => {
+            const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
+            return chooseHandDiscardMove(G, ctx, playerID, cardIds);
+          }
+        },
         next: 'end'
       },
 

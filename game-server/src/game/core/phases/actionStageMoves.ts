@@ -129,6 +129,15 @@ export const actionStageMoves = {
       };
     }
     
+    // Check if there's a pending card choice (A306 AI-Powered Attack) - if so, don't switch to reaction yet
+    if (newG.pendingCardChoice) {
+      console.log('DEBUG: Found pendingCardChoice, staying in action stage for card selection');
+      return {
+        ...newG,
+        currentActionPlayer: playerID
+      };
+    }
+    
     // Always allow reaction to a throw card action
     // Store the action player's ID so we can return to them later
     const updatedG = {
@@ -217,6 +226,24 @@ export const actionStageMoves = {
     // After chain effect is resolved, transition to reaction phase
     if (!updatedG.pendingChainChoice) {
       // Chain effect completed, now allow reaction to the original card
+      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      if (opponentID) {
+        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+      }
+    }
+    
+    return updatedG;
+  },
+  
+  // Card selection from deck functionality (A306 AI-Powered Attack)
+  chooseCardFromDeck: ({ G, ctx, playerID, events }, selectedCardId) => {
+    const { chooseCardFromDeckMove } = require('../../moves/chooseCardFromDeck');
+    const updatedG = chooseCardFromDeckMove(G, ctx, playerID, selectedCardId);
+    
+    // After card selection is resolved, transition to reaction phase
+    if (!updatedG.pendingCardChoice) {
+      console.log('DEBUG: Card selection completed, transitioning to reaction phase');
+      // Card selection completed, now allow reaction to the original card
       const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
