@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import type { GameMatch } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
-import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt } from 'react-icons/fa';
+import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt, FaLock } from 'react-icons/fa';
 import LobbyChat from './LobbyChat';
 
 const LobbyDetail: React.FC = () => {
@@ -274,8 +274,17 @@ const LobbyDetail: React.FC = () => {
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <h2 className="text-2xl font-mono text-primary glitch-text">LOBBY #{matchID.substring(0, 8)}</h2>
+        <div className="flex flex-col">
+          <div className="flex items-center">
+            <h2 className="text-2xl font-mono text-primary glitch-text">LOBBY #{matchID.substring(0, 8)}</h2>
+          </div>
+          {match?.setupData.isPrivate && (
+            <div className="mt-2 flex items-center gap-2">
+              <FaLock className="text-primary/70 text-sm" />
+              <span className="text-xs font-mono text-primary/70">PRIVATE LOBBY</span>
+              <span className="text-xs font-mono text-primary/50">ID: {matchID}</span>
+            </div>
+          )}
         </div>
         <div className="px-3 py-1 bg-primary/20 border border-primary/40 text-primary font-mono text-xs rounded-md uppercase">
           <div className="flex items-center">

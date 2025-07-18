@@ -11,6 +11,8 @@ const LobbyBrowser: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState<string | null>(null);
+  const [privateLobbysId, setPrivateLobbyId] = useState('');
+  const [isJoiningPrivate, setIsJoiningPrivate] = useState(false);
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -25,6 +27,81 @@ const LobbyBrowser: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleJoinPrivateLobby = async () => {
+    if (!user) {
+      setError('You must be logged in to join a match');
+      return;
+    }
+
+    if (!privateLobbysId.trim()) {
+      setError('Please enter a lobby ID');
+      return;
+    }
+
+    try {
+      setIsJoiningPrivate(true);
+      setError(null);
+
+      // Try to join the private lobby
+      const result = await lobbyService.joinPrivateLobby(privateLobbysId.trim());
+
+      if (!result.success) {
+        setError(result.error || 'Failed to join private lobby');
+        return;
+      }
+
+      if (!result.match) {
+        setError('Unable to get lobby details');
+        return;
+      }
+
+      // Find an empty slot
+      let playerID = '0';
+      for (let i = 0; i < result.match.players.length; i++) {
+        if (!result.match.players[i].name) {
+          playerID = i.toString();
+          break;
+        }
+      }
+
+      // Auto-assign a role based on availability
+      let role: 'attacker' | 'defender' | undefined = undefined;
+      const roles = result.match.setupData?.roles || {};
+
+      if (!roles.attackerPlayerId) {
+        role = 'attacker';
+      } else if (!roles.defenderPlayerId) {
+        role = 'defender';
+      }
+
+      const joinData = {
+        role,
+        data: {
+          realUserId: user.id,
+          realUsername: user.username
+        }
+      };
+
+      const joinResult = await lobbyService.joinMatch(
+        privateLobbysId.trim(),
+        user.username,
+        playerID,
+        joinData
+      );
+
+      if (joinResult) {
+        navigate(`/lobbies/${privateLobbysId.trim()}`);
+      } else {
+        setError('Failed to join the private lobby');
+      }
+    } catch (err) {
+      setError('Failed to join the private lobby. Please check the lobby ID and try again.');
+      console.error(err);
+    } finally {
+      setIsJoiningPrivate(false);
     }
   };
 
@@ -237,6 +314,52 @@ const LobbyBrowser: React.FC = () => {
           <p className="font-mono">{error}</p>
         </div>
       )}
+      
+      {/* Private Lobby Join Section */}
+      <div className="mb-8 border border-primary/30 bg-base-800/50 backdrop-filter backdrop-blur-sm shadow-lg shadow-primary/10 p-6 relative">
+        <div className="absolute -top-2 -left-2 w-20 h-20 border-t-2 border-l-2 border-primary opacity-60"></div>
+        <div className="absolute -bottom-2 -right-2 w-20 h-20 border-b-2 border-r-2 border-primary opacity-60"></div>
+        
+        <h3 className="text-xl font-mono text-primary mb-4 glitch-text">JOIN PRIVATE LOBBY</h3>
+        
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={privateLobbysId}
+              onChange={(e) => setPrivateLobbyId(e.target.value)}
+              placeholder="Enter Lobby ID..."
+              className="w-full px-4 py-3 bg-base-900/80 border border-primary/30 text-primary font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              disabled={isJoiningPrivate}
+            />
+          </div>
+          <button
+            onClick={handleJoinPrivateLobby}
+            disabled={isJoiningPrivate || !privateLobbysId.trim()}
+            className={`px-6 py-3 font-mono text-sm border transition-all duration-200 ${
+              isJoiningPrivate || !privateLobbysId.trim()
+                ? 'bg-primary/10 border-primary/30 text-primary/50 cursor-not-allowed'
+                : 'bg-primary/20 border-primary text-primary hover:bg-primary/30'
+            }`}
+          >
+            {isJoiningPrivate ? (
+              <>
+                <span className="animate-pulse">⚙</span>
+                <span className="ml-2">CONNECTING...</span>
+              </>
+            ) : (
+              <>
+                <span>🔗</span>
+                <span className="ml-2">CONNECT</span>
+              </>
+            )}
+          </button>
+        </div>
+        
+        <div className="mt-3 text-xs text-primary/60 font-mono">
+          Private lobbies require the exact lobby ID to join. Get the ID from the lobby host.
+        </div>
+      </div>
       
       {/* Loading state */}
       {loading && (

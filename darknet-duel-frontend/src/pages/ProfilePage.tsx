@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import EditProfileModal from '../components/EditProfileModal';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
 
@@ -30,6 +31,7 @@ const ProfilePage: React.FC = () => {
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Get theme from localStorage
   useEffect(() => {
@@ -94,6 +96,20 @@ const ProfilePage: React.FC = () => {
     }, 3000);
   };
 
+  const handleEditProfile = () => {
+    setShowEditModal(true);
+  };
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+  };
+
+  const handleEditModalSave = () => {
+    setShowEditModal(false);
+    // Refresh profile data after edit
+    window.location.reload();
+  };
+
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
@@ -153,6 +169,17 @@ const ProfilePage: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-2">
+                {isOwnProfile && (
+                  <button 
+                    onClick={handleEditProfile}
+                    className="btn btn-sm bg-primary/20 border-primary/50 hover:border-primary text-primary btn-cyberpunk"
+                    aria-label="Edit Profile"
+                  >
+                    <span className="mr-1">✏️</span>
+                    <span className="hidden sm:inline">EDIT</span>
+                  </button>
+                )}
+                
                 <button 
                   onClick={toggleTheme} 
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
@@ -385,6 +412,13 @@ const ProfilePage: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={handleEditModalClose}
+        onSave={handleEditModalSave}
+      />
     </div>
   );
 };

@@ -31,6 +31,7 @@ import PowerBar from './board-components/PowerBar';
 import InfrastructureArea from './board-components/InfrastructureArea';
 import DevCheatPanel from './board-components/DevCheatPanel';
 import TemporaryEffectsDisplay from './board-components/TemporaryEffectsDisplay';
+import LobbyChat from '../lobby/LobbyChat';
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
@@ -334,14 +335,20 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     };
     
     return (
-      <WinnerLobby
-        // @ts-expect-error - Missing gameConfig properties in local type
-        G={G}
-        playerID={playerID || undefined}
-        moves={winnerLobbyMoves}
-        isAttacker={isAttacker}
-        matchID={matchID}
-      />
+      <>
+        <WinnerLobby
+          // @ts-expect-error - Missing gameConfig properties in local type
+          G={G}
+          playerID={playerID || undefined}
+          moves={winnerLobbyMoves}
+          isAttacker={isAttacker}
+          matchID={matchID}
+        />
+        <div className="mt-8">
+          {/* Connect to the lobby chat for this game/lobby */}
+          <LobbyChat lobbyId={matchID} showChannelSwitcher={false} />
+        </div>
+      </>
     );
   }
 
