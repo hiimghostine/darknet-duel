@@ -371,3 +371,53 @@ html, html * {
   80% { clip-path: inset(5% 0 34% 0); }
   100% { clip-path: inset(58% 0 43% 0); }
 }
+
+/* Custom Scrollbar Styles */
+html {
+  --scrollbar-bg: #181e2a;
+  --scrollbar-thumb: var(--color-primary-glow, #00b7ff80);
+  --scrollbar-thumb-hover: var(--color-primary, #00b7ff);
+  --scrollbar-thumb-border: rgba(0,0,0,0.2);
+}
+
+html[data-theme='cyberpunk'] {
+  --scrollbar-bg: #e6f6ff;
+  --scrollbar-thumb: rgba(0,183,255,0.4);
+  --scrollbar-thumb-hover: rgba(0,183,255,0.7);
+  --scrollbar-thumb-border: rgba(0,183,255,0.2);
+}
+
+html[data-theme='cyberpunk-dark'] {
+  --scrollbar-bg: #181e2a;
+  --scrollbar-thumb: rgba(255,37,91,0.3);
+  --scrollbar-thumb-hover: rgba(255,37,91,0.7);
+  --scrollbar-thumb-border: rgba(255,37,91,0.2);
+}
+
+/* Webkit browsers */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: var(--scrollbar-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--scrollbar-thumb-border);
+  box-shadow: 0 0 8px var(--scrollbar-thumb);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px var(--scrollbar-thumb-hover);
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+  border-radius: 8px;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+}

@@ -54,7 +54,7 @@ const StorePage: React.FC = () => {
           currencyService.getBalance()
         ]);
         const elapsed = Date.now() - start;
-        const minDuration = 1500; // 1.5 seconds
+        const minDuration = 2000;
         if (elapsed < minDuration) {
           await new Promise(res => setTimeout(res, minDuration - elapsed));
         }
