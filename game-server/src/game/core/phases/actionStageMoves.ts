@@ -77,7 +77,8 @@ export const actionStageMoves = {
     const newG = playCardMove({ G, ctx, playerID }, cardId);
     
     // Check if this card can be reacted to (if it's a reaction-eligible card)
-    const isAttacker = playerID === G.attacker?.id;
+    // FIXED: Use boardgame.io player IDs for validation
+    const isAttacker = playerID === '0';
     const currentPlayer = isAttacker ? G.attacker : G.defender;
     const card = currentPlayer?.hand.find(c => c.id === cardId);
     
@@ -92,7 +93,8 @@ export const actionStageMoves = {
       };
       
       // Switch active player to opponent for reaction stage
-      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      // FIXED: Use boardgame.io player IDs for opponent lookup
+      const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }
@@ -146,7 +148,8 @@ export const actionStageMoves = {
     };
     
     // Switch active player to opponent for reaction stage
-    const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+    // FIXED: Use boardgame.io player IDs for opponent lookup
+    const opponentID = playerID === '0' ? '1' : '0';
     if (opponentID) {
       events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
     }
@@ -226,7 +229,8 @@ export const actionStageMoves = {
     // After chain effect is resolved, transition to reaction phase
     if (!updatedG.pendingChainChoice) {
       // Chain effect completed, now allow reaction to the original card
-      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      // FIXED: Use boardgame.io player IDs for opponent lookup
+      const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }

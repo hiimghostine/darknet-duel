@@ -88,6 +88,7 @@ export interface PlayerMetadata {
 export interface Player {
   id: string;
   name: string;
+  realUserId?: string; // Real user UUID for database operations
   role: PlayerRole;
   resources: number;
   actionPoints: number;

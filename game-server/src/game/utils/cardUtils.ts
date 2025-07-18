@@ -29,7 +29,8 @@ export function isCardPlayable(
 ): boolean {
   // Get player information if not provided
   if (!player) {
-    const isAttacker = playerID === G.attacker?.id;
+    // FIXED: Use boardgame.io player IDs for validation
+    const isAttacker = playerID === '0';
     player = isAttacker ? G.attacker! : G.defender!;
     
     // Safety check
@@ -52,8 +53,10 @@ export function isCardPlayable(
   }
   
   // Check if it's the player's turn for non-reactive cards
-  const isPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) || 
-                      (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  // FIXED: Use boardgame.io player IDs for turn validation
+  const isAttacker = playerID === '0';
+  const isPlayerTurn = (G.currentTurn === 'attacker' && isAttacker) || 
+                      (G.currentTurn === 'defender' && !isAttacker);
   
   // Check reaction-specific conditions
   // Check both the boardgame.io active player stage AND the pendingReactions array
@@ -61,9 +64,6 @@ export function isCardPlayable(
   const isInReactionStage = playerStage === 'reaction';
   const hasPendingReactions = G.pendingReactions !== undefined && G.pendingReactions.length > 0;
   const isReactionPhase = isInReactionStage || hasPendingReactions;
-  
-  // Get player role (attacker or defender)
-  const isAttacker = playerID === G.attacker?.id;
   
   // Check if the card type and isReactive flag are consistent
   const isProperReactiveCard = 

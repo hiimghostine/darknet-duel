@@ -35,9 +35,14 @@ export interface ValidationResult {
  * Validates player turn permissions and reaction mode
  */
 export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { valid: boolean; message?: string; isAttacker?: boolean } {
+  // FIXED: Use boardgame.io player IDs for turn validation
+  // playerID is the boardgame.io ID ("0" or "1"), not the real user UUID
+  const isAttacker = playerID === '0';
+  const isDefender = playerID === '1';
+  
   // Verify it's the player's turn or a valid reaction
-  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) ||
-                             (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && isAttacker) ||
+                             (G.currentTurn === 'defender' && isDefender);
   
   // Check if player is in reaction mode - important for counter-attack cards
   const isInReactionMode = ctx.activePlayers && 
@@ -52,7 +57,6 @@ export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { 
     };
   }
   
-  const isAttacker = playerID === G.attacker?.id;
   return { valid: true, isAttacker };
 }
 
@@ -66,7 +70,8 @@ export function validatePlayerAndCard(G: GameState, playerID: string, cardId: st
   card?: Card;
   cardIndex?: number;
 } {
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use boardgame.io player IDs for validation
+  const isAttacker = playerID === '0';
   const player = isAttacker ? G.attacker : G.defender;
   
   if (!player) {

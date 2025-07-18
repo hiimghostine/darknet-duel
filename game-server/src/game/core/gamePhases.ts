@@ -156,6 +156,7 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
   onBegin: ({ G }: { G: GameState }) => {
     return {
       ...G,
+      gamePhase: 'playing' as const,
       currentStage: 'action' as TurnStage,
       pendingReactions: [] as PendingReaction[],
       reactionComplete: false
