@@ -11,6 +11,7 @@ export interface AccountData {
   gamesLost: number;
   rating: number;
   bio: string | null;
+  decoration: string | null;
   creds: number;
   crypts: number;
   createdAt: string;
@@ -165,6 +166,13 @@ class AccountService {
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = URL.createObjectURL(file);
     });
+  }
+
+  /**
+   * Get the API base URL
+   */
+  getApiBaseUrl(): string {
+    return api.defaults.baseURL || '';
   }
 }
 

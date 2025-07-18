@@ -25,6 +25,7 @@ export interface User {
   level: number;
   creds: number;
   crypts: number;
+  decoration: string | null;
   createdAt: string;
   updatedAt: string;
 }

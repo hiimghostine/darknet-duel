@@ -229,6 +229,19 @@ const ProfilePage: React.FC = () => {
                         e.currentTarget.src = logo;
                       }}
                     />
+                    {/* Decoration Overlay */}
+                    {displayUser.decoration && (
+                      <div className="absolute inset-0">
+                        <img
+                          src={`${accountService.getApiBaseUrl()}/files/decorations/${displayUser.decoration}.png`}
+                          alt="Avatar decoration"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

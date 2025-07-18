@@ -7,6 +7,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 import accountService from '../services/account.service';
+import storeService from '../services/store.service';
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout, loadUser } = useAuthStore();
@@ -291,6 +292,19 @@ const DashboardPage: React.FC = () => {
                             target.src = logo;
                           }}
                         />
+                        {/* Decoration overlay */}
+                        {user?.decoration && (
+                          <img
+                            src={storeService.getDecorationUrl(user.decoration)}
+                            alt="Decoration"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            onError={(e) => {
+                              // Hide decoration if it fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        )}
                         {/* Online indicator */}
                         <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-base-200 rounded-full"></div>
                       </div>
