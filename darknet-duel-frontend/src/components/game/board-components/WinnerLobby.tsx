@@ -1,6 +1,6 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { GameState } from 'shared-types/game.types';
-import '../../../styles/winner-lobby.css';
 import PostGameChat from './PostGameChat';
 
 interface WinnerLobbyProps {
@@ -54,145 +54,373 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
   const currentPlayerRequestedRematch = G.rematchRequested && 
     playerID && G.rematchRequested.includes(playerID);
 
+  // Animation variants
+  const containerVariants = {
+    initial: { opacity: 0 },
+    animate: { 
+      opacity: 1,
+      transition: { 
+        duration: 0.8,
+        staggerChildren: 0.2 
+      }
+    }
+  };
+
+  const itemVariants = {
+    initial: { opacity: 0, y: 30 },
+    animate: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6 }
+    }
+  };
+
+  const glitchVariants = {
+    initial: { opacity: 0, scale: 0.8 },
+    animate: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { 
+        duration: 0.8,
+        type: "spring" as const,
+        bounce: 0.4
+      }
+    }
+  };
+
+  const pulseAnimation = {
+    scale: [1, 1.05, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut" as const
+    }
+  };
+
   return (
-    <div className="winner-lobby-dashboard">
-      {/* Dashboard-style header */}
-      <div className="winner-lobby-header">
-        <div className="brand-section">
-          <h1 className="game-title">DARKNET DUEL</h1>
-          <span className="game-status">Match Complete</span>
-        </div>
-        <div className="header-actions">
-          <button 
-            className={`action-btn ${currentPlayerRequestedRematch ? 'requested' : 'primary'}`}
-            onClick={handleRematchRequest}
-            disabled={currentPlayerRequestedRematch || false}
-          >
-            {currentPlayerRequestedRematch ? 'Rematch Requested' : 'Request Rematch'}
-          </button>
-          
-          {moves.surrender && (
-            <button 
-              className="action-btn secondary"
-              onClick={handleSurrender}
-            >
-              Leave Game
-            </button>
-          )}
+    <motion.div 
+      className="min-h-screen bg-base-100 relative overflow-hidden text-base-content"
+      variants={containerVariants}
+      initial="initial"
+      animate="animate"
+    >
+      {/* Cyberpunk Background Effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Grid background */}
+        <div className="absolute inset-0 grid-bg opacity-20"></div>
+        
+        {/* Scanlines */}
+        <div className="absolute inset-0 scanlines pointer-events-none"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-1/3 h-1 bg-gradient-to-r from-primary to-transparent"></div>
+        <div className="absolute top-0 right-0 w-1/4 h-1 bg-gradient-to-l from-primary to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-1/2 h-1 bg-gradient-to-r from-primary to-transparent"></div>
+        <div className="absolute top-0 right-1/4 w-1 h-32 bg-gradient-to-b from-primary to-transparent"></div>
+        <div className="absolute bottom-0 left-1/3 w-1 h-48 bg-gradient-to-t from-primary to-transparent"></div>
+        
+        {/* Binary background */}
+        <div className="absolute top-20 left-10 opacity-5 text-9xl font-mono text-primary">101</div>
+        <div className="absolute bottom-20 right-10 opacity-5 text-9xl font-mono text-primary">010</div>
+        <div className="absolute top-1/3 right-20 opacity-5 text-7xl font-mono text-primary rotate-12">
+          {isWinner ? 'WIN' : 'FAIL'}
         </div>
       </div>
 
-      {/* Dashboard-style content */}
-      <div className="winner-lobby-content">
-        
-        {/* Result panel - hero section */}
-        <div className="result-panel">
-          <div className={`result-announcement ${isWinner ? 'victory' : 'defeat'}`}>
-            <div className="result-icon">
-              {isWinner ? '🏆' : '💀'}
-            </div>
-            <h1 className="result-title">
-              {isWinner ? 'VICTORY' : 'DEFEAT'}
+      {/* Header */}
+      <motion.header 
+        className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80 relative z-10"
+        variants={itemVariants}
+      >
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
+              DARKNET_DUEL
             </h1>
-            <p className="result-subtitle">
-              {isWinner 
-                ? `You successfully ${isAttacker ? 'compromised' : 'defended'} the network!`
-                : `Your ${isAttacker ? 'attack' : 'defense'} has failed!`
-              }
-            </p>
-            {G.gameStats?.winReason && (
-              <p className="win-reason">{G.gameStats.winReason}</p>
+            <div className="badge badge-primary font-mono text-xs">
+              MISSION_COMPLETE
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <motion.button 
+              onClick={handleRematchRequest}
+              disabled={currentPlayerRequestedRematch || false}
+              className={`btn btn-sm font-mono ${
+                currentPlayerRequestedRematch 
+                  ? 'btn-success' 
+                  : 'btn-primary'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {currentPlayerRequestedRematch ? (
+                <>
+                  <span className="loading loading-dots loading-xs"></span>
+                  REMATCH_REQUESTED
+                </>
+              ) : (
+                <>🔄 REQUEST_REMATCH</>
+              )}
+            </motion.button>
+            
+            {moves.surrender && (
+              <motion.button 
+                onClick={handleSurrender}
+                className="btn btn-sm btn-error font-mono"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                🚪 EXIT_NODE
+              </motion.button>
             )}
           </div>
-
-          {bothRequestedRematch && (
-            <div className="rematch-status">
-              <div className="status-icon">⚡</div>
-              <div className="status-text">
-                <strong>Both players requested a rematch!</strong>
-                <p>Starting new game...</p>
-              </div>
-            </div>
-          )}
         </div>
+      </motion.header>
 
-        {/* Two-column layout like dashboard */}
-        <div className="content-grid">
-          
-          {/* Left column - Statistics */}
-          <div className="stats-section">
-            <div className="section-panel">
-              <h2 className="panel-title">Game Statistics</h2>
-              
-              {G.gameStats ? (
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-value">{formatDuration(G.gameStats.gameDuration)}</div>
-                    <div className="stat-label">Duration</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">{G.gameStats.cardsPlayed}</div>
-                    <div className="stat-label">Cards Played</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">{G.turnNumber}</div>
-                    <div className="stat-label">Turns</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">{G.gameStats.infrastructureChanged}</div>
-                    <div className="stat-label">Infrastructure Changes</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="loading-state">Loading statistics...</div>
+      {/* Main Content */}
+      <main className="container mx-auto p-4 relative z-10">
+        {/* Victory/Defeat Banner */}
+        <motion.div 
+          className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm mb-8"
+          variants={glitchVariants}
+        >
+          <div className={`bg-base-200 border-2 p-8 relative text-center ${
+            isWinner ? 'border-success' : 'border-error'
+          }`}>
+            {/* Corner accents */}
+            <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${
+              isWinner ? 'border-success' : 'border-error'
+            }`}></div>
+            <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${
+              isWinner ? 'border-success' : 'border-error'
+            }`}></div>
+            <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${
+              isWinner ? 'border-success' : 'border-error'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${
+              isWinner ? 'border-success' : 'border-error'
+            }`}></div>
+            
+                         <motion.div
+               animate={isWinner ? pulseAnimation : undefined}
+               className="mb-4"
+             >
+              <div className={`text-8xl mb-4 ${isWinner ? 'text-success' : 'text-error'}`}>
+                {isWinner ? '🏆' : '💀'}
+              </div>
+              <h1 className={`text-6xl font-mono font-bold mb-4 ${
+                isWinner ? 'text-success' : 'text-error'
+              } data-corrupt`} data-text={isWinner ? 'VICTORY' : 'DEFEAT'}>
+                {isWinner ? 'VICTORY' : 'DEFEAT'}
+              </h1>
+            </motion.div>
+            
+            <div className="font-mono">
+              <p className="text-xl mb-2">
+                {isWinner 
+                  ? `MISSION_SUCCESS: Network ${isAttacker ? 'compromised' : 'defended'} successfully!`
+                  : `MISSION_FAILED: Your ${isAttacker ? 'attack' : 'defense'} operation has failed!`
+                }
+              </p>
+              {G.gameStats?.winReason && (
+                <p className="text-sm text-base-content/70">
+                  TERMINATION_REASON: {G.gameStats.winReason}
+                </p>
               )}
             </div>
-
-            <div className="section-panel">
-              <h2 className="panel-title">Score Breakdown</h2>
-              <div className="score-grid">
-                <div className={`score-card ${isAttacker ? 'current-player' : ''}`}>
-                  <div className="score-value">{G.attackerScore}</div>
-                  <div className="score-label">Attacker Score</div>
-                  {isAttacker && <div className="player-indicator">You</div>}
-                </div>
-                <div className="score-divider">vs</div>
-                <div className={`score-card ${!isAttacker ? 'current-player' : ''}`}>
-                  <div className="score-value">{G.defenderScore}</div>
-                  <div className="score-label">Defender Score</div>
-                  {!isAttacker && <div className="player-indicator">You</div>}
-                </div>
-              </div>
-            </div>
-
-            {/* Future analytics placeholder */}
-            <div className="section-panel analytics-preview">
-              <h2 className="panel-title">Performance Analytics</h2>
-              <div className="analytics-placeholder">
-                <div className="placeholder-icon">📊</div>
-                <p>Detailed analytics coming soon</p>
-                <span className="placeholder-subtitle">Charts, insights, and performance metrics will be available in future updates</span>
-              </div>
-            </div>
           </div>
+        </motion.div>
 
-          {/* Right column - Chat */}
-          <div className="chat-section">
-            <div className="section-panel chat-panel">
-              <h2 className="panel-title">Post-Game Chat</h2>
-              <div className="chat-container">
-                <PostGameChat 
-                  chat={G.chat || { messages: [], lastReadTimestamp: {} }}
-                  playerID={playerID}
-                  sendMessage={(content) => moves.sendChatMessage(content)}
-                />
+        {/* Rematch Status */}
+        <AnimatePresence>
+          {bothRequestedRematch && (
+            <motion.div 
+              className="p-1 bg-gradient-to-br from-success/20 via-success/10 to-transparent backdrop-blur-sm mb-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <div className="bg-base-200 border border-success/50 p-4 relative">
+                <div className="flex items-center gap-4 font-mono">
+                  <div className="text-4xl">⚡</div>
+                  <div>
+                    <div className="text-lg font-bold text-success">REMATCH_PROTOCOL_INITIATED</div>
+                    <div className="text-sm text-base-content/70">Both operatives have agreed to a new engagement...</div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="loading loading-dots loading-sm text-success"></span>
+                      <span className="text-xs">INITIALIZING_NEW_MISSION</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Game Statistics */}
+          <motion.div 
+            className="lg:col-span-2 space-y-6"
+            variants={itemVariants}
+          >
+            {/* Mission Stats */}
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+              <div className="bg-base-200 border border-primary/20 p-6 relative">
+                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-mono text-primary text-lg">MISSION_STATISTICS</h3>
+                  <div className="text-xs text-base-content/70 font-mono">STATUS: ARCHIVED</div>
+                </div>
+                
+                {G.gameStats ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                      <div className="text-2xl font-mono mb-2 text-primary">
+                        {formatDuration(G.gameStats.gameDuration)}
+                      </div>
+                      <div className="text-xs text-primary font-mono">DURATION</div>
+                    </div>
+                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                      <div className="text-2xl font-mono mb-2 text-primary">
+                        {G.gameStats.cardsPlayed}
+                      </div>
+                      <div className="text-xs text-primary font-mono">CARDS_PLAYED</div>
+                    </div>
+                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                      <div className="text-2xl font-mono mb-2 text-primary">
+                        {G.turnNumber}
+                      </div>
+                      <div className="text-xs text-primary font-mono">TURNS</div>
+                    </div>
+                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                      <div className="text-2xl font-mono mb-2 text-primary">
+                        {G.gameStats.infrastructureChanged}
+                      </div>
+                      <div className="text-xs text-primary font-mono">INFRA_CHANGES</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <span className="loading loading-spinner loading-lg text-primary"></span>
+                    <p className="mt-4 font-mono text-sm">COMPILING_STATISTICS...</p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
+            {/* Score Breakdown */}
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+              <div className="bg-base-200 border border-primary/20 p-6 relative">
+                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-mono text-primary text-lg">FINAL_SCORES</h3>
+                  <div className="text-xs text-base-content/70 font-mono">NETWORK_CONTROL</div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-6 items-center">
+                  <motion.div 
+                    className={`border-2 bg-base-300/50 p-6 text-center relative ${
+                      isAttacker ? 'border-primary' : 'border-primary/30'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    {isAttacker && (
+                      <div className="absolute -top-2 -right-2 bg-primary text-base-100 text-xs font-mono px-2 py-1 rounded">
+                        YOU
+                      </div>
+                    )}
+                    <div className="text-3xl font-mono mb-2 text-error">
+                      {G.attackerScore}
+                    </div>
+                    <div className="text-xs text-error font-mono">ATTACKER</div>
+                  </motion.div>
+                  
+                  <div className="text-center font-mono text-2xl text-base-content/50">
+                    VS
+                  </div>
+                  
+                  <motion.div 
+                    className={`border-2 bg-base-300/50 p-6 text-center relative ${
+                      !isAttacker ? 'border-primary' : 'border-primary/30'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    {!isAttacker && (
+                      <div className="absolute -top-2 -right-2 bg-primary text-base-100 text-xs font-mono px-2 py-1 rounded">
+                        YOU
+                      </div>
+                    )}
+                    <div className="text-3xl font-mono mb-2 text-info">
+                      {G.defenderScore}
+                    </div>
+                    <div className="text-xs text-info font-mono">DEFENDER</div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Analytics Preview */}
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+              <div className="bg-base-200 border border-primary/20 border-dashed p-6 relative opacity-60">
+                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📊</div>
+                  <h3 className="font-mono text-primary text-lg mb-2">ANALYTICS_MODULE</h3>
+                  <p className="font-mono text-sm text-base-content/70">
+                    Advanced performance metrics and tactical analysis
+                  </p>
+                  <p className="font-mono text-xs text-primary mt-4">
+                    [MODULE_STATUS: UNDER_DEVELOPMENT]
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Post-Game Communications */}
+          <motion.div 
+            className="space-y-6"
+            variants={itemVariants}
+          >
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm h-full">
+              <div className="bg-base-200 border border-primary/20 p-4 relative h-full flex flex-col">
+                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-mono text-primary text-lg">SECURE_CHANNEL</h3>
+                  <div className="text-xs text-base-content/70 font-mono">ENCRYPTED</div>
+                </div>
+                
+                <div className="flex-1 min-h-[400px]">
+                  <PostGameChat 
+                    chat={G.chat || { messages: [], lastReadTimestamp: {} }}
+                    playerID={playerID}
+                    sendMessage={(content) => moves.sendChatMessage(content)}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      </main>
+    </motion.div>
   );
 };
 

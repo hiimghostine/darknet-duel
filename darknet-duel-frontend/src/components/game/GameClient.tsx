@@ -368,6 +368,7 @@ const GameClient: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [clientComponent, setClientComponent] = useState<React.ReactNode>(null);
   const [playerRole, setPlayerRole] = useState<'attacker' | 'defender'>('attacker');
+  const [gameState, setGameState] = useState<any>(null);
   
   /**
    * Handle leaving the game and clean up resources
