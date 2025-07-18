@@ -47,12 +47,17 @@ const StorePage: React.FC = () => {
     const loadStoreData = async () => {
       try {
         setIsLoading(true);
+        const start = Date.now();
         const [storeCategories, purchases, balance] = await Promise.all([
           storeService.getStoreData(),
           storeService.getUserPurchases(),
           currencyService.getBalance()
         ]);
-
+        const elapsed = Date.now() - start;
+        const minDuration = 1500; // 1.5 seconds
+        if (elapsed < minDuration) {
+          await new Promise(res => setTimeout(res, minDuration - elapsed));
+        }
         setStoreData(storeCategories);
         setUserPurchases(purchases);
         setUserBalance(balance);

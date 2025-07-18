@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/auth.store';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
 import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
+import { useThemeStore } from '../../store/theme.store';
 
 interface LobbyChatProps {
   chatId?: string;
@@ -72,6 +73,8 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     username: '',
     position: { x: 0, y: 0 }
   });
+
+  const { theme } = useThemeStore();
 
   // Scroll to bottom when new messages arrive - only within the message container
   const scrollToBottom = () => {
@@ -338,7 +341,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
             </div>
 
             {/* IRC-style input with cyberpunk styling */}
-            <div className="mt-3 bg-base-300/30 border border-primary/30 relative">
+            <div className={`mt-3 border border-primary/30 relative rounded-md transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80' : 'bg-base-100/80'}`}>
               {/* Corner accents for input */}
               <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/50"></div>
               <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/50"></div>
@@ -359,8 +362,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   placeholder="ENTER_TRANSMISSION..."
                   disabled={!isConnected}
                   maxLength={500}
-                  className="flex-1 bg-transparent border-none outline-none text-base-content text-sm font-mono
-                           placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 border-none outline-none text-base-content text-sm font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'text-base-content' : 'text-base-content'} `}
                 />
                 {newMessage.length > 450 && (
                   <span className="text-warning text-xs ml-2 font-mono">

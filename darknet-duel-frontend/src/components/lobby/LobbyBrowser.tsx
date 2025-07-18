@@ -5,6 +5,7 @@ import type { GameMatch, LobbyState } from '../../services/lobby.service';
 import { FaLock, FaPlay, FaCircleNotch, FaExclamationTriangle as FaExclamationCircle } from 'react-icons/fa';
 import { useAuthStore } from '../../store/auth.store';
 import { FaSync, FaPlus, FaExclamationTriangle, FaServer, FaUserSecret, FaNetworkWired } from 'react-icons/fa';
+import { useThemeStore } from '../../store/theme.store';
 
 const LobbyBrowser: React.FC = () => {
   const [matches, setMatches] = useState<GameMatch[]>([]);
@@ -15,6 +16,7 @@ const LobbyBrowser: React.FC = () => {
   const [isJoiningPrivate, setIsJoiningPrivate] = useState(false);
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { theme } = useThemeStore();
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -329,7 +331,7 @@ const LobbyBrowser: React.FC = () => {
               value={privateLobbysId}
               onChange={(e) => setPrivateLobbyId(e.target.value)}
               placeholder="Enter Lobby ID..."
-              className="w-full px-4 py-3 bg-base-900/80 border border-primary/30 text-primary font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className={`w-full px-4 py-3 border font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80 border-primary/30 text-primary' : 'bg-base-100/80 border-primary/40 text-primary'}`}
               disabled={isJoiningPrivate}
             />
           </div>
