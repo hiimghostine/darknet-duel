@@ -59,6 +59,7 @@ export interface GameMatch {
     };
     started?: boolean; // Flag to indicate if the game has started
     state?: LobbyState; // Current lobby state
+    isPrivate?: boolean; // Whether the lobby is private
   };
 }
 
@@ -91,10 +92,11 @@ export const lobbyService = {
           maxTurns: number;
           roles: Record<string, string>;
           started?: boolean;
+          isPrivate?: boolean;
         };
       }
       
-      const matches: GameMatch[] = response.matches.map((match: RawMatch) => {
+      const allMatches: GameMatch[] = response.matches.map((match: RawMatch) => {
         // Determine lobby state based on player data and connection status
         let state: LobbyState = 'waiting';
         const players: MatchPlayer[] = match.players || [];
@@ -128,12 +130,16 @@ export const lobbyService = {
               gameMode: 'standard',
               initialResources: 5,
               maxTurns: 30,
-              roles: {}
+              roles: {},
+              isPrivate: false
             }),
             state: state
           }
         };
       });
+      
+      // Filter out private lobbies from public listing
+      const matches = allMatches.filter(match => !match.setupData.isPrivate);
       return matches;
     } catch (error) {
       console.error('Failed to fetch matches:', error as Error);
@@ -148,7 +154,8 @@ export const lobbyService = {
       gameMode: 'standard',
       initialResources: 5,
       maxTurns: 30,
-      roles: {}
+      roles: {},
+      isPrivate: false
     }
   ): Promise<string | null> => {
     try {
@@ -285,6 +292,38 @@ export const lobbyService = {
         console.error('Failed to get match details:', error);
       }
       return null;
+    }
+  },
+  
+  // Join a private lobby by ID
+  joinPrivateLobby: async (matchID: string): Promise<{ success: boolean; match?: GameMatch; error?: string }> => {
+    try {
+      // First, try to get the match details to see if it exists and is joinable
+      const match = await lobbyService.getMatch(matchID);
+      
+      if (!match) {
+        return { success: false, error: 'Lobby not found' };
+      }
+      
+      // Check if lobby is full
+      const activePlayerCount = match.players.filter(p => p.name && (p.isConnected !== false)).length;
+      if (activePlayerCount >= 2) {
+        return { success: false, error: 'Lobby is full' };
+      }
+      
+      // Check if lobby is abandoned or in game
+      const state = match.setupData.state || 'waiting';
+      if (state === 'abandoned') {
+        return { success: false, error: 'Lobby has been abandoned' };
+      }
+      if (state === 'in_game') {
+        return { success: false, error: 'Game is already in progress' };
+      }
+      
+      return { success: true, match };
+    } catch (error) {
+      console.error('Failed to join private lobby:', error);
+      return { success: false, error: 'Failed to connect to lobby' };
     }
   },
   

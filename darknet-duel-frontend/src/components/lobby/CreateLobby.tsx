@@ -10,6 +10,7 @@ const CreateLobby: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<'standard' | 'blitz' | 'custom'>('standard');
+  const [isPrivate, setIsPrivate] = useState(false);
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
@@ -23,10 +24,12 @@ const CreateLobby: React.FC = () => {
       // Using standard mode settings only
       interface GameSettings {
         gameMode: string;
+        isPrivate: boolean;
       }
       
       const settings: GameSettings = {
-        gameMode: 'standard'
+        gameMode: 'standard',
+        isPrivate: isPrivate
       };
       
       const matchID = await lobbyService.createMatch(2, settings);
@@ -156,6 +159,67 @@ const CreateLobby: React.FC = () => {
             <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
             <span className="text-base font-bold block relative z-10">CUSTOM</span>
             <span className="text-xs relative z-10">[ COMING SOON ]</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Privacy Settings */}
+      <div className="mb-8">
+        <div className="flex items-center mb-3">
+          <FaShieldAlt className="text-primary mr-2" />
+          <h3 className="text-xl font-mono text-primary">LOBBY PRIVACY</h3>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        
+        <div className="grid md:grid-cols-2 gap-3 mt-4">
+          <button 
+            type="button"
+            onClick={() => setIsPrivate(false)}
+            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+              !isPrivate 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
+            }`}
+          >
+            <div className={`absolute inset-0 transition-opacity duration-300 ${
+              !isPrivate ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
+            }`}></div>
+            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
+              !isPrivate ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
+              !isPrivate ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <span className="text-base font-bold block relative z-10">PUBLIC</span>
+            <span className={`text-xs relative z-10 ${
+              !isPrivate ? 'text-primary/90' : 'text-primary/70'
+            }`}>[ {!isPrivate ? 'SELECTED' : 'AVAILABLE'} ]</span>
+            <div className="text-xs mt-2 text-primary/60 relative z-10">Visible in lobby browser</div>
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => setIsPrivate(true)}
+            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+              isPrivate 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
+            }`}
+          >
+            <div className={`absolute inset-0 transition-opacity duration-300 ${
+              isPrivate ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
+            }`}></div>
+            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
+              isPrivate ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
+              isPrivate ? 'border-primary/80' : 'border-primary'
+            }`}></div>
+            <span className="text-base font-bold block relative z-10">PRIVATE</span>
+            <span className={`text-xs relative z-10 ${
+              isPrivate ? 'text-primary/90' : 'text-primary/70'
+            }`}>[ {isPrivate ? 'SELECTED' : 'AVAILABLE'} ]</span>
+            <div className="text-xs mt-2 text-primary/60 relative z-10">Join by ID only</div>
           </button>
         </div>
       </div>
