@@ -47,16 +47,99 @@ if (server.db) {
   console.log('Database initialized for matchmaking');
 }
 
-// Set up lobby server
+// ✅ Set up lobby hooks to capture real user data
+// This captures player data when they join lobbies
 server.router.use(async (ctx, next) => {
-  // Hook to log match creation/joining
-  if (ctx.request.path.includes('/games/') && ctx.request.method === 'POST') {
-    console.log(`Lobby action: ${ctx.request.path} - ${ctx.request.method}`);
+  // Intercept lobby join requests to capture real user data
+  if (ctx.request.path.includes('/games/darknet-duel/') && 
+      ctx.request.path.includes('/join') && 
+      ctx.request.method === 'POST') {
+    
+    console.log('🔍 Intercepting lobby join request...');
+    
+    // Continue with the original request first
+    await next();
+    
+    // After the join is successful, try to update the game state with real user data
+    try {
+      // Extract match ID from the path
+      const pathParts = ctx.request.path.split('/');
+      const matchIndex = pathParts.findIndex(part => part === 'darknet-duel');
+      const matchID = pathParts[matchIndex + 1];
+      
+      if (matchID && server.db) {
+        console.log(`🔍 Processing user data for match ${matchID}...`);
+        
+        // Get the current match state and try to inject real user data
+        const matchData = await server.db.fetch(matchID, { state: true, metadata: true });
+        
+        if (matchData && matchData.metadata && matchData.metadata.players && matchData.state) {
+          console.log('🔍 Found match data, attempting to update game state with real user data...');
+          
+          // Extract real user data from lobby metadata
+          const realUserMap: Record<string, { id: string; name: string }> = {};
+          
+          Object.entries(matchData.metadata.players).forEach(([playerId, playerMeta]: [string, any]) => {
+            if (playerMeta && playerMeta.data && playerMeta.data.realUserId && playerMeta.data.realUsername) {
+              realUserMap[playerId] = {
+                id: playerMeta.data.realUserId,
+                name: playerMeta.data.realUsername
+              };
+              console.log(`✅ Found real user data for player ${playerId}: ${playerMeta.data.realUsername} (${playerMeta.data.realUserId})`);
+            }
+          });
+          
+          // If we have real user data and the game state exists, update the player objects
+          if (Object.keys(realUserMap).length > 0 && matchData.state.G) {
+            let stateUpdated = false;
+            const gameState = matchData.state.G;
+            
+            // Create a new game state with updated player data
+            const newGameState = { ...gameState };
+            
+            // Update attacker if we have real data for player 0
+            if (realUserMap['0'] && gameState.attacker) {
+              newGameState.attacker = {
+                ...gameState.attacker,
+                id: realUserMap['0'].id,
+                name: realUserMap['0'].name
+              };
+              console.log(`✅ Updated attacker: ${newGameState.attacker.name} (${newGameState.attacker.id})`);
+              stateUpdated = true;
+            }
+            
+            // Update defender if we have real data for player 1
+            if (realUserMap['1'] && gameState.defender) {
+              newGameState.defender = {
+                ...gameState.defender,
+                id: realUserMap['1'].id,
+                name: realUserMap['1'].name
+              };
+              console.log(`✅ Updated defender: ${newGameState.defender.name} (${newGameState.defender.id})`);
+              stateUpdated = true;
+            }
+            
+            // If we updated the state, save it back to the database
+            if (stateUpdated) {
+              const newState = {
+                ...matchData.state,
+                G: newGameState
+              };
+              await server.db.setState(matchID, newState);
+              console.log(`🎮 Successfully updated game state with real user data for match ${matchID}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error updating game state with real user data:', error);
+    }
+  } else {
+    await next();
   }
-  await next();
 });
 
-// Initialize the lobby server
+// Set up lobby server
 if (server.app) {
   // Add CORS first
   server.app.use(cors());
