@@ -6,6 +6,7 @@ import accountService from '../services/account.service';
 import LoadingScreen from '../components/LoadingScreen';
 import logo from '../assets/logo.png';
 import type { GameHistoryItem, GameDetails } from '../types/game.types';
+import { useThemeStore } from '../store/theme.store';
 
 const GameHistoryPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -21,20 +22,7 @@ const GameHistoryPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
+  const { theme, toggleTheme } = useThemeStore();
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {

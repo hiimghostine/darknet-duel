@@ -5,14 +5,14 @@ import logo from '../assets/logo.png';
 
 interface AppBarProps {
   currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history' | 'store';
-  theme?: 'cyberpunk' | 'cyberpunk-dark';
-  onThemeToggle?: () => void;
+  theme: 'cyberpunk' | 'cyberpunk-dark';
+  onThemeToggle: () => void;
   onLogout?: () => void;
 }
 
 const AppBar: React.FC<AppBarProps> = ({ 
   currentPage, 
-  theme = 'cyberpunk', 
+  theme, 
   onThemeToggle, 
   onLogout 
 }) => {

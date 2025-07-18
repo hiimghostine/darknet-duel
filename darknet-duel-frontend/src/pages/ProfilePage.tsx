@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useThemeStore } from '../store/theme.store';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
@@ -12,6 +13,7 @@ const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const { id: profileId } = useParams<{ id: string }>();
+  const { theme, toggleTheme } = useThemeStore();
 
   // If no profile ID is provided, redirect to current user's profile
   useEffect(() => {
@@ -26,18 +28,11 @@ const ProfilePage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [showLogoutScreen, setShowLogoutScreen] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
   const [userData, setUserData] = useState<Partial<AccountData> | null>(null);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-  }, []);
 
   // Load profile data
   useEffect(() => {
@@ -80,13 +75,6 @@ const ProfilePage: React.FC = () => {
 
     fetchProfileData();
   }, [isOwnProfile, profileId]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
 
   const handleLogout = () => {
     setShowLogoutScreen(true);

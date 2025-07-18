@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useThemeStore } from '../store/theme.store';
 import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
@@ -14,7 +15,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -58,19 +59,6 @@ const DashboardPage: React.FC = () => {
     fetchData();
   }, [loadUser]);
   
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-  }, []);
-  
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
   // Handle logout process with animation
   const handleLogout = () => {
     setIsLoggingOut(true);

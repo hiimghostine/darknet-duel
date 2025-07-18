@@ -6,13 +6,14 @@ import LogoutScreen from '../components/LogoutScreen';
 import bossingImage from '../assets/bossing.png';
 
 import { FaUsers, FaGamepad, FaComments, FaCogs, FaShieldAlt, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import { useThemeStore } from '../store/theme.store';
 
 const AdminPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -32,17 +33,8 @@ const AdminPage: React.FC = () => {
 
   // Get theme from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const handleLogout = () => {
     setIsLoggingOut(true);

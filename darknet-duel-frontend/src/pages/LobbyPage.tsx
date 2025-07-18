@@ -8,6 +8,7 @@ import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import { useThemeStore } from '../store/theme.store';
 
 const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -15,7 +16,7 @@ const LobbyPage: React.FC = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
   
   // Simplified loading logic - only show loading on first visit
   useEffect(() => {
@@ -30,20 +31,6 @@ const LobbyPage: React.FC = () => {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
 
   const handleLogout = () => {
     setIsLoggingOut(true);

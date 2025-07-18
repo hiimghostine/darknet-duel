@@ -17,15 +17,18 @@ import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
 import StorePage from './pages/StorePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { useThemeStore } from './store/theme.store';
 
 function App() {
   const { loadUser } = useAuthStore();
   const { toasts, removeToast } = useToastStore();
+  const { theme } = useThemeStore();
   
   useEffect(() => {
     // Check authentication status when app loads
     loadUser();
-  }, [loadUser]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [loadUser, theme]);
 
   return (
     <Router>
