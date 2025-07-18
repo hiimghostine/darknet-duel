@@ -293,8 +293,7 @@ const DashboardPage: React.FC = () => {
                             }}
                           />
                         )}
-                        {/* Online indicator */}
-                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-base-200 rounded-full"></div>
+                        {/* Online indicator removed */}
                       </div>
                     </div>
                     
