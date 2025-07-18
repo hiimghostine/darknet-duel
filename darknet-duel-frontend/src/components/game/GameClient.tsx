@@ -17,7 +17,7 @@ import {
 } from '../../utils/gameDebugUtils';
 import GameLoading from '../ui/GameLoading';
 import GameError from '../ui/GameError';
-import GameControls from '../ui/GameControls';
+
 import GameInitializationScreen from './GameInitializationScreen';
 import './GameClient.css';
 
@@ -529,12 +529,7 @@ const GameClient: React.FC = () => {
       
       {clientComponent}
       
-      <GameControls 
-        onLeaveGame={handleLeaveGame}
-        matchID={matchID}
-        playerID={playerID}
-        connectionStatus={connectionStatus}
-      />
+
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import type { BoardProps } from 'boardgame.io/react';
 import isEqual from 'lodash/isEqual';
 
@@ -56,6 +57,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     playerID,
     isActive
   } = props;
+  
+  // Get matchID from URL params
+  const { matchID } = useParams<{ matchID: string }>();
   
   // Use optimized memoization strategies
   const memoizedG = useMemoizedValue(G);
@@ -336,6 +340,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         playerID={playerID || undefined}
         moves={winnerLobbyMoves}
         isAttacker={isAttacker}
+        matchID={matchID}
       />
     );
   }

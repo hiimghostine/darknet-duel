@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { GameState } from 'shared-types/game.types';
-import PostGameChat from './PostGameChat';
+import LobbyChat from '../../lobby/LobbyChat';
 
 interface WinnerLobbyProps {
   G: GameState;
@@ -12,13 +12,15 @@ interface WinnerLobbyProps {
     surrender?: () => void;
   };
   isAttacker?: boolean;
+  matchID?: string;
 }
 
 const WinnerLobby: React.FC<WinnerLobbyProps> = ({ 
   G, 
   playerID,
   moves,
-  isAttacker
+  isAttacker,
+  matchID
 }) => {
   const isWinner = G.winner === (isAttacker ? 'attacker' : 'defender');
   
@@ -99,7 +101,7 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
 
   return (
     <motion.div 
-      className="min-h-screen bg-base-100 relative overflow-hidden text-base-content"
+      className="h-screen bg-base-100 relative overflow-hidden text-base-content flex flex-col"
       variants={containerVariants}
       initial="initial"
       animate="animate"
@@ -179,7 +181,7 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
       </motion.header>
 
       {/* Main Content */}
-      <main className="container mx-auto p-4 relative z-10">
+      <main className="container mx-auto p-4 relative z-10 flex-1 overflow-y-auto">
         {/* Victory/Defeat Banner */}
         <motion.div 
           className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm mb-8"
@@ -259,7 +261,7 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
         </AnimatePresence>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-0">
           {/* Game Statistics */}
           <motion.div 
             className="lg:col-span-2 space-y-6"
@@ -393,10 +395,10 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
 
           {/* Post-Game Communications */}
           <motion.div 
-            className="space-y-6"
+            className="space-y-6 flex flex-col min-h-0"
             variants={itemVariants}
           >
-            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm h-full">
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm flex-1 min-h-0">
               <div className="bg-base-200 border border-primary/20 p-4 relative h-full flex flex-col">
                 <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
                 <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
@@ -408,11 +410,11 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
                   <div className="text-xs text-base-content/70 font-mono">ENCRYPTED</div>
                 </div>
                 
-                <div className="flex-1 min-h-[400px]">
-                  <PostGameChat 
-                    chat={G.chat || { messages: [], lastReadTimestamp: {} }}
-                    playerID={playerID}
-                    sendMessage={(content) => moves.sendChatMessage(content)}
+                <div className="flex-1 min-h-0">
+                  <LobbyChat 
+                    lobbyId={matchID}
+                    showChannelSwitcher={false}
+                    className="h-full"
                   />
                 </div>
               </div>
