@@ -15,6 +15,7 @@ import TopUpPage from './pages/TopUpPage';
 import GameHistoryPage from './pages/GameHistoryPage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
+import StorePage from './pages/StorePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/topup" element={<TopUpPage />} />
           <Route path="/history" element={<GameHistoryPage />} />
+          <Route path="/store" element={<StorePage />} />
           <Route path="/lobbies/*" element={<LobbyPage />} />
           <Route path="/game/:matchID" element={<GamePage />} />
         </Route>

@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 import logo from '../assets/logo.png';
 
 interface AppBarProps {
-  currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history';
+  currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history' | 'store';
   theme?: 'cyberpunk' | 'cyberpunk-dark';
   onThemeToggle?: () => void;
   onLogout?: () => void;
@@ -61,6 +61,14 @@ const AppBar: React.FC<AppBarProps> = ({
               <span className="hidden sm:inline">LOBBY</span>
             </button>
           )}
+          
+          <button 
+            onClick={() => navigate('/store')} 
+            className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+          >
+            <span className="mr-1">🛍️</span> 
+            <span className="hidden sm:inline">STORE</span>
+          </button>
           
           <button 
             onClick={() => navigate(`/profile/${user?.id}`)} 
