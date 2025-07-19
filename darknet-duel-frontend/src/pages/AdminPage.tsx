@@ -221,7 +221,7 @@ const AdminPage: React.FC = () => {
 
               {/* Security Overview */}
               <div 
-                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer md:col-span-2"
+                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
                 onClick={() => navigate('/admin/security-overview')}
               >
                 <div className="flex items-center gap-3 mb-4">
