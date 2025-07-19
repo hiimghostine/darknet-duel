@@ -18,6 +18,9 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const maxSelections = pendingChoice.count || 1;
   
+  // Check if this is a Honeypot Network tax (self-discard) or opponent discard
+  const isHoneypotTax = pendingChoice.pendingCardPlay !== undefined;
+  
   const handleCardToggle = (cardId: string) => {
     if (selectedCards.includes(cardId)) {
       setSelectedCards(selectedCards.filter(id => id !== cardId));
@@ -29,8 +32,12 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
   return (
     <div className="hand-disruption-overlay">
       <div className="hand-disruption-container">
-        <h3>Choose Cards to Discard</h3>
-        <p className="disruption-description">Select {maxSelections} card(s) from opponent's hand:</p>
+        <h3>{isHoneypotTax ? '🍯 Honeypot Network Tax' : 'Choose Cards to Discard'}</h3>
+        <p className="disruption-description">
+          {isHoneypotTax
+            ? `Honeypot Network requires you to discard ${maxSelections} card${maxSelections > 1 ? 's' : ''} before playing your exploit:`
+            : `Select ${maxSelections} card(s) from opponent's hand:`}
+        </p>
         
         <div className="disruption-cards-section">
           <div className="player-hand-selection">

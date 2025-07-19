@@ -193,6 +193,27 @@ export class WildcardResolver {
         }
         break;
         
+      case 'D306': // Honeypot Network
+        console.log(`🍯 Honeypot Network (${card.id}) detected! Applying temporary_tax effect`);
+        
+        // Add temporary effect that will tax exploit cards for the specified duration
+        const duration = (card as any).duration || 2; // Use card duration or default to 2
+        updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+          type: 'temporary_tax',
+          playerId: context.playerID,
+          duration: duration * 2, // Convert rounds to turns (each round = 2 turns)
+          sourceCardId: card.id,
+          metadata: {
+            taxedCardType: 'exploit',
+            taxAmount: 1, // Force discard 1 additional card
+            description: 'Whenever attacker plays an exploit card, they must discard 1 additional card'
+          }
+        });
+        
+        updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
+        console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
+        break;
+        
     }
     
     // Handle card-specific effects based on card ID with flexible matching
@@ -481,6 +502,28 @@ export class WildcardResolver {
             console.log(`❌ Mass restore failed: No infrastructure array found`);
             updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
           }
+          break;
+          
+        case 'temporary_tax':
+          // Handle Honeypot Network (D306) effect
+          console.log(`🍯 Honeypot Network (${card.id}) detected! Applying temporary_tax effect`);
+          
+          // Add temporary effect that will tax exploit cards for the specified duration
+          const duration = (card as any).duration || 2; // Use card duration or default to 2
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'temporary_tax',
+            playerId: context.playerID,
+            duration: duration * 2, // Convert rounds to turns (each round = 2 turns)
+            sourceCardId: card.id,
+            metadata: {
+              taxedCardType: 'exploit',
+              taxAmount: 1, // Force discard 1 additional card
+              description: 'Whenever attacker plays an exploit card, they must discard 1 additional card'
+            }
+          });
+          
+          updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
+          console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
           break;
           
         default:

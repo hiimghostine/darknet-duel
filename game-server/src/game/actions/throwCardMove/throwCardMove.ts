@@ -19,7 +19,7 @@ import { resolveAttackVector, AttackVectorContext } from './utils/attackVectorRe
  * This function has been refactored from 500 lines while maintaining 100% functionality.
  * All critical logic from the original has been preserved with modular structure.
  */
-export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetInfrastructureId: string): GameState => {
+export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetInfrastructureId: string, skipTaxCheck: boolean = false): GameState => {
   console.log(`=== THROWCARD MOVE START ===`);
   console.log(`Player: ${playerID}, Card: ${cardId}, Target: ${targetInfrastructureId}`);
   
@@ -146,16 +146,72 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   
   // Check if player has enough action points for effective cost
   if (player!.actionPoints < effectiveCost) {
-    return { 
+    return {
       ...G,
       message: "Not enough action points to throw this card"
     };
   }
-
-  // Phase 5: Handle hand management (remove card from hand)
+  
+  // Phase 5: Handle hand management (remove card from hand) - MOVED EARLIER
   const newHand = [...player!.hand];
   const cardIndex = newHand.findIndex(c => c.id === cardId);
   newHand.splice(cardIndex, 1);
+  
+  // Create updated player state with card removed from hand
+  const updatedPlayerWithCardRemoved = {
+    ...player,
+    hand: newHand,
+    actionPoints: player!.actionPoints - effectiveCost
+  };
+
+  // Check for temporary_tax effects that apply to this card type
+  // This creates a pending hand choice for the player to select which cards to discard
+  // Skip tax check if this is a continuation after tax has already been paid
+  if (effectiveCardType === 'exploit' && isAttacker && !skipTaxCheck) {
+    const hasTaxEffect = TemporaryEffectsManager.hasEffect(G, 'temporary_tax');
+    if (hasTaxEffect) {
+      // Find the tax effect to get its metadata
+      const taxEffect = G.temporaryEffects?.find(effect => effect.type === 'temporary_tax');
+      if (taxEffect && taxEffect.metadata?.taxedCardType === 'exploit') {
+        const taxAmount = taxEffect.metadata.taxAmount || 1;
+        console.log(`🍯 Honeypot Network tax triggered! Attacker must choose ${taxAmount} card(s) to discard`);
+        
+        // Check if player has enough cards to discard (after the exploit card was removed)
+        if (updatedPlayerWithCardRemoved.hand.length >= taxAmount) {
+          // Create pending hand choice for the tax - use the updated hand without the exploit card
+          const gameStateWithCardRemoved = {
+            ...G,
+            attacker: isAttacker ? updatedPlayerWithCardRemoved : G.attacker,
+            defender: !isAttacker ? updatedPlayerWithCardRemoved : G.defender,
+          };
+          
+          const updatedGameState = {
+            ...gameStateWithCardRemoved,
+            pendingHandChoice: {
+              type: 'discard_from_hand' as const,
+              targetPlayerId: playerID,
+              revealedHand: [...updatedPlayerWithCardRemoved.hand], // Show hand WITHOUT the exploit card
+              count: taxAmount,
+              pendingCardPlay: {
+                cardId: cardId,
+                targetInfrastructureId: targetInfrastructureId
+              }
+            },
+            message: `Honeypot Network activated! Choose ${taxAmount} card${taxAmount > 1 ? 's' : ''} to discard, then your exploit will be played.`
+          };
+          
+          console.log(`✅ Tax pending: Player must choose ${taxAmount} cards to discard from remaining ${updatedPlayerWithCardRemoved.hand.length} cards`);
+          return updatedGameState;
+        } else {
+          console.log(`⚠️ Player only has ${updatedPlayerWithCardRemoved.hand.length} cards remaining, cannot pay tax of ${taxAmount} cards`);
+          return {
+            ...G,
+            message: `Cannot play exploit: Honeypot Network requires ${taxAmount} additional card${taxAmount > 1 ? 's' : ''} to discard, but you only have ${updatedPlayerWithCardRemoved.hand.length} card${updatedPlayerWithCardRemoved.hand.length !== 1 ? 's' : ''} remaining.`
+          };
+        }
+      }
+    }
+  }
 
   // Phase 6: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
   if (card!.type === 'wildcard' && card!.wildcardType) {
@@ -165,12 +221,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     if (card!.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
       console.log(`🔥 Memory Corruption Attack detected! Applying immediate hand disruption`);
       
-      // Create the updated player state - we move the card from hand to discard
+      // Create the updated player state - add card to discard pile (hand already updated)
       const updatedPlayer = {
-        ...player,
-        hand: newHand,
-        discard: [...player!.discard, JSON.parse(JSON.stringify(card))],
-        actionPoints: player!.actionPoints - effectiveCost
+        ...updatedPlayerWithCardRemoved,
+        discard: [...player!.discard, JSON.parse(JSON.stringify(card))]
       };
       
       // Apply wildcard effects directly (this handles the hand disruption)
@@ -200,12 +254,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     if (card!.id === 'D303' || card!.id.startsWith('D303') || (card as any).target === 'all_infrastructure') {
       console.log(`🚨 Emergency Response Team detected! Applying immediate mass restore`);
       
-      // Create the updated player state - we move the card from hand to discard
+      // Create the updated player state - add card to discard pile (hand already updated)
       const updatedPlayer = {
-        ...player,
-        hand: newHand,
-        discard: [...player!.discard, JSON.parse(JSON.stringify(card))],
-        actionPoints: player!.actionPoints - effectiveCost
+        ...updatedPlayerWithCardRemoved,
+        discard: [...player!.discard, JSON.parse(JSON.stringify(card))]
       };
       
       // Apply wildcard effects directly (this handles the mass restore)
@@ -252,6 +304,47 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           }
         }
       }
+      // Special handling for Honeypot Network (D306) - defender wildcard that acts defensively
+      else if (card!.id === 'D306' || card!.id.startsWith('D306')) {
+        if (targetInfrastructure) {
+          console.log(`Honeypot Network - auto-selecting defensive action for ${targetInfrastructure.state} infrastructure`);
+          switch (targetInfrastructure.state) {
+            case 'secure':
+              if (availableTypes.includes('shield')) {
+                autoSelectedType = 'shield';
+                console.log(`Honeypot Network - auto-selecting shield for secure infrastructure`);
+              }
+              break;
+            case 'vulnerable':
+              if (availableTypes.includes('reaction')) {
+                autoSelectedType = 'reaction';
+                console.log(`Honeypot Network - auto-selecting reaction to counter vulnerability`);
+              } else if (availableTypes.includes('shield')) {
+                autoSelectedType = 'shield';
+                console.log(`Honeypot Network - auto-selecting shield for vulnerable infrastructure`);
+              }
+              break;
+            case 'compromised':
+              if (availableTypes.includes('response')) {
+                autoSelectedType = 'response';
+                console.log(`Honeypot Network - auto-selecting response to restore compromised infrastructure`);
+              }
+              break;
+            case 'shielded':
+              if (availableTypes.includes('fortify')) {
+                autoSelectedType = 'fortify';
+                console.log(`Honeypot Network - auto-selecting fortify for shielded infrastructure`);
+              }
+              break;
+            case 'fortified':
+            case 'fortified_weaken':
+              // Invalid targets for defender actions
+              console.log(`Honeypot Network - ${targetInfrastructure.state} infrastructure is invalid target`);
+              autoSelectedType = null;
+              break;
+          }
+        }
+      }
       // For special wildcards with only one type, auto-select it
       else if (card!.wildcardType === 'special' && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
@@ -264,37 +357,83 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         autoSelectedType = availableTypes[0];
         console.log(`Single-type wildcard ${card!.name} - auto-selecting ${autoSelectedType}`);
       } else if (targetInfrastructure) {
-        // Multi-type wildcard - use smart selection based on infrastructure state
-        switch (targetInfrastructure.state) {
-          case 'secure':
-            // For secure infrastructure, prioritize exploit
-            if (availableTypes.includes('exploit')) {
-              autoSelectedType = 'exploit';
-            }
-            break;
-          case 'vulnerable':
-            // For vulnerable infrastructure, prioritize attack
-            if (availableTypes.includes('attack')) {
-              autoSelectedType = 'attack';
-            }
-            break;
-          case 'compromised':
-            // For compromised infrastructure, prioritize response (if defender) or special effects
-            if (availableTypes.includes('response') && !isAttacker) {
-              autoSelectedType = 'response';
-            } else if (availableTypes.includes('special')) {
-              autoSelectedType = 'special';
-            }
-            break;
-          case 'shielded':
-            // For shielded infrastructure, prioritize fortify (if defender) or counter-attack (if attacker)
-            if (availableTypes.includes('fortify') && !isAttacker) {
-              autoSelectedType = 'fortify';
-            } else if (availableTypes.includes('counter-attack') && isAttacker) {
-              autoSelectedType = 'counter-attack';
-            }
-            break;
+        // Multi-type wildcard - use smart selection based on infrastructure state and player role
+        if (isAttacker) {
+          // Attacker logic
+          switch (targetInfrastructure.state) {
+            case 'secure':
+              // For secure infrastructure, prioritize exploit
+              if (availableTypes.includes('exploit')) {
+                autoSelectedType = 'exploit';
+              }
+              break;
+            case 'vulnerable':
+              // For vulnerable infrastructure, prioritize attack
+              if (availableTypes.includes('attack')) {
+                autoSelectedType = 'attack';
+              }
+              break;
+            case 'compromised':
+              // For compromised infrastructure, use special effects if available
+              if (availableTypes.includes('special')) {
+                autoSelectedType = 'special';
+              }
+              break;
+            case 'shielded':
+              // For shielded infrastructure, try counter-attack or exploit
+              if (availableTypes.includes('counter-attack')) {
+                autoSelectedType = 'counter-attack';
+              } else if (availableTypes.includes('exploit')) {
+                autoSelectedType = 'exploit';
+              }
+              break;
+          }
+        } else {
+          // Defender logic - for generic defender wildcards
+          switch (targetInfrastructure.state) {
+            case 'secure':
+              // For secure infrastructure, use shield
+              if (availableTypes.includes('shield')) {
+                autoSelectedType = 'shield';
+              }
+              break;
+            case 'vulnerable':
+              // For vulnerable infrastructure, use reaction to counter the vulnerability
+              if (availableTypes.includes('reaction')) {
+                autoSelectedType = 'reaction';
+              } else if (availableTypes.includes('shield')) {
+                autoSelectedType = 'shield';
+              }
+              break;
+            case 'compromised':
+              // For compromised infrastructure, use response to restore
+              if (availableTypes.includes('response')) {
+                autoSelectedType = 'response';
+              }
+              break;
+            case 'shielded':
+              // For shielded infrastructure, use fortify
+              if (availableTypes.includes('fortify')) {
+                autoSelectedType = 'fortify';
+              }
+              break;
+            case 'fortified':
+            case 'fortified_weaken':
+              // For fortified infrastructure, no valid defensive action
+              autoSelectedType = null;
+              break;
+          }
         }
+      }
+    }
+    
+    // Check if no valid type was selected for defender cards targeting invalid infrastructure
+    if (autoSelectedType === null && !isAttacker && targetInfrastructure) {
+      if (targetInfrastructure.state === 'fortified' || targetInfrastructure.state === 'fortified_weaken') {
+        return {
+          ...G,
+          message: `${card!.name} cannot target ${targetInfrastructure.state} infrastructure - no valid defensive actions available`
+        };
       }
     }
     
@@ -336,12 +475,11 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         console.log(`❌ AUTO-SELECTION: No costReduction property on card or no infrastructure target`);
       }
       
-      // Create the updated player state - we move the card from hand to discard
+      // Create the updated player state - add card to discard pile (hand already updated)
       const updatedPlayer = {
-        ...player,
-        hand: newHand,
+        ...updatedPlayerWithCardRemoved,
         discard: [...player!.discard, cardCopy], // Add to discard pile immediately
-        actionPoints: player!.actionPoints - finalEffectiveCost
+        actionPoints: updatedPlayerWithCardRemoved.actionPoints - (finalEffectiveCost - effectiveCost) // Adjust for any additional cost reductions
       };
       
       // Apply the card effect directly with the auto-selected type
@@ -464,12 +602,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     // Create a deep copy of the card to ensure all properties are preserved
     const cardCopy = JSON.parse(JSON.stringify(card));
     
-    // Create the updated player state - we move the card from hand to discard
+    // Create the updated player state - add card to discard pile (hand already updated)
     const updatedPlayer = {
-      ...player,
-      hand: newHand,
-      discard: [...player!.discard, cardCopy], // Add to discard pile immediately
-      actionPoints: player!.actionPoints - effectiveCost
+      ...updatedPlayerWithCardRemoved,
+      discard: [...player!.discard, cardCopy] // Add to discard pile immediately
     };
     
     // Create the updated game state with pending wildcard choice
@@ -493,12 +629,10 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   // Create a deep copy of the card to ensure all properties are preserved during serialization
   const cardCopy = JSON.parse(JSON.stringify(card));
   
-  // Add card to discard pile
+  // Add card to discard pile (hand already updated)
   const updatedPlayer = {
-    ...player,
-    hand: newHand,
-    discard: [...player!.discard, cardCopy],
-    actionPoints: player!.actionPoints - effectiveCost // Use effective action points with reductions applied
+    ...updatedPlayerWithCardRemoved,
+    discard: [...player!.discard, cardCopy]
   };
   
   // Log the card removal for debugging

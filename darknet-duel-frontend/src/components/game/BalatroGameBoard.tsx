@@ -31,6 +31,7 @@ import PowerBar from './board-components/PowerBar';
 import InfrastructureArea from './board-components/InfrastructureArea';
 import DevCheatPanel from './board-components/DevCheatPanel';
 import TemporaryEffectsDisplay from './board-components/TemporaryEffectsDisplay';
+import GlobalEffectsIndicator from './board-components/GlobalEffectsIndicator';
 import LobbyChat from '../lobby/LobbyChat';
 
 // Extended interface for client properties
@@ -1552,16 +1553,24 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       )}
       
       {(() => {
-        // Debug pendingHandChoice state
+        // Debug pendingHandChoice state - updated logic to match PendingChoicesOverlay
+        const isHoneypotTax = memoizedG.pendingHandChoice?.pendingCardPlay !== undefined;
+        const shouldShow = memoizedG.pendingHandChoice && (
+          isHoneypotTax
+            ? (playerID === memoizedG.pendingHandChoice.targetPlayerId) // Honeypot tax: attacker chooses their own cards
+            : (playerID !== memoizedG.pendingHandChoice.targetPlayerId) // Threat Intelligence: opponent chooses target's cards
+        );
+        
         console.log('🎯 HAND CHOICE DEBUG:', {
           hasPendingHandChoice: !!memoizedG.pendingHandChoice,
           playerID,
           targetPlayerId: memoizedG.pendingHandChoice?.targetPlayerId,
-          shouldShow: memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId,
+          isHoneypotTax,
+          shouldShow,
           pendingChoice: memoizedG.pendingHandChoice
         });
         
-        return memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId && (
+        return shouldShow && memoizedG.pendingHandChoice && (
           <HandDisruptionUI
             pendingChoice={memoizedG.pendingHandChoice}
             playerId={playerID || ''}
@@ -1576,6 +1585,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           onChooseCard={handleChooseCardFromDeck}
         />
       )}
+
+      {/* Global Effects Indicator */}
+      <GlobalEffectsIndicator gameState={memoizedG} />
 
       {/* Developer Cheat Panel - Only in development */}
       {process.env.NODE_ENV === 'development' && (

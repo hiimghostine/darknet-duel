@@ -408,13 +408,13 @@
       "cost": 2,
       "description": "Decoy systems that detect and punish intrusions",
       "flavor": "The sweetest traps catch the greediest flies",
-      "effect": "Can be played as any card type. For the next 3 turns, whenever attacker plays an exploit card, they must discard 1 additional card.",
+      "effect": "Can be played as any card type. For the next 2 rounds, whenever attacker plays an exploit card, they must discard 1 additional card.",
       "img": "honeypot",
       "isReactive": false,
       "target": "game_state",
       "wildcardType": "any",
       "specialEffect": "temporary_tax",
-      "duration": 3
+      "duration": 2
     },
     {
       "id": "D307",

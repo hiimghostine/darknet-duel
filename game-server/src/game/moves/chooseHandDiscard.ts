@@ -30,13 +30,26 @@ export const chooseHandDiscardMove = (
     };
   }
   
-  // Verify the player making the choice is NOT the target player
+  // Check if this is a self-discard (Honeypot Network tax) or opponent discard (Threat Intelligence)
   const isTargetPlayer = G.pendingHandChoice.targetPlayerId === playerID;
-  if (isTargetPlayer) {
-    return {
-      ...G,
-      message: "You cannot choose cards from your own hand to discard"
-    };
+  const isHoneypotTax = G.pendingHandChoice.pendingCardPlay !== undefined;
+  
+  if (isHoneypotTax) {
+    // For Honeypot Network tax: the target player (attacker) chooses their own cards to discard
+    if (!isTargetPlayer) {
+      return {
+        ...G,
+        message: "Only the target player can choose their own cards to discard for Honeypot Network tax"
+      };
+    }
+  } else {
+    // For Threat Intelligence: the opponent chooses cards from the target player's hand
+    if (isTargetPlayer) {
+      return {
+        ...G,
+        message: "You cannot choose cards from your own hand to discard"
+      };
+    }
   }
   
   // Verify we're not trying to discard more cards than allowed
@@ -46,8 +59,29 @@ export const chooseHandDiscardMove = (
     cardIdsArray = cardIdsArray.slice(0, allowedCount);
   }
   
+  // Create callback for continuing card play after Honeypot Network tax
+  const continueCardPlay = (gameState: any, cardId: string, targetInfrastructureId: string) => {
+    // Import throwCardMove here to avoid circular dependency
+    const { throwCardMove } = require('../actions/throwCardMove/throwCardMove');
+    
+    // Create a context object
+    const fakeCtx = {
+      phase: 'playing',
+      currentPlayer: playerID,
+      activePlayers: { [playerID]: 'action' }
+    };
+    
+    // Continue with the original card play now that tax is paid - SKIP TAX CHECK to prevent loop
+    return throwCardMove(
+      { G: gameState, ctx: fakeCtx, playerID: playerID },
+      cardId,
+      targetInfrastructureId,
+      true // skipTaxCheck = true to prevent infinite loop
+    );
+  };
+  
   // Resolve the hand choice
-  const updatedState = resolveHandChoice(G, cardIdsArray);
+  const updatedState = resolveHandChoice(G, cardIdsArray, continueCardPlay);
   
   return updatedState;
 };
