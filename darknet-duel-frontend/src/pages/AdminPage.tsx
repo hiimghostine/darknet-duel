@@ -119,6 +119,14 @@ const AdminPage: React.FC = () => {
                   </div>
                   
                   <button
+                    onClick={() => navigate('/dashboard')}
+                    className="btn btn-sm bg-primary/20 border-primary/50 hover:bg-primary/30 text-primary btn-cyberpunk"
+                  >
+                    <FaGamepad className="mr-1" />
+                    PLAY GAME
+                  </button>
+                  
+                  <button
                     onClick={toggleTheme}
                     className="btn btn-sm bg-base-300/80 border-error/30 hover:border-error text-error btn-cyberpunk"
                   >

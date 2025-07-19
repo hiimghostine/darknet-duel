@@ -89,6 +89,18 @@ const AppBar: React.FC<AppBarProps> = ({
             <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"></span>
           </button>
           
+          {/* Control Panel Button - Only show for mods and admins */}
+          {user?.type && ['mod', 'admin'].includes(user.type) && (
+            <button 
+              onClick={() => navigate('/admin')} 
+              className="btn btn-sm bg-error/20 border-error/50 hover:bg-error/30 text-error btn-cyberpunk"
+              aria-label="Control Panel"
+            >
+              <span className="mr-1">🛡️</span>
+              <span className="hidden sm:inline">CONTROL</span>
+            </button>
+          )}
+          
           <button
             onClick={handleThemeToggle}
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"

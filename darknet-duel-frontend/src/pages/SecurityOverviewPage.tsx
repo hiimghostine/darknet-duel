@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { FaShieldAlt, FaEye, FaArrowLeft, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaShieldAlt, FaEye, FaArrowLeft, FaSearch, FaFilter, FaGamepad } from 'react-icons/fa';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
 import { useThemeStore } from '../store/theme.store';
@@ -121,6 +121,14 @@ const SecurityOverviewPage: React.FC = () => {
                   className="btn btn-sm bg-base-300/80 border-error/30 hover:border-error text-error btn-cyberpunk"
                 >
                   <FaArrowLeft className="mr-1" /> BACK_TO_ADMIN
+                </button>
+
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="btn btn-sm bg-primary/20 border-primary/50 hover:bg-primary/30 text-primary btn-cyberpunk"
+                >
+                  <FaGamepad className="mr-1" />
+                  PLAY GAME
                 </button>
 
                 <div className="text-sm font-mono text-base-content/70">
