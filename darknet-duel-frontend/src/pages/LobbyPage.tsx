@@ -14,17 +14,14 @@ const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
   
-  // Simplified loading logic - only show loading on first visit
+  // Loading logic - show loading on every page visit
   useEffect(() => {
-    const isFirstVisit = sessionStorage.getItem('lobbies_visited') !== 'true';
-    
-    if (isFirstVisit && isAuthenticated) {
+    if (isAuthenticated) {
       setIsLoading(true);
-      sessionStorage.setItem('lobbies_visited', 'true');
       const timer = setTimeout(() => setIsLoading(false), 2000);
       return () => clearTimeout(timer);
     } else {
@@ -47,6 +44,9 @@ const LobbyPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
+      {/* Show loading screen when isLoading is true */}
+      {isLoading && <LoadingScreen text="CONNECTING TO DARKNET SERVERS" />}
+      
       {/* Wrapper to hide content during logout */}
       <div className={`${isLoggingOut ? 'hidden' : 'block'}`}>
         
@@ -127,9 +127,6 @@ const LobbyPage: React.FC = () => {
         </main>
         </div>
       </div>
-      
-      {/* Show loading animation */}
-      {isLoading && <LoadingScreen text="CONNECTING TO DARKNET SERVERS" />}
       
       {/* Show logout screen */}
       {isLoggingOut && <LogoutScreen />}

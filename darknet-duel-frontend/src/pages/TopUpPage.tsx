@@ -152,6 +152,14 @@ const TopUpPage: React.FC = () => {
                 </button>
                 
                 <button 
+                  onClick={() => navigate('/store')} 
+                  className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+                >
+                  <span className="mr-1">🛍️</span> 
+                  <span className="hidden sm:inline">STORE</span>
+                </button>
+                
+                <button 
                   onClick={() => navigate(`/profile/${user?.id}`)} 
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Profile"
@@ -290,9 +298,6 @@ const TopUpPage: React.FC = () => {
                     <div className="mb-6">
                       <div className="text-3xl font-bold text-base-content">
                         ₱{pkg.price}
-                      </div>
-                      <div className="text-sm text-base-content/70 font-mono">
-                        ₱{(pkg.price / pkg.crypts).toFixed(2)} per crypt
                       </div>
                     </div>
                     

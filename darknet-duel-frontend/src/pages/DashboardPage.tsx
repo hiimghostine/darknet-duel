@@ -262,7 +262,7 @@ const DashboardPage: React.FC = () => {
                       to="/profile"
                       className="text-xs text-base-content/70 font-mono hover:text-primary transition-colors cursor-pointer"
                     >
-                      [EDIT]
+                      [VIEW_PROFILE]
                     </Link>
                   </div>
                   

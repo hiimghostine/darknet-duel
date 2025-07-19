@@ -122,6 +122,9 @@ const GameHistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
+      {/* Show loading screen when isLoading is true */}
+      {isLoading && <LoadingScreen text="ACCESSING COMBAT RECORDS" />}
+      
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary"></div>
@@ -501,8 +504,6 @@ const GameHistoryPage: React.FC = () => {
         </main>
       </div>
       
-      {/* Show loading animation */}
-      {isLoading && <LoadingScreen text="ACCESSING COMBAT ARCHIVES" />}
     </div>
   );
 };
