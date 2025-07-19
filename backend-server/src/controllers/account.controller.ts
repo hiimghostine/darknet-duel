@@ -402,6 +402,7 @@ export class AccountController {
       const publicAccount = {
         id: account.id,
         username: account.username,
+        type: account.type,
         isActive: account.isActive,
         gamesPlayed: account.gamesPlayed,
         gamesWon: account.gamesWon,
@@ -422,6 +423,111 @@ export class AccountController {
       return res.status(500).json({
         success: false,
         message: 'Failed to retrieve account details',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
+
+  /**
+   * @swagger
+   * /api/account/search:
+   *   get:
+   *     tags: [Account Management]
+   *     summary: Search user account by username
+   *     description: Retrieves public account information for any user by their username
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: username
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: The username of the user account to retrieve
+   *         example: "CyberNinja"
+   *     responses:
+   *       200:
+   *         description: Account details retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   $ref: '#/components/schemas/PublicUser'
+   *       400:
+   *         description: Bad request - username parameter missing
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: User account not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
+  searchAccountByUsername = async (req: Request, res: Response) => {
+    try {
+      const { username } = req.query;
+
+      if (!username || typeof username !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Username parameter is required'
+        });
+      }
+
+      const account = await this.accountService.getAccountByUsername(username);
+
+      if (!account) {
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      // Return public information only (exclude email and sensitive data)
+      const publicAccount = {
+        id: account.id,
+        username: account.username,
+        type: account.type,
+        isActive: account.isActive,
+        gamesPlayed: account.gamesPlayed,
+        gamesWon: account.gamesWon,
+        gamesLost: account.gamesLost,
+        rating: account.rating,
+        bio: account.bio,
+        decoration: account.decoration,
+        createdAt: account.createdAt
+      };
+
+      return res.status(200).json({
+        success: true,
+        data: publicAccount
+      });
+
+    } catch (error) {
+      console.error('Search account by username error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to search account',
         error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
       });
     }

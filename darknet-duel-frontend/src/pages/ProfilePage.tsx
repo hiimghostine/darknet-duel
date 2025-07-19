@@ -7,6 +7,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import EditProfileModal from '../components/EditProfileModal';
 import ReportModal from '../components/ReportModal';
+import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
 
@@ -257,10 +258,11 @@ const ProfilePage: React.FC = () => {
                 {/* User Info */}
                 <div className="flex-1">
                   <div className="font-mono">
-                    <h2 className="text-3xl font-bold mb-2">
+                    <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
                       <span className="text-primary data-corrupt" data-text={displayUser.username}>
                         {displayUser.username}
                       </span>
+                      {displayUser.type && <UserTypeTag userType={displayUser.type} />}
                       {isOwnProfile && <span className="text-base-content/50 ml-2">(YOU)</span>}
                     </h2>
                     

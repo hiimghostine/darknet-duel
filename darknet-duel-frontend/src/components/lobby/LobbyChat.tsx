@@ -6,6 +6,7 @@ import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamat
 import UserProfilePopup from '../UserProfilePopup';
 import ReportModal from '../ReportModal';
 import ContextMenu from '../ContextMenu';
+import UserTypeTag from '../UserTypeTag';
 import { useThemeStore } from '../../store/theme.store';
 
 interface LobbyChatProps {
@@ -404,6 +405,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                         onClick={(e) => handleUsernameClick(e, message)}
                       >
                         &lt;{username}&gt;
+                        {message.metadata?.type && <UserTypeTag userType={message.metadata.type} className="ml-1" />}
                       </span>{' '}
                       <span className="text-base-content">{message.messageContent}</span>
                     </div>

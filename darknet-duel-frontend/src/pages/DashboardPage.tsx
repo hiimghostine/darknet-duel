@@ -6,6 +6,7 @@ import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import UserTypeTag from '../components/UserTypeTag';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 import accountService from '../services/account.service';
 import storeService from '../services/store.service';
@@ -138,6 +139,7 @@ const DashboardPage: React.FC = () => {
                 <div className="flex items-baseline gap-2 mb-1">
                   <h2 className="text-2xl font-bold mb-2 font-mono">
                     WELCOME_BACK, <span className="text-primary data-corrupt" data-text={user?.username}>{user?.username}</span>
+                    {user?.type && <UserTypeTag userType={user.type} className="ml-2" />}
                   </h2>
                 </div>
                 <div className="text-base-content text-sm">
@@ -298,8 +300,9 @@ const DashboardPage: React.FC = () => {
                     {/* Profile Info */}
                     <div className="flex-1 min-w-0">
                       <div className="font-mono">
-                        <div className="text-lg font-bold text-primary truncate">
+                        <div className="text-lg font-bold text-primary truncate flex items-center gap-2">
                           {user?.username}
+                          {user?.type && <UserTypeTag userType={user.type} />}
                         </div>
                         <div className="text-xs text-base-content/70 mb-2">
                           RATING: {profileStats?.rating || 1000}

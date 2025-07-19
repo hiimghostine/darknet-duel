@@ -17,6 +17,9 @@ router.get('/me', accountController.getMyAccount);
 // POST /api/account/me - update own user's details (supports multipart/form-data)
 router.post('/me', avatarUpload, accountController.updateMyAccount);
 
+// GET /api/account/search - search user by username
+router.get('/search', accountController.searchAccountByUsername);
+
 // GET /api/account/{uuid} - get a user's details by UUID
 router.get('/:uuid', accountController.getAccountByUuid);
 

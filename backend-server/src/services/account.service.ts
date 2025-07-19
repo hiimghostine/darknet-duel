@@ -147,4 +147,18 @@ export class AccountService {
     const existingAccount = await query.getOne();
     return !existingAccount;
   }
+
+  /**
+   * Get account details by username (without password and avatar)
+   */
+  async getAccountByUsername(username: string): Promise<Omit<Account, 'password' | 'avatar' | 'avatarMimeType'> | null> {
+    const account = await this.accountRepository.findOne({ where: { username } });
+    if (!account) {
+      return null;
+    }
+    
+    // Remove password and avatar data from response
+    const { password, avatar, avatarMimeType, ...accountWithoutSensitiveData } = account;
+    return accountWithoutSensitiveData;
+  }
 } 

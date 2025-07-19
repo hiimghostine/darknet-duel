@@ -11,7 +11,7 @@ export interface ChatMessage {
   createdAt: Date;
   metadata?: {
     username?: string;
-    avatar?: string;
+    type?: 'user' | 'mod' | 'admin';
     [key: string]: any;
   };
 }
@@ -39,7 +39,7 @@ export class ChatService {
 
     const metadata = {
       username: sender?.username || 'Unknown User',
-      avatar: sender?.avatar || null,
+      type: sender?.type || 'user',
       ...data.metadata
     };
 
@@ -99,8 +99,7 @@ export class ChatService {
       messageContent,
       messageType: 'system',
       metadata: {
-        username: 'SYSTEM',
-        avatar: null
+        username: 'SYSTEM'
       }
     });
   }

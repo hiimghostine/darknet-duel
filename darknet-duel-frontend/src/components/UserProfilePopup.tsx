@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import accountService, { type AccountData } from '../services/account.service';
 import { type ProfileStats } from '../services/info.service';
+import UserTypeTag from './UserTypeTag';
 import logo from '../assets/logo.png';
 
 interface UserProfilePopupProps {
@@ -215,8 +216,9 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-mono">
-                  <div className="text-lg font-bold text-primary truncate">
+                  <div className="text-lg font-bold text-primary truncate flex items-center gap-2">
                     {userData.username || username}
+                    {userData.type && <UserTypeTag userType={userData.type} />}
                   </div>
                   <div className="text-xs text-base-content/70">
                     RATING: {userData.rating || 1200}
