@@ -89,9 +89,7 @@ const DashboardPage: React.FC = () => {
   ];
   
   // Use real activities data from API or show placeholder if empty (limit to 3 activities)
-  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [
-    { type: 'WIN' as const, opponent: 'No recent games', time: 'Play a game to see activity', pointsChange: '+0 PTS' },
-  ];
+  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [];
 
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
@@ -359,22 +357,29 @@ const DashboardPage: React.FC = () => {
                   )}
                   
                   <div className="space-y-3">
-                    {activitiesData.map((activity, index) => (
-                      <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
-                          <div className="font-mono">
-                            <div className="text-sm font-bold">
-                              {activity.type} vs {activity.opponent}
+                    {activitiesData.length > 0 ? (
+                      activitiesData.map((activity, index) => (
+                        <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
+                            <div className="font-mono">
+                              <div className="text-sm font-bold">
+                                {activity.type} vs {activity.opponent}
+                              </div>
+                              <div className="text-xs text-base-content/70">{activity.time}</div>
                             </div>
-                            <div className="text-xs text-base-content/70">{activity.time}</div>
+                          </div>
+                          <div className="text-xs font-mono text-primary">
+                            {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                           </div>
                         </div>
-                        <div className="text-xs font-mono text-primary">
-                          {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
-                        </div>
+                      ))
+                    ) : (
+                      <div className="border border-primary/30 bg-base-300/50 p-3 text-center">
+                        <div className="font-mono text-sm text-base-content/70">No recent games</div>
+                        <div className="font-mono text-xs text-base-content/50 mt-1">Play a game to see activity</div>
                       </div>
-                    ))}
+                    )}
                   </div>
                   
                   <button 
