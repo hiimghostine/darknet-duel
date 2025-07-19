@@ -6,6 +6,7 @@ import LobbyDetail from '../components/lobby/LobbyDetail';
 import LobbyChat from '../components/lobby/LobbyChat';
 import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import { useThemeStore } from '../store/theme.store';
@@ -14,6 +15,7 @@ const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { triggerClick, triggerSendMsg, triggerRecvMsg } = useAudioManager();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { theme, toggleTheme } = useThemeStore();

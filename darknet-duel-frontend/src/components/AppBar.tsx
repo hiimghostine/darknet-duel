@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useSettingsStore } from '../store/settings.store';
 import logo from '../assets/logo.png';
 
 interface AppBarProps {
@@ -18,6 +19,7 @@ const AppBar: React.FC<AppBarProps> = ({
 }) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { openSettings } = useSettingsStore();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -100,6 +102,15 @@ const AppBar: React.FC<AppBarProps> = ({
               <span className="hidden sm:inline">CONTROL</span>
             </button>
           )}
+          
+          <button
+            onClick={openSettings}
+            className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+            aria-label="Audio Settings"
+          >
+            <span className="mr-1">🔊</span>
+            <span className="hidden sm:inline">SETTINGS</span>
+          </button>
           
           <button
             onClick={handleThemeToggle}

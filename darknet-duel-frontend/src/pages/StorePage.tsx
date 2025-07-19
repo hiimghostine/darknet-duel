@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
 import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
@@ -13,6 +14,7 @@ const StorePage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { addToast } = useToastStore();
   const navigate = useNavigate();
+  const { triggerClick, triggerPurchaseSuccessful, triggerPositiveClick } = useAudioManager();
   
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -84,12 +86,14 @@ const StorePage: React.FC = () => {
   const handlePurchase = async (item: StoreItem) => {
     if (loadingPurchase) return;
 
+    triggerClick();
     setLoadingPurchase(item.f);
     
     try {
       const result = await storeService.purchaseItem(item.f);
       
              if (result.success) {
+         triggerPurchaseSuccessful();
          addToast({
            type: 'success',
            title: 'Purchase Successful',
@@ -124,10 +128,12 @@ const StorePage: React.FC = () => {
 
   // Handle apply decoration
   const handleApplyDecoration = async (decorationId: string) => {
+    triggerClick();
     try {
       const result = await storeService.applyDecoration(decorationId);
       
              if (result.success) {
+         triggerPositiveClick();
          addToast({
            type: 'success',
            title: 'Decoration Applied',

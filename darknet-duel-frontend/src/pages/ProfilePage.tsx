@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
@@ -16,6 +17,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { id: profileId } = useParams<{ id: string }>();
   const { theme, toggleTheme } = useThemeStore();
+  const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
 
   // If no profile ID is provided, redirect to current user's profile
   useEffect(() => {
@@ -157,7 +159,10 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => {
+                    triggerClick();
+                    navigate('/dashboard');
+                  }}
                   className="btn btn-ghost text-primary font-mono text-lg"
                 >
                   ← BACK
@@ -170,7 +175,10 @@ const ProfilePage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 {isOwnProfile && (
                   <button 
-                    onClick={handleEditProfile}
+                    onClick={() => {
+                      triggerClick();
+                      handleEditProfile();
+                    }}
                     className="btn btn-sm bg-primary/20 border-primary/50 hover:border-primary text-primary btn-cyberpunk"
                     aria-label="Edit Profile"
                   >
@@ -181,7 +189,10 @@ const ProfilePage: React.FC = () => {
                 
                 {!isOwnProfile && (
                   <button 
-                    onClick={handleReportUser}
+                    onClick={() => {
+                      triggerClick();
+                      handleReportUser();
+                    }}
                     className="btn btn-sm bg-error/20 border-error/50 hover:border-error text-error btn-cyberpunk"
                     aria-label="Report User"
                   >
@@ -191,7 +202,10 @@ const ProfilePage: React.FC = () => {
                 )}
                 
                 <button 
-                  onClick={toggleTheme} 
+                  onClick={() => {
+                    triggerClick();
+                    toggleTheme();
+                  }} 
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Toggle theme"
                 >

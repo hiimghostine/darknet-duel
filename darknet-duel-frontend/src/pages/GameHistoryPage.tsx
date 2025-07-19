@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import gameService from '../services/game.service';
 import accountService from '../services/account.service';
 import LoadingScreen from '../components/LoadingScreen';
@@ -11,6 +12,7 @@ import { useThemeStore } from '../store/theme.store';
 const GameHistoryPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const { triggerClick } = useAudioManager();
   
   // Component state
   const [isLoading, setIsLoading] = useState(true);
@@ -132,7 +134,10 @@ const GameHistoryPage: React.FC = () => {
       <div className={`relative z-10 transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'} scanline`}>
         <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
           <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => navigate('/dashboard')}>
+            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => {
+              triggerClick();
+              navigate('/dashboard');
+            }}>
               <img src={logo} alt="Darknet Duel Logo" className="h-8" />
               <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
                 DARKNET_DUEL
@@ -141,7 +146,10 @@ const GameHistoryPage: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => navigate('/dashboard')} 
+                onClick={() => {
+                  triggerClick();
+                  navigate('/dashboard');
+                }} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
               >
                 <span className="mr-1">🏠</span> 
@@ -149,7 +157,10 @@ const GameHistoryPage: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => navigate('/lobbies')} 
+                onClick={() => {
+                  triggerClick();
+                  navigate('/lobbies');
+                }} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
               >
                 <span className="mr-1">🎮</span> 
@@ -157,7 +168,10 @@ const GameHistoryPage: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => navigate(`/profile/${user?.id}`)} 
+                onClick={() => {
+                  triggerClick();
+                  navigate(`/profile/${user?.id}`);
+                }} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Profile"
               >
@@ -166,7 +180,10 @@ const GameHistoryPage: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => navigate('/topup')} 
+                onClick={() => {
+                  triggerClick();
+                  navigate('/topup');
+                }} 
                 className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
                 aria-label="Top Up"
               >
@@ -176,7 +193,10 @@ const GameHistoryPage: React.FC = () => {
               </button>
               
               <button
-                onClick={toggleTheme}
+                onClick={() => {
+                  triggerClick();
+                  toggleTheme();
+                }}
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Toggle Theme"
               >
