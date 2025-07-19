@@ -103,6 +103,13 @@ export function validateTargetInfrastructure(G: GameState, targetInfrastructureI
     return { valid: true, targetInfrastructure: null };
   }
   
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card && (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state')) {
+    console.log(`🚨 All-infrastructure targeting card detected: ${card.name} (${card.id})`);
+    // For all-infrastructure cards, we don't need specific infrastructure validation
+    return { valid: true, targetInfrastructure: null };
+  }
+  
   const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
   if (!targetInfrastructure) {
     return {
@@ -127,6 +134,15 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
   // Special handling for Memory Corruption Attack and other hand-targeting cards
   if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
     console.log(`🎯 Hand-targeting card ${card.name} uses special validation`);
+    return {
+      effectiveCardType: 'special',
+      validationCardType: 'special'
+    };
+  }
+  
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state') {
+    console.log(`🚨 All-infrastructure targeting card ${card.name} uses special validation`);
     return {
       effectiveCardType: 'special',
       validationCardType: 'special'

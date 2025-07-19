@@ -5,7 +5,7 @@
  * validation, and effect application.
  */
 import { Card, CardType, AttackVector } from 'shared-types/card.types';
-import { GameState } from 'shared-types/game.types';
+import { GameState, InfrastructureState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
 import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
@@ -273,6 +273,41 @@ export class WildcardResolver {
       }
     }
     
+    // Handle Emergency Response Team (D303) by ID check first
+    if (card.id === 'D303' || card.id.startsWith('D303')) {
+      console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
+      
+      // Restore ALL compromised infrastructure to secure state
+      if (updatedGameState.infrastructure) {
+        let restoredCount = 0;
+        updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+          if (infra.state === 'compromised') {
+            restoredCount++;
+            console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+            return {
+              ...infra,
+              state: 'secure' as InfrastructureState,
+              vulnerabilities: [] // Clear vulnerabilities like regular response cards
+            };
+          }
+          return infra;
+        });
+        
+        if (restoredCount > 0) {
+          updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
+          console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+        } else {
+          updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
+          console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+        }
+      } else {
+        console.log(`❌ Mass restore failed: No infrastructure array found`);
+        updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
+      }
+      
+      return updatedGameState; // Return early to avoid processing other card effects
+    }
+
     // Handle other card-specific effects based on card ID
     switch (card.id) {
       case 'A307': // Memory Corruption Attack
@@ -412,6 +447,39 @@ export class WildcardResolver {
             }
             
             updatedGameState.message = `Intelligence network activated: Opponent must discard 2 cards. Drew 1 card.`;
+          }
+          break;
+          
+        case 'mass_restore':
+          // Handle Emergency Response Team (D303) effect
+          console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
+          
+          // Restore ALL compromised infrastructure to secure state
+          if (updatedGameState.infrastructure) {
+            let restoredCount = 0;
+            updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+              if (infra.state === 'compromised') {
+                restoredCount++;
+                console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+                return {
+                  ...infra,
+                  state: 'secure' as InfrastructureState,
+                  vulnerabilities: [] // Clear vulnerabilities like regular response cards
+                };
+              }
+              return infra;
+            });
+            
+            if (restoredCount > 0) {
+              updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
+              console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+            } else {
+              updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
+              console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+            }
+          } else {
+            console.log(`❌ Mass restore failed: No infrastructure array found`);
+            updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
           }
           break;
           

@@ -368,8 +368,7 @@
       "isReactive": false,
       "target": "all_infrastructure",
       "wildcardType": "special",
-      "specialEffect": "mass_restore",
-      "oncePerGame": true
+      "specialEffect": "mass_restore"
     },
     {
       "id": "D304",

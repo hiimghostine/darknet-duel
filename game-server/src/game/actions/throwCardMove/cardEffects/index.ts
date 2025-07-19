@@ -118,6 +118,14 @@ function handleSpecialEffect(
 ): InfrastructureCard[] | null | { victory: true } | { pendingChoice: true } {
   console.log(`Handling special effect for card: ${card.name} (${card.id})`);
   
+  // Handle Emergency Response Team (D303) mass restore effect
+  if (card.id === 'D303' || card.specialEffect === 'mass_restore' || card.name === 'Emergency Response Team') {
+    console.log(`🚨 Emergency Response Team special effect - mass restore should be handled by wildcard resolver`);
+    // For mass restore cards, the effect is handled entirely by the wildcard resolver
+    // Return the infrastructure unchanged as the wildcard resolver will handle the restoration
+    return allInfrastructure;
+  }
+  
   // Handle specific special cards by name/ID
   if (card.name === 'Lateral Movement' || card.id === 'lateral-movement') {
     console.log('Lateral Movement card - triggering chain vulnerability effect');

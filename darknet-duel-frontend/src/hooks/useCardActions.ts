@@ -36,6 +36,12 @@ export function useCardActions(props: BoardProps) {
       return false; // These cards don't need infrastructure targeting
     }
     
+    // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+    if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure') {
+      console.log('🚨 All-infrastructure targeting card detected, no specific target needed:', card.name);
+      return false; // These cards don't need specific infrastructure targeting
+    }
+    
     // Check if the card inherently requires targeting
     if (card.requiresTarget) return true;
     
@@ -243,6 +249,14 @@ export function useCardActions(props: BoardProps) {
     // Special handling for Memory Corruption Attack - use throwCard with dummy target
     if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
       console.log("🔥 Playing Memory Corruption Attack directly");
+      // Use throwCard with a dummy target since validation will skip infrastructure checks
+      moves.throwCard(card.id, 'dummy_target');
+      return;
+    }
+    
+    // Special handling for Emergency Response Team (D303) - use throwCard with dummy target
+    if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure') {
+      console.log("🚨 Playing Emergency Response Team directly");
       // Use throwCard with a dummy target since validation will skip infrastructure checks
       moves.throwCard(card.id, 'dummy_target');
       return;

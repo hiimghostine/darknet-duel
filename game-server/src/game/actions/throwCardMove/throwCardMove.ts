@@ -196,6 +196,41 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       };
     }
     
+    // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+    if (card!.id === 'D303' || card!.id.startsWith('D303') || (card as any).target === 'all_infrastructure') {
+      console.log(`🚨 Emergency Response Team detected! Applying immediate mass restore`);
+      
+      // Create the updated player state - we move the card from hand to discard
+      const updatedPlayer = {
+        ...player,
+        hand: newHand,
+        discard: [...player!.discard, JSON.parse(JSON.stringify(card))],
+        actionPoints: player!.actionPoints - effectiveCost
+      };
+      
+      // Apply wildcard effects directly (this handles the mass restore)
+      const { WildcardResolver } = require('../wildcardResolver');
+      const wildcardContext = {
+        gameState: G,
+        playerRole: isAttacker ? 'attacker' : 'defender',
+        card: extendedCard,
+        targetInfrastructure: null, // No specific infrastructure target for all-infrastructure cards
+        chosenType: 'special',
+        playerID: playerID
+      };
+      
+      console.log(`Applying Emergency Response Team wildcard effects`);
+      const gameStateWithWildcardEffects = WildcardResolver.applyWildcardEffects(extendedCard, wildcardContext);
+      
+      return {
+        ...gameStateWithWildcardEffects,
+        attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker,
+        defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender,
+        actions: [...gameStateWithWildcardEffects.actions, newAction],
+        message: gameStateWithWildcardEffects.message || `${card!.name} emergency response activated!`
+      };
+    }
+    
     // Get available types for this wildcard
     const availableTypes = getAvailableCardTypes(card!.wildcardType);
     console.log(`Available wildcard types:`, availableTypes);
