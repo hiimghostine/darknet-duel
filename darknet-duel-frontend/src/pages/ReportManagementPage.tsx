@@ -5,8 +5,10 @@ import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
 import { useThemeStore } from '../store/theme.store';
 import { reportService, type Report, type GetReportsOptions, type ReportStats } from '../services/report.service';
+import adminService, { type AdminUser } from '../services/admin.service';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import BanUserModal from '../components/admin/BanUserModal';
 
 const ReportManagementPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -36,6 +38,9 @@ const ReportManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [userToBan, setUserToBan] = useState<AdminUser | null>(null);
+  const [isBanning, setIsBanning] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -136,6 +141,37 @@ const ReportManagementPage: React.FC = () => {
     } catch (error) {
       console.error('Error loading report details:', error);
       addToast({ type: 'error', title: 'Error', message: 'Failed to load report details' });
+    }
+  };
+
+  const handleBanUser = async (reporteeId: string) => {
+    try {
+      // Get user details for the ban modal
+      const user = await adminService.getUserById(reporteeId);
+      setUserToBan(user);
+      setShowBanModal(true);
+    } catch (error) {
+      console.error('Error loading user details:', error);
+      addToast({ type: 'error', title: 'Error', message: 'Failed to load user details' });
+    }
+  };
+
+  const handleConfirmBan = async (reason: string) => {
+    if (!userToBan) return;
+
+    setIsBanning(true);
+    try {
+      await adminService.banUser(userToBan.id, reason);
+      addToast({ type: 'success', title: 'Success', message: `User ${userToBan.username} has been banned` });
+      setShowBanModal(false);
+      setUserToBan(null);
+      // Reload reports to reflect any changes
+      loadReports();
+    } catch (error) {
+      console.error('Error banning user:', error);
+      addToast({ type: 'error', title: 'Error', message: 'Failed to ban user' });
+    } finally {
+      setIsBanning(false);
     }
   };
 
@@ -481,40 +517,40 @@ const ReportManagementPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">REPORTER</label>
-                  <p className="text-sm font-mono">{selectedReport.reporter.username}</p>
+                  <p className="text-sm font-mono text-base-content">{selectedReport.reporter.username}</p>
                   <p className="text-xs text-base-content/60">{selectedReport.reporter.email}</p>
                 </div>
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">REPORTEE</label>
-                  <p className="text-sm font-mono">{selectedReport.reportee.username}</p>
+                  <p className="text-sm font-mono text-base-content">{selectedReport.reportee.username}</p>
                   <p className="text-xs text-base-content/60">{selectedReport.reportee.email}</p>
                 </div>
               </div>
               
               <div>
                 <label className="text-xs text-base-content/60 font-mono">REASON</label>
-                <p className="text-sm font-mono bg-base-200 p-3 rounded">{selectedReport.reason}</p>
+                <p className="text-sm font-mono bg-base-200 p-3 rounded text-base-content">{selectedReport.reason}</p>
               </div>
               
               {selectedReport.content && (
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">CONTENT</label>
-                  <p className="text-sm font-mono bg-base-200 p-3 rounded">{selectedReport.content}</p>
+                  <p className="text-sm font-mono bg-base-200 p-3 rounded text-base-content">{selectedReport.content}</p>
                 </div>
               )}
               
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">TYPE</label>
-                  <p className="text-sm font-mono">{selectedReport.reportType}</p>
+                  <p className="text-sm font-mono text-base-content">{selectedReport.reportType}</p>
                 </div>
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">STATUS</label>
-                  <p className="text-sm font-mono">{selectedReport.status}</p>
+                  <p className="text-sm font-mono text-base-content">{selectedReport.status}</p>
                 </div>
                 <div>
                   <label className="text-xs text-base-content/60 font-mono">CREATED</label>
-                  <p className="text-sm font-mono">{formatDate(selectedReport.createdAt)}</p>
+                  <p className="text-sm font-mono text-base-content">{formatDate(selectedReport.createdAt)}</p>
                 </div>
               </div>
             </div>
@@ -542,6 +578,21 @@ const ReportManagementPage: React.FC = () => {
                   </button>
                 </>
               )}
+              
+              {/* Ban User Button - Only show for mods and admins */}
+              {user?.type && ['mod', 'admin'].includes(user.type) && (
+                <button
+                  onClick={() => {
+                    handleBanUser(selectedReport.reportee.id);
+                    setShowReportModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-warning/20 border border-warning/50 text-warning hover:bg-warning/30 transition-colors rounded font-mono text-sm"
+                >
+                  <FaBan className="inline mr-1" />
+                  Ban User
+                </button>
+              )}
+              
               <button
                 onClick={() => {
                   handleDeleteReport(selectedReport.id);
@@ -555,6 +606,18 @@ const ReportManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Ban User Modal */}
+      <BanUserModal
+        user={userToBan}
+        isOpen={showBanModal}
+        onClose={() => {
+          setShowBanModal(false);
+          setUserToBan(null);
+        }}
+        onConfirm={handleConfirmBan}
+        isLoading={isBanning}
+      />
     </div>
   );
 };
