@@ -1,8 +1,10 @@
 import { AppDataSource } from '../utils/database';
 import { Account } from '../entities/account.entity';
+import { LogService } from './log.service';
 
 export class AuthService {
   private accountRepository = AppDataSource.getRepository(Account);
+  private logService = new LogService();
   
   // Create a new user
   async createUser(userData: Partial<Account>): Promise<Account> {
@@ -41,5 +43,15 @@ export class AuthService {
   // Update user data
   async updateUser(id: string, userData: Partial<Account>): Promise<void> {
     await this.accountRepository.update({ id }, userData);
+  }
+
+  // Log user login
+  async logUserLogin(userId: string, username: string): Promise<void> {
+    await this.logService.logUserLogin(userId, username);
+  }
+
+  // Log failed login attempt
+  async logFailedLogin(email: string, reason: string): Promise<void> {
+    await this.logService.logFailedLogin(email, reason);
   }
 }

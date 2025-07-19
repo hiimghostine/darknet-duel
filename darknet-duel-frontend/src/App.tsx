@@ -15,6 +15,8 @@ import TopUpPage from './pages/TopUpPage';
 import GameHistoryPage from './pages/GameHistoryPage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
+import ReportManagementPage from './pages/ReportManagementPage';
+import SecurityOverviewPage from './pages/SecurityOverviewPage';
 import StorePage from './pages/StorePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useThemeStore } from './store/theme.store';
@@ -42,6 +44,8 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/user-management" element={<UserManagementPage />} />
+          <Route path="/admin/report-management" element={<ReportManagementPage />} />
+          <Route path="/admin/security-overview" element={<SecurityOverviewPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/topup" element={<TopUpPage />} />

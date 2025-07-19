@@ -6,6 +6,7 @@ import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import EditProfileModal from '../components/EditProfileModal';
+import ReportModal from '../components/ReportModal';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
 
@@ -33,6 +34,7 @@ const ProfilePage: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -96,6 +98,14 @@ const ProfilePage: React.FC = () => {
     setShowEditModal(false);
     // Refresh profile data after edit
     window.location.reload();
+  };
+
+  const handleReportUser = () => {
+    setShowReportModal(true);
+  };
+
+  const handleReportModalClose = () => {
+    setShowReportModal(false);
   };
 
   // If not authenticated, redirect to login
@@ -165,6 +175,17 @@ const ProfilePage: React.FC = () => {
                   >
                     <span className="mr-1">✏️</span>
                     <span className="hidden sm:inline">EDIT</span>
+                  </button>
+                )}
+                
+                {!isOwnProfile && (
+                  <button 
+                    onClick={handleReportUser}
+                    className="btn btn-sm bg-error/20 border-error/50 hover:border-error text-error btn-cyberpunk"
+                    aria-label="Report User"
+                  >
+                    <span className="mr-1">⚠️</span>
+                    <span className="hidden sm:inline">REPORT</span>
                   </button>
                 )}
                 
@@ -420,6 +441,17 @@ const ProfilePage: React.FC = () => {
         onClose={handleEditModalClose}
         onSave={handleEditModalSave}
       />
+
+      {/* Report Modal */}
+      {!isOwnProfile && displayUser && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={handleReportModalClose}
+          reporteeId={displayUser.id || ''}
+          reporteeUsername={displayUser.username || ''}
+          reportType="profile"
+        />
+      )}
     </div>
   );
 };

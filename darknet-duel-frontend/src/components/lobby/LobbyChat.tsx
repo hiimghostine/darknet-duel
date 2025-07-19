@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
-import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt } from 'react-icons/fa';
+import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamationTriangle } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
+import ReportModal from '../ReportModal';
+import ContextMenu from '../ContextMenu';
 import { useThemeStore } from '../../store/theme.store';
 
 interface LobbyChatProps {
@@ -72,6 +74,30 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     userId: '',
     username: '',
     position: { x: 0, y: 0 }
+  });
+
+  // Report modal state
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    reporteeId: string;
+    reporteeUsername: string;
+    content?: string;
+  }>({
+    isOpen: false,
+    reporteeId: '',
+    reporteeUsername: '',
+    content: undefined
+  });
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean;
+    position: { x: number; y: number };
+    selectedMessage: LobbyChatMessage | null;
+  }>({
+    isVisible: false,
+    position: { x: 0, y: 0 },
+    selectedMessage: null
   });
 
   const { theme } = useThemeStore();
@@ -243,6 +269,49 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     setProfilePopup(prev => ({ ...prev, isVisible: false }));
   };
 
+  // Handle right-click on message to show context menu
+  const handleMessageRightClick = (event: React.MouseEvent, message: LobbyChatMessage) => {
+    event.preventDefault();
+    
+    // Don't show context menu for system messages or own messages
+    if (message.messageType === 'system' || isOwnMessage(message)) {
+      return;
+    }
+
+    setContextMenu({
+      isVisible: true,
+      position: { x: event.clientX, y: event.clientY },
+      selectedMessage: message
+    });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(prev => ({ ...prev, isVisible: false, selectedMessage: null }));
+  };
+
+  const handleReportFromContextMenu = () => {
+    const message = contextMenu.selectedMessage;
+    if (!message) return;
+
+    const userId = message.senderUuid;
+    const username = message.metadata?.username || 'ANON';
+    
+    if (!userId) return;
+
+    setReportModal({
+      isOpen: true,
+      reporteeId: userId,
+      reporteeUsername: username,
+      content: message.messageContent
+    });
+
+    closeContextMenu();
+  };
+
+  const closeReportModal = () => {
+    setReportModal(prev => ({ ...prev, isOpen: false }));
+  };
+
   return (
     <div className={`${className}`}>
       {/* Chat banner with same styling as lobbies banner */}
@@ -322,7 +391,11 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   }
                   
                   return (
-                    <div key={message.id} className="text-xs mb-1 break-words">
+                    <div 
+                      key={message.id} 
+                      className="text-xs mb-1 break-words"
+                      onContextMenu={(e) => handleMessageRightClick(e, message)}
+                    >
                       <span className="text-base-content/50">[{timestamp}]</span>{' '}
                       <span 
                         className={`font-bold cursor-pointer hover:opacity-80 transition-opacity ${
@@ -395,6 +468,24 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
         isVisible={profilePopup.isVisible}
         position={profilePopup.position}
         onClose={closeProfilePopup}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={closeReportModal}
+        reporteeId={reportModal.reporteeId}
+        reporteeUsername={reportModal.reporteeUsername}
+        reportType="chat"
+        content={reportModal.content}
+      />
+
+      {/* Context Menu */}
+      <ContextMenu
+        isVisible={contextMenu.isVisible}
+        position={contextMenu.position}
+        onClose={closeContextMenu}
+        onReport={handleReportFromContextMenu}
       />
     </div>
   );

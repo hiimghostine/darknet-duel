@@ -194,50 +194,28 @@ const AdminPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Game Management */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
+              {/* Report Management */}
+              <div 
+                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
+                onClick={() => navigate('/admin/report-management')}
+              >
                 <div className="flex items-center gap-3 mb-4">
-                  <FaGamepad className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">GAME_CONTROL</h3>
+                  <FaExclamationTriangle className="text-2xl text-error" />
+                  <h3 className="text-lg font-mono font-bold text-error">REPORT_MANAGEMENT</h3>
                 </div>
                 <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Monitor active games, matches, and server statistics
+                  Review and manage user reports for profiles and chat messages
                 </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
-                </div>
-              </div>
-
-              {/* Chat Moderation */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaComments className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">CHAT_MODERATION</h3>
-                </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Monitor chat channels and manage user communications
-                </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
-                </div>
-              </div>
-
-              {/* System Settings */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaCogs className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">SYSTEM_CONFIG</h3>
-                </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Configure server settings and system parameters
-                </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
+                <div className="text-xs text-green-500 font-mono">
+                  STATUS: ACTIVE
                 </div>
               </div>
 
               {/* Security Overview */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer md:col-span-2">
+              <div 
+                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer md:col-span-2"
+                onClick={() => navigate('/admin/security-overview')}
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <FaShieldAlt className="text-2xl text-error" />
                   <h3 className="text-lg font-mono font-bold text-error">SECURITY_OVERVIEW</h3>
@@ -245,8 +223,8 @@ const AdminPage: React.FC = () => {
                 <p className="text-base-content/70 text-sm font-mono mb-4">
                   Monitor system security, authentication logs, and access patterns
                 </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
+                <div className="text-xs text-green-500 font-mono">
+                  STATUS: ACTIVE
                 </div>
               </div>
 

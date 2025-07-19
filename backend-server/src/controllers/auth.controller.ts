@@ -193,11 +193,15 @@ export class AuthController {
       // Find user
       const user = await authService.findByEmail(email.toLowerCase());
       if (!user) {
+        // Log failed login attempt
+        await authService.logFailedLogin(email.toLowerCase(), 'user not found');
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
       // Check if account is active
       if (!user.isActive) {
+        // Log failed login attempt
+        await authService.logFailedLogin(email.toLowerCase(), 'account inactive');
         return res.status(401).json({ 
           message: 'This account is inactive!',
           inactiveReason: user.inactiveReason || 'Account has been deactivated',
@@ -208,11 +212,16 @@ export class AuthController {
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
+        // Log failed login attempt
+        await authService.logFailedLogin(email.toLowerCase(), 'invalid password');
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
       // Update last login
       await authService.updateLastLogin(user.id);
+      
+      // Log the login
+      await authService.logUserLogin(user.id, user.username);
       
       // Generate JWT token
       const secret: Secret = process.env.JWT_SECRET || 'fallback_secret';

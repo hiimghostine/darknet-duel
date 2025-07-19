@@ -149,7 +149,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
               </label>
               <input
                 type="email"
-                className={`input input-bordered w-full bg-base-100 ${errors.email ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content ${errors.email ? 'input-error' : ''}`}
                 value={formData.email || ''}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="user@domain.com"
@@ -166,7 +166,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
               </label>
               <input
                 type="text"
-                className={`input input-bordered w-full bg-base-100 ${errors.username ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content ${errors.username ? 'input-error' : ''}`}
                 value={formData.username || ''}
                 onChange={(e) => handleChange('username', e.target.value)}
                 placeholder="username"
@@ -185,7 +185,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
                 ACCOUNT_TYPE
               </label>
               <select
-                className="select select-bordered w-full bg-base-100"
+                className="select select-bordered w-full bg-base-100 text-base-content"
                 value={formData.type}
                 onChange={(e) => handleChange('type', e.target.value as 'user' | 'mod' | 'admin')}
               >
@@ -201,7 +201,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
                 STATUS
               </label>
               <select
-                className="select select-bordered w-full bg-base-100"
+                className="select select-bordered w-full bg-base-100 text-base-content"
                 value={formData.isActive?.toString()}
                 onChange={(e) => handleChange('isActive', e.target.value === 'true')}
               >
@@ -217,7 +217,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
               BIO ({formData.bio?.length || 0}/30)
             </label>
             <textarea
-              className={`textarea textarea-bordered w-full bg-base-100 ${errors.bio ? 'textarea-error' : ''}`}
+              className={`textarea textarea-bordered w-full bg-base-100 text-base-content ${errors.bio ? 'textarea-error' : ''}`}
               value={formData.bio || ''}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="User bio (optional)"
@@ -238,7 +238,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
               </label>
               <input
                 type="number"
-                className={`input input-bordered w-full bg-base-100 ${errors.creds ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content ${errors.creds ? 'input-error' : ''}`}
                 value={formData.creds || 0}
                 onChange={(e) => handleChange('creds', parseInt(e.target.value) || 0)}
                 min="0"
@@ -255,7 +255,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
               </label>
               <input
                 type="number"
-                className={`input input-bordered w-full bg-base-100 ${errors.crypts ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content ${errors.crypts ? 'input-error' : ''}`}
                 value={formData.crypts || 0}
                 onChange={(e) => handleChange('crypts', parseInt(e.target.value) || 0)}
                 min="0"
@@ -273,7 +273,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ user, onClose, onSave, on
             </label>
             <input
               type="password"
-              className={`input input-bordered w-full bg-base-100 ${errors.password ? 'input-error' : ''}`}
+              className={`input input-bordered w-full bg-base-100 text-base-content ${errors.password ? 'input-error' : ''}`}
               value={formData.password || ''}
               onChange={(e) => handleChange('password', e.target.value)}
               placeholder="New password (optional)"

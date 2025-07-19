@@ -2,9 +2,11 @@ import { AppDataSource } from '../utils/database';
 import { Account } from '../entities/account.entity';
 import { validateEmail } from '../utils/validation';
 import bcrypt from 'bcrypt';
+import { LogService } from './log.service';
 
 export class AccountService {
   private accountRepository = AppDataSource.getRepository(Account);
+  private logService = new LogService();
 
   /**
    * Get account details by ID (without password and avatar)
@@ -108,6 +110,9 @@ export class AccountService {
     if (!updatedAccount) {
       return null;
     }
+
+    // Log the profile update
+    await this.logService.logProfileUpdate(id, updatedAccount.username);
 
     const { password, avatar, avatarMimeType, ...accountWithoutSensitiveData } = updatedAccount;
     return accountWithoutSensitiveData;
