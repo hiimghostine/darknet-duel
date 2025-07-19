@@ -240,8 +240,20 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     
     // Handle auto-selection logic (PRESERVED FROM ORIGINAL)
     if (availableTypes.length >= 1) {
+      // Special handling for Security Automation Suite (D304) - auto-select based on target state
+      if (card!.id === 'D304' || card!.id.startsWith('D304')) {
+        if (targetInfrastructure) {
+          if (targetInfrastructure.state === 'secure' || targetInfrastructure.state === 'vulnerable') {
+            autoSelectedType = 'shield';
+            console.log(`Security Automation Suite - auto-selecting shield for ${targetInfrastructure.state} infrastructure`);
+          } else if (targetInfrastructure.state === 'shielded') {
+            autoSelectedType = 'fortify';
+            console.log(`Security Automation Suite - auto-selecting fortify for shielded infrastructure`);
+          }
+        }
+      }
       // For special wildcards with only one type, auto-select it
-      if (card!.wildcardType === 'special' && availableTypes.length === 1) {
+      else if (card!.wildcardType === 'special' && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
         console.log(`Special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
       } else if (card!.wildcardType === 'special') {
@@ -364,6 +376,23 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           playerID,
           gameStateWithWildcardEffects // Use the updated game state with wildcard effects
         );
+        
+        // Special handling for Security Automation Suite chain security effect
+        if (card!.id === 'D304' || card!.id.startsWith('D304')) {
+          console.log(`Triggering chain security effect for ${card!.name}`);
+          const { handleChainSecurity } = require('../chainEffects');
+          const chainGameState = handleChainSecurity(
+            { ...gameStateWithWildcardEffects, infrastructure: effectResult },
+            extendedCard,
+            playerID
+          );
+          
+          // Update the game state with the pending chain choice
+          if (chainGameState.pendingChainChoice) {
+            gameStateWithWildcardEffects.pendingChainChoice = chainGameState.pendingChainChoice;
+            gameStateWithWildcardEffects.message = `${card!.name} played! Choose another infrastructure to shield.`;
+          }
+        }
       } else {
         // For hand-targeting cards, we already applied the effect via wildcard resolver
         // Just return the current infrastructure unchanged

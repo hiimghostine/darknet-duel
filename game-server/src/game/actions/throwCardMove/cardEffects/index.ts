@@ -166,12 +166,10 @@ function handleSpecialEffect(
       return allInfrastructure;
     }
     
-    // First, apply the initial shield effect to the targeted infrastructure
-    const updatedInfra = shieldEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
-    
-    // Then trigger chain security effect
+    // The initial shield/fortify effect should already be applied
+    // Just trigger the chain security effect without re-applying the effect
     const updatedGameState = handleChainSecurity(
-      { ...gameState, infrastructure: updatedInfra },
+      { ...gameState, infrastructure: allInfrastructure },
       card,
       playerID
     );
@@ -185,7 +183,7 @@ function handleSpecialEffect(
       }
     }
     
-    return updatedInfra;
+    return allInfrastructure;
   }
   
   // Default behavior for other special cards

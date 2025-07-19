@@ -143,10 +143,10 @@ export function useCardActions(props: BoardProps) {
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'shield':
-                // Shield cards can target non-shielded/fortified infrastructure
+                // Shield cards can target secure or vulnerable infrastructure (not compromised)
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) =>
-                    infra.state !== 'shielded' && infra.state !== 'fortified'
+                    infra.state === 'secure' || infra.state === 'vulnerable'
                   )
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
