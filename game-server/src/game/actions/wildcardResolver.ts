@@ -193,17 +193,93 @@ export class WildcardResolver {
         }
         break;
         
-      case 'D304': // Threat Intelligence
-        // This needs special UI for hand viewing and selection
-        // For now, just add a message
-        updatedGameState.message = `${card.name} reveals attacker's hand`;
-        break;
+    }
+    
+    // Handle card-specific effects based on card ID with flexible matching
+    if (card.id.startsWith('D302')) { // Threat Intelligence Network
+      console.log(`🎯 D302 Threat Intelligence Network detected! Card ID: ${card.id}`);
+      
+      // Determine target player (opponent)
+      const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
+      const opponentPlayerId = opponentRole === 'attacker' ?
+        updatedGameState.attacker?.id : updatedGameState.defender?.id;
+      
+      if (opponentPlayerId) {
+        console.log(`🎯 D302: Targeting opponent: ${opponentPlayerId} (${opponentRole})`);
         
+        try {
+          // Import the hand disruption handler
+          const { handleHandDisruption } = require('./handDisruption');
+          console.log(`🎯 D302: handleHandDisruption imported successfully:`, typeof handleHandDisruption);
+          
+          console.log(`🎯 D302: Calling handleHandDisruption with:`, {
+            targetPlayerId: opponentPlayerId,
+            effectType: 'view_and_discard',
+            count: 2
+          });
+          
+          // Use existing handDisruption system for view_and_discard effect
+          const stateBeforeDisruption = { ...updatedGameState };
+          updatedGameState = handleHandDisruption(
+            updatedGameState,
+            'view_and_discard',
+            opponentPlayerId,
+            2 // Force discard 2 cards
+          );
+          
+          console.log(`🎯 D302: handleHandDisruption completed. State changes:`, {
+            hadPendingHandChoice: !!stateBeforeDisruption.pendingHandChoice,
+            hasPendingHandChoice: !!updatedGameState.pendingHandChoice,
+            pendingHandChoice: updatedGameState.pendingHandChoice,
+            messageChanged: stateBeforeDisruption.message !== updatedGameState.message
+          });
+        } catch (error) {
+          console.error(`❌ D302: Error in handleHandDisruption:`, error);
+          updatedGameState.message = `${card.name} failed: Hand disruption error`;
+        }
+        
+        // Add card draw effect for the defender who played this card
+        const currentPlayer = context.playerRole === 'attacker' ?
+          updatedGameState.attacker : updatedGameState.defender;
+        
+        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
+          const drawnCard = currentPlayer.deck[0];
+          const newHand = [...currentPlayer.hand, drawnCard];
+          const newDeck = currentPlayer.deck.slice(1);
+          
+          // Update the current player's hand and deck
+          if (context.playerRole === 'attacker') {
+            updatedGameState.attacker = {
+              ...currentPlayer,
+              hand: newHand,
+              deck: newDeck
+            };
+          } else {
+            updatedGameState.defender = {
+              ...currentPlayer,
+              hand: newHand,
+              deck: newDeck
+            };
+          }
+          
+          console.log(`🎯 D302: Drew 1 card for ${context.playerRole}`);
+        }
+        
+        updatedGameState.message = `${card.name}: Viewing opponent's hand and forcing discard of 2 cards. Drew 1 card.`;
+        console.log(`🎯 D302: Effect applied successfully`);
+      } else {
+        console.error(`❌ D302: Could not determine opponent player`);
+        updatedGameState.message = `${card.name} failed: Could not identify opponent`;
+      }
+    }
+    
+    // Handle other card-specific effects based on card ID
+    switch (card.id) {
       case 'A307': // Memory Corruption Attack
         console.log(`🔥 Memory Corruption Attack (A307) detected! Applying discard_redraw effect`);
         
         // Import the hand disruption handler
-        const { handleHandDisruption } = require('../handDisruption');
+        const { handleHandDisruption } = require('./handDisruption');
         
         // Determine target player (opponent)
         const targetPlayerId = context.playerRole === 'attacker' ?
@@ -286,6 +362,56 @@ export class WildcardResolver {
           } else {
             console.error(`❌ Memory Corruption Attack failed: Could not determine target player`);
             updatedGameState.message = `Memory Corruption Attack failed: Invalid target`;
+          }
+          break;
+          
+        case 'intel_disrupt':
+          // Handle Threat Intelligence Network effect via generic specialEffect
+          console.log(`🎯 Intel disrupt effect detected for card: ${card.id}`);
+          
+          // Determine target player (opponent)
+          const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
+          const opponentPlayerId = opponentRole === 'attacker' ?
+            updatedGameState.attacker?.id : updatedGameState.defender?.id;
+          
+          if (opponentPlayerId) {
+            // Import the hand disruption handler
+            const { handleHandDisruption } = require('./handDisruption');
+            
+            // Use existing handDisruption system for view_and_discard effect
+            updatedGameState = handleHandDisruption(
+              updatedGameState,
+              'view_and_discard',
+              opponentPlayerId,
+              2 // Force discard 2 cards
+            );
+            
+            // Add card draw effect for the defender who played this card
+            const currentPlayer = context.playerRole === 'attacker' ?
+              updatedGameState.attacker : updatedGameState.defender;
+            
+            if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
+              const drawnCard = currentPlayer.deck[0];
+              const newHand = [...currentPlayer.hand, drawnCard];
+              const newDeck = currentPlayer.deck.slice(1);
+              
+              // Update the current player's hand and deck
+              if (context.playerRole === 'attacker') {
+                updatedGameState.attacker = {
+                  ...currentPlayer,
+                  hand: newHand,
+                  deck: newDeck
+                };
+              } else {
+                updatedGameState.defender = {
+                  ...currentPlayer,
+                  hand: newHand,
+                  deck: newDeck
+                };
+              }
+            }
+            
+            updatedGameState.message = `Intelligence network activated: Opponent must discard 2 cards. Drew 1 card.`;
           }
           break;
           

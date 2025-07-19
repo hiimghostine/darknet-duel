@@ -253,8 +253,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   }, [moves]);
   
   const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
+    console.log('🎯 HAND DISCARD: Attempting to discard cards:', cardIds);
+    console.log('🎯 HAND DISCARD: Available moves:', Object.keys(moves || {}));
+    console.log('🎯 HAND DISCARD: chooseHandDiscard available:', !!moves.chooseHandDiscard);
+    
     if (moves.chooseHandDiscard) {
+      console.log('🎯 HAND DISCARD: Calling moves.chooseHandDiscard with:', { cardIds });
       moves.chooseHandDiscard({ cardIds });
+    } else {
+      console.error('🎯 HAND DISCARD: chooseHandDiscard move not available!');
     }
   }, [moves]);
   
@@ -1544,13 +1551,24 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         />
       )}
       
-      {memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId && (
-        <HandDisruptionUI
-          pendingChoice={memoizedG.pendingHandChoice}
-          playerId={playerID || ''}
-          onChooseCards={handleChooseHandDiscard}
-        />
-      )}
+      {(() => {
+        // Debug pendingHandChoice state
+        console.log('🎯 HAND CHOICE DEBUG:', {
+          hasPendingHandChoice: !!memoizedG.pendingHandChoice,
+          playerID,
+          targetPlayerId: memoizedG.pendingHandChoice?.targetPlayerId,
+          shouldShow: memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId,
+          pendingChoice: memoizedG.pendingHandChoice
+        });
+        
+        return memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId && (
+          <HandDisruptionUI
+            pendingChoice={memoizedG.pendingHandChoice}
+            playerId={playerID || ''}
+            onChooseCards={handleChooseHandDiscard}
+          />
+        );
+      })()}
       
       {memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId && (
         <CardSelectionUI

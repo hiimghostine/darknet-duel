@@ -18,7 +18,9 @@ export const chooseHandDiscardMove = (
   playerID: string,
   cardIds: string[]
 ): GameState => {
-  console.log(`Player ${playerID} choosing cards to discard: ${cardIds.join(', ')}`);
+  // Defensive programming: ensure cardIds is an array
+  let cardIdsArray = Array.isArray(cardIds) ? cardIds : [];
+  console.log(`Player ${playerID} choosing cards to discard:`, cardIdsArray);
   
   // Verify we have a pending hand choice
   if (!G.pendingHandChoice) {
@@ -39,13 +41,13 @@ export const chooseHandDiscardMove = (
   
   // Verify we're not trying to discard more cards than allowed
   const allowedCount = G.pendingHandChoice.count || 1;
-  if (cardIds.length > allowedCount) {
+  if (cardIdsArray.length > allowedCount) {
     // Just trim the array to the allowed count
-    cardIds = cardIds.slice(0, allowedCount);
+    cardIdsArray = cardIdsArray.slice(0, allowedCount);
   }
   
   // Resolve the hand choice
-  const updatedState = resolveHandChoice(G, cardIds);
+  const updatedState = resolveHandChoice(G, cardIdsArray);
   
   return updatedState;
 };

@@ -373,11 +373,22 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           temporaryEffects: gameStateWithWildcardEffects.temporaryEffects || G.temporaryEffects,
           persistentEffects: gameStateWithWildcardEffects.persistentEffects || G.persistentEffects,
           pendingCardChoice: gameStateWithWildcardEffects.pendingCardChoice || G.pendingCardChoice,
+          // Include hand choice (important for D302 Threat Intelligence Network) - prioritize the one from wildcard effects
+          pendingHandChoice: gameStateWithWildcardEffects.pendingHandChoice || G.pendingHandChoice,
           // Include chain choice (important for Lateral Movement) - prioritize the one from wildcard effects
           pendingChainChoice: gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
         };
         
         console.log(`DEBUG: Final state has pendingChainChoice: ${finalState.pendingChainChoice ? 'YES' : 'NO'}`);
+        console.log(`🎯 DEBUG: Final state has pendingHandChoice: ${finalState.pendingHandChoice ? 'YES' : 'NO'}`);
+        if (finalState.pendingHandChoice) {
+          console.log(`🎯 DEBUG: pendingHandChoice details:`, {
+            type: finalState.pendingHandChoice.type,
+            targetPlayerId: finalState.pendingHandChoice.targetPlayerId,
+            handSize: finalState.pendingHandChoice.revealedHand?.length || 0,
+            count: finalState.pendingHandChoice.count
+          });
+        }
         
         return finalState;
       } else {
