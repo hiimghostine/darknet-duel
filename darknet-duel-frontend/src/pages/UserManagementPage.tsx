@@ -4,33 +4,20 @@ import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import UserManagement from '../components/admin/UserManagement';
-import { FaArrowLeft, FaUsers, FaExclamationTriangle, FaShieldAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaExclamationTriangle, FaShieldAlt, FaGamepad } from 'react-icons/fa';
+import { useThemeStore } from '../store/theme.store';
 
 const UserManagementPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Check authentication and admin permissions
   if (!isAuthenticated || user?.type !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -76,6 +63,14 @@ const UserManagementPage: React.FC = () => {
                   className="btn btn-sm bg-base-300/80 border-error/30 hover:border-error text-error btn-cyberpunk"
                 >
                   <FaArrowLeft className="mr-1" /> BACK_TO_ADMIN
+                </button>
+
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="btn btn-sm bg-primary/20 border-primary/50 hover:bg-primary/30 text-primary btn-cyberpunk"
+                >
+                  <FaGamepad className="mr-1" />
+                  PLAY GAME
                 </button>
 
                 <div className="text-sm font-mono text-base-content/70">

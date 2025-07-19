@@ -63,6 +63,9 @@ export class Account {
   @Column({ default: 0 })
   crypts: number;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  decoration: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

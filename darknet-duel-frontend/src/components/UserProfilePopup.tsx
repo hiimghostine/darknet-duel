@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import accountService, { type AccountData } from '../services/account.service';
 import { type ProfileStats } from '../services/info.service';
+import UserTypeTag from './UserTypeTag';
 import logo from '../assets/logo.png';
 
 interface UserProfilePopupProps {
@@ -190,7 +191,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
           <div className="space-y-4">
             {/* User Info */}
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 border border-primary/50 rounded-full overflow-hidden">
+              <div className="relative w-12 h-12 border border-primary/50 rounded-full overflow-hidden">
                 <img
                   src={accountService.getAvatarUrl(userId)}
                   alt={`${username}'s avatar`}
@@ -199,11 +200,25 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
                     e.currentTarget.src = logo;
                   }}
                 />
+                {/* Decoration Overlay */}
+                {userData.decoration && (
+                  <div className="absolute inset-0">
+                    <img
+                      src={`${accountService.getApiBaseUrl()}/files/decorations/${userData.decoration}.png`}
+                      alt="Avatar decoration"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-mono">
-                  <div className="text-lg font-bold text-primary truncate">
+                  <div className="text-lg font-bold text-primary truncate flex items-center gap-2">
                     {userData.username || username}
+                    {userData.type && <UserTypeTag userType={userData.type} />}
                   </div>
                   <div className="text-xs text-base-content/70">
                     RATING: {userData.rating || 1200}

@@ -224,8 +224,9 @@ export class AdminController {
     try {
       const { id } = req.params;
       const updateData = req.body;
+      const adminId = req.user?.id;
 
-      const updatedUser = await this.adminService.updateUser(id, updateData);
+      const updatedUser = await this.adminService.updateUser(id, updateData, adminId!);
 
       if (!updatedUser) {
         return res.status(404).json({
@@ -455,7 +456,8 @@ export class AdminController {
         });
       }
 
-      const bannedUser = await this.adminService.banUser(id, reason.trim());
+      const adminId = req.user?.id;
+      const bannedUser = await this.adminService.banUser(id, reason.trim(), adminId!);
 
       return res.status(200).json({
         success: true,
@@ -529,7 +531,8 @@ export class AdminController {
     try {
       const { id } = req.params;
 
-      const unbannedUser = await this.adminService.unbanUser(id);
+      const adminId = req.user?.id;
+      const unbannedUser = await this.adminService.unbanUser(id, adminId!);
 
       return res.status(200).json({
         success: true,

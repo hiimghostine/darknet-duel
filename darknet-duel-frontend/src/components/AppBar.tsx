@@ -1,23 +1,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useSettingsStore } from '../store/settings.store';
 import logo from '../assets/logo.png';
 
 interface AppBarProps {
-  currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history';
-  theme?: 'cyberpunk' | 'cyberpunk-dark';
-  onThemeToggle?: () => void;
+  currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history' | 'store';
+  theme: 'cyberpunk' | 'cyberpunk-dark';
+  onThemeToggle: () => void;
   onLogout?: () => void;
 }
 
 const AppBar: React.FC<AppBarProps> = ({ 
   currentPage, 
-  theme = 'cyberpunk', 
+  theme, 
   onThemeToggle, 
   onLogout 
 }) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { openSettings } = useSettingsStore();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -63,6 +65,14 @@ const AppBar: React.FC<AppBarProps> = ({
           )}
           
           <button 
+            onClick={() => navigate('/store')} 
+            className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+          >
+            <span className="mr-1">🛍️</span> 
+            <span className="hidden sm:inline">STORE</span>
+          </button>
+          
+          <button 
             onClick={() => navigate(`/profile/${user?.id}`)} 
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Profile"
@@ -76,9 +86,30 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
             aria-label="Top Up"
           >
-            <span className="mr-1">💎</span>
-            <span className="hidden sm:inline text-flicker">TOP-UP</span>
-            <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+            <span className="mr-1 z-10 relative">💎</span>
+            <span className="hidden sm:inline text-flicker z-10 relative">TOP-UP</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"></span>
+          </button>
+          
+          {/* Control Panel Button - Only show for mods and admins */}
+          {user?.type && ['mod', 'admin'].includes(user.type) && (
+            <button 
+              onClick={() => navigate('/admin')} 
+              className="btn btn-sm bg-error/20 border-error/50 hover:bg-error/30 text-error btn-cyberpunk"
+              aria-label="Control Panel"
+            >
+              <span className="mr-1">🛡️</span>
+              <span className="hidden sm:inline">CONTROL</span>
+            </button>
+          )}
+          
+          <button
+            onClick={openSettings}
+            className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
+            aria-label="Audio Settings"
+          >
+            <span className="mr-1">🔊</span>
+            <span className="hidden sm:inline">SETTINGS</span>
           </button>
           
           <button

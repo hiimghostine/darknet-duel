@@ -214,7 +214,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
               USER_TYPE
             </label>
             <select
-              className="select select-bordered w-full bg-base-100"
+              className="select select-bordered w-full bg-base-100 text-base-content"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
             >
@@ -231,7 +231,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
               STATUS
             </label>
             <select
-              className="select select-bordered w-full bg-base-100"
+              className="select select-bordered w-full bg-base-100 text-base-content"
               value={statusFilter === undefined ? '' : statusFilter.toString()}
               onChange={(e) => setStatusFilter(e.target.value === '' ? undefined : e.target.value === 'true')}
             >
@@ -267,14 +267,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
           <table className="table table-zebra w-full">
             <thead className="bg-base-300">
               <tr>
-                <th className="font-mono text-xs">AVATAR</th>
-                <th className="font-mono text-xs">USERNAME</th>
-                <th className="font-mono text-xs">STATUS</th>
-                <th className="font-mono text-xs">CREATED</th>
-                <th className="font-mono text-xs">CREDS</th>
-                <th className="font-mono text-xs">CRYPTS</th>
-                <th className="font-mono text-xs">TYPE</th>
-                <th className="font-mono text-xs">ACTIONS</th>
+                <th className="font-mono text-xs text-base-content">AVATAR</th>
+                <th className="font-mono text-xs text-base-content">USERNAME</th>
+                <th className="font-mono text-xs text-base-content">STATUS</th>
+                <th className="font-mono text-xs text-base-content">CREATED</th>
+                <th className="font-mono text-xs text-base-content">CREDS</th>
+                <th className="font-mono text-xs text-base-content">CRYPTS</th>
+                <th className="font-mono text-xs text-base-content">TYPE</th>
+                <th className="font-mono text-xs text-base-content">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -351,13 +351,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ onError, onSuccess }) =
                     </td>
 
                     {/* Created Date */}
-                    <td className="font-mono text-sm">{formatDate(user.createdAt)}</td>
+                    <td className="font-mono text-sm text-base-content">{formatDate(user.createdAt)}</td>
 
                     {/* Creds */}
-                    <td className="font-mono text-sm">{user.creds.toLocaleString()}</td>
+                    <td className="font-mono text-sm text-base-content">{user.creds.toLocaleString()}</td>
 
                     {/* Crypts */}
-                    <td className="font-mono text-sm">{user.crypts.toLocaleString()}</td>
+                    <td className="font-mono text-sm text-base-content">{user.crypts.toLocaleString()}</td>
 
                     {/* Type */}
                     <td>

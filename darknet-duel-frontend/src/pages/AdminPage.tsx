@@ -6,13 +6,14 @@ import LogoutScreen from '../components/LogoutScreen';
 import bossingImage from '../assets/bossing.png';
 
 import { FaUsers, FaGamepad, FaComments, FaCogs, FaShieldAlt, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import { useThemeStore } from '../store/theme.store';
 
 const AdminPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -32,17 +33,8 @@ const AdminPage: React.FC = () => {
 
   // Get theme from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -65,8 +57,8 @@ const AdminPage: React.FC = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect non-admins to dashboard
-  if (user && user.type !== 'admin') {
+  // Redirect non-admin/non-moderator users to dashboard
+  if (user && user.type !== 'admin' && user.type !== 'mod') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -114,10 +106,10 @@ const AdminPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <FaShieldAlt className="text-2xl text-error" />
                   <h1 className="text-2xl font-mono font-bold text-error glitch-text">
-                    ADMIN_CONTROL_PANEL
+                    {user?.type === 'admin' ? 'ADMIN_CONTROL_PANEL' : 'MODERATOR_PANEL'}
                   </h1>
                   <div className="px-2 py-1 bg-error/20 border border-error/40 text-error text-xs font-mono rounded">
-                    ROOT_ACCESS
+                    {user?.type === 'admin' ? 'ROOT_ACCESS' : 'MODERATOR_ACCESS'}
                   </div>
                 </div>
                 
@@ -125,6 +117,14 @@ const AdminPage: React.FC = () => {
                   <div className="text-sm font-mono text-base-content/70">
                     {user?.username?.toUpperCase() || 'ADMIN'}
                   </div>
+                  
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="btn btn-sm bg-primary/20 border-primary/50 hover:bg-primary/30 text-primary btn-cyberpunk"
+                  >
+                    <FaGamepad className="mr-1" />
+                    PLAY GAME
+                  </button>
                   
                   <button
                     onClick={toggleTheme}
@@ -167,7 +167,7 @@ const AdminPage: React.FC = () => {
                 <div className="font-mono">
                   <div className="flex items-baseline gap-2 mb-1">
                     <h2 className="text-2xl font-bold mb-2 font-mono text-error">
-                      DARKNET_ADMIN_SYSTEM
+                      {user?.type === 'admin' ? 'DARKNET_ADMIN_SYSTEM' : 'DARKNET_MODERATOR_SYSTEM'}
                     </h2>
                   </div>
                   <div className="text-base-content text-sm flex items-center gap-2">
@@ -176,7 +176,7 @@ const AdminPage: React.FC = () => {
                   </div>
                   <div className="text-xs text-error mt-3 flex items-center gap-2">
                     <FaExclamationTriangle />
-                    <span>WARNING: ADMINISTRATIVE FUNCTIONS ENABLED • USE WITH CAUTION</span>
+                    <span>WARNING: {user?.type === 'admin' ? 'ADMINISTRATIVE' : 'MODERATOR'} FUNCTIONS ENABLED • USE WITH CAUTION</span>
                   </div>
                 </div>
               </div>
@@ -185,67 +185,47 @@ const AdminPage: React.FC = () => {
             {/* Admin modules grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               
-              {/* User Management */}
+              {/* User Management - Admin Only */}
+              {user?.type === 'admin' && (
+                <div 
+                  className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
+                  onClick={() => navigate('/admin/user-management')}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <FaUsers className="text-2xl text-error" />
+                    <h3 className="text-lg font-mono font-bold text-error">USER_MANAGEMENT</h3>
+                  </div>
+                  <p className="text-base-content/70 text-sm font-mono mb-4">
+                    Manage user accounts, permissions, and access levels
+                  </p>
+                  <div className="text-xs text-green-500 font-mono">
+                    STATUS: ACTIVE
+                  </div>
+                </div>
+              )}
+
+              {/* Report Management */}
               <div 
                 className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
-                onClick={() => navigate('/admin/user-management')}
+                onClick={() => navigate('/admin/report-management')}
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <FaUsers className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">USER_MANAGEMENT</h3>
+                  <FaExclamationTriangle className="text-2xl text-error" />
+                  <h3 className="text-lg font-mono font-bold text-error">REPORT_MANAGEMENT</h3>
                 </div>
                 <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Manage user accounts, permissions, and access levels
+                  Review and manage user reports for profiles and chat messages
                 </p>
                 <div className="text-xs text-green-500 font-mono">
                   STATUS: ACTIVE
                 </div>
               </div>
 
-              {/* Game Management */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaGamepad className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">GAME_CONTROL</h3>
-                </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Monitor active games, matches, and server statistics
-                </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
-                </div>
-              </div>
-
-              {/* Chat Moderation */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaComments className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">CHAT_MODERATION</h3>
-                </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Monitor chat channels and manage user communications
-                </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
-                </div>
-              </div>
-
-              {/* System Settings */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaCogs className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">SYSTEM_CONFIG</h3>
-                </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Configure server settings and system parameters
-                </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
-                </div>
-              </div>
-
               {/* Security Overview */}
-              <div className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer md:col-span-2">
+              <div 
+                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
+                onClick={() => navigate('/admin/security-overview')}
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <FaShieldAlt className="text-2xl text-error" />
                   <h3 className="text-lg font-mono font-bold text-error">SECURITY_OVERVIEW</h3>
@@ -253,8 +233,8 @@ const AdminPage: React.FC = () => {
                 <p className="text-base-content/70 text-sm font-mono mb-4">
                   Monitor system security, authentication logs, and access patterns
                 </p>
-                <div className="text-xs text-base-content/50 font-mono">
-                  STATUS: COMING_SOON
+                <div className="text-xs text-green-500 font-mono">
+                  STATUS: ACTIVE
                 </div>
               </div>
 

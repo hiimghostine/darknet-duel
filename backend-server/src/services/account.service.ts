@@ -2,9 +2,11 @@ import { AppDataSource } from '../utils/database';
 import { Account } from '../entities/account.entity';
 import { validateEmail } from '../utils/validation';
 import bcrypt from 'bcrypt';
+import { LogService } from './log.service';
 
 export class AccountService {
   private accountRepository = AppDataSource.getRepository(Account);
+  private logService = new LogService();
 
   /**
    * Get account details by ID (without password and avatar)
@@ -109,6 +111,9 @@ export class AccountService {
       return null;
     }
 
+    // Log the profile update
+    await this.logService.logProfileUpdate(id, updatedAccount.username);
+
     const { password, avatar, avatarMimeType, ...accountWithoutSensitiveData } = updatedAccount;
     return accountWithoutSensitiveData;
   }
@@ -141,5 +146,19 @@ export class AccountService {
     
     const existingAccount = await query.getOne();
     return !existingAccount;
+  }
+
+  /**
+   * Get account details by username (without password and avatar)
+   */
+  async getAccountByUsername(username: string): Promise<Omit<Account, 'password' | 'avatar' | 'avatarMimeType'> | null> {
+    const account = await this.accountRepository.findOne({ where: { username } });
+    if (!account) {
+      return null;
+    }
+    
+    // Remove password and avatar data from response
+    const { password, avatar, avatarMimeType, ...accountWithoutSensitiveData } = account;
+    return accountWithoutSensitiveData;
   }
 } 

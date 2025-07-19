@@ -1,30 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 import coverPhoto from '../assets/Cover Photo.png';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
+  const { triggerClick } = useAudioManager();
   
-  useEffect(() => {
-    // Get theme from localStorage on component mount
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
   const handleLogoClick = () => {
     if (isAuthenticated) {
+      triggerClick();
       navigate('/dashboard');
     }
     // If not authenticated, stay on homepage (do nothing)
@@ -54,7 +44,10 @@ const HomePage: React.FC = () => {
             </div>
           </div>
           <button 
-            onClick={toggleTheme} 
+            onClick={() => {
+              triggerClick();
+              toggleTheme();
+            }} 
             className="btn btn-sm btn-outline border-primary text-primary hover:bg-primary hover:text-primary-content transition-all duration-300 ease-in-out group relative overflow-hidden"
             aria-label="Toggle theme"
           >
@@ -100,6 +93,7 @@ const HomePage: React.FC = () => {
                 <>
                   <Link 
                     to="/auth" 
+                    onClick={triggerClick}
                     className="btn btn-primary px-8 relative overflow-hidden group"
                   >
                     <span className="relative z-10">ACCESS_NETWORK</span>
@@ -107,6 +101,7 @@ const HomePage: React.FC = () => {
                   </Link>
                   <Link 
                     to="/auth?register=true" 
+                    onClick={triggerClick}
                     className="btn btn-outline border-primary text-primary hover:bg-primary hover:text-primary-content px-8"
                   >
                     CREATE_IDENTITY
@@ -116,6 +111,7 @@ const HomePage: React.FC = () => {
                 <>
                   <Link 
                     to="/dashboard" 
+                    onClick={triggerClick}
                     className="btn btn-primary px-8 relative overflow-hidden group"
                   >
                     <span className="relative z-10">DASHBOARD</span>
@@ -123,6 +119,7 @@ const HomePage: React.FC = () => {
                   </Link>
                   <Link 
                     to="/lobby" 
+                    onClick={triggerClick}
                     className="btn btn-outline border-primary text-primary hover:bg-primary hover:text-primary-content px-8"
                   >
                     FIND_MATCH

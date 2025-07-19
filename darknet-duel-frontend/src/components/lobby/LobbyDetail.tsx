@@ -5,6 +5,10 @@ import type { GameMatch } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
 import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt, FaLock } from 'react-icons/fa';
 import LobbyChat from './LobbyChat';
+import UserTypeTag from '../UserTypeTag';
+import accountService from '../../services/account.service';
+import storeService from '../../services/store.service';
+import logo from '../../assets/logo.png';
 
 const LobbyDetail: React.FC = () => {
   const { matchID = '' } = useParams();
@@ -18,6 +22,7 @@ const LobbyDetail: React.FC = () => {
   const [currentPlayerID, setCurrentPlayerID] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  const [opponentData, setOpponentData] = useState<any>(null);
 
   // Track previous player slots for detecting host transfers using ref to avoid dependency issues
   const prevPlayerIDsRef = useRef<{[key: string]: number}>({});
@@ -206,6 +211,32 @@ const LobbyDetail: React.FC = () => {
       isReady: !!(opponent.data?.isReady)
     };
   };
+
+  // Fetch opponent data when opponent changes
+  useEffect(() => {
+    const fetchOpponentData = async () => {
+      const opponentInfo = getOpponentInfo();
+      if (opponentInfo.name !== 'Waiting for opponent...' && opponentInfo.name !== 'Unknown') {
+        try {
+          // Try to get opponent data by username (this is a simplified approach)
+          // In a real implementation, you'd need the opponent's user ID
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/account/search?username=${opponentInfo.name}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setOpponentData(data.data);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch opponent data:', error);
+        }
+      } else {
+        setOpponentData(null);
+      }
+    };
+
+    fetchOpponentData();
+  }, [match, currentPlayerID]);
   
   // Check if both players are ready
   const areBothPlayersReady = () => {
@@ -303,13 +334,40 @@ const LobbyDetail: React.FC = () => {
           <div className="absolute top-0 right-0 w-16 h-16 -mt-8 -mr-8 bg-primary/10 rounded-full blur-xl"></div>
           
           <div className="flex items-center mb-3">
-            <FaUserAlt className="text-primary mr-2" />
-            <div className="text-lg font-mono text-primary">{user?.username || 'YOU'}</div>
-            {isHost && (
-              <div className="ml-2 px-2 py-0.5 bg-primary/20 border border-primary/40 text-primary text-xs font-mono rounded">
-                HOST
-              </div>
-            )}
+            {/* Avatar */}
+            <div className="relative w-12 h-12 border-2 border-primary/50 bg-base-300/50 rounded-full overflow-hidden mr-3">
+              <img
+                src={user?.id ? accountService.getAvatarUrl(user.id) : logo}
+                alt={`${user?.username}'s avatar`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = logo;
+                }}
+              />
+              {/* Decoration overlay */}
+              {user?.decoration && (
+                <img
+                  src={storeService.getDecorationUrl(user.decoration)}
+                  alt="Decoration"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="text-lg font-mono text-primary">{user?.username || 'YOU'}</div>
+              {user?.type && <UserTypeTag userType={user.type} />}
+              {isHost && (
+                <div className="px-2 py-0.5 bg-primary/20 border border-primary/40 text-primary text-xs font-mono rounded">
+                  HOST
+                </div>
+              )}
+            </div>
           </div>
           
           <div className={`flex items-center mb-4 ${isReady ? 'text-green-500' : 'text-gray-400'}`}>
@@ -349,9 +407,42 @@ const LobbyDetail: React.FC = () => {
           <div className="absolute top-0 right-0 w-16 h-16 -mt-8 -mr-8 bg-secondary/10 rounded-full blur-xl"></div>
           
           <div className="flex items-center mb-3">
-            <FaUserAlt className="text-secondary mr-2" />
-            <div className="text-lg font-mono text-secondary">
-              {opponentInfo.name}
+            {/* Avatar */}
+            <div className="relative w-12 h-12 border-2 border-secondary/50 bg-base-300/50 rounded-full overflow-hidden mr-3">
+              {opponentData ? (
+                <img
+                  src={accountService.getAvatarUrl(opponentData.id)}
+                  alt={`${opponentInfo.name}'s avatar`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = logo;
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-base-300 flex items-center justify-center">
+                  <FaUserAlt className="text-secondary/50" />
+                </div>
+              )}
+              {/* Decoration overlay */}
+              {opponentData?.decoration && (
+                <img
+                  src={storeService.getDecorationUrl(opponentData.decoration)}
+                  alt="Decoration"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="text-lg font-mono text-secondary">
+                {opponentInfo.name}
+              </div>
+              {opponentData?.type && <UserTypeTag userType={opponentData.type} />}
             </div>
           </div>
           

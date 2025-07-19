@@ -2,7 +2,7 @@
  * Types for the chat system in Darknet Duel
  */
 
-import { PlayerRole } from './game.types';
+import type { PlayerRole } from './game.types';
 
 /**
  * Represents a single chat message
@@ -26,10 +26,9 @@ export interface LobbyChatMessage {
   messageContent: string;
   messageType: 'user' | 'system' | 'admin';
   createdAt: Date;
-  metadata?: {
-    username?: string;
-    avatar?: string;
-    [key: string]: any;
+  metadata: {
+    username: string;
+    type: 'user' | 'mod' | 'admin';
   };
 }
 

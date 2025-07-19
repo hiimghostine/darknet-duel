@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAudioManager } from '../../hooks/useAudioManager';
 
 interface LoginFormProps {
   onToggleForm: () => void;
@@ -20,6 +21,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
   const [showAuthErrorFlash, setShowAuthErrorFlash] = useState(false);
   const { login, isLoading, error, clearError } = useAuthStore();
+  const { triggerClick, triggerError, triggerNotification } = useAudioManager();
   
   const {
     register,
@@ -44,9 +46,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
   
   const onSubmit = async (data: LoginFormData) => {
     try {
+      triggerClick();
       await login(data);
       // Authentication state and redirect handled by parent component
     } catch (error) {
+      triggerError();
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
@@ -145,7 +149,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       <div className="mt-3 pt-2 border-t border-base-content/10 text-center font-mono text-xs">
         <div className="text-base-content/70 mb-0.5">NEW USER REGISTRATION</div>
         <button 
-          onClick={onToggleForm}
+          onClick={() => {
+            triggerClick();
+            onToggleForm();
+          }}
           className="inline-block text-primary hover:text-primary/80 transition-colors"
         >
           [ CREATE_NEW_IDENTITY ]

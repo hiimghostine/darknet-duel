@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
+import { useAudioManager } from '../../hooks/useAudioManager';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
-import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt } from 'react-icons/fa';
+import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamationTriangle } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
+import ReportModal from '../ReportModal';
+import ContextMenu from '../ContextMenu';
+import UserTypeTag from '../UserTypeTag';
+import { useThemeStore } from '../../store/theme.store';
 
 interface LobbyChatProps {
   chatId?: string;
@@ -19,6 +24,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   showChannelSwitcher = false
 }) => {
   const { user } = useAuthStore();
+  const { triggerSendMsg, triggerRecvMsg } = useAudioManager();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<LobbyChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -72,6 +78,32 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     username: '',
     position: { x: 0, y: 0 }
   });
+
+  // Report modal state
+  const [reportModal, setReportModal] = useState<{
+    isOpen: boolean;
+    reporteeId: string;
+    reporteeUsername: string;
+    content?: string;
+  }>({
+    isOpen: false,
+    reporteeId: '',
+    reporteeUsername: '',
+    content: undefined
+  });
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean;
+    position: { x: number; y: number };
+    selectedMessage: LobbyChatMessage | null;
+  }>({
+    isVisible: false,
+    position: { x: 0, y: 0 },
+    selectedMessage: null
+  });
+
+  const { theme } = useThemeStore();
 
   // Scroll to bottom when new messages arrive - only within the message container
   const scrollToBottom = () => {
@@ -133,6 +165,10 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
     socketInstance.on('new_message', (message: LobbyChatMessage) => {
       console.log('💬 New message:', message);
+      // Only play receive sound for messages from other users
+      if (message.senderUuid !== user?.id) {
+        triggerRecvMsg();
+      }
       setMessages(prev => {
         // Keep only last 30 messages for performance
         const newMessages = [...prev, message];
@@ -192,6 +228,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const sendMessage = () => {
     if (!socket || !newMessage.trim()) return;
 
+    triggerSendMsg();
     socket.emit('send_message', {
       chatId: channelInfo.chatId,
       message: newMessage.trim()
@@ -238,6 +275,49 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   const closeProfilePopup = () => {
     setProfilePopup(prev => ({ ...prev, isVisible: false }));
+  };
+
+  // Handle right-click on message to show context menu
+  const handleMessageRightClick = (event: React.MouseEvent, message: LobbyChatMessage) => {
+    event.preventDefault();
+    
+    // Don't show context menu for system messages or own messages
+    if (message.messageType === 'system' || isOwnMessage(message)) {
+      return;
+    }
+
+    setContextMenu({
+      isVisible: true,
+      position: { x: event.clientX, y: event.clientY },
+      selectedMessage: message
+    });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(prev => ({ ...prev, isVisible: false, selectedMessage: null }));
+  };
+
+  const handleReportFromContextMenu = () => {
+    const message = contextMenu.selectedMessage;
+    if (!message) return;
+
+    const userId = message.senderUuid;
+    const username = message.metadata?.username || 'ANON';
+    
+    if (!userId) return;
+
+    setReportModal({
+      isOpen: true,
+      reporteeId: userId,
+      reporteeUsername: username,
+      content: message.messageContent
+    });
+
+    closeContextMenu();
+  };
+
+  const closeReportModal = () => {
+    setReportModal(prev => ({ ...prev, isOpen: false }));
   };
 
   return (
@@ -319,7 +399,11 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   }
                   
                   return (
-                    <div key={message.id} className="text-xs mb-1 break-words">
+                    <div 
+                      key={message.id} 
+                      className="text-xs mb-1 break-words"
+                      onContextMenu={(e) => handleMessageRightClick(e, message)}
+                    >
                       <span className="text-base-content/50">[{timestamp}]</span>{' '}
                       <span 
                         className={`font-bold cursor-pointer hover:opacity-80 transition-opacity ${
@@ -328,6 +412,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                         onClick={(e) => handleUsernameClick(e, message)}
                       >
                         &lt;{username}&gt;
+                        {message.metadata?.type && <UserTypeTag userType={message.metadata.type} className="ml-1" />}
                       </span>{' '}
                       <span className="text-base-content">{message.messageContent}</span>
                     </div>
@@ -338,7 +423,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
             </div>
 
             {/* IRC-style input with cyberpunk styling */}
-            <div className="mt-3 bg-base-300/30 border border-primary/30 relative">
+            <div className={`mt-3 border border-primary/30 relative rounded-md transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80' : 'bg-base-100/80'}`}>
               {/* Corner accents for input */}
               <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/50"></div>
               <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/50"></div>
@@ -359,8 +444,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   placeholder="ENTER_TRANSMISSION..."
                   disabled={!isConnected}
                   maxLength={500}
-                  className="flex-1 bg-transparent border-none outline-none text-base-content text-sm font-mono
-                           placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 border-none outline-none text-base-content text-sm font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'text-base-content' : 'text-base-content'} `}
                 />
                 {newMessage.length > 450 && (
                   <span className="text-warning text-xs ml-2 font-mono">
@@ -393,6 +477,24 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
         isVisible={profilePopup.isVisible}
         position={profilePopup.position}
         onClose={closeProfilePopup}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={closeReportModal}
+        reporteeId={reportModal.reporteeId}
+        reporteeUsername={reportModal.reporteeUsername}
+        reportType="chat"
+        content={reportModal.content}
+      />
+
+      {/* Context Menu */}
+      <ContextMenu
+        isVisible={contextMenu.isVisible}
+        position={contextMenu.position}
+        onClose={closeContextMenu}
+        onReport={handleReportFromContextMenu}
       />
     </div>
   );

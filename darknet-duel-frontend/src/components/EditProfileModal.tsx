@@ -3,6 +3,7 @@ import { FaUser, FaImage, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import accountService, { type UpdateAccountData } from '../services/account.service';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const { user, loadUser } = useAuthStore();
   const { addToast } = useToastStore();
+  const { triggerPositiveClick, triggerNegativeClick } = useAudioManager();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<UpdateAccountData>({
@@ -409,7 +411,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <div className="flex gap-3 pt-4 border-t border-primary/20">
             <button
               type="button"
-              onClick={handleClose}
+              onClick={() => {
+                triggerNegativeClick();
+                handleClose();
+              }}
               className="btn btn-outline flex-1 border-base-content/30 hover:bg-base-content/10 font-mono"
               disabled={loading}
             >
@@ -417,6 +422,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </button>
             <button
               type="submit"
+              onClick={() => {
+                if (!loading) {
+                  triggerPositiveClick();
+                }
+              }}
               className="btn btn-primary flex-1 font-mono"
               disabled={loading}
             >

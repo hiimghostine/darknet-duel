@@ -2,6 +2,7 @@ import { AppDataSource } from '../utils/database';
 import { Account, AccountType } from '../entities/account.entity';
 import { validateEmail } from '../utils/validation';
 import bcrypt from 'bcrypt';
+import { LogService } from './log.service';
 
 export interface GetUsersFilters {
   page: number;
@@ -44,6 +45,7 @@ export interface AdminUserData {
 
 export class AdminService {
   private accountRepository = AppDataSource.getRepository(Account);
+  private logService = new LogService();
 
   /**
    * Get paginated list of users with search and filtering
@@ -150,7 +152,7 @@ export class AdminService {
   /**
    * Update user details (admin only)
    */
-  async updateUser(id: string, updateData: Partial<Account>): Promise<AdminUserData | null> {
+  async updateUser(id: string, updateData: Partial<Account>, adminId: string): Promise<AdminUserData | null> {
     // Get current user
     const currentUser = await this.accountRepository.findOne({ where: { id } });
     if (!currentUser) {
@@ -216,6 +218,37 @@ export class AdminService {
     // Update the user
     await this.accountRepository.update({ id }, updateData);
 
+    // Log only the fields that were actually changed
+    const updateMessages: string[] = [];
+    
+    if (updateData.email && updateData.email !== currentUser.email) {
+      updateMessages.push(`EMAIL_ADDRESS: ${updateData.email}`);
+    }
+    if (updateData.bio !== undefined && updateData.bio !== currentUser.bio) {
+      updateMessages.push(`BIO: ${updateData.bio}`);
+    }
+    if (updateData.creds !== undefined && updateData.creds !== currentUser.creds) {
+      updateMessages.push(`CREDS: ${updateData.creds}`);
+    }
+    if (updateData.crypts !== undefined && updateData.crypts !== currentUser.crypts) {
+      updateMessages.push(`CRYPTS: ${updateData.crypts}`);
+    }
+    if (updateData.username && updateData.username !== currentUser.username) {
+      updateMessages.push(`USERNAME: ${updateData.username}`);
+    }
+    if (updateData.type && updateData.type !== currentUser.type) {
+      updateMessages.push(`TYPE: ${updateData.type}`);
+    }
+    if (updateData.password) {
+      updateMessages.push(`PASSWORD: changed`);
+      // Also log password change separately for security tracking
+      await this.logService.logPasswordChange(adminId, currentUser.username);
+    }
+    
+    if (updateMessages.length > 0) {
+      await this.logService.logUserUpdate(adminId, currentUser.username, updateMessages);
+    }
+
     // Return updated user
     return this.getUserById(id);
   }
@@ -276,7 +309,7 @@ export class AdminService {
   /**
    * Ban a user with a reason
    */
-  async banUser(id: string, reason: string): Promise<AdminUserData | null> {
+  async banUser(id: string, reason: string, adminId: string): Promise<AdminUserData | null> {
     const user = await this.accountRepository.findOne({ where: { id } });
     
     if (!user) {
@@ -294,6 +327,9 @@ export class AdminService {
     user.updatedAt = new Date();
 
     const updatedUser = await this.accountRepository.save(user);
+
+    // Log the ban action
+    await this.logService.logUserBan(adminId, updatedUser.username);
 
     return {
       id: updatedUser.id,
@@ -319,7 +355,7 @@ export class AdminService {
   /**
    * Unban a user (reactivate account)
    */
-  async unbanUser(id: string): Promise<AdminUserData | null> {
+  async unbanUser(id: string, adminId: string): Promise<AdminUserData | null> {
     const user = await this.accountRepository.findOne({ where: { id } });
     
     if (!user) {
@@ -332,6 +368,9 @@ export class AdminService {
     user.updatedAt = new Date();
 
     const updatedUser = await this.accountRepository.save(user);
+
+    // Log the unban action
+    await this.logService.logUserUnban(adminId, updatedUser.username);
 
     return {
       id: updatedUser.id,

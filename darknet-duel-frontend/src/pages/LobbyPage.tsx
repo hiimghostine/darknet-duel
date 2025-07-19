@@ -6,44 +6,30 @@ import LobbyDetail from '../components/lobby/LobbyDetail';
 import LobbyChat from '../components/lobby/LobbyChat';
 import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import { useThemeStore } from '../store/theme.store';
 
 const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const { triggerClick, triggerSendMsg, triggerRecvMsg } = useAudioManager();
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
   
-  // Simplified loading logic - only show loading on first visit
+  // Loading logic - show loading on every page visit
   useEffect(() => {
-    const isFirstVisit = sessionStorage.getItem('lobbies_visited') !== 'true';
-    
-    if (isFirstVisit && isAuthenticated) {
+    if (isAuthenticated) {
       setIsLoading(true);
-      sessionStorage.setItem('lobbies_visited', 'true');
       const timer = setTimeout(() => setIsLoading(false), 2000);
       return () => clearTimeout(timer);
     } else {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -60,6 +46,9 @@ const LobbyPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
+      {/* Show loading screen when isLoading is true */}
+      {isLoading && <LoadingScreen text="CONNECTING TO DARKNET SERVERS" />}
+      
       {/* Wrapper to hide content during logout */}
       <div className={`${isLoggingOut ? 'hidden' : 'block'}`}>
         
@@ -140,9 +129,6 @@ const LobbyPage: React.FC = () => {
         </main>
         </div>
       </div>
-      
-      {/* Show loading animation */}
-      {isLoading && <LoadingScreen text="CONNECTING TO DARKNET SERVERS" />}
       
       {/* Show logout screen */}
       {isLoggingOut && <LogoutScreen />}

@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import EditProfileModal from '../components/EditProfileModal';
+import ReportModal from '../components/ReportModal';
+import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
 
@@ -12,6 +16,8 @@ const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const { id: profileId } = useParams<{ id: string }>();
+  const { theme, toggleTheme } = useThemeStore();
+  const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
 
   // If no profile ID is provided, redirect to current user's profile
   useEffect(() => {
@@ -26,18 +32,12 @@ const ProfilePage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [showLogoutScreen, setShowLogoutScreen] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
   const [userData, setUserData] = useState<Partial<AccountData> | null>(null);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-  }, []);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -81,13 +81,6 @@ const ProfilePage: React.FC = () => {
     fetchProfileData();
   }, [isOwnProfile, profileId]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
   const handleLogout = () => {
     setShowLogoutScreen(true);
     setTimeout(() => {
@@ -108,6 +101,14 @@ const ProfilePage: React.FC = () => {
     setShowEditModal(false);
     // Refresh profile data after edit
     window.location.reload();
+  };
+
+  const handleReportUser = () => {
+    setShowReportModal(true);
+  };
+
+  const handleReportModalClose = () => {
+    setShowReportModal(false);
   };
 
   // If not authenticated, redirect to login
@@ -158,7 +159,10 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => {
+                    triggerClick();
+                    navigate('/dashboard');
+                  }}
                   className="btn btn-ghost text-primary font-mono text-lg"
                 >
                   ← BACK
@@ -171,7 +175,10 @@ const ProfilePage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 {isOwnProfile && (
                   <button 
-                    onClick={handleEditProfile}
+                    onClick={() => {
+                      triggerClick();
+                      handleEditProfile();
+                    }}
                     className="btn btn-sm bg-primary/20 border-primary/50 hover:border-primary text-primary btn-cyberpunk"
                     aria-label="Edit Profile"
                   >
@@ -180,8 +187,25 @@ const ProfilePage: React.FC = () => {
                   </button>
                 )}
                 
+                {!isOwnProfile && (
+                  <button 
+                    onClick={() => {
+                      triggerClick();
+                      handleReportUser();
+                    }}
+                    className="btn btn-sm bg-error/20 border-error/50 hover:border-error text-error btn-cyberpunk"
+                    aria-label="Report User"
+                  >
+                    <span className="mr-1">⚠️</span>
+                    <span className="hidden sm:inline">REPORT</span>
+                  </button>
+                )}
+                
                 <button 
-                  onClick={toggleTheme} 
+                  onClick={() => {
+                    triggerClick();
+                    toggleTheme();
+                  }} 
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Toggle theme"
                 >
@@ -229,16 +253,30 @@ const ProfilePage: React.FC = () => {
                         e.currentTarget.src = logo;
                       }}
                     />
+                    {/* Decoration Overlay */}
+                    {displayUser.decoration && (
+                      <div className="absolute inset-0">
+                        <img
+                          src={`${accountService.getApiBaseUrl()}/files/decorations/${displayUser.decoration}.png`}
+                          alt="Avatar decoration"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* User Info */}
                 <div className="flex-1">
                   <div className="font-mono">
-                    <h2 className="text-3xl font-bold mb-2">
+                    <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
                       <span className="text-primary data-corrupt" data-text={displayUser.username}>
                         {displayUser.username}
                       </span>
+                      {displayUser.type && <UserTypeTag userType={displayUser.type} />}
                       {isOwnProfile && <span className="text-base-content/50 ml-2">(YOU)</span>}
                     </h2>
                     
@@ -419,6 +457,17 @@ const ProfilePage: React.FC = () => {
         onClose={handleEditModalClose}
         onSave={handleEditModalSave}
       />
+
+      {/* Report Modal */}
+      {!isOwnProfile && displayUser && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={handleReportModalClose}
+          reporteeId={displayUser.id || ''}
+          reporteeUsername={displayUser.username || ''}
+          reportType="profile"
+        />
+      )}
     </div>
   );
 };

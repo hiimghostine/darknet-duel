@@ -16,7 +16,7 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     }
 
     // Check if user is an admin
-    if (req.user.type !== AccountType.ADMIN) {
+    if (req.user.type !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Admin access required'

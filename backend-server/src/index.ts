@@ -13,6 +13,10 @@ import currencyRoutes from './routes/currency.routes';
 import paymentRoutes from './routes/payment.routes';
 import gamesRoutes from './routes/games.routes';
 import adminRoutes from './routes/admin.routes';
+import storeRoutes from './routes/store.routes';
+import purchaseRoutes from './routes/purchase.routes';
+import reportRoutes from './routes/report.routes';
+import logRoutes from './routes/log.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 import { ChatSocketService } from './services/chat-socket.service';
 
@@ -90,6 +94,16 @@ app.use('/api/games', gamesRoutes);
 
 // Admin routes for user management (admin access only)
 app.use('/api/admin', adminRoutes);
+
+// Store routes for avatar decorations and shop
+app.use('/api/store', storeRoutes);
+
+// Purchase routes for buying store items
+app.use('/api/purchase', purchaseRoutes);
+
+// Report routes for user reports and admin management
+app.use('/api/reports', reportRoutes);
+app.use('/api/logs', logRoutes);
 
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));

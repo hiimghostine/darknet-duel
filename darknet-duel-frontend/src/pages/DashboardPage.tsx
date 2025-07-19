@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import UserTypeTag from '../components/UserTypeTag';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 import accountService from '../services/account.service';
+import storeService from '../services/store.service';
 
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout, loadUser } = useAuthStore();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<'cyberpunk' | 'cyberpunk-dark'>('cyberpunk');
+  const { theme, toggleTheme } = useThemeStore();
+  const { triggerClick } = useAudioManager();
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -57,19 +62,6 @@ const DashboardPage: React.FC = () => {
     fetchData();
   }, [loadUser]);
   
-  // Get theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'cyberpunk' | 'cyberpunk-dark' || 'cyberpunk';
-    setTheme(savedTheme);
-  }, []);
-  
-  const toggleTheme = () => {
-    const newTheme = theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
   // Handle logout process with animation
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -100,9 +92,7 @@ const DashboardPage: React.FC = () => {
   ];
   
   // Use real activities data from API or show placeholder if empty (limit to 3 activities)
-  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [
-    { type: 'WIN' as const, opponent: 'No recent games', time: 'Play a game to see activity', pointsChange: '+0 PTS' },
-  ];
+  const activitiesData = recentActivity.length > 0 ? recentActivity.slice(0, 3) : [];
 
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
@@ -151,6 +141,7 @@ const DashboardPage: React.FC = () => {
                 <div className="flex items-baseline gap-2 mb-1">
                   <h2 className="text-2xl font-bold mb-2 font-mono">
                     WELCOME_BACK, <span className="text-primary data-corrupt" data-text={user?.username}>{user?.username}</span>
+                    {user?.type && <UserTypeTag userType={user.type} className="ml-2" />}
                   </h2>
                 </div>
                 <div className="text-base-content text-sm">
@@ -232,7 +223,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Link to="/lobbies" className="btn btn-primary font-mono flex items-center justify-center gap-2 relative overflow-hidden group">
+                    <Link to="/lobbies" onClick={triggerClick} className="btn btn-primary font-mono flex items-center justify-center gap-2 relative overflow-hidden group">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
@@ -243,7 +234,7 @@ const DashboardPage: React.FC = () => {
                       <span className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     </Link>
                     
-                    <Link to="/lobbies/create" className="btn btn-outline btn-primary font-mono flex items-center justify-center gap-2">
+                    <Link to="/lobbies/create" onClick={triggerClick} className="btn btn-outline btn-primary font-mono flex items-center justify-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -271,9 +262,10 @@ const DashboardPage: React.FC = () => {
                     <h3 className="font-mono text-primary text-lg">USER_PROFILE</h3>
                     <Link
                       to="/profile"
+                      onClick={triggerClick}
                       className="text-xs text-base-content/70 font-mono hover:text-primary transition-colors cursor-pointer"
                     >
-                      [EDIT]
+                      [VIEW_PROFILE]
                     </Link>
                   </div>
                   
@@ -291,16 +283,29 @@ const DashboardPage: React.FC = () => {
                             target.src = logo;
                           }}
                         />
-                        {/* Online indicator */}
-                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-success border-2 border-base-200 rounded-full"></div>
+                        {/* Decoration overlay */}
+                        {user?.decoration && (
+                          <img
+                            src={storeService.getDecorationUrl(user.decoration)}
+                            alt="Decoration"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            onError={(e) => {
+                              // Hide decoration if it fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        {/* Online indicator removed */}
                       </div>
                     </div>
                     
                     {/* Profile Info */}
                     <div className="flex-1 min-w-0">
                       <div className="font-mono">
-                        <div className="text-lg font-bold text-primary truncate">
+                        <div className="text-lg font-bold text-primary truncate flex items-center gap-2">
                           {user?.username}
+                          {user?.type && <UserTypeTag userType={user.type} />}
                         </div>
                         <div className="text-xs text-base-content/70 mb-2">
                           RATING: {profileStats?.rating || 1000}
@@ -358,26 +363,36 @@ const DashboardPage: React.FC = () => {
                   )}
                   
                   <div className="space-y-3">
-                    {activitiesData.map((activity, index) => (
-                      <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
-                          <div className="font-mono">
-                            <div className="text-sm font-bold">
-                              {activity.type} vs {activity.opponent}
+                    {activitiesData.length > 0 ? (
+                      activitiesData.map((activity, index) => (
+                        <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
+                            <div className="font-mono">
+                              <div className="text-sm font-bold">
+                                {activity.type} vs {activity.opponent}
+                              </div>
+                              <div className="text-xs text-base-content/70">{activity.time}</div>
                             </div>
-                            <div className="text-xs text-base-content/70">{activity.time}</div>
+                          </div>
+                          <div className="text-xs font-mono text-primary">
+                            {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                           </div>
                         </div>
-                        <div className="text-xs font-mono text-primary">
-                          {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
-                        </div>
+                      ))
+                    ) : (
+                      <div className="border border-primary/30 bg-base-300/50 p-3 text-center">
+                        <div className="font-mono text-sm text-base-content/70">No recent games</div>
+                        <div className="font-mono text-xs text-base-content/50 mt-1">Play a game to see activity</div>
                       </div>
-                    ))}
+                    )}
                   </div>
                   
                   <button 
-                    onClick={() => navigate('/history')}
+                    onClick={() => {
+                      triggerClick();
+                      navigate('/history');
+                    }}
                     className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk"
                   >
                     VIEW_FULL_HISTORY
