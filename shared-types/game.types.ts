@@ -136,7 +136,7 @@ export interface PendingReaction {
  * Chain effect type - used for lateral movement across infrastructure (Phase 3)
  */
 export interface ChainEffect {
-  type: 'chain_vulnerability' | 'chain_compromise';
+  type: 'chain_vulnerability' | 'chain_compromise' | 'chain_security';
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];

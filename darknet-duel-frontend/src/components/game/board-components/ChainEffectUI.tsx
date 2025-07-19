@@ -17,15 +17,29 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
   onCancel
 }) => {
   // Extract properties from the chainEffect object
-  const { availableTargets, sourceCardId } = pendingChainChoice;
+  const { availableTargets, sourceCardId, type } = pendingChainChoice;
   
   // Filter the infrastructure cards to only those that are valid targets
   const validTargets = useMemo(() => {
     if (!availableTargets || availableTargets.length === 0) return [];
-    return infrastructureCards.filter(card => 
+    return infrastructureCards.filter(card =>
       availableTargets.includes(card.id)
     );
   }, [infrastructureCards, availableTargets]);
+  
+  // Dynamic content based on chain effect type
+  const getChainDescription = (effectType: string) => {
+    switch (effectType) {
+      case 'chain_vulnerability':
+        return 'Lateral Movement allows you to make another infrastructure vulnerable.';
+      case 'chain_compromise':
+        return 'Advanced attack allows you to compromise another infrastructure.';
+      case 'chain_security':
+        return 'Security Automation Suite allows you to shield another infrastructure.';
+      default:
+        return 'Chain effect allows you to target another infrastructure.';
+    }
+  };
   
   return (
     <div className="chain-effect-overlay">
@@ -35,7 +49,7 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
           <div className="source-card-section">
             <p>Source card: {sourceCardId}</p>
             <div className="chain-effect-description">
-              Lateral Movement allows you to make another infrastructure vulnerable.
+              {getChainDescription(type)}
             </div>
           </div>
         </div>

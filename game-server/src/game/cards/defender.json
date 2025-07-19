@@ -376,16 +376,14 @@
       "type": "wildcard",
       "category": "any",
       "cost": 2,
-      "description": "AI-powered defensive coordination",
-      "flavor": "Machines react faster than humans can think",
-      "effect": "Can be played as any card type. Automatically counter the next 2 attacker cards played this turn. Draw 1 card.",
+      "description": "Automated defensive network coordination",
+      "flavor": "Why secure one system when you can secure them all?",
+      "effect": "After shielding or fortifying infrastructure, immediately make another infrastructure shielded.",
       "img": "automation_suite",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "any",
-      "specialEffect": "auto_counter",
-      "autoCounters": 2,
-      "draw": 1
+      "wildcardType": "special",
+      "specialEffect": "chain_security"
     },
     {
       "id": "D305",

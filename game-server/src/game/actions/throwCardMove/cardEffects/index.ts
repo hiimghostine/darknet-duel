@@ -8,7 +8,7 @@ import { responseEffect } from './responseEffect';
 import { reactionEffect } from './reactionEffect';
 import { counterEffect } from './counterEffect';
 import { WildcardResolver, WildcardPlayContext } from '../../wildcardResolver';
-import { handleChainVulnerability } from '../../chainEffects';
+import { handleChainVulnerability, handleChainSecurity } from '../../chainEffects';
 import { TemporaryEffectsManager } from '../../temporaryEffectsManager';
 
 /**
@@ -151,6 +151,37 @@ function handleSpecialEffect(
       if (gameState) {
         gameState.pendingChainChoice = updatedGameState.pendingChainChoice;
         gameState.message = `${card.name} played! Choose another infrastructure to make vulnerable.`;
+      }
+    }
+    
+    return updatedInfra;
+  }
+  
+  // Handle Security Automation Suite (D304) chain security effect
+  if (card.name === 'Security Automation Suite' || card.id === 'D304' || card.id.startsWith('D304')) {
+    console.log('Security Automation Suite card - triggering chain security effect');
+    
+    if (!gameState || !playerID) {
+      console.warn('Missing gameState or playerID for Security Automation Suite effect');
+      return allInfrastructure;
+    }
+    
+    // First, apply the initial shield effect to the targeted infrastructure
+    const updatedInfra = shieldEffect(currentInfra, infraIndex, allInfrastructure, card, attackVector, playerID);
+    
+    // Then trigger chain security effect
+    const updatedGameState = handleChainSecurity(
+      { ...gameState, infrastructure: updatedInfra },
+      card,
+      playerID
+    );
+    
+    // Update the game state with the pending chain choice
+    if (updatedGameState.pendingChainChoice) {
+      // Modify the game state reference to include the pending choice
+      if (gameState) {
+        gameState.pendingChainChoice = updatedGameState.pendingChainChoice;
+        gameState.message = `${card.name} played! Choose another infrastructure to shield.`;
       }
     }
     

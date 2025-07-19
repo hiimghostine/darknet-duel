@@ -120,7 +120,7 @@ export interface Shield {
 }
 
 export interface ChainEffect {
-  type: 'chain_vulnerability' | 'chain_compromise';
+  type: 'chain_vulnerability' | 'chain_compromise' | 'chain_security';
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];
