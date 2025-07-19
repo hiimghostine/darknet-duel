@@ -57,8 +57,8 @@ const AdminPage: React.FC = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect non-admins to dashboard
-  if (user && user.type !== 'admin') {
+  // Redirect non-admin/non-moderator users to dashboard
+  if (user && user.type !== 'admin' && user.type !== 'mod') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -106,10 +106,10 @@ const AdminPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <FaShieldAlt className="text-2xl text-error" />
                   <h1 className="text-2xl font-mono font-bold text-error glitch-text">
-                    ADMIN_CONTROL_PANEL
+                    {user?.type === 'admin' ? 'ADMIN_CONTROL_PANEL' : 'MODERATOR_PANEL'}
                   </h1>
                   <div className="px-2 py-1 bg-error/20 border border-error/40 text-error text-xs font-mono rounded">
-                    ROOT_ACCESS
+                    {user?.type === 'admin' ? 'ROOT_ACCESS' : 'MODERATOR_ACCESS'}
                   </div>
                 </div>
                 
@@ -167,7 +167,7 @@ const AdminPage: React.FC = () => {
                 <div className="font-mono">
                   <div className="flex items-baseline gap-2 mb-1">
                     <h2 className="text-2xl font-bold mb-2 font-mono text-error">
-                      DARKNET_ADMIN_SYSTEM
+                      {user?.type === 'admin' ? 'DARKNET_ADMIN_SYSTEM' : 'DARKNET_MODERATOR_SYSTEM'}
                     </h2>
                   </div>
                   <div className="text-base-content text-sm flex items-center gap-2">
@@ -176,7 +176,7 @@ const AdminPage: React.FC = () => {
                   </div>
                   <div className="text-xs text-error mt-3 flex items-center gap-2">
                     <FaExclamationTriangle />
-                    <span>WARNING: ADMINISTRATIVE FUNCTIONS ENABLED • USE WITH CAUTION</span>
+                    <span>WARNING: {user?.type === 'admin' ? 'ADMINISTRATIVE' : 'MODERATOR'} FUNCTIONS ENABLED • USE WITH CAUTION</span>
                   </div>
                 </div>
               </div>
@@ -185,22 +185,24 @@ const AdminPage: React.FC = () => {
             {/* Admin modules grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               
-              {/* User Management */}
-              <div 
-                className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
-                onClick={() => navigate('/admin/user-management')}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <FaUsers className="text-2xl text-error" />
-                  <h3 className="text-lg font-mono font-bold text-error">USER_MANAGEMENT</h3>
+              {/* User Management - Admin Only */}
+              {user?.type === 'admin' && (
+                <div 
+                  className="border border-error/30 bg-base-900/50 rounded-lg p-6 hover:bg-base-900/70 transition-colors cursor-pointer"
+                  onClick={() => navigate('/admin/user-management')}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <FaUsers className="text-2xl text-error" />
+                    <h3 className="text-lg font-mono font-bold text-error">USER_MANAGEMENT</h3>
+                  </div>
+                  <p className="text-base-content/70 text-sm font-mono mb-4">
+                    Manage user accounts, permissions, and access levels
+                  </p>
+                  <div className="text-xs text-green-500 font-mono">
+                    STATUS: ACTIVE
+                  </div>
                 </div>
-                <p className="text-base-content/70 text-sm font-mono mb-4">
-                  Manage user accounts, permissions, and access levels
-                </p>
-                <div className="text-xs text-green-500 font-mono">
-                  STATUS: ACTIVE
-                </div>
-              </div>
+              )}
 
               {/* Report Management */}
               <div 

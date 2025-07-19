@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ReportController } from '../controllers/report.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { adminAuthMiddleware } from '../middleware/admin-auth.middleware';
+import { moderatorAuthMiddleware } from '../middleware/moderator-auth.middleware';
 
 const router = Router();
 const reportController = new ReportController();
@@ -12,8 +13,8 @@ router.use(authMiddleware);
 // Create a new report
 router.post('/', reportController.createReport);
 
-// Admin routes (require admin privileges)
-router.use('/admin', adminAuthMiddleware);
+// Admin/Moderator routes (require admin or moderator privileges)
+router.use('/admin', moderatorAuthMiddleware);
 
 // Get reports for admin review
 router.get('/admin', reportController.getReports);

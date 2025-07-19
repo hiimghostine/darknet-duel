@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { LogController } from '../controllers/log.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
-import { adminAuthMiddleware } from '../middleware/admin-auth.middleware';
+import { moderatorAuthMiddleware } from '../middleware/moderator-auth.middleware';
 
 const router = Router();
 const logController = new LogController();
 
-// All log routes require authentication and admin privileges
+// All log routes require authentication and admin/moderator privileges
 router.use(authMiddleware);
-router.use(adminAuthMiddleware);
+router.use(moderatorAuthMiddleware);
 
 // Get logs with pagination
 router.get('/', logController.getLogs.bind(logController));

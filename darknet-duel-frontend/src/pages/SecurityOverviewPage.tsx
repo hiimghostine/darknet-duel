@@ -15,8 +15,8 @@ const SecurityOverviewPage: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Check authentication and admin permissions
-  if (!isAuthenticated || user?.type !== 'admin') {
+  // Check authentication and admin/moderator permissions
+  if (!isAuthenticated || (user?.type !== 'admin' && user?.type !== 'mod')) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -111,7 +111,7 @@ const SecurityOverviewPage: React.FC = () => {
                   SECURITY_OVERVIEW_SYSTEM
                 </h1>
                 <div className="px-2 py-1 bg-error/20 border border-error/40 text-error text-xs font-mono rounded">
-                  ADMIN_ACCESS
+                  {user?.type === 'admin' ? 'ADMIN_ACCESS' : 'MODERATOR_ACCESS'}
                 </div>
               </div>
               
