@@ -47,11 +47,12 @@ export const initializePlayerWithData = (
   // Load appropriate deck based on player role
   const deck = role === 'attacker' ? createAttackerDeck() : createDefenderDeck();
   
-  console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (ID: ${userData.id})`);
+  console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (UUID: ${userData.id}, BGio ID: ${playerId})`);
 
   return {
-    id: userData.id,              // ✅ Use real user UUID
-    name: userData.name,          // ✅ Use real user name
+    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1")
+    name: userData.name,         // ✅ Use real user name
+    realUserId: userData.id,     // ✅ Store real user UUID separately
     role: role,
     resources: gameConfig.initialResources,
     actionPoints: gameConfig.initialActionPoints,

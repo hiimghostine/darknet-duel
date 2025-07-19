@@ -5,7 +5,7 @@
  * validation, and effect application.
  */
 import { Card, CardType, AttackVector } from 'shared-types/card.types';
-import { GameState } from 'shared-types/game.types';
+import { GameState, InfrastructureState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
 import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
@@ -113,9 +113,9 @@ export class WildcardResolver {
         return targetInfrastructure.state === 'vulnerable';
       
       case 'shield':
-        // Can only shield secure or compromised infrastructure
-        return targetInfrastructure.state === 'secure' || 
-               targetInfrastructure.state === 'compromised';
+        // Can shield secure or vulnerable infrastructure (not compromised)
+        return targetInfrastructure.state === 'secure' ||
+               targetInfrastructure.state === 'vulnerable';
       
       case 'fortify':
         // Can only fortify shielded infrastructure
@@ -193,17 +193,149 @@ export class WildcardResolver {
         }
         break;
         
-      case 'D304': // Threat Intelligence
-        // This needs special UI for hand viewing and selection
-        // For now, just add a message
-        updatedGameState.message = `${card.name} reveals attacker's hand`;
+      case 'D306': // Honeypot Network
+        console.log(`🍯 Honeypot Network (${card.id}) detected! Applying temporary_tax effect`);
+        
+        // Add temporary effect that will tax exploit cards for the specified duration
+        const duration = (card as any).duration || 2; // Use card duration or default to 2
+        updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+          type: 'temporary_tax',
+          playerId: context.playerID,
+          duration: duration * 2, // Convert rounds to turns (each round = 2 turns)
+          sourceCardId: card.id,
+          metadata: {
+            taxedCardType: 'exploit',
+            taxAmount: 1, // Force discard 1 additional card
+            description: 'Whenever attacker plays an exploit card, they must discard 1 additional card'
+          }
+        });
+        
+        updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
+        console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
         break;
         
+    }
+    
+    // Handle card-specific effects based on card ID with flexible matching
+    if (card.id.startsWith('D302')) { // Threat Intelligence Network
+      console.log(`🎯 D302 Threat Intelligence Network detected! Card ID: ${card.id}`);
+      
+      // Determine target player (opponent)
+      const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
+      const opponentPlayerId = opponentRole === 'attacker' ?
+        updatedGameState.attacker?.id : updatedGameState.defender?.id;
+      
+      if (opponentPlayerId) {
+        console.log(`🎯 D302: Targeting opponent: ${opponentPlayerId} (${opponentRole})`);
+        
+        try {
+          // Import the hand disruption handler
+          const { handleHandDisruption } = require('./handDisruption');
+          console.log(`🎯 D302: handleHandDisruption imported successfully:`, typeof handleHandDisruption);
+          
+          console.log(`🎯 D302: Calling handleHandDisruption with:`, {
+            targetPlayerId: opponentPlayerId,
+            effectType: 'view_and_discard',
+            count: 2
+          });
+          
+          // Use existing handDisruption system for view_and_discard effect
+          const stateBeforeDisruption = { ...updatedGameState };
+          updatedGameState = handleHandDisruption(
+            updatedGameState,
+            'view_and_discard',
+            opponentPlayerId,
+            2 // Force discard 2 cards
+          );
+          
+          console.log(`🎯 D302: handleHandDisruption completed. State changes:`, {
+            hadPendingHandChoice: !!stateBeforeDisruption.pendingHandChoice,
+            hasPendingHandChoice: !!updatedGameState.pendingHandChoice,
+            pendingHandChoice: updatedGameState.pendingHandChoice,
+            messageChanged: stateBeforeDisruption.message !== updatedGameState.message
+          });
+        } catch (error) {
+          console.error(`❌ D302: Error in handleHandDisruption:`, error);
+          updatedGameState.message = `${card.name} failed: Hand disruption error`;
+        }
+        
+        // Add card draw effect for the defender who played this card
+        const currentPlayer = context.playerRole === 'attacker' ?
+          updatedGameState.attacker : updatedGameState.defender;
+        
+        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
+          const drawnCard = currentPlayer.deck[0];
+          const newHand = [...currentPlayer.hand, drawnCard];
+          const newDeck = currentPlayer.deck.slice(1);
+          
+          // Update the current player's hand and deck
+          if (context.playerRole === 'attacker') {
+            updatedGameState.attacker = {
+              ...currentPlayer,
+              hand: newHand,
+              deck: newDeck
+            };
+          } else {
+            updatedGameState.defender = {
+              ...currentPlayer,
+              hand: newHand,
+              deck: newDeck
+            };
+          }
+          
+          console.log(`🎯 D302: Drew 1 card for ${context.playerRole}`);
+        }
+        
+        updatedGameState.message = `${card.name}: Viewing opponent's hand and forcing discard of 2 cards. Drew 1 card.`;
+        console.log(`🎯 D302: Effect applied successfully`);
+      } else {
+        console.error(`❌ D302: Could not determine opponent player`);
+        updatedGameState.message = `${card.name} failed: Could not identify opponent`;
+      }
+    }
+    
+    // Handle Emergency Response Team (D303) by ID check first
+    if (card.id === 'D303' || card.id.startsWith('D303')) {
+      console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
+      
+      // Restore ALL compromised infrastructure to secure state
+      if (updatedGameState.infrastructure) {
+        let restoredCount = 0;
+        updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+          if (infra.state === 'compromised') {
+            restoredCount++;
+            console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+            return {
+              ...infra,
+              state: 'secure' as InfrastructureState,
+              vulnerabilities: [] // Clear vulnerabilities like regular response cards
+            };
+          }
+          return infra;
+        });
+        
+        if (restoredCount > 0) {
+          updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
+          console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+        } else {
+          updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
+          console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+        }
+      } else {
+        console.log(`❌ Mass restore failed: No infrastructure array found`);
+        updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
+      }
+      
+      return updatedGameState; // Return early to avoid processing other card effects
+    }
+
+    // Handle other card-specific effects based on card ID
+    switch (card.id) {
       case 'A307': // Memory Corruption Attack
         console.log(`🔥 Memory Corruption Attack (A307) detected! Applying discard_redraw effect`);
         
         // Import the hand disruption handler
-        const { handleHandDisruption } = require('../handDisruption');
+        const { handleHandDisruption } = require('./handDisruption');
         
         // Determine target player (opponent)
         const targetPlayerId = context.playerRole === 'attacker' ?
@@ -287,6 +419,111 @@ export class WildcardResolver {
             console.error(`❌ Memory Corruption Attack failed: Could not determine target player`);
             updatedGameState.message = `Memory Corruption Attack failed: Invalid target`;
           }
+          break;
+          
+        case 'intel_disrupt':
+          // Handle Threat Intelligence Network effect via generic specialEffect
+          console.log(`🎯 Intel disrupt effect detected for card: ${card.id}`);
+          
+          // Determine target player (opponent)
+          const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
+          const opponentPlayerId = opponentRole === 'attacker' ?
+            updatedGameState.attacker?.id : updatedGameState.defender?.id;
+          
+          if (opponentPlayerId) {
+            // Import the hand disruption handler
+            const { handleHandDisruption } = require('./handDisruption');
+            
+            // Use existing handDisruption system for view_and_discard effect
+            updatedGameState = handleHandDisruption(
+              updatedGameState,
+              'view_and_discard',
+              opponentPlayerId,
+              2 // Force discard 2 cards
+            );
+            
+            // Add card draw effect for the defender who played this card
+            const currentPlayer = context.playerRole === 'attacker' ?
+              updatedGameState.attacker : updatedGameState.defender;
+            
+            if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
+              const drawnCard = currentPlayer.deck[0];
+              const newHand = [...currentPlayer.hand, drawnCard];
+              const newDeck = currentPlayer.deck.slice(1);
+              
+              // Update the current player's hand and deck
+              if (context.playerRole === 'attacker') {
+                updatedGameState.attacker = {
+                  ...currentPlayer,
+                  hand: newHand,
+                  deck: newDeck
+                };
+              } else {
+                updatedGameState.defender = {
+                  ...currentPlayer,
+                  hand: newHand,
+                  deck: newDeck
+                };
+              }
+            }
+            
+            updatedGameState.message = `Intelligence network activated: Opponent must discard 2 cards. Drew 1 card.`;
+          }
+          break;
+          
+        case 'mass_restore':
+          // Handle Emergency Response Team (D303) effect
+          console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
+          
+          // Restore ALL compromised infrastructure to secure state
+          if (updatedGameState.infrastructure) {
+            let restoredCount = 0;
+            updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+              if (infra.state === 'compromised') {
+                restoredCount++;
+                console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+                return {
+                  ...infra,
+                  state: 'secure' as InfrastructureState,
+                  vulnerabilities: [] // Clear vulnerabilities like regular response cards
+                };
+              }
+              return infra;
+            });
+            
+            if (restoredCount > 0) {
+              updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
+              console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+            } else {
+              updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
+              console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+            }
+          } else {
+            console.log(`❌ Mass restore failed: No infrastructure array found`);
+            updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
+          }
+          break;
+          
+        case 'temporary_tax':
+          // Handle Honeypot Network (D306) effect
+          console.log(`🍯 Honeypot Network (${card.id}) detected! Applying temporary_tax effect`);
+          
+          // Add temporary effect that will tax exploit cards for the specified duration
+          const duration = (card as any).duration || 2; // Use card duration or default to 2
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'temporary_tax',
+            playerId: context.playerID,
+            duration: duration * 2, // Convert rounds to turns (each round = 2 turns)
+            sourceCardId: card.id,
+            metadata: {
+              taxedCardType: 'exploit',
+              taxAmount: 1, // Force discard 1 additional card
+              description: 'Whenever attacker plays an exploit card, they must discard 1 additional card'
+            }
+          });
+          
+          updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
+          console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
           break;
           
         default:

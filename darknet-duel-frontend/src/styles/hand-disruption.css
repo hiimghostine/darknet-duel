@@ -74,6 +74,15 @@
   transform: scale(1);
 }
 
+.discard-card-option.selected {
+  transform: scale(1.05);
+}
+
+.discard-card-option.selected .disruption-card-display {
+  border: 3px solid #cc3333;
+  box-shadow: 0 0 15px rgba(204, 51, 51, 0.8);
+}
+
 .disruption-card-display {
   box-shadow: 0 0 10px rgba(204, 51, 51, 0.4);
 }

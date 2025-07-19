@@ -9,6 +9,11 @@ export interface PendingHandChoice {
   targetPlayerId: string;
   revealedHand: Card[];
   count?: number; // Number of cards to discard, defaults to 1 if not specified
+  // For Honeypot Network tax - store the original card that should be played after tax
+  pendingCardPlay?: {
+    cardId: string;
+    targetInfrastructureId: string;
+  };
 }
 
 /**
@@ -116,14 +121,16 @@ export function handleHandDisruption(
 
 /**
  * Resolves a pending hand choice, discarding the selected cards
- * 
+ *
  * @param gameState Current game state
  * @param cardIds IDs of the cards to discard
+ * @param continueCardPlay Optional callback to continue playing a card after tax is paid
  * @returns Updated game state with the cards discarded
  */
 export function resolveHandChoice(
   gameState: GameState,
-  cardIds: string[]
+  cardIds: string[],
+  continueCardPlay?: (gameState: GameState, cardId: string, targetInfrastructureId: string) => GameState
 ): GameState {
   if (!gameState.pendingHandChoice) {
     return gameState;
@@ -156,8 +163,8 @@ export function resolveHandChoice(
     }
   };
   
-  // Update the target player's hand and discard pile
-  return {
+  // Create the updated game state with discarded cards
+  const updatedGameState = {
     ...gameState,
     [targetPlayerId === gameState.attacker?.id ? 'attacker' : 'defender']: {
       ...targetPlayer,
@@ -168,6 +175,17 @@ export function resolveHandChoice(
     pendingHandChoice: undefined,
     message: `${discardedCards.length} card${discardedCards.length !== 1 ? 's' : ''} discarded from ${targetPlayerId === gameState.attacker?.id ? 'Attacker' : 'Defender'}'s hand`
   };
+  
+  // If this was a Honeypot Network tax, continue with the original card play
+  if (gameState.pendingHandChoice.pendingCardPlay && continueCardPlay) {
+    const { cardId, targetInfrastructureId } = gameState.pendingHandChoice.pendingCardPlay;
+    console.log(`🍯 Tax paid! Continuing with original exploit: ${cardId} -> ${targetInfrastructureId}`);
+    
+    // Use the callback to continue the card play
+    return continueCardPlay(updatedGameState, cardId, targetInfrastructureId);
+  }
+  
+  return updatedGameState;
 }
 
 /**

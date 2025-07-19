@@ -120,7 +120,7 @@ export interface Shield {
 }
 
 export interface ChainEffect {
-  type: 'chain_vulnerability' | 'chain_compromise';
+  type: 'chain_vulnerability' | 'chain_compromise' | 'chain_security';
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];
@@ -137,6 +137,11 @@ export interface HandDisruptionChoice {
   targetPlayerId: string;
   revealedHand: Card[];
   count?: number;
+  // For Honeypot Network tax - store the original card that should be played after tax
+  pendingCardPlay?: {
+    cardId: string;
+    targetInfrastructureId: string;
+  };
   // Additional UI-specific properties
   selectedCardId?: string;
   playerHand?: Card[];
@@ -308,7 +313,7 @@ export interface GameState {
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-          'restrict_targeting' | 'quantum_protection' | 'honeypot';
+          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax';
     targetId?: string;
     playerId?: string;
     duration: number;

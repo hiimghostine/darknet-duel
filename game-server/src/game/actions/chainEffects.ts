@@ -5,7 +5,7 @@ import { Card } from 'shared-types/card.types';
  * Interface representing a chain effect that allows lateral movement across infrastructure
  */
 export interface ChainEffect {
-  type: 'chain_vulnerability' | 'chain_compromise';
+  type: 'chain_vulnerability' | 'chain_compromise' | 'chain_security';
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];
@@ -81,6 +81,41 @@ export function handleChainCompromise(
 }
 
 /**
+ * Handles chain security effect, which allows a defender to mark additional
+ * infrastructure as shielded after successfully shielding/fortifying one
+ *
+ * @param gameState Current game state
+ * @param sourceCard Card that triggered the chain effect
+ * @param playerId Player who played the card
+ * @returns Updated game state with pending chain choice
+ */
+export function handleChainSecurity(
+  gameState: GameState,
+  sourceCard: Card,
+  playerId: string
+): GameState {
+  // Only secure infrastructure can be shielded through chain effects
+  const availableTargets = gameState.infrastructure?.filter(
+    infra => infra.state === 'secure'
+  ) || [];
+  
+  if (availableTargets.length === 0) {
+    return gameState;
+  }
+  
+  // Add pending chain choice to game state
+  return {
+    ...gameState,
+    pendingChainChoice: {
+      type: 'chain_security',
+      sourceCardId: sourceCard.id,
+      playerId,
+      availableTargets: availableTargets.map(t => t.id)
+    }
+  };
+}
+
+/**
  * Resolves a chain effect choice, applying the selected effect to the target infrastructure
  * 
  * @param gameState Current game state
@@ -132,7 +167,7 @@ export function resolveChainEffect(
       pendingChainChoice: undefined,
       message: `Chain effect: Infrastructure ${targetInfra.name} is now vulnerable!`
     };
-  } 
+  }
   else if (type === 'chain_compromise') {
     // Mark the target infrastructure as compromised
     targetInfra.state = 'compromised';
@@ -141,7 +176,7 @@ export function resolveChainEffect(
       playerRole: gameState.pendingChainChoice.playerId === gameState.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole,
       actionType: 'chainEffect',
       timestamp: Date.now(),
-      payload: { 
+      payload: {
         sourceCardId: gameState.pendingChainChoice.sourceCardId,
         targetInfrastructureId: targetInfraId,
         effectType: 'chain_compromise'
@@ -174,6 +209,32 @@ export function resolveChainEffect(
       actions: [...gameState.actions, newAction],
       pendingChainChoice: undefined,
       message: `Chain effect: Infrastructure ${targetInfra.name} has been compromised!`
+    };
+  }
+  else if (type === 'chain_security') {
+    // Mark the target infrastructure as shielded
+    targetInfra.state = 'shielded';
+    // Add a game action to record this chain effect
+    const newAction: GameAction = {
+      playerRole: gameState.pendingChainChoice.playerId === gameState.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole,
+      actionType: 'chainEffect',
+      timestamp: Date.now(),
+      payload: {
+        sourceCardId: gameState.pendingChainChoice.sourceCardId,
+        targetInfrastructureId: targetInfraId,
+        effectType: 'chain_security'
+      }
+    };
+    
+    updatedInfra[targetIndex] = targetInfra;
+    
+    // Return updated game state without the pending choice
+    return {
+      ...gameState,
+      infrastructure: updatedInfra,
+      actions: [...gameState.actions, newAction],
+      pendingChainChoice: undefined,
+      message: `Chain effect: Infrastructure ${targetInfra.name} is now shielded!`
     };
   }
   

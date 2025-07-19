@@ -31,6 +31,7 @@ import PowerBar from './board-components/PowerBar';
 import InfrastructureArea from './board-components/InfrastructureArea';
 import DevCheatPanel from './board-components/DevCheatPanel';
 import TemporaryEffectsDisplay from './board-components/TemporaryEffectsDisplay';
+import GlobalEffectsIndicator from './board-components/GlobalEffectsIndicator';
 import LobbyChat from '../lobby/LobbyChat';
 
 // Extended interface for client properties
@@ -253,8 +254,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   }, [moves]);
   
   const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
+    console.log('🎯 HAND DISCARD: Attempting to discard cards:', cardIds);
+    console.log('🎯 HAND DISCARD: Available moves:', Object.keys(moves || {}));
+    console.log('🎯 HAND DISCARD: chooseHandDiscard available:', !!moves.chooseHandDiscard);
+    
     if (moves.chooseHandDiscard) {
+      console.log('🎯 HAND DISCARD: Calling moves.chooseHandDiscard with:', { cardIds });
       moves.chooseHandDiscard({ cardIds });
+    } else {
+      console.error('🎯 HAND DISCARD: chooseHandDiscard move not available!');
     }
   }, [moves]);
   
@@ -1544,13 +1552,32 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         />
       )}
       
-      {memoizedG.pendingHandChoice && playerID !== memoizedG.pendingHandChoice.targetPlayerId && (
-        <HandDisruptionUI
-          pendingChoice={memoizedG.pendingHandChoice}
-          playerId={playerID || ''}
-          onChooseCards={handleChooseHandDiscard}
-        />
-      )}
+      {(() => {
+        // Debug pendingHandChoice state - updated logic to match PendingChoicesOverlay
+        const isHoneypotTax = memoizedG.pendingHandChoice?.pendingCardPlay !== undefined;
+        const shouldShow = memoizedG.pendingHandChoice && (
+          isHoneypotTax
+            ? (playerID === memoizedG.pendingHandChoice.targetPlayerId) // Honeypot tax: attacker chooses their own cards
+            : (playerID !== memoizedG.pendingHandChoice.targetPlayerId) // Threat Intelligence: opponent chooses target's cards
+        );
+        
+        console.log('🎯 HAND CHOICE DEBUG:', {
+          hasPendingHandChoice: !!memoizedG.pendingHandChoice,
+          playerID,
+          targetPlayerId: memoizedG.pendingHandChoice?.targetPlayerId,
+          isHoneypotTax,
+          shouldShow,
+          pendingChoice: memoizedG.pendingHandChoice
+        });
+        
+        return shouldShow && memoizedG.pendingHandChoice && (
+          <HandDisruptionUI
+            pendingChoice={memoizedG.pendingHandChoice}
+            playerId={playerID || ''}
+            onChooseCards={handleChooseHandDiscard}
+          />
+        );
+      })()}
       
       {memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId && (
         <CardSelectionUI
@@ -1558,6 +1585,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           onChooseCard={handleChooseCardFromDeck}
         />
       )}
+
+      {/* Global Effects Indicator */}
+      <GlobalEffectsIndicator gameState={memoizedG} />
 
       {/* Developer Cheat Panel - Only in development */}
       {process.env.NODE_ENV === 'development' && (

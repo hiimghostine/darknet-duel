@@ -157,6 +157,30 @@ export const reactionStageMoves = {
     };
   },
   
+  // Hand discard selection functionality (D302 Threat Intelligence Network)
+  chooseHandDiscard: ({ G, ctx, playerID, events }: MoveParams<GameState>, args: any) => {
+    // Extract cardIds from the parameter object
+    const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+    console.log('DEBUG: reactionStage chooseHandDiscard received args:', args);
+    console.log('DEBUG: reactionStage extracted cardIds:', cardIds);
+    
+    const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
+    const updatedG = chooseHandDiscardMove(G, ctx, playerID, cardIds);
+    
+    // After hand choice is resolved, return to action stage
+    if (!updatedG.pendingHandChoice) {
+      console.log('DEBUG: Hand discard selection completed during reaction, returning to action stage');
+      // Hand discard completed, return to action player's action stage
+      if (G.currentActionPlayer && events) {
+        switchToStage(events, G.currentActionPlayer, 'action');
+      } else if (events) {
+        switchCurrentPlayerToStage(events, 'action');
+      }
+    }
+    
+    return updatedG;
+  },
+  
   // Developer cheat move
   devCheatAddCard: ({ G, ctx, playerID, events }: MoveParams<GameState>, card: any) => {
     const { devCheatAddCardMove } = require('../../moves/devCheatAddCard');

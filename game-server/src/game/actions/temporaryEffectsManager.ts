@@ -5,7 +5,7 @@ import { GameState, InfrastructureState } from 'shared-types/game.types';
  */
 export interface TemporaryEffect {
   type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-        'restrict_targeting' | 'quantum_protection' | 'honeypot';
+        'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax';
   targetId?: string;
   playerId?: string;
   duration: number;
@@ -80,7 +80,7 @@ export class TemporaryEffectsManager {
    */
   static hasEffect(gameState: GameState,
                    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' |
-                        'chain_vulnerability' | 'restrict_targeting' | 'quantum_protection' | 'honeypot',
+                        'chain_vulnerability' | 'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax',
                    targetId?: string): boolean {
     return gameState.temporaryEffects?.some(effect =>
       effect.type === type && (!targetId || effect.targetId === targetId)

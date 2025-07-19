@@ -1,5 +1,4 @@
-import { PlayerRole } from 'shared-types/game.types';
-import type { GameState } from 'shared-types/game.types';
+import { PlayerRole, GameState } from 'shared-types/game.types';
 
 /**
  * Centralized chat message handler
@@ -30,10 +29,11 @@ export function handleChatMessage({ G, playerID }: MoveParams<GameState>, conten
   }
   
   // Determine player role
+  // FIXED: Use boardgame.io player IDs for role determination
   let senderRole: PlayerRole = 'attacker';
-  if (playerID === G.attacker?.id) {
+  if (playerID === '0') {
     senderRole = 'attacker';
-  } else if (playerID === G.defender?.id) {
+  } else if (playerID === '1') {
     senderRole = 'defender';
   }
   

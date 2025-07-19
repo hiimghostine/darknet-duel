@@ -35,9 +35,14 @@ export interface ValidationResult {
  * Validates player turn permissions and reaction mode
  */
 export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { valid: boolean; message?: string; isAttacker?: boolean } {
+  // FIXED: Use boardgame.io player IDs for turn validation
+  // playerID is the boardgame.io ID ("0" or "1"), not the real user UUID
+  const isAttacker = playerID === '0';
+  const isDefender = playerID === '1';
+  
   // Verify it's the player's turn or a valid reaction
-  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) ||
-                             (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && isAttacker) ||
+                             (G.currentTurn === 'defender' && isDefender);
   
   // Check if player is in reaction mode - important for counter-attack cards
   const isInReactionMode = ctx.activePlayers && 
@@ -52,7 +57,6 @@ export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { 
     };
   }
   
-  const isAttacker = playerID === G.attacker?.id;
   return { valid: true, isAttacker };
 }
 
@@ -66,7 +70,8 @@ export function validatePlayerAndCard(G: GameState, playerID: string, cardId: st
   card?: Card;
   cardIndex?: number;
 } {
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use boardgame.io player IDs for validation
+  const isAttacker = playerID === '0';
   const player = isAttacker ? G.attacker : G.defender;
   
   if (!player) {
@@ -98,6 +103,13 @@ export function validateTargetInfrastructure(G: GameState, targetInfrastructureI
     return { valid: true, targetInfrastructure: null };
   }
   
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card && (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state')) {
+    console.log(`🚨 All-infrastructure targeting card detected: ${card.name} (${card.id})`);
+    // For all-infrastructure cards, we don't need specific infrastructure validation
+    return { valid: true, targetInfrastructure: null };
+  }
+  
   const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
   if (!targetInfrastructure) {
     return {
@@ -122,6 +134,15 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
   // Special handling for Memory Corruption Attack and other hand-targeting cards
   if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
     console.log(`🎯 Hand-targeting card ${card.name} uses special validation`);
+    return {
+      effectiveCardType: 'special',
+      validationCardType: 'special'
+    };
+  }
+  
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state') {
+    console.log(`🚨 All-infrastructure targeting card ${card.name} uses special validation`);
     return {
       effectiveCardType: 'special',
       validationCardType: 'special'

@@ -368,8 +368,7 @@
       "isReactive": false,
       "target": "all_infrastructure",
       "wildcardType": "special",
-      "specialEffect": "mass_restore",
-      "oncePerGame": true
+      "specialEffect": "mass_restore"
     },
     {
       "id": "D304",
@@ -377,16 +376,14 @@
       "type": "wildcard",
       "category": "any",
       "cost": 2,
-      "description": "AI-powered defensive coordination",
-      "flavor": "Machines react faster than humans can think",
-      "effect": "Can be played as any card type. Automatically counter the next 2 attacker cards played this turn. Draw 1 card.",
+      "description": "Automated defensive network coordination",
+      "flavor": "Why secure one system when you can secure them all?",
+      "effect": "After shielding or fortifying infrastructure, immediately make another infrastructure shielded.",
       "img": "automation_suite",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "any",
-      "specialEffect": "auto_counter",
-      "autoCounters": 2,
-      "draw": 1
+      "wildcardType": "special",
+      "specialEffect": "chain_security"
     },
     {
       "id": "D305",
@@ -411,13 +408,13 @@
       "cost": 2,
       "description": "Decoy systems that detect and punish intrusions",
       "flavor": "The sweetest traps catch the greediest flies",
-      "effect": "Can be played as any card type. For the next 3 turns, whenever attacker plays an exploit card, they must discard 1 additional card.",
+      "effect": "Can be played as any card type. For the next 2 rounds, whenever attacker plays an exploit card, they must discard 1 additional card.",
       "img": "honeypot",
       "isReactive": false,
       "target": "game_state",
       "wildcardType": "any",
       "specialEffect": "temporary_tax",
-      "duration": 3
+      "duration": 2
     },
     {
       "id": "D307",
