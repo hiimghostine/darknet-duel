@@ -13,24 +13,27 @@ export const useAudioManager = () => {
   const getBGMForPage = useCallback((pathname: string): BGMType | null => {
     console.log('🎵 getBGMForPage called with pathname:', pathname);
     
-    // Check for exact matches first, then startsWith for admin routes
+    // Exclude only root, auth, and admin routes from BGM
     if (
       pathname === '/' ||
-      pathname === '/auth' ||
-      pathname === '/game' ||
-      pathname.startsWith('/game')
+      pathname === '/auth'
     ) {
-      console.log('🎵 Page should not have BGM (game or excluded route):', pathname);
+      console.log('🎵 Page should not have BGM (excluded route):', pathname);
       return null;
     }
     
-    // Check admin routes
     if (pathname.startsWith('/admin')) {
       console.log('🎵 Page should not have BGM (admin route):', pathname);
       return null;
     }
     
-    // All other pages should have BGM
+    // Game routes get THE DROP BGM
+    if (pathname === '/game' || pathname.startsWith('/game')) {
+      console.log('🎵 Page should have THE DROP BGM:', pathname);
+      return 'the-drop';
+    }
+    
+    // All other pages should have THE SYSTEM HAS FAILED BGM
     console.log('🎵 Page should have BGM:', pathname);
     return 'the-system-has-failed';
   }, []);
@@ -39,6 +42,12 @@ export const useAudioManager = () => {
   useEffect(() => {
     const targetBGM = getBGMForPage(location.pathname);
     const currentBGM = getCurrentBGM();
+
+    // Prevent global BGM changes if suppressed (e.g., WinnerLobby is active)
+    if ((window as any).__suppressGlobalBGM) {
+      console.log('🎵 AudioManager: Global BGM is suppressed (e.g., WinnerLobby), skipping BGM change');
+      return;
+    }
 
     console.log('🎵 AudioManager: Page changed to:', location.pathname);
     console.log('🎵 AudioManager: Target BGM:', targetBGM);
@@ -51,11 +60,7 @@ export const useAudioManager = () => {
         playBGM(targetBGM);
       } else {
         console.log('🎵 AudioManager: Stopping BGM for page without BGM');
-        if (!(window as any).__suppressGlobalBGM) {
-          stopBGM();
-        } else {
-          console.log('🎵 AudioManager: Suppressing global BGM stop due to WinnerLobby');
-        }
+        stopBGM();
       }
     } else {
       console.log('🎵 AudioManager: Same BGM, no change needed');

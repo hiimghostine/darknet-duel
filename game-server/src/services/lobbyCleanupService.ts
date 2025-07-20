@@ -216,7 +216,12 @@ export class LobbyCleanupService {
               removalReason = `abandoned game (removed after ${Math.round(abandonedGracePeriod/1000)}s grace period)`;  
             }
           }
-          // Remove inactive games with no connected players
+          // Do NOT remove completed games (with a winner) after inactivity
+          else if (gameState?.winner && gameState?.winner !== 'abandoned') {
+            // Completed games with a winner are kept indefinitely (or until a manual/admin cleanup)
+            shouldRemove = false;
+          }
+          // Remove inactive games with no connected players (not completed or abandoned)
           else if (!hasAnyConnectedPlayers && timeSinceUpdate >= this.INACTIVE_GAME_TTL_MS) {
             shouldRemove = true;
             removalReason = `inactive with no connected players (${Math.round(timeSinceUpdate / 60000)} minutes old)`;

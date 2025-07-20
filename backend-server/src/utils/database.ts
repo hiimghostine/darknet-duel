@@ -21,7 +21,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || "example",
   database: process.env.DB_NAME || "darknet_duel",
   synchronize: process.env.NODE_ENV === "development", // Only use in development
-  logging: process.env.NODE_ENV === "development",
+  logging: false,
   entities: [Account, GameResult, GamePlayer, PlayerRating, RatingHistory, LobbyChat, Purchase, Report, Log],
   migrations: [],
   subscribers: [],

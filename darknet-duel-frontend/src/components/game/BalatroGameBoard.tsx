@@ -37,6 +37,9 @@ import TemporaryEffectsDisplay from './board-components/TemporaryEffectsDisplay'
 import GlobalEffectsIndicator from './board-components/GlobalEffectsIndicator';
 import LobbyChat from '../lobby/LobbyChat';
 
+// Import audio SFX triggers
+import { useAudioManager } from '../../hooks/useAudioManager';
+
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
   surrender?: () => void;
@@ -93,12 +96,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Extract game board data with performance utilities
   const { infrastructureData } = useGameBoardData(memoizedG, currentPhase);
   
+  // Inject audio SFX triggers
+  const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
+  
   // Create optimized props object for hooks
   const optimizedProps = useMemo(() => ({
     ...props,
     G: memoizedG,
-    ctx: memoizedCtx
-  }), [props, memoizedG, memoizedCtx]);
+    ctx: memoizedCtx,
+    triggerClick,
+    triggerPositiveClick,
+    triggerNegativeClick
+  }), [props, memoizedG, memoizedCtx, triggerClick, triggerPositiveClick, triggerNegativeClick]);
   
   const {
     selectedCard,
