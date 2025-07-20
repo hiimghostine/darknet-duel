@@ -973,6 +973,11 @@ const startGameOverMonitoring = () => {
             // Process the game end
             await handleGameEnd(matchID, fullMatchData || matchData);
             
+            // Immediately remove the completed game (winner or abandoned)
+            if (lobbyCleanupService) {
+              await lobbyCleanupService.removeCompletedGame(matchID);
+            }
+            
             // Mark the game as processed
             processedGames.add(matchID);
             console.log(`DEBUG: Marked game ${matchID} as processed`);

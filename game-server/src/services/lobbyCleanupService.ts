@@ -123,6 +123,29 @@ export class LobbyCleanupService {
   }
 
   /**
+   * Immediately remove a specific completed game (winner or abandoned)
+   * @param matchID The ID of the match to remove
+   */
+  public async removeCompletedGame(matchID: string): Promise<boolean> {
+    try {
+      if (!this.server.db) return false;
+      const matchDetails = await this.server.db.fetch(matchID, { state: true });
+      if (!matchDetails) return false;
+      const gameState = matchDetails.state?.G as GameState;
+      // Remove if the game is over (has a winner or is abandoned)
+      const isCompleted = gameState?.gamePhase === 'gameOver' && (gameState?.winner !== undefined);
+      if (isCompleted) {
+        await this.server.db.wipe(matchID);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Error removing completed game ${matchID}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * The main cleanup routine that removes abandoned or inactive games
    */
   private async cleanupAbandonedGames(): Promise<void> {
