@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useAudioStore } from '../store/audio.store';
 import { audioHandler } from '../utils/audioHandler';
 import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { theme } = useThemeStore();
+  const { triggerClick } = useAudioManager();
   
   const {
     bgmVolume,
@@ -116,7 +118,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             AUDIO SETTINGS
           </h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              triggerClick();
+              onClose();
+            }}
             className={`btn btn-ghost btn-sm ${
               theme === 'cyberpunk' ? 'text-primary hover:text-primary/70' : 'text-base-content hover:text-base-content/70'
             }`}
@@ -196,7 +201,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 disabled={!sfxEnabled}
               />
               <button
-                onClick={testSFX}
+                onClick={() => {
+                  triggerClick();
+                  testSFX();
+                }}
                 disabled={!sfxEnabled}
                 className={`btn btn-secondary btn-sm w-full ${
                   theme === 'cyberpunk' ? 'btn-cyberpunk' : ''

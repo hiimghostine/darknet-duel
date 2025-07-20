@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
 import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle } from 'react-icons/fa';
+import { useAudioManager } from '../../hooks/useAudioManager';
 
 const CreateLobby: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { triggerClick } = useAudioManager();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<'standard' | 'blitz' | 'custom'>('standard');
@@ -107,7 +109,10 @@ const CreateLobby: React.FC = () => {
         <div className="grid md:grid-cols-3 gap-3 mt-4">
           <button 
             type="button"
-            onClick={() => setSelectedMode('standard')}
+            onClick={() => {
+              triggerClick();
+              setSelectedMode('standard');
+            }}
             className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
               selectedMode === 'standard' 
                 ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
@@ -174,7 +179,10 @@ const CreateLobby: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-3 mt-4">
           <button 
             type="button"
-            onClick={() => setIsPrivate(false)}
+            onClick={() => {
+              triggerClick();
+              setIsPrivate(false);
+            }}
             className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
               !isPrivate 
                 ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
@@ -199,7 +207,10 @@ const CreateLobby: React.FC = () => {
           
           <button 
             type="button"
-            onClick={() => setIsPrivate(true)}
+            onClick={() => {
+              triggerClick();
+              setIsPrivate(true);
+            }}
             className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
               isPrivate 
                 ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
@@ -266,7 +277,10 @@ const CreateLobby: React.FC = () => {
         <button 
           type="button" 
           className="px-6 py-2 bg-base-200/10 border border-base-content/30 text-base-content hover:text-error hover:border-error hover:bg-error/10 transition-colors duration-200 rounded font-mono text-sm flex items-center" 
-          onClick={handleCancel}
+          onClick={() => {
+            triggerClick();
+            handleCancel();
+          }}
         >
           <span className="mr-2">✕</span>
           ABORT OPERATION
@@ -275,7 +289,10 @@ const CreateLobby: React.FC = () => {
         <button 
           type="button" 
           className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
-          onClick={handleCreateLobby}
+          onClick={() => {
+            triggerClick();
+            handleCreateLobby();
+          }}
           disabled={isCreating || !user}
         >
           {isCreating ? (
