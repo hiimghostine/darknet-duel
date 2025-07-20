@@ -39,6 +39,7 @@ import LobbyChat from '../lobby/LobbyChat';
 
 // Import audio SFX triggers
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { useThemeStore } from '../../store/theme.store';
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
@@ -545,7 +546,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 
                 {/* Bottom section - Type and Category */}
                 <div className="space-y-1">
-                  <div className="lg:text-[9px] text-[8px] font-semibold uppercase text-gray-300">
+                  <div className="lg:text-[9px] text-[8px] font-semibold uppercase text-base-content/70">
                     {cardType}
                   </div>
                   {card.metadata?.category && (
@@ -565,15 +566,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               </div>
 
               {/* Expanded Card View (on hover) - Card-like proportions */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-current z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
                 {/* Card Header */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center text-xs font-bold">
+                    <div className="w-6 h-6 bg-amber-600 text-base-content rounded-full flex items-center justify-center text-xs font-bold">
                       {card.cost}
                     </div>
                     {card.power && (
-                      <div className="w-6 h-6 bg-blue-600 text-blue-100 rounded-full flex items-center justify-center text-xs font-bold">
+                      <div className="w-6 h-6 bg-blue-600 text-base-content rounded-full flex items-center justify-center text-xs font-bold">
                         {card.power}
                       </div>
                     )}
@@ -591,27 +592,27 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
                 {/* Card Name and Type */}
                 <div className="text-center mb-2 border-b border-current/30 pb-2">
-                  <div className="font-bold text-sm text-white leading-tight mb-1">
+                  <div className="font-bold text-sm text-base-content leading-tight mb-1">
                     {card.name}
                   </div>
-                  <div className="text-xs opacity-70 uppercase text-gray-300 font-semibold">
+                  <div className="text-xs opacity-70 uppercase text-base-content/70 font-semibold">
                     {cardType}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1 justify-center">
                     {(card as any).attackVector && (
-                      <span className="inline-block bg-orange-600 text-orange-100 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                      <span className="inline-block bg-orange-600 text-base-content rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
                         {(card as any).attackVector}
                       </span>
                     )}
                     {card.metadata?.category && (
                       <span className={`
-                        inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase
-                        ${card.metadata.category === 'network' ? 'bg-blue-600 text-blue-100' :
-                          card.metadata.category === 'web' ? 'bg-green-600 text-green-100' :
-                          card.metadata.category === 'social' ? 'bg-purple-600 text-purple-100' :
-                          card.metadata.category === 'physical' ? 'bg-orange-600 text-orange-100' :
-                          card.metadata.category === 'malware' ? 'bg-red-600 text-red-100' :
-                          'bg-gray-600 text-gray-200'}
+                        inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-base-content
+                        ${card.metadata.category === 'network' ? 'bg-blue-600' :
+                          card.metadata.category === 'web' ? 'bg-green-600' :
+                          card.metadata.category === 'social' ? 'bg-purple-600' :
+                          card.metadata.category === 'physical' ? 'bg-orange-600' :
+                          card.metadata.category === 'malware' ? 'bg-red-600' :
+                          'bg-gray-600'}
                       `}>
                         {card.metadata.category}
                       </span>
@@ -621,18 +622,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
                 {/* Card Description */}
                 <div className="flex-1 mb-2">
-                  <div className="text-xs text-gray-200 leading-tight mb-2">
+                  <div className="text-xs text-base-content/70 leading-tight mb-2">
                     {card.description}
                   </div>
                   
                   {/* Effects */}
                   {(card as any).effects && (card as any).effects.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-bold text-cyan-300 mb-1 uppercase">Effects:</div>
+                      <div className="text-[10px] font-bold text-info mb-1 uppercase">Effects:</div>
                       {(card as any).effects.map((effect: any, idx: number) => (
-                        <div key={idx} className="text-[10px] text-cyan-200 bg-cyan-900/30 rounded px-1.5 py-0.5 mb-1">
+                        <div key={idx} className="text-[10px] text-info bg-info/10 rounded px-1.5 py-0.5 mb-1">
                           <span className="font-semibold">{effect.type}:</span> {effect.description}
-                          {effect.value && <span className="ml-1 text-cyan-100 font-bold">({effect.value})</span>}
+                          {effect.value && <span className="ml-1 text-info font-bold">({effect.value})</span>}
                         </div>
                       ))}
                     </div>
@@ -641,7 +642,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   {/* Flavor Text */}
                   {card.metadata?.flavor && (
                     <div className="border-t border-current/20 pt-1.5">
-                      <div className="text-[10px] italic text-amber-200 leading-tight">
+                      <div className="text-[10px] italic text-warning leading-tight">
                         "{card.metadata.flavor}"
                       </div>
                     </div>
@@ -651,13 +652,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 {/* Card Footer - Special Properties */}
                 <div className="space-y-1">
                   {(card as any).isReactive && (
-                    <div className="text-center text-[10px] font-bold bg-cyan-600 text-cyan-100 py-0.5 px-1.5 rounded">
+                    <div className="text-center text-[10px] font-bold bg-info text-base-content py-0.5 px-1.5 rounded">
                       REACTIVE
                     </div>
                   )}
                   
                   {(card as any).preventReaction && (
-                    <div className="text-center text-[10px] font-bold bg-red-600 text-red-100 py-0.5 px-1.5 rounded">
+                    <div className="text-center text-[10px] font-bold bg-error text-base-content py-0.5 px-1.5 rounded">
                       NO REACTIONS
                     </div>
                   )}
@@ -666,13 +667,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
               {/* Special indicators */}
               {isReactiveCard && (
-                <div className="absolute top-1 left-1 bg-cyan-600/90 text-cyan-100 rounded px-1 text-[6px] font-bold z-60">
+                <div className="absolute top-1 left-1 bg-info/90 text-base-content rounded px-1 text-[6px] font-bold z-60">
                   REACTIVE
                 </div>
               )}
               
               {isInReactionMode && isReactiveCard && (
-                <div className="absolute -top-1 -right-1 bg-cyan-500 text-cyan-100 rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold animate-pulse z-60">
+                <div className="absolute -top-1 -right-1 bg-info text-base-content rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold animate-pulse z-60">
                   ⚡
                 </div>
               )}
@@ -680,7 +681,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               {/* Per-card cycle button */}
               {!targetMode && !isInReactionMode && isInActionMode && (
                 <button 
-                  className="absolute -top-1 -left-1 bg-orange-600 text-orange-100 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-60"
+                  className="absolute -top-1 -left-1 bg-warning text-base-content rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-60"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -703,27 +704,27 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   const getInfraStateClasses = (state: string) => {
     switch (state) {
       case 'secure':
-        return 'bg-green-900/70 border-green-500 text-green-100 shadow-green-500/30';
+        return 'bg-green-900/70 border-green-500 text-base-content shadow-green-500/30';
       case 'vulnerable':
-        return 'bg-amber-900/70 border-amber-500 text-amber-100 shadow-amber-500/40 animate-pulse';
+        return 'bg-amber-900/70 border-amber-500 text-base-content shadow-amber-500/40 animate-pulse';
       case 'compromised':
-        return 'bg-red-900/80 border-red-500 text-red-100 shadow-red-500/50 animate-pulse';
+        return 'bg-red-900/80 border-red-500 text-base-content shadow-red-500/50 animate-pulse';
       case 'fortified':
-        return 'bg-blue-900/70 border-blue-500 text-blue-100 shadow-blue-500/40';
+        return 'bg-blue-900/70 border-blue-500 text-base-content shadow-blue-500/40';
       case 'shielded':
-        return 'bg-purple-900/70 border-purple-500 text-purple-100 shadow-purple-500/40';
+        return 'bg-purple-900/70 border-purple-500 text-base-content shadow-purple-500/40';
       default:
         return isAttacker 
-          ? 'bg-red-900/60 border-red-600 text-red-200' 
-          : 'bg-blue-900/60 border-blue-600 text-blue-200';
+          ? 'bg-red-900/60 border-red-600 text-base-content' 
+          : 'bg-blue-900/60 border-blue-600 text-base-content';
     }
   };
 
   // Helper function to get player card classes
   const getPlayerCardClasses = (cardType: string, isAttacker: boolean) => {
     const baseClasses = isAttacker 
-      ? 'bg-red-900/30 border-red-600 text-red-100' 
-      : 'bg-blue-900/30 border-blue-600 text-blue-100';
+      ? 'bg-red-900/30 border-red-600 text-base-content' 
+      : 'bg-blue-900/30 border-blue-600 text-base-content';
     
     switch (cardType) {
       case 'attack':
@@ -739,7 +740,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       case 'fortify':
         return `${baseClasses} shadow-blue-500/40`;
       case 'wildcard':
-        return 'bg-purple-900/30 border-purple-600 text-purple-100 shadow-purple-500/40';
+        return 'bg-purple-900/30 border-purple-600 text-base-content shadow-purple-500/40';
       default:
         return baseClasses;
     }
@@ -792,7 +793,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40' : ''}
                 ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
                 ${targetMode && !isTargetable ? 'opacity-50 cursor-not-allowed' : ''}
-                ${!targetMode ? 'hover:scale-150 hover:z-60 hover:shadow-2xl transform-gpu' : ''}
+                ${!targetMode ? 'hover:scale-150 hover:z-[9999] hover:shadow-2xl transform-gpu' : ''}
                 ${hasMonitoringEffects ? 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100' : ''}
               `}
               onClick={() => {
@@ -803,55 +804,55 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             >
               {/* Monitoring & Effects Indicators - Top overlay */}
               {(hasMonitoringEffects || hasActiveEffects) && (
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-70 group/effects flex gap-1">
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[999999] group/effects flex gap-1">
                   {/* Monitoring Indicator */}
                   {hasMonitoringEffects && (
-                    <div className="lg:text-[9px] text-[8px] bg-orange-600 text-orange-100 rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-orange-400 cursor-help">
+                    <div className="lg:text-[9px] text-[8px] bg-warning text-base-content rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-warning/50 cursor-help">
                       🎯 MONITORED
                     </div>
                   )}
                   
                   {/* Active Effects Indicator */}
                   {hasActiveEffects && (
-                    <div className="lg:text-[9px] text-[8px] bg-purple-600 text-purple-100 rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-purple-400 cursor-help">
+                    <div className="lg:text-[9px] text-[8px] bg-info text-base-content rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-info/50 cursor-help">
                       ⚡ AFFECTED
                     </div>
                   )}
                   
                   {/* Effects Magnification on Hover */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-slate-400 z-80 transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-none">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[999999] transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-none">
                     <div className="text-center mb-2">
-                      <div className="font-bold text-sm text-slate-100 mb-1">Effects & Monitoring</div>
-                      <div className="text-xs text-slate-200">on {infra.name}</div>
+                      <div className="font-bold text-sm text-base-content mb-1">Effects & Monitoring</div>
+                      <div className="text-xs text-base-content/70">on {infra.name}</div>
                     </div>
                     
                     <div className="space-y-3">
                       {/* Persistent Effects Section */}
                       {infraPersistentEffects.length > 0 && (
                         <div>
-                          <div className="text-xs font-bold text-orange-300 mb-2 uppercase flex items-center gap-1">
+                          <div className="text-xs font-bold text-warning mb-2 uppercase flex items-center gap-1">
                             <span>🎯</span> Monitoring Effects
                           </div>
                           {infraPersistentEffects.map((effect, idx) => (
-                            <div key={`persistent-${idx}`} className="bg-orange-800/50 rounded-lg p-2 border border-orange-600/30 mb-2">
+                            <div key={`persistent-${idx}`} className="bg-warning/10 rounded-lg p-2 border border-warning/30 mb-2">
                               <div className="flex items-center justify-between mb-1">
-                                <div className="text-xs font-bold text-orange-100 capitalize">
+                                <div className="text-xs font-bold text-base-content capitalize">
                                   Multi-Stage Malware
                                 </div>
-                                <div className="text-xs text-orange-300">
+                                <div className="text-xs text-warning">
                                   {effect.triggered ? 'TRIGGERED' : 'ACTIVE'}
                                 </div>
                               </div>
-                              <div className="text-[10px] text-orange-200 mb-1">
+                              <div className="text-[10px] text-base-content/70 mb-1">
                                 Condition: {effect.condition.fromState || 'any'} → {effect.condition.toState}
                               </div>
-                              <div className="text-[10px] text-orange-200 mb-1">
+                              <div className="text-[10px] text-base-content/70 mb-1">
                                 Reward: +{effect.reward.amount} AP when compromised
                               </div>
-                              <div className="text-[10px] text-orange-200 mb-1">
+                              <div className="text-[10px] text-base-content/70 mb-1">
                                 Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
                               </div>
-                              <div className="text-[10px] text-orange-300 italic">
+                              <div className="text-[10px] text-warning/70 italic">
                                 Watching for infrastructure compromise...
                               </div>
                             </div>
@@ -862,34 +863,34 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                       {/* Temporary Effects Section */}
                       {infraEffects.length > 0 && (
                         <div>
-                          <div className="text-xs font-bold text-purple-300 mb-2 uppercase flex items-center gap-1">
+                          <div className="text-xs font-bold text-info mb-2 uppercase flex items-center gap-1">
                             <span>⚡</span> Active Effects
                           </div>
                           {infraEffects.map((effect, idx) => (
-                            <div key={`temporary-${idx}`} className="bg-purple-800/50 rounded-lg p-2 border border-purple-600/30 mb-2">
+                            <div key={`temporary-${idx}`} className="bg-info/10 rounded-lg p-2 border border-info/30 mb-2">
                               <div className="flex items-center justify-between mb-1">
-                                <div className="text-xs font-bold text-purple-100 capitalize">
+                                <div className="text-xs font-bold text-base-content capitalize">
                                   {effect.type.replace('_', ' ')}
                                 </div>
-                                <div className="text-xs text-purple-300">
+                                <div className="text-xs text-info">
                                   {effect.duration} turn{effect.duration !== 1 ? 's' : ''}
                                 </div>
                               </div>
-                              <div className="text-[10px] text-purple-200">
+                              <div className="text-[10px] text-base-content/70">
                                 Source: {effect.sourceCardId}
                               </div>
                               {effect.type === 'prevent_reactions' && (
-                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                <div className="text-[10px] text-info/70 mt-1 italic">
                                   Blocks reaction cards from targeting this infrastructure
                                 </div>
                               )}
                               {effect.type === 'prevent_restore' && (
-                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                <div className="text-[10px] text-info/70 mt-1 italic">
                                   Prevents restoration effects on this infrastructure
                                 </div>
                               )}
                               {effect.type === 'cost_reduction' && (
-                                <div className="text-[10px] text-purple-300 mt-1 italic">
+                                <div className="text-[10px] text-info/70 mt-1 italic">
                                   Reduces action point costs when targeting this
                                 </div>
                               )}
@@ -906,7 +907,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
                 {/* Top section - ID and Type Icon */}
                 <div className="flex items-center justify-between w-full mb-1">
-                  <div className="lg:text-xs text-[10px] bg-gray-600 text-gray-200 rounded px-1.5 py-1 font-semibold">
+                  <div className="lg:text-xs text-[10px] bg-base-300 text-base-content rounded px-1.5 py-1 font-semibold">
                     {infra.id}
                   </div>
                   <div className="lg:text-3xl text-2xl">
@@ -927,7 +928,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 
                 {/* Bottom section - Type and Vulnerabilities */}
                 <div className="space-y-2">
-                  <div className="lg:text-xs text-[10px] font-semibold uppercase text-gray-300 text-center">
+                  <div className="lg:text-xs text-[10px] font-semibold uppercase text-base-content/70 text-center">
                     {infra.type} Infra
                   </div>
                   
@@ -936,19 +937,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                     <div className="flex flex-wrap gap-1 justify-center">
                       {(infra as any).vulnerableVectors.slice(0, 3).map((vector: string, idx: number) => (
                         <div key={idx} className={`
-                          inline-block lg:text-[9px] text-[8px] rounded-full px-2 py-1 font-bold uppercase tracking-wide
-                          ${vector === 'network' ? 'bg-blue-500 text-blue-100' :
-                            vector === 'web' ? 'bg-green-500 text-green-100' :
-                            vector === 'social' ? 'bg-purple-500 text-purple-100' :
-                            vector === 'physical' ? 'bg-orange-500 text-orange-100' :
-                            vector === 'malware' ? 'bg-red-500 text-red-100' :
-                            'bg-gray-500 text-gray-100'}
+                          inline-block lg:text-[9px] text-[8px] rounded-full px-2 py-1 font-bold uppercase tracking-wide text-base-content
+                          ${vector === 'network' ? 'bg-blue-600' :
+                            vector === 'web' ? 'bg-green-600' :
+                            vector === 'social' ? 'bg-purple-600' :
+                            vector === 'physical' ? 'bg-orange-600' :
+                            vector === 'malware' ? 'bg-red-600' :
+                            'bg-gray-600'}
                         `}>
                           {vector}
                         </div>
                       ))}
                       {(infra as any).vulnerableVectors.length > 3 && (
-                        <div className="inline-block lg:text-[9px] text-[8px] bg-gray-400 text-gray-100 rounded-full px-2 py-1 font-bold">
+                        <div className="inline-block lg:text-[9px] text-[8px] bg-base-300 text-base-content rounded-full px-2 py-1 font-bold">
                           +{(infra as any).vulnerableVectors.length - 3}
                         </div>
                       )}
@@ -957,12 +958,12 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   
                   {/* State indicator */}
                   <div className={`
-                    lg:text-[10px] text-[9px] font-bold px-2 py-1 rounded uppercase text-center
-                    ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
-                      infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
-                      infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
-                      infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
-                      'bg-green-600 text-green-100'}
+                    lg:text-[10px] text-[9px] font-bold px-2 py-1 rounded uppercase text-center text-base-content
+                    ${infra.state === 'compromised' ? 'bg-red-600' : 
+                      infra.state === 'fortified' ? 'bg-blue-600' : 
+                      infra.state === 'vulnerable' ? 'bg-amber-600' :
+                      infra.state === 'shielded' ? 'bg-purple-600' :
+                      'bg-green-600'}
                   `}>
                     {infra.state}
                   </div>
@@ -970,17 +971,17 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               </div>
 
               {/* Expanded Infrastructure Card View (on hover) - Card-like proportions */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border-2 border-current z-60 transform scale-125 origin-center shadow-2xl w-48 h-72 p-2.5 flex flex-col pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[99999] transform scale-125 origin-center shadow-2xl w-48 h-72 p-2.5 flex flex-col pointer-events-none">
                 {/* Infrastructure Card Header */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
                     <div className={`
-                      w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                      ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
-                        infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
-                        infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
-                        infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
-                        'bg-green-600 text-green-100'}
+                      w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-base-content
+                      ${infra.state === 'compromised' ? 'bg-red-600' : 
+                        infra.state === 'fortified' ? 'bg-blue-600' : 
+                        infra.state === 'vulnerable' ? 'bg-amber-600' :
+                        infra.state === 'shielded' ? 'bg-purple-600' :
+                        'bg-green-600'}
                     `}>
                       {infra.state === 'compromised' ? '💥' : 
                        infra.state === 'fortified' ? '🛡️' : 
@@ -988,7 +989,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                        infra.state === 'shielded' ? '🔒' :
                        '✅'}
                     </div>
-                    <div className="text-xs bg-gray-600 text-gray-200 rounded px-1.5 py-0.5 font-semibold uppercase">
+                    <div className="text-xs bg-base-300 text-base-content rounded px-1.5 py-0.5 font-semibold uppercase">
                       {infra.id}
                     </div>
                   </div>
@@ -1003,19 +1004,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
                 {/* Infrastructure Name and Type */}
                 <div className="text-center mb-2 border-b border-current/30 pb-2">
-                  <div className="font-bold text-sm text-white leading-tight mb-1">
+                  <div className="font-bold text-sm text-base-content leading-tight mb-1">
                     {infra.name}
                   </div>
-                  <div className="text-xs opacity-70 uppercase text-gray-300 font-semibold">
+                  <div className="text-xs opacity-70 uppercase text-base-content/70 font-semibold">
                     {infra.type} Infrastructure
                   </div>
                   <div className={`
-                    mt-1 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase
-                    ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
-                      infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
-                      infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
-                      infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
-                      'bg-green-600 text-green-100'}
+                    mt-1 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase text-base-content
+                    ${infra.state === 'compromised' ? 'bg-red-600' : 
+                      infra.state === 'fortified' ? 'bg-blue-600' : 
+                      infra.state === 'vulnerable' ? 'bg-amber-600' :
+                      infra.state === 'shielded' ? 'bg-purple-600' :
+                      'bg-green-600'}
                   `}>
                     {infra.state}
                   </div>
@@ -1023,24 +1024,24 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
                 {/* Infrastructure Description */}
                 <div className="flex-1 mb-2">
-                  <div className="text-xs text-gray-200 leading-tight mb-2">
+                  <div className="text-xs text-base-content/70 leading-tight mb-2">
                     {infra.description}
                   </div>
                   
                   {/* Vulnerabilities Section */}
                   {((infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0) || ((infra as any).vulnerabilities && (infra as any).vulnerabilities.length > 0) && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-bold text-red-300 mb-1 uppercase">Vulnerable To:</div>
+                      <div className="text-[10px] font-bold text-error mb-1 uppercase">Vulnerable To:</div>
                       <div className="flex flex-wrap gap-1">
                         {/* Show vulnerableVectors if available */}
                         {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.map((vector: string, idx: number) => (
-                          <span key={`vector-${idx}`} className="text-[10px] text-red-200 bg-red-900/30 rounded px-1.5 py-0.5">
+                          <span key={`vector-${idx}`} className="text-[10px] text-error bg-error/10 rounded px-1.5 py-0.5">
                             {vector.toUpperCase()}
                           </span>
                         ))}
                         {/* Show vulnerabilities if available and different from vulnerableVectors */}
                         {(infra as any).vulnerabilities && (infra as any).vulnerabilities.map((vuln: string, idx: number) => (
-                          <span key={`vuln-${idx}`} className="text-[10px] text-red-200 bg-red-900/30 rounded px-1.5 py-0.5">
+                          <span key={`vuln-${idx}`} className="text-[10px] text-error bg-error/10 rounded px-1.5 py-0.5">
                             {vuln.toUpperCase()}
                           </span>
                         ))}
@@ -1051,7 +1052,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   {/* Flavor Text */}
                   {(infra as any).flavor && (
                     <div className="border-t border-current/20 pt-1.5">
-                      <div className="text-[10px] italic text-amber-200 leading-tight">
+                      <div className="text-[10px] italic text-warning leading-tight">
                         "{(infra as any).flavor}"
                       </div>
                     </div>
@@ -1063,12 +1064,12 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   {/* Security Level Indicator */}
                   <div className="text-center">
                     <div className={`
-                      text-[10px] font-bold py-0.5 px-1.5 rounded
-                      ${infra.state === 'compromised' ? 'bg-red-600 text-red-100' : 
-                        infra.state === 'fortified' ? 'bg-blue-600 text-blue-100' : 
-                        infra.state === 'vulnerable' ? 'bg-amber-600 text-amber-100' :
-                        infra.state === 'shielded' ? 'bg-purple-600 text-purple-100' :
-                        'bg-green-600 text-green-100'}
+                      text-[10px] font-bold py-0.5 px-1.5 rounded text-base-content
+                      ${infra.state === 'compromised' ? 'bg-red-600' : 
+                        infra.state === 'fortified' ? 'bg-blue-600' : 
+                        infra.state === 'vulnerable' ? 'bg-amber-600' :
+                        infra.state === 'shielded' ? 'bg-purple-600' :
+                        'bg-green-600'}
                     `}>
                       Security: {infra.state === 'compromised' ? 'BREACHED' : 
                                 infra.state === 'fortified' ? 'FORTIFIED' : 
@@ -1079,7 +1080,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   </div>
 
                   {/* Infrastructure Type Category */}
-                  <div className="text-center text-[10px] bg-gray-600 text-gray-100 py-0.5 px-1.5 rounded">
+                  <div className="text-center text-[10px] bg-base-300 text-base-content/70 py-0.5 px-1.5 rounded">
                     Category: {infra.type.charAt(0).toUpperCase() + infra.type.slice(1)}
                   </div>
                   
@@ -1089,14 +1090,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                       {/* Persistent Effects */}
                       {infraPersistentEffects.length > 0 && (
                         <div className="mb-2">
-                          <div className="text-[10px] font-bold text-orange-300 mb-1 uppercase flex items-center gap-1">
+                          <div className="text-xs font-bold text-warning mb-1 uppercase flex items-center gap-1">
                             <span>🎯</span> Monitoring:
                           </div>
                           <div className="space-y-1">
                             {infraPersistentEffects.map((effect, idx) => (
-                              <div key={`persist-${idx}`} className="text-[9px] text-orange-200 bg-orange-900/30 rounded px-1.5 py-0.5">
+                              <div key={`persist-${idx}`} className="text-[9px] text-warning bg-warning/10 rounded px-1.5 py-0.5">
                                 <span className="font-semibold">Multi-Stage Malware:</span> +{effect.reward.amount} AP on compromise
-                                <div className="text-[8px] text-orange-300 mt-0.5">
+                                <div className="text-[8px] text-warning/70 mt-0.5">
                                   Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
                                 </div>
                               </div>
@@ -1108,7 +1109,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                       {/* Temporary Effects */}
                       {infraEffects.length > 0 && (
                         <div>
-                          <div className="text-[10px] font-bold text-purple-300 mb-1 uppercase flex items-center gap-1">
+                          <div className="text-[10px] font-bold text-info mb-1 uppercase flex items-center gap-1">
                             <span>⚡</span> Active Effects:
                           </div>
                           <TemporaryEffectsDisplay
@@ -1128,21 +1129,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     );
   };
 
+  // Theme support
+  const { theme, toggleTheme } = useThemeStore();
+
   return (
-    <div className={`
-      min-h-screen w-full flex flex-col relative overflow-hidden font-mono transition-all duration-1000
-      ${isAttacker 
-        ? 'bg-red-950 text-red-50' 
-        : 'bg-blue-950 text-blue-50'
-      }
-      ${targetMode ? 'ring-4 ring-warning/60 ring-inset shadow-[inset_0_0_50px_rgba(255,204,0,0.2)] animate-pulse' : ''}
-      ${isActive 
-        ? isAttacker 
-          ? 'ring-2 ring-red-400/50 ring-inset shadow-[inset_0_0_100px_rgba(239,68,68,0.15)]' 
-          : 'ring-2 ring-blue-400/50 ring-inset shadow-[inset_0_0_100px_rgba(59,130,246,0.15)]'
-        : ''
-      }
-    `}>
+    <div
+      className={`min-h-screen w-full flex flex-col relative overflow-hidden font-mono transition-all duration-1000 bg-base-100 text-base-content ${theme}`}
+      data-theme={theme}
+    >
       {/* Team-colored cyberpunk background grid */}
       <div 
         className={`absolute inset-0 pointer-events-none opacity-5 ${
@@ -1314,6 +1308,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             disabled={isProcessingMove}
           >
             SURRENDER
+          </button>
+          {/* Theme Switcher Button - right of Surrender */}
+          <button
+            onClick={toggleTheme}
+            className={`btn btn-sm font-mono font-bold uppercase transition-all duration-200 bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk`}
+            aria-label="Toggle Theme"
+            style={{ marginLeft: '0.5rem' }}
+          >
+            {theme === 'cyberpunk' ? '🌙' : '☀️'}
           </button>
         </div>
       </header>
