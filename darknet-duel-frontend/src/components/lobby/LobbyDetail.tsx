@@ -9,11 +9,13 @@ import UserTypeTag from '../UserTypeTag';
 import accountService from '../../services/account.service';
 import storeService from '../../services/store.service';
 import logo from '../../assets/logo.png';
+import { useAudioManager } from '../../hooks/useAudioManager';
 
 const LobbyDetail: React.FC = () => {
   const { matchID = '' } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { triggerClick, triggerNegativeClick, triggerPositiveClick } = useAudioManager();
   const [match, setMatch] = useState<GameMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +25,7 @@ const LobbyDetail: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [opponentData, setOpponentData] = useState<any>(null);
+  const [bothPlayersReady, setBothPlayersReady] = useState(false);
 
   // Track previous player slots for detecting host transfers using ref to avoid dependency issues
   const prevPlayerIDsRef = useRef<{[key: string]: number}>({});
@@ -104,26 +107,29 @@ const LobbyDetail: React.FC = () => {
           // User is not part of this match
           navigate('/lobbies');
         }
-      } else {
-        // Match not found - likely deleted due to inactivity
-        if (isBackgroundFetch) {
-          // Only show notification and redirect on background fetches (polling)
-          // This prevents showing the notification on initial load
-          console.log('Lobby not found - likely deleted due to inactivity');
-          
-          // Clean up local storage
-          localStorage.removeItem(`match_${matchID}_playerID`);
-          localStorage.removeItem(`match_${matchID}_credentials`);
-          
-          // Show notification and redirect
-          setError('This lobby has been deleted due to inactivity. Redirecting to lobby browser...');
-          
-          // Redirect after a short delay to show the notification
-          setTimeout(() => {
-            navigate('/lobbies');
-          }, 2000);
+              } else {
+          // Match not found - likely deleted due to inactivity
+          if (isBackgroundFetch) {
+            // Only show notification and redirect on background fetches (polling)
+            // This prevents showing the notification on initial load
+            console.log('Lobby not found - likely deleted due to inactivity');
+            
+            // Clean up local storage
+            localStorage.removeItem(`match_${matchID}_playerID`);
+            localStorage.removeItem(`match_${matchID}_credentials`);
+            
+            // Play negative sound effect for lobby timeout
+            triggerNegativeClick();
+            
+            // Show notification and redirect
+            setError('This lobby has been deleted due to inactivity. Redirecting to lobby browser...');
+            
+            // Redirect after a short delay to show the notification
+            setTimeout(() => {
+              navigate('/lobbies');
+            }, 2000);
+          }
         }
-      }
     } catch (err) {
       console.error('Error fetching match details:', err);
       if (!isBackgroundFetch) {
@@ -172,6 +178,21 @@ const LobbyDetail: React.FC = () => {
     }
   }, [match, currentPlayerID]);
 
+  // Check if both players are ready and play sound effect
+  useEffect(() => {
+    if (match) {
+      const areReady = areBothPlayersReady();
+      if (areReady && !bothPlayersReady) {
+        // Both players just became ready
+        triggerPositiveClick();
+        setBothPlayersReady(true);
+      } else if (!areReady && bothPlayersReady) {
+        // Players are no longer both ready
+        setBothPlayersReady(false);
+      }
+    }
+  }, [match, bothPlayersReady, triggerPositiveClick]);
+
   // Handle ready status change
   const handleReadyToggle = async () => {
     if (!matchID) return;
@@ -180,10 +201,13 @@ const LobbyDetail: React.FC = () => {
       const success = await lobbyService.updateReadyStatus(matchID, !isReady);
       if (success) {
         setIsReady(!isReady);
+      } else {
+        triggerNegativeClick(); // Play negative click sound on failure
       }
     } catch (err) {
       console.error('Error updating ready status:', err);
       setError('Failed to update ready status');
+      triggerNegativeClick(); // Play negative click sound on error
     }
   };
   
@@ -407,7 +431,10 @@ const LobbyDetail: React.FC = () => {
           </div>
           
           <button 
-            onClick={handleReadyToggle}
+            onClick={() => {
+              triggerClick(); // Play click sound on button press
+              handleReadyToggle();
+            }}
             className={`w-full py-2 px-4 font-mono text-sm rounded flex items-center justify-center transition-colors duration-300 ${isReady 
               ? 'bg-red-900/30 border border-red-700/50 text-red-500 hover:bg-red-900/50' 
               : 'bg-green-900/30 border border-green-500/50 text-green-500 hover:bg-green-900/50'}`}
