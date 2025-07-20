@@ -292,6 +292,21 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     
     // Handle auto-selection logic (PRESERVED FROM ORIGINAL)
     if (availableTypes.length >= 1) {
+      // Special handling for Incident Containment Protocol (D307) - reactive response-only card
+      if (card!.id.startsWith('D307') || card!.specialEffect === 'emergency_restore_shield') {
+        // This card can only be played as a response card and only during reaction phases
+        if (targetInfrastructure && targetInfrastructure.state === 'compromised') {
+          autoSelectedType = 'response';
+          console.log(`Incident Containment Protocol - auto-selecting response for compromised infrastructure`);
+        } else {
+          console.log(`Incident Containment Protocol - can only target compromised infrastructure`);
+          return {
+            ...G,
+            message: `${card!.name} can only target compromised infrastructure`
+          };
+        }
+      }
+      else
       // Special handling for Security Automation Suite (D304) - auto-select based on target state
       if (card!.id === 'D304' || card!.id.startsWith('D304')) {
         if (targetInfrastructure) {
@@ -504,16 +519,22 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       // Only apply infrastructure card effects if we have a target infrastructure
       let effectResult = null;
       if (targetInfrastructure) {
-        effectResult = applyCardEffect(
-          autoSelectedType,
-          targetInfrastructure,
-          G.infrastructure?.findIndex(infra => infra.id === targetInfrastructureId) || 0,
-          G.infrastructure ? [...G.infrastructure] : [],
-          extendedCard,
-          attackVector,
-          playerID,
-          gameStateWithWildcardEffects // Use the updated game state with wildcard effects
-        );
+        // For D307 (emergency_restore_shield), skip normal card effects since wildcard resolver handles everything
+        if (card!.id.startsWith('D307') || card!.specialEffect === 'emergency_restore_shield') {
+          console.log(`🚨 Skipping normal card effects for ${card!.name} - wildcard resolver handles everything`);
+          effectResult = gameStateWithWildcardEffects.infrastructure || G.infrastructure || [];
+        } else {
+          effectResult = applyCardEffect(
+            autoSelectedType,
+            targetInfrastructure,
+            G.infrastructure?.findIndex(infra => infra.id === targetInfrastructureId) || 0,
+            gameStateWithWildcardEffects.infrastructure || G.infrastructure ? [...(gameStateWithWildcardEffects.infrastructure || G.infrastructure)] : [],
+            extendedCard,
+            attackVector,
+            playerID,
+            gameStateWithWildcardEffects // Use the updated game state with wildcard effects
+          );
+        }
         
         // Special handling for Security Automation Suite chain security effect
         if (card!.id === 'D304' || card!.id.startsWith('D304')) {
@@ -550,10 +571,12 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         
         // Create a clean infrastructure array without Immer draft objects
         const cleanInfrastructure = effectResult.map(infra => {
-          // If it's an Immer draft, extract clean data
+          // If it's an Immer draft, extract the current state (not the base)
           if (infra && typeof infra === 'object' && ('base_' in infra || 'type_' in infra)) {
-            // Use JSON serialization to get clean object
-            return JSON.parse(JSON.stringify(infra));
+            // For Immer drafts, we need to get the current state, not the base
+            // Check if there's a copy_ property (modified draft) or use the current object
+            const currentState = (infra as any).copy_ || infra;
+            return JSON.parse(JSON.stringify(currentState));
           }
           // Otherwise, create a clean copy
           return { ...infra };

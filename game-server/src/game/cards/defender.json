@@ -421,13 +421,13 @@
       "name": "Incident Containment Protocol",
       "type": "wildcard", 
       "category": "any",
-      "cost": 2,
+      "cost": 4,
       "description": "Rapid response to security breaches",
       "flavor": "Stop the breach before it spreads",
-      "effect": "Can be played as any Response card. When played in response to attacker compromising infrastructure, immediately restore it to secure state and shield it.",
+      "effect": "Can be played as a Response card. When played in response to attacker compromising infrastructure, immediately restore it to secure state and shield it.",
       "img": "containment",
       "isReactive": true,
-      "target": "any",
+      "target": "compromised",
       "wildcardType": "response",
       "specialEffect": "emergency_restore_shield"
     }

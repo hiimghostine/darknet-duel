@@ -402,12 +402,30 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           // Proper reaction mode filtering - only reactive cards can be played
           let isPlayable = false;
           if (!targetMode && isActive && ctx.phase === 'playing') {
+            // Special handling for D307 - can be played in both normal and reaction modes
+            const isD307 = card.id?.startsWith('D307') || card.specialEffect === 'emergency_restore_shield';
+            
             if (isInReactionMode) {
               // In reaction mode, only reactive cards can be played
-              isPlayable = isReactiveCardObject(card) && card.playable;
+              const isReactiveCard = isReactiveCardObject(card, G);
+              if (isReactiveCard && card.playable) {
+                if (isD307) {
+                  // D307 special condition: only playable if there's compromised infrastructure
+                  const hasCompromisedInfra = G.infrastructure?.some(infra => infra.state === 'compromised') || false;
+                  isPlayable = hasCompromisedInfra;
+                } else {
+                  isPlayable = true;
+                }
+              }
             } else if (isInActionMode) {
               // In action mode, all playable cards can be played
-              isPlayable = card.playable;
+              if (isD307) {
+                // D307 special condition: only playable if there's compromised infrastructure
+                const hasCompromisedInfra = G.infrastructure?.some(infra => infra.state === 'compromised') || false;
+                isPlayable = card.playable && hasCompromisedInfra;
+              } else {
+                isPlayable = card.playable;
+              }
             }
           }
           
@@ -420,8 +438,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                                  'border-l-accent';
           
           // Special styling for reactive cards in reaction mode
-          const isReactiveCard = isReactiveCardObject(card);
-          const reactionModeClass = isInReactionMode && isReactiveCard ? 
+          const isReactiveCard = isReactiveCardObject(card, G);
+          const reactionModeClass = isInReactionMode && isReactiveCard ?
             'ring-2 ring-accent animate-pulse bg-accent/10' : '';
           
           return (
@@ -443,7 +461,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   console.log('🚫 Card not playable:', {
                     cardName: card.name,
                     isInReactionMode,
-                    isReactive: isReactiveCardObject(card),
+                    isReactive: isReactiveCardObject(card, G),
                     playable: card.playable
                   });
                   return;
