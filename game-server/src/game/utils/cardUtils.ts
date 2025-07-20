@@ -1,6 +1,7 @@
 import { Ctx } from 'boardgame.io';
 import { GameState, Player } from 'shared-types/game.types';
 import { Card } from 'shared-types/card.types';
+import { TemporaryEffectsManager } from '../actions/temporaryEffectsManager';
 
 /**
  * Comprehensive check if a card is playable in the current game state
@@ -20,12 +21,13 @@ import { Card } from 'shared-types/card.types';
  * @returns Whether the card is playable
  */
 export function isCardPlayable(
-  G: GameState, 
-  ctx: Ctx, 
-  playerID: string, 
-  card: Card, 
-  player: Player, 
-  debug: boolean = false
+  G: GameState,
+  ctx: Ctx,
+  playerID: string,
+  card: Card,
+  player: Player,
+  debug: boolean = false,
+  targetInfrastructureId?: string
 ): boolean {
   // Get player information if not provided
   if (!player) {
@@ -80,6 +82,16 @@ export function isCardPlayable(
     if ((!card.isReactive && !isD307) || !isProperReactiveCard) {
       if (debug) console.log(`Card ${card.name} not playable during reaction phase: Not a proper reaction card`);
       return false;
+    }
+    
+    // Check if this reactive card is blocked by prevent_reactions effects (D301 Advanced Threat Defense)
+    if (targetInfrastructureId && (card.type === 'counter-attack' || (card.type === 'wildcard' && card.isReactive))) {
+      // Check if the target infrastructure has a prevent_reactions effect that blocks reactive attacks
+      const hasPreventReactions = TemporaryEffectsManager.hasEffect(G, 'prevent_reactions', targetInfrastructureId);
+      if (hasPreventReactions) {
+        if (debug) console.log(`Reactive attack card ${card.name} blocked by prevent_reactions effect on infrastructure ${targetInfrastructureId}`);
+        return false;
+      }
     }
     
     // Special condition for D307: only playable if there's compromised infrastructure

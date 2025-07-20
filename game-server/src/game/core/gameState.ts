@@ -39,6 +39,11 @@ export const createInitialState = (): GameState => {
  * @returns Winner information if the game has ended, undefined otherwise
  */
 export const checkGameEnd = (G: GameState) => {
+  // Safety check: if G is undefined (invalid move), return undefined to continue game
+  if (!G || !G.gameConfig) {
+    return undefined;
+  }
+  
   // Check for max turns - standard mode is 15 rounds max
   if (G.turnNumber > G.gameConfig.maxTurns) {
     // If we hit max rounds, defender wins (defenders advantage)

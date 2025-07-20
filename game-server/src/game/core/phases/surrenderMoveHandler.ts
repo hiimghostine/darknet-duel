@@ -1,5 +1,4 @@
-import { PlayerRole } from 'shared-types/game.types';
-import type { GameState } from 'shared-types/game.types';
+import type { PlayerRole, GameState } from 'shared-types/game.types';
 import { addSystemMessage } from './chatMoveHandler';
 
 /**
@@ -70,9 +69,29 @@ export function handleSurrenderInGameOver({ G, playerID }: MoveParams<GameState>
   // The game is already over so no need to change winner
   
   // FIXED: Use boardgame.io player IDs for role determination
-  const playerRole = playerID === '0' ? 'Attacker' : 'Defender';  // Add system message about surrender
-  const updatedG = { ...G };
-  addSystemMessage(updatedG, `${playerRole} has surrendered!`);
+  const playerRole = playerID === '0' ? 'Attacker' : 'Defender';
   
-  return updatedG;
+  // Create immutable update to avoid Immer violation
+  const existingChat = G.chat || {
+    messages: [],
+    lastReadTimestamp: {}
+  };
+  
+  const systemMessage = {
+    id: Date.now().toString(),
+    sender: 'system',
+    senderRole: 'attacker' as const,
+    content: `${playerRole} has surrendered!`,
+    timestamp: Date.now(),
+    isSystem: true
+  };
+  
+  // Return completely new state object instead of mutating
+  return {
+    ...G,
+    chat: {
+      ...existingChat,
+      messages: [...existingChat.messages, systemMessage]
+    }
+  };
 }

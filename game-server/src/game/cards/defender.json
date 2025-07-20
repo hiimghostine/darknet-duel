@@ -388,18 +388,18 @@
     },
     {
       "id": "D305",
-      "name": "Defensive Coordination Protocol",
+      "name": "Defensive Hardening Protocol",
       "type": "wildcard",
       "category": "any",
       "cost": 2,
-      "description": "Coordinated defensive response across all systems",
-      "flavor": "Defense is stronger when we work together",
-      "effect": "Can be played as any Shield, Fortify, or Response card. After securing infrastructure, immediately secure another infrastructure without playing a card.",
-      "img": "defensive_coordination",
+      "description": "Implements comprehensive security measures that resist exploitation",
+      "flavor": "Some systems are just too well defended to crack",
+      "effect": "Can be played as any Shield or Fortify card. The targeted infrastructure cannot be made vulnerable by Exploit cards for 1 turn.",
+      "img": "defensive_hardening",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "any",
-      "specialEffect": "chain_defense"
+      "wildcardType": "shield_or_fortify",
+      "specialEffect": "prevent_exploits"
     },
     {
       "id": "D306",

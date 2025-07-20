@@ -196,10 +196,22 @@ export class WildcardResolver {
         }
         break;
         
-      case 'D301': // Zero Trust Architecture
-        // This needs special handling in the validation system
+      case 'D301': // Advanced Threat Defense
         if (context.targetInfrastructure) {
-          updatedGameState.message = `${card.name} requires 2 matching exploits to compromise`;
+          // Prevents reactive attack cards from being played on this infrastructure
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'prevent_reactions',
+            targetId: context.targetInfrastructure.id,
+            playerId: context.playerID,
+            duration: 2, // Lasts for a full round (both attacker and defender turns)
+            sourceCardId: card.id,
+            metadata: {
+              preventType: 'reactive_attacks',
+              description: 'Target infrastructure cannot be compromised by reactive attack cards'
+            }
+          });
+          
+          updatedGameState.message = `${card.name} prevents reactive attacks on ${context.targetInfrastructure.name} for 1 turn`;
         }
         break;
         
@@ -387,6 +399,25 @@ export class WildcardResolver {
           }
           break;
         
+        case 'prevent_reactive_attacks':
+          // Advanced Threat Defense - Prevent reactive attack cards for 1 round
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+              type: 'prevent_reactions',
+              targetId: context.targetInfrastructure.id,
+              playerId: context.playerID,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
+              sourceCardId: card.id,
+              metadata: {
+                preventType: 'reactive_attacks',
+                description: 'Target infrastructure cannot be compromised by reactive attack cards'
+              }
+            });
+            
+            updatedGameState.message = `${card.name} prevents reactive attacks on ${context.targetInfrastructure.name} for 1 turn`;
+          }
+          break;
+        
         case 'prevent_restore':
           // Prevent restore effects for 1 round
           if (context.targetInfrastructure) {
@@ -407,6 +438,25 @@ export class WildcardResolver {
             duration: 0, // Immediate effect
             sourceCardId: card.id
           });
+          break;
+        
+        case 'prevent_exploits':
+          // Defensive Hardening Protocol - Prevent exploit cards for 1 round
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+              type: 'prevent_exploits',
+              targetId: context.targetInfrastructure.id,
+              playerId: context.playerID,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
+              sourceCardId: card.id,
+              metadata: {
+                preventType: 'exploits',
+                description: 'Target infrastructure cannot be made vulnerable by Exploit cards'
+              }
+            });
+            
+            updatedGameState.message = `${card.name} prevents exploit cards on ${context.targetInfrastructure.name} for 1 turn`;
+          }
           break;
         
         case 'discard_redraw':

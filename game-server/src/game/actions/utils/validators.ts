@@ -28,9 +28,15 @@ export function validateCardTargeting(
     }
     
     // Check if restoration is prevented
-    if (cardType === 'response' && 
+    if (cardType === 'response' &&
         TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_restore', infrastructure.id)) {
       return { valid: false, message: "This infrastructure cannot be restored" };
+    }
+    
+    // Check if exploits are prevented by Defensive Hardening Protocol
+    if (cardType === 'exploit' &&
+        TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_exploits', infrastructure.id)) {
+      return { valid: false, message: "This infrastructure is protected from exploit cards" };
     }
     
     // PHASE 2: Check for chain vulnerability - makes all exploits valid on this infra

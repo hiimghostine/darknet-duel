@@ -39,23 +39,40 @@ export const reactionStageMoves = {
     const { throwCardMove } = require('../../actions/playerActions');
     const newG = throwCardMove({ G, ctx, playerID }, cardId, targetInfrastructureId);
     
-    // Clear pending reactions for this player
-    const updatedPendingReactions = G.pendingReactions ? 
-      G.pendingReactions.filter(reaction => reaction.target !== playerID) : [];
-        
-    // Return to the action player's action stage after playing a reaction
-    if (G.currentActionPlayer && events) {
-      switchToStage(events, G.currentActionPlayer, 'action');
-    } else if (events) {
-      switchCurrentPlayerToStage(events, 'action');
-    }
+    // Check if the move was successful by comparing if the game state actually changed
+    // If only the message changed, it means the move was blocked/invalid
+    const moveWasSuccessful = newG !== G && (
+      JSON.stringify(G.attacker?.hand) !== JSON.stringify(newG.attacker?.hand) ||
+      JSON.stringify(G.defender?.hand) !== JSON.stringify(newG.defender?.hand) ||
+      JSON.stringify(G.infrastructure) !== JSON.stringify(newG.infrastructure) ||
+      G.attacker?.actionPoints !== newG.attacker?.actionPoints ||
+      G.defender?.actionPoints !== newG.defender?.actionPoints
+    );
     
-    // Update the game state to include cleared pending reactions
-    return {
-      ...newG,
-      pendingReactions: updatedPendingReactions,
-      reactionComplete: updatedPendingReactions.length === 0
-    };
+    // Only proceed with phase transitions if the move was successful
+    if (moveWasSuccessful) {
+      // Clear pending reactions for this player
+      const updatedPendingReactions = G.pendingReactions ?
+        G.pendingReactions.filter(reaction => reaction.target !== playerID) : [];
+          
+      // Return to the action player's action stage after playing a reaction
+      if (G.currentActionPlayer && events) {
+        switchToStage(events, G.currentActionPlayer, 'action');
+      } else if (events) {
+        switchCurrentPlayerToStage(events, 'action');
+      }
+      
+      // Update the game state to include cleared pending reactions
+      return {
+        ...newG,
+        pendingReactions: updatedPendingReactions,
+        reactionComplete: updatedPendingReactions.length === 0
+      };
+    } else {
+      // Move was blocked/invalid - stay in reaction mode and just return the error state
+      console.log('🚫 REACTION: Move was blocked, staying in reaction mode');
+      return newG;
+    }
   },
   
   // Keep the legacy playReaction for backward compatibility

@@ -28,7 +28,13 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   const validation = validateThrowCardMove(validationContext);
   
   if (!validation.valid) {
-    return { ...G, message: validation.message || "Validation failed" };
+    console.log(`🚫 INVALID MOVE: ${validation.message || "Validation failed"}`);
+    // Return the unchanged game state with an error message
+    // This prevents the move from executing while preserving the game state
+    return {
+      ...G,
+      message: validation.message || "Validation failed"
+    };
   }
   
   // Extract validated data
@@ -92,7 +98,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     );
 
     if (!targetingValidation.valid) {
-      console.log(`VALIDATION FAILED: ${targetingValidation.message}`);
+      console.log(`🚫 INVALID MOVE: ${targetingValidation.message}`);
       console.log(`Card: ${card!.name}, Type: ${card!.type}, Effective Type: ${effectiveCardType}`);
       console.log(`Target: ${targetInfrastructure.name}, State: ${targetInfrastructure.state}`);
       return {
@@ -155,6 +161,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   
   // Check if player has enough action points for effective cost
   if (player!.actionPoints < effectiveCost) {
+    console.log(`🚫 INVALID MOVE: Not enough action points (${player!.actionPoints}/${effectiveCost})`);
     return {
       ...G,
       message: "Not enough action points to throw this card"

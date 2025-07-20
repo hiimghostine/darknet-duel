@@ -253,7 +253,7 @@ export interface GameState {
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax'; // Added Phase 2 & 3 effect types
+          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'prevent_exploits'; // Added Phase 2 & 3 effect types
     targetId?: string;
     playerId?: string;
     duration: number;
