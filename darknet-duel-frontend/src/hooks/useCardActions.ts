@@ -196,11 +196,12 @@ export function useCardActions(props: BoardProps & {
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'shield':
-                // Shield cards can target secure or vulnerable infrastructure
+                // Shield cards can ONLY target secure infrastructure (not vulnerable, compromised, shielded, or fortified)
+                // Only reaction cards should be able to target vulnerable infrastructure to restore it to secure
                 // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
-                    const stateMatch = infra.state === 'secure' || infra.state === 'vulnerable';
+                    const stateMatch = infra.state === 'secure';
                     const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
@@ -310,11 +311,12 @@ export function useCardActions(props: BoardProps & {
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For shield cards, target secure/vulnerable infrastructure + vector compatibility
+      // For shield cards, target ONLY secure infrastructure + vector compatibility
+      // Shield cards should not be able to target vulnerable infrastructure
       else if (effectiveCardType === 'shield') {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
-            const stateMatch = infra.state === 'secure' || infra.state === 'vulnerable';
+            const stateMatch = infra.state === 'secure';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
@@ -372,7 +374,7 @@ export function useCardActions(props: BoardProps & {
         switch (effectiveCardType) {
           case 'attack': return infra.state === 'vulnerable';
           case 'exploit': return infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
-          case 'shield': return infra.state === 'secure' || infra.state === 'vulnerable';
+          case 'shield': return infra.state === 'secure';
           case 'fortify': return infra.state === 'shielded';
           case 'response': return infra.state === 'compromised';
           case 'reaction': return infra.state === 'vulnerable' || infra.state === 'compromised';

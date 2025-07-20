@@ -177,11 +177,12 @@ export function validateCardTargeting(
       return { valid: true };
       
     case 'shield':
-      // Shield cards can target secure or vulnerable infrastructure (not compromised, shielded, or fortified)
-      if (infrastructure.state !== 'secure' && infrastructure.state !== 'vulnerable') {
+      // Shield cards can ONLY target secure infrastructure (not vulnerable, compromised, shielded, or fortified)
+      // Only reaction cards should be able to target vulnerable infrastructure to restore it to secure
+      if (infrastructure.state !== 'secure') {
         return {
           valid: false,
-          message: "Shield cards can only target secure or vulnerable infrastructure"
+          message: "Shield cards can only target secure infrastructure"
         };
       }
       
