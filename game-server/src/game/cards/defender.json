@@ -333,13 +333,14 @@
       "type": "wildcard",
       "category": "any",
       "cost": 2,
-      "description": "Multi-layered security system",
+      "description": "Multi-layered security system with reactive blocking",
       "flavor": "When one shield falls, three more stand ready",
-      "effect": "Can be played as any Shield or Fortify card. Target infrastructure gains immunity to one attack vector of your choice for 2 turns.",
+      "effect": "Can be played as any Shield or Fortify card. Target infrastructure can't be compromised by reactive attack cards for 1 turn.",
       "img": "advanced_defense",
       "isReactive": false,
+      "target": "any",
       "wildcardType": "shield_or_fortify",
-      "specialEffect": "selective_immunity"
+      "specialEffect": "prevent_reactive_attacks"
     },
     {
       "id": "D302",
@@ -387,18 +388,18 @@
     },
     {
       "id": "D305",
-      "name": "Zero Trust Architecture",
+      "name": "Defensive Coordination Protocol",
       "type": "wildcard",
       "category": "any",
       "cost": 2,
-      "description": "Never trust, always verify security model",
-      "flavor": "Every access request is guilty until proven innocent",
-      "effect": "Can be played as any Shield or Fortify card. Infrastructure requires 2 matching exploits to become vulnerable for the rest of the game.",
-      "img": "zero_trust",
+      "description": "Coordinated defensive response across all systems",
+      "flavor": "Defense is stronger when we work together",
+      "effect": "Can be played as any Shield, Fortify, or Response card. After securing infrastructure, immediately secure another infrastructure without playing a card.",
+      "img": "defensive_coordination",
       "isReactive": false,
-      "target": "infrastructure",
-      "wildcardType": "shield_or_fortify",
-      "specialEffect": "enhanced_protection"
+      "target": "any",
+      "wildcardType": "any",
+      "specialEffect": "chain_defense"
     },
     {
       "id": "D306",
