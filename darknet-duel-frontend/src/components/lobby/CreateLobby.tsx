@@ -2,20 +2,29 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
-import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle } from 'react-icons/fa';
+import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle, FaTag } from 'react-icons/fa';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { useThemeStore } from '../../store/theme.store';
 
 const CreateLobby: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { triggerClick } = useAudioManager();
+  const { theme } = useThemeStore();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<'standard' | 'blitz' | 'custom'>('standard');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [lobbyName, setLobbyName] = useState('');
+
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
+      return;
+    }
+    
+    if (!lobbyName.trim()) {
+      setError('Please enter a lobby name');
       return;
     }
     
@@ -27,11 +36,13 @@ const CreateLobby: React.FC = () => {
       interface GameSettings {
         gameMode: string;
         isPrivate: boolean;
+        lobbyName: string;
       }
       
       const settings: GameSettings = {
         gameMode: 'standard',
-        isPrivate: isPrivate
+        isPrivate: isPrivate,
+        lobbyName: lobbyName.trim()
       };
       
       const matchID = await lobbyService.createMatch(2, settings);
@@ -235,6 +246,33 @@ const CreateLobby: React.FC = () => {
         </div>
       </div>
       
+      {/* Lobby Name */}
+      <div className="mb-8">
+        <div className="flex items-center mb-3">
+          <FaTag className="text-primary mr-2" />
+          <h3 className="text-xl font-mono text-primary">LOBBY IDENTIFICATION</h3>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        
+        <div className="mt-4">
+          <input
+            type="text"
+            value={lobbyName}
+            onChange={(e) => setLobbyName(e.target.value)}
+            placeholder="Enter lobby name..."
+            maxLength={50}
+            className={`w-full px-4 py-3 border font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200 ${
+              theme === 'cyberpunk-dark' 
+                ? 'bg-base-900/80 border-primary/30 text-primary' 
+                : 'bg-base-100/80 border-primary/40 text-primary'
+            }`}
+          />
+          <div className="mt-2 text-xs text-primary/60 font-mono">
+            Choose a descriptive name for your lobby (max 50 characters)
+          </div>
+        </div>
+      </div>
+      
       <div className="mb-8">
         <div className="flex items-center mb-3">
           <FaUserSecret className="text-primary mr-2" />
@@ -288,12 +326,12 @@ const CreateLobby: React.FC = () => {
         
         <button 
           type="button" 
-          className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
+          className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user || !lobbyName.trim() ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
           onClick={() => {
             triggerClick();
             handleCreateLobby();
           }}
-          disabled={isCreating || !user}
+          disabled={isCreating || !user || !lobbyName.trim()}
         >
           {isCreating ? (
             <>

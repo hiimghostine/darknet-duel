@@ -307,15 +307,22 @@ const LobbyDetail: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
           <div className="flex items-center">
-            <h2 className="text-2xl font-mono text-primary glitch-text">LOBBY #{matchID.substring(0, 8)}</h2>
+            <h2 className="text-2xl font-mono text-primary glitch-text">
+              {match.setupData?.lobbyName || 'Unnamed Lobby'}
+            </h2>
           </div>
-          {match?.setupData.isPrivate && (
-            <div className="mt-2 flex items-center gap-2">
-              <FaLock className="text-primary/70 text-sm" />
-              <span className="text-xs font-mono text-primary/70">PRIVATE LOBBY</span>
-              <span className="text-xs font-mono text-primary/50">ID: {matchID}</span>
-            </div>
-          )}
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-sm font-mono text-primary/70">LOBBY #{matchID.substring(0, 8)}</span>
+            {match?.setupData.isPrivate && (
+              <>
+                <span className="text-primary/50">•</span>
+                <div className="flex items-center gap-1">
+                  <FaLock className="text-primary/70 text-xs" />
+                  <span className="text-xs font-mono text-primary/70">PRIVATE</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="px-3 py-1 bg-primary/20 border border-primary/40 text-primary font-mono text-xs rounded-md uppercase">
           <div className="flex items-center">
