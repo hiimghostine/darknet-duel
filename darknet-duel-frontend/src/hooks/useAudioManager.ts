@@ -14,8 +14,13 @@ export const useAudioManager = () => {
     console.log('🎵 getBGMForPage called with pathname:', pathname);
     
     // Check for exact matches first, then startsWith for admin routes
-    if (pathname === '/' || pathname === '/auth' || pathname === '/game') {
-      console.log('🎵 Page should not have BGM (exact match):', pathname);
+    if (
+      pathname === '/' ||
+      pathname === '/auth' ||
+      pathname === '/game' ||
+      pathname.startsWith('/game')
+    ) {
+      console.log('🎵 Page should not have BGM (game or excluded route):', pathname);
       return null;
     }
     
@@ -46,8 +51,11 @@ export const useAudioManager = () => {
         playBGM(targetBGM);
       } else {
         console.log('🎵 AudioManager: Stopping BGM for page without BGM');
-        // Stop BGM for pages that shouldn't have it
-        stopBGM();
+        if (!(window as any).__suppressGlobalBGM) {
+          stopBGM();
+        } else {
+          console.log('🎵 AudioManager: Suppressing global BGM stop due to WinnerLobby');
+        }
       }
     } else {
       console.log('🎵 AudioManager: Same BGM, no change needed');

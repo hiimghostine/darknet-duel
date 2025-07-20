@@ -20,6 +20,7 @@ import GameError from '../ui/GameError';
 
 import GameInitializationScreen from './GameInitializationScreen';
 import './GameClient.css';
+import { playBGM, stopBGM } from '../../utils/audioHandler';
 
 // Type declarations for debugging
 declare global {
@@ -516,6 +517,14 @@ const GameClient: React.FC = () => {
       }
     };
   }, [matchID, navigate, user]);
+
+  // Play 'the-drop' BGM when entering the game
+  useEffect(() => {
+    playBGM('the-drop');
+    return () => {
+      stopBGM();
+    };
+  }, []);
   
   // Render component
   return (

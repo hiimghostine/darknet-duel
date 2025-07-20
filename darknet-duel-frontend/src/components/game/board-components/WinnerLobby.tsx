@@ -5,6 +5,7 @@ import type { GameState } from 'shared-types/game.types';
 import LobbyChat from '../../lobby/LobbyChat';
 import { useGameCredentials } from '../../../hooks/useGameCredentials';
 import { useGameConnection } from '../../../hooks/useGameConnection';
+import { playBGM, stopBGM } from '../../../utils/audioHandler';
 
 interface WinnerLobbyProps {
   G: GameState;
@@ -28,6 +29,20 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
   const navigate = useNavigate();
   const isWinner = G.winner === (isAttacker ? 'attacker' : 'defender');
   
+  // Play victory/defeat BGM on mount and suppress global BGM manager
+  React.useEffect(() => {
+    window.__suppressGlobalBGM = true;
+    if (isWinner) {
+      playBGM('end-credits');
+    } else {
+      playBGM('unplugged-from-the-matrix');
+    }
+    return () => {
+      window.__suppressGlobalBGM = false;
+      stopBGM();
+    };
+  }, [isWinner]);
+
   // Use the same hooks as GameClient for proper cleanup
   const { clearCredentials } = useGameCredentials(matchID);
   const { leaveMatch } = useGameConnection(matchID, playerID || null, null);
@@ -449,3 +464,9 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
 };
 
 export default WinnerLobby;
+
+declare global {
+  interface Window {
+    __suppressGlobalBGM?: boolean;
+  }
+}
