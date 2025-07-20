@@ -26,7 +26,7 @@ export function getExplicitAttackVector(card: Card): AttackVector | undefined {
 }
 
 /**
- * Gets attack vector from card's metadata.category
+ * Gets attack vector from card's metadata.category or direct category property
  */
 export function getMetadataAttackVector(card: Card): AttackVector | undefined {
   const extendedCard = hasCardFeatures(card) ? card : card;
@@ -36,6 +36,14 @@ export function getMetadataAttackVector(card: Card): AttackVector | undefined {
       extendedCard.metadata.category !== 'any') {
     // Cast the category to AttackVector if it's one of our known values
     return extendedCard.metadata.category as AttackVector;
+  }
+  
+  // For non-wildcard cards, try to get attack vector from card data category property
+  if (card.type !== 'wildcard') {
+    const cardWithCategory = card as any;
+    if (cardWithCategory.category && cardWithCategory.category !== 'any') {
+      return cardWithCategory.category as AttackVector;
+    }
   }
   
   return undefined;

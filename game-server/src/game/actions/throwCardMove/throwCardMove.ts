@@ -43,7 +43,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     payload: { cardId, targetInfrastructureId, cardType: card!.type }
   };
 
-  // Phase 2: Attack vector resolution (PRESERVED FROM ORIGINAL)
+  // Phase 2: Attack vector resolution (ENHANCED FOR ALL CARD TYPES)
   let attackVector = extendedCard.attackVector as AttackVector | undefined;
   
   // If no explicit attackVector, try to get it from metadata.category
@@ -51,6 +51,15 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       extendedCard.metadata.category !== 'any') {
     // Cast the category to AttackVector if it's one of our known values
     attackVector = extendedCard.metadata.category as AttackVector;
+  }
+  
+  // For non-wildcard cards, try to get attack vector from card data category property
+  if (!attackVector && card!.type !== 'wildcard') {
+    const cardWithCategory = card as any;
+    if (cardWithCategory.category && cardWithCategory.category !== 'any') {
+      attackVector = cardWithCategory.category as AttackVector;
+      console.log(`Using card category as attack vector: ${attackVector}`);
+    }
   }
   
   // For wildcards without attack vector, provide a default based on target infrastructure

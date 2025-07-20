@@ -164,6 +164,35 @@ export function debugWildcardTargeting(card: any, gameState: any) {
 }
 
 /**
+ * Debug vector compatibility between card and infrastructure
+ */
+export function debugVectorCompatibility(card: any, infrastructure: any, cardAttackVector?: string) {
+  if (!debugSettings.enabled) return;
+  
+  console.group(`🎯 Vector Compatibility Debug: ${card.name} -> ${infrastructure.name}`);
+  console.log('Card attack vector:', cardAttackVector || 'NONE');
+  console.log('Infrastructure vulnerable vectors:', infrastructure.vulnerableVectors || 'NONE');
+  
+  if (cardAttackVector && infrastructure.vulnerableVectors) {
+    const isCompatible = infrastructure.vulnerableVectors.includes(cardAttackVector);
+    console.log('Compatible:', isCompatible ? '✅ YES' : '❌ NO');
+    
+    if (!isCompatible) {
+      console.log(`❌ ${card.name} (${cardAttackVector}) cannot target ${infrastructure.name}`);
+      console.log(`   Infrastructure accepts: ${infrastructure.vulnerableVectors.join(', ')}`);
+    } else {
+      console.log(`✅ ${card.name} (${cardAttackVector}) can target ${infrastructure.name}`);
+    }
+  } else if (!cardAttackVector) {
+    console.log('⚠️ No attack vector on card - will be allowed (wildcards, special cards)');
+  } else if (!infrastructure.vulnerableVectors) {
+    console.log('⚠️ No vulnerable vectors on infrastructure - will be allowed');
+  }
+  
+  console.groupEnd();
+}
+
+/**
  * Export the debug settings for reference
  */
 export { debugSettings };
