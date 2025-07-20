@@ -159,11 +159,8 @@ export class RatingService {
         
         if (account) {
           account.rating = newRating;
-          if (isWinner) {
-            account.gamesWon += 1;
-          } else {
-            account.gamesLost += 1;
-          }
+          // Note: Game statistics (gamesWon, gamesLost) are handled by GameService.saveGameResults()
+          // to avoid double increments
           await queryRunner.manager.save(account);
         }
 
