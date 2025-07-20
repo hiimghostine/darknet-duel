@@ -103,6 +103,38 @@ export function isCardPlayable(
       }
     }
     
+    // FIXED: Add vector validation for reactive cards during reaction phase
+    if (targetInfrastructureId) {
+      // Import the targeting validator
+      const { validateCardTargeting } = require('../actions/utils/validators');
+      
+      // Get attack vector from card (matches frontend logic)
+      let attackVector;
+      if (card.attackVector) {
+        attackVector = card.attackVector;
+      } else if (card.metadata && card.metadata.category && card.metadata.category !== 'any') {
+        attackVector = card.metadata.category;
+      }
+      
+      // Find the target infrastructure
+      const targetInfra = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
+      if (targetInfra) {
+        const validation = validateCardTargeting(
+          card.type,
+          targetInfra,
+          attackVector,
+          G,
+          card,
+          playerID
+        );
+        
+        if (!validation.valid) {
+          if (debug) console.log(`Reactive card ${card.name} not playable: ${validation.message}`);
+          return false;
+        }
+      }
+    }
+    
     return true; // Reactive cards can be played during reaction phase
   }
   
