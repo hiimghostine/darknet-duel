@@ -317,7 +317,7 @@ const DashboardPage: React.FC = () => {
                             </div>
                           ) : (
                             <div className="text-base-content/50 italic">
-                              Click [EDIT] to add your bio
+                              Click [VIEW_PROFILE] to add your bio
                             </div>
                           )}
                         </div>

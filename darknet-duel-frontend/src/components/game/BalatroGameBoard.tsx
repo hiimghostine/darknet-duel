@@ -366,6 +366,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     isAttacker
   }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
+  // Theme support - MOVED UP to avoid hooks order issues
+  const { theme, toggleTheme } = useThemeStore();
+
   // Loading state
   if (!G || !ctx) {
     return (
@@ -921,10 +924,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                     {infra.id}
                   </div>
                   <div className="lg:text-3xl text-2xl">
-                    {infra.type === 'network' ? '🌐' : 
-                     infra.type === 'data' ? '💾' : 
-                     infra.type === 'web' ? '🖥️' : 
-                     infra.type === 'user' ? '👤' : 
+                    {infra.type === 'network' ? '🌐' :
+                     infra.type === 'data' ? '💾' :
+                     infra.type === 'web' ? '🖥️' :
+                     infra.type === 'user' ? '👤' :
                      infra.type === 'critical' ? '🔧' : '⚙️'}
                   </div>
                 </div>
@@ -969,8 +972,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   {/* State indicator */}
                   <div className={`
                     lg:text-[10px] text-[9px] font-bold px-2 py-1 rounded uppercase text-center text-base-content
-                    ${infra.state === 'compromised' ? 'bg-red-600' : 
-                      infra.state === 'fortified' ? 'bg-blue-600' : 
+                    ${infra.state === 'compromised' ? 'bg-red-600' :
+                      infra.state === 'fortified' ? 'bg-blue-600' :
                       infra.state === 'vulnerable' ? 'bg-amber-600' :
                       infra.state === 'shielded' ? 'bg-purple-600' :
                       'bg-green-600'}
@@ -987,14 +990,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   <div className="flex items-center gap-1.5">
                     <div className={`
                       w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-base-content
-                      ${infra.state === 'compromised' ? 'bg-red-600' : 
-                        infra.state === 'fortified' ? 'bg-blue-600' : 
+                      ${infra.state === 'compromised' ? 'bg-red-600' :
+                        infra.state === 'fortified' ? 'bg-blue-600' :
                         infra.state === 'vulnerable' ? 'bg-amber-600' :
                         infra.state === 'shielded' ? 'bg-purple-600' :
                         'bg-green-600'}
                     `}>
-                      {infra.state === 'compromised' ? '💥' : 
-                       infra.state === 'fortified' ? '🛡️' : 
+                      {infra.state === 'compromised' ? '💥' :
+                       infra.state === 'fortified' ? '🛡️' :
                        infra.state === 'vulnerable' ? '⚠️' :
                        infra.state === 'shielded' ? '🔒' :
                        '✅'}
@@ -1004,10 +1007,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                     </div>
                   </div>
                   <div className="text-xl">
-                    {infra.type === 'network' ? '🌐' : 
-                     infra.type === 'data' ? '💾' : 
-                     infra.type === 'web' ? '🖥️' : 
-                     infra.type === 'user' ? '👤' : 
+                    {infra.type === 'network' ? '🌐' :
+                     infra.type === 'data' ? '💾' :
+                     infra.type === 'web' ? '🖥️' :
+                     infra.type === 'user' ? '👤' :
                      infra.type === 'critical' ? '🔧' : '⚙️'}
                   </div>
                 </div>
@@ -1022,8 +1025,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   </div>
                   <div className={`
                     mt-1 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase text-base-content
-                    ${infra.state === 'compromised' ? 'bg-red-600' : 
-                      infra.state === 'fortified' ? 'bg-blue-600' : 
+                    ${infra.state === 'compromised' ? 'bg-red-600' :
+                      infra.state === 'fortified' ? 'bg-blue-600' :
                       infra.state === 'vulnerable' ? 'bg-amber-600' :
                       infra.state === 'shielded' ? 'bg-purple-600' :
                       'bg-green-600'}
@@ -1075,14 +1078,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   <div className="text-center">
                     <div className={`
                       text-[10px] font-bold py-0.5 px-1.5 rounded text-base-content
-                      ${infra.state === 'compromised' ? 'bg-red-600' : 
-                        infra.state === 'fortified' ? 'bg-blue-600' : 
+                      ${infra.state === 'compromised' ? 'bg-red-600' :
+                        infra.state === 'fortified' ? 'bg-blue-600' :
                         infra.state === 'vulnerable' ? 'bg-amber-600' :
                         infra.state === 'shielded' ? 'bg-purple-600' :
                         'bg-green-600'}
                     `}>
-                      Security: {infra.state === 'compromised' ? 'BREACHED' : 
-                                infra.state === 'fortified' ? 'FORTIFIED' : 
+                      Security: {infra.state === 'compromised' ? 'BREACHED' :
+                                infra.state === 'fortified' ? 'FORTIFIED' :
                                 infra.state === 'vulnerable' ? 'AT RISK' :
                                 infra.state === 'shielded' ? 'SHIELDED' :
                                 'SECURE'}
@@ -1138,9 +1141,6 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       </div>
     );
   };
-
-  // Theme support
-  const { theme, toggleTheme } = useThemeStore();
 
   return (
     <div
@@ -1311,11 +1311,11 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             </button>
           )}
           
-          <button 
+          <button
             className={`
               btn btn-sm font-mono font-bold uppercase transition-all duration-200
-              ${isAttacker 
-                ? 'bg-red-900/80 border-red-700/50 text-red-200 hover:bg-red-800/90 hover:border-red-600 hover:shadow-lg hover:shadow-red-600/30' 
+              ${isAttacker
+                ? 'bg-red-900/80 border-red-700/50 text-red-200 hover:bg-red-800/90 hover:border-red-600 hover:shadow-lg hover:shadow-red-600/30'
                 : 'bg-blue-900/80 border-blue-700/50 text-blue-200 hover:bg-blue-800/90 hover:border-blue-600 hover:shadow-lg hover:shadow-blue-600/30'
               }
             `}
@@ -1323,7 +1323,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               triggerClick(); // Play click sound on button press
               surrender();
             }}
-            disabled={isProcessingMove}
+            disabled={!isActive || isProcessingMove}
+            title={!isActive ? "Surrender is only available during your turn" : "Surrender the game"}
           >
             SURRENDER
           </button>
