@@ -867,6 +867,10 @@ lobbyCleanupService.setCleanupInterval(10000); // 10 seconds
 // This allows players to see that a game was abandoned before it disappears
 lobbyCleanupService.setAbandonedGameTTL(30000); // 30 seconds grace period
 
+// Set a 5-minute TTL for inactive games (games with no connected players)
+// This ensures lobbies don't accumulate indefinitely
+lobbyCleanupService.setInactiveGameTTL(5 * 60 * 1000); // 5 minutes
+
 // Start the server
 server.run(PORT, () => {
   console.log(`Game server running on port ${PORT}`);

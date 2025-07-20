@@ -14,7 +14,7 @@ export class LobbyCleanupService {
   private cleanupInterval: NodeJS.Timeout | null = null;
   private CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // Run every 5 minutes by default
   private ABANDONED_GAME_TTL_MS = 30 * 60 * 1000; // Remove abandoned games after 30 minutes by default
-  private INACTIVE_GAME_TTL_MS = 2 * 60 * 60 * 1000; // Remove inactive games after 2 hours by default
+  private INACTIVE_GAME_TTL_MS = 5 * 60 * 1000; // Remove inactive games after 5 minutes by default
 
   constructor(server: ReturnType<typeof Server>) {
     this.server = server;

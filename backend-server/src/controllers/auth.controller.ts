@@ -313,11 +313,11 @@ export class AuthController {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Return user without password
-      const { password: _, ...userWithoutPassword } = user;
+      // Return user without password and avatar (use dedicated avatar endpoint)
+      const { password: _, avatar: __, avatarMimeType: ___, ...userWithoutSensitiveData } = user;
       
       return res.status(200).json({
-        user: userWithoutPassword
+        user: userWithoutSensitiveData
       });
     } catch (error) {
       console.error('Get profile error:', error);

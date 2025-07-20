@@ -104,10 +104,31 @@ const LobbyDetail: React.FC = () => {
           // User is not part of this match
           navigate('/lobbies');
         }
+      } else {
+        // Match not found - likely deleted due to inactivity
+        if (isBackgroundFetch) {
+          // Only show notification and redirect on background fetches (polling)
+          // This prevents showing the notification on initial load
+          console.log('Lobby not found - likely deleted due to inactivity');
+          
+          // Clean up local storage
+          localStorage.removeItem(`match_${matchID}_playerID`);
+          localStorage.removeItem(`match_${matchID}_credentials`);
+          
+          // Show notification and redirect
+          setError('This lobby has been deleted due to inactivity. Redirecting to lobby browser...');
+          
+          // Redirect after a short delay to show the notification
+          setTimeout(() => {
+            navigate('/lobbies');
+          }, 2000);
+        }
       }
     } catch (err) {
       console.error('Error fetching match details:', err);
-      setError('Failed to load lobby details');
+      if (!isBackgroundFetch) {
+        setError('Failed to load lobby details');
+      }
     } finally {
       setLoading(false);
       if (isBackgroundFetch) setIsPolling(false);
@@ -268,6 +289,11 @@ const LobbyDetail: React.FC = () => {
 
   const opponentInfo = getOpponentInfo();
   const gameMode = match.setupData?.gameMode || 'standard';
+  
+  // Determine who the host is (player in slot 0)
+  const hostPlayer = match.players.find(p => p.id === 0);
+  const isCurrentPlayerHost = currentPlayerID === '0';
+  const isOpponentHost = !isCurrentPlayerHost && hostPlayer?.name;
 
   return (
     <>
@@ -446,6 +472,11 @@ const LobbyDetail: React.FC = () => {
                 {opponentInfo.name}
               </div>
               {opponentData?.type && <UserTypeTag userType={opponentData.type} />}
+              {isOpponentHost && (
+                <div className="px-2 py-0.5 bg-secondary/20 border border-secondary/40 text-secondary text-xs font-mono rounded">
+                  HOST
+                </div>
+              )}
             </div>
           </div>
           

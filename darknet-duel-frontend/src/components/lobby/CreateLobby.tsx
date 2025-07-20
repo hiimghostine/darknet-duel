@@ -17,16 +17,29 @@ const CreateLobby: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [lobbyName, setLobbyName] = useState('');
 
+  // Predefined cyberpunk lobby names
+  const cyberpunkLobbyNames = [
+    'NEON_UNDERGROUND',
+    'DIGITAL_SHADOWS',
+    'CYBER_MAELSTROM',
+    'MATRIX_BREACH',
+    'SYSTEM_CORRUPTION',
+    'NEURAL_INTRUSION',
+    'QUANTUM_HACK'
+  ];
+
+  const getRandomLobbyName = () => {
+    return cyberpunkLobbyNames[Math.floor(Math.random() * cyberpunkLobbyNames.length)];
+  };
+
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
       return;
     }
     
-    if (!lobbyName.trim()) {
-      setError('Please enter a lobby name');
-      return;
-    }
+    // Use random name if lobby name is blank
+    const finalLobbyName = lobbyName.trim() || getRandomLobbyName();
     
     setIsCreating(true);
     setError(null);
@@ -42,7 +55,7 @@ const CreateLobby: React.FC = () => {
       const settings: GameSettings = {
         gameMode: 'standard',
         isPrivate: isPrivate,
-        lobbyName: lobbyName.trim()
+        lobbyName: finalLobbyName
       };
       
       const matchID = await lobbyService.createMatch(2, settings);
@@ -268,7 +281,7 @@ const CreateLobby: React.FC = () => {
             }`}
           />
           <div className="mt-2 text-xs text-primary/60 font-mono">
-            Choose a descriptive name for your lobby (max 50 characters)
+            Choose a descriptive name for your lobby (max 50 characters). Leave blank for a random cyberpunk name.
           </div>
         </div>
       </div>
@@ -326,12 +339,12 @@ const CreateLobby: React.FC = () => {
         
         <button 
           type="button" 
-          className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user || !lobbyName.trim() ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
+          className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
           onClick={() => {
             triggerClick();
             handleCreateLobby();
           }}
-          disabled={isCreating || !user || !lobbyName.trim()}
+          disabled={isCreating || !user}
         >
           {isCreating ? (
             <>
