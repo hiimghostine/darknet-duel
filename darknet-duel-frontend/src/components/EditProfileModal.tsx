@@ -289,7 +289,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </label>
               <input
                 type="email"
-                className={`input input-bordered w-full bg-base-100 font-mono ${errors.email ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.email ? 'input-error' : ''}`}
                 value={formData.email || ''}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="user@domain.com"
@@ -307,7 +307,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </label>
               <input
                 type="text"
-                className={`input input-bordered w-full bg-base-100 font-mono ${errors.username ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.username ? 'input-error' : ''}`}
                 value={formData.username || ''}
                 onChange={(e) => handleChange('username', e.target.value)}
                 placeholder="username"
@@ -325,7 +325,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               BIO ({formData.bio?.length || 0}/30)
             </label>
             <textarea
-              className={`textarea textarea-bordered w-full bg-base-100 font-mono ${errors.bio ? 'textarea-error' : ''}`}
+              className={`textarea textarea-bordered w-full bg-base-100 text-base-content font-mono ${errors.bio ? 'textarea-error' : ''}`}
               value={formData.bio || ''}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="Tell others about yourself..."
@@ -353,7 +353,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 </label>
                 <input
                   type="password"
-                  className={`input input-bordered w-full bg-base-100 font-mono ${errors.password ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.password ? 'input-error' : ''}`}
                   value={formData.password || ''}
                   onChange={(e) => handleChange('password', e.target.value)}
                   placeholder="Enter new password"
@@ -372,7 +372,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 </label>
                 <input
                   type="password"
-                  className={`input input-bordered w-full bg-base-100 font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
