@@ -313,7 +313,7 @@ export interface GameState {
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax';
+          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'maintenance_cost';
     targetId?: string;
     playerId?: string;
     duration: number;

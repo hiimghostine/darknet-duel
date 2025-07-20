@@ -140,20 +140,29 @@ export const reactionStageMoves = {
   },
   
   skipReaction: function skipReaction({ G, ctx, playerID, events }: MoveParams<GameState>) {
+    console.log(`🔄 SKIP REACTION: Player ${playerID} is skipping reaction`);
+    
     // Skip the reaction and clear pending reactions for this player
     
     // Clear pending reactions for this player
-    const updatedPendingReactions = G.pendingReactions ? 
+    const updatedPendingReactions = G.pendingReactions ?
       G.pendingReactions.filter(reaction => reaction.target !== playerID) : [];
+    
+    console.log(`🔄 SKIP REACTION: Pending reactions before: ${G.pendingReactions?.length || 0}, after: ${updatedPendingReactions.length}`);
     
     // Return control to the action player if no more pending reactions
     if (updatedPendingReactions.length === 0) {
+      console.log(`🔄 SKIP REACTION: No more pending reactions, returning to action stage`);
       if (G.currentActionPlayer && events) {
+        console.log(`🔄 SKIP REACTION: Switching to action stage for player ${G.currentActionPlayer}`);
         switchToStage(events, G.currentActionPlayer, 'action');
       } else if (events) {
         // Fallback to current player if somehow currentActionPlayer is not set
+        console.log(`🔄 SKIP REACTION: Fallback - switching current player to action stage`);
         switchCurrentPlayerToStage(events, 'action');
       }
+    } else {
+      console.log(`🔄 SKIP REACTION: Still have ${updatedPendingReactions.length} pending reactions`);
     }
     
     // Record the action of skipping a reaction
@@ -164,6 +173,8 @@ export const reactionStageMoves = {
       timestamp: Date.now(),
       payload: {}
     };
+    
+    console.log(`🔄 SKIP REACTION: Completed for ${isAttacker ? 'attacker' : 'defender'}`);
     
     return {
       ...G,
