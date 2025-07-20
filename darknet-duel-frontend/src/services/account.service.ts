@@ -69,6 +69,24 @@ class AccountService {
   }
 
   /**
+   * Search account by username (public information only)
+   */
+  async searchAccountByUsername(username: string): Promise<Partial<AccountData> | null> {
+    try {
+      const response = await api.get<AccountResponse>(`/account/search?username=${encodeURIComponent(username)}`);
+      
+      if (!response.data.success) {
+        return null;
+      }
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to search account by username:', error);
+      return null;
+    }
+  }
+
+  /**
    * Update current user's account details
    * Supports both JSON and multipart/form-data for avatar uploads
    */

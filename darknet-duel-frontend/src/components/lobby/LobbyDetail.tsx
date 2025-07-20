@@ -218,14 +218,10 @@ const LobbyDetail: React.FC = () => {
       const opponentInfo = getOpponentInfo();
       if (opponentInfo.name !== 'Waiting for opponent...' && opponentInfo.name !== 'Unknown') {
         try {
-          // Try to get opponent data by username (this is a simplified approach)
-          // In a real implementation, you'd need the opponent's user ID
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/account/search?username=${opponentInfo.name}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              setOpponentData(data.data);
-            }
+          // Use the account service to search for opponent data by username
+          const opponentData = await accountService.searchAccountByUsername(opponentInfo.name);
+          if (opponentData) {
+            setOpponentData(opponentData);
           }
         } catch (error) {
           console.error('Failed to fetch opponent data:', error);
