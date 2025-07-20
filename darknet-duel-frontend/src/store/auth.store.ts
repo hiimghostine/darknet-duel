@@ -36,6 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (error: any) {
       const errorData = error.response?.data;
+      const status = error.response?.status;
       
       // Handle inactive account with toast notification
       if (errorData?.isInactive) {
@@ -50,6 +51,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         set({ isLoading: false, error: null });
         return; // Don't throw error, just show toast
+      }
+      
+      // Show toast notification for all non-200 responses
+      if (status && status !== 200) {
+        const errorMessage = errorData?.message || `Login failed (HTTP ${status}). Please try again.`;
+        showToast.error(
+          'Authentication Error',
+          errorMessage,
+          5000 // Show for 5 seconds
+        );
       }
       
       const errorMessage = errorData?.message || 'Login failed. Please try again.';
@@ -68,7 +79,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Auto-login after successful registration
       await get().login({ email: data.email, password: data.password });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+      const errorData = error.response?.data;
+      const status = error.response?.status;
+      
+      // Show toast notification for all non-200 responses
+      if (status && status !== 200) {
+        const errorMessage = errorData?.message || `Registration failed (HTTP ${status}). Please try again.`;
+        showToast.error(
+          'Registration Error',
+          errorMessage,
+          5000 // Show for 5 seconds
+        );
+      }
+      
+      const errorMessage = errorData?.message || 'Registration failed. Please try again.';
       set({ isLoading: false, error: errorMessage });
       throw new Error(errorMessage);
     }

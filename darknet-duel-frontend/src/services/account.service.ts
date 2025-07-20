@@ -115,11 +115,19 @@ class AccountService {
   }
 
   /**
-   * Get avatar URL for a user
+   * Get avatar URL for a user with cache busting
    */
-  getAvatarUrl(uuid: string): string {
+  getAvatarUrl(uuid: string, cacheBuster?: string): string {
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    return `${baseUrl}/files/avatar/${uuid}`;
+    const url = `${baseUrl}/files/avatar/${uuid}`;
+    
+    // Add cache busting parameter if provided
+    if (cacheBuster) {
+      return `${url}?v=${cacheBuster}`;
+    }
+    
+    // Add timestamp as default cache buster
+    return `${url}?v=${Date.now()}`;
   }
 
   /**

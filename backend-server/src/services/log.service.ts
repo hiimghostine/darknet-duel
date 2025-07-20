@@ -97,8 +97,25 @@ export class LogService {
   }
 
   async logFailedLogin(email: string, reason: string): Promise<void> {
-    // Note: We don't have a userId for failed logins, so we'll use a system log
-    await this.createLog('system', `failed login attempt for ${email}: ${reason}`);
+    // For failed logins, we need to either find the user or use a system account
+    // First try to find the user by email
+    const user = await this.accountRepository.findOne({ 
+      where: { email: email.toLowerCase() } 
+    });
+    
+    if (user) {
+      // User exists, log with their ID
+      await this.createLog(user.id, `failed login attempt: ${reason}`);
+    } else {
+      // User doesn't exist, use system account for logging
+      // Note: This requires the system account to exist in the database
+      try {
+        await this.createLog('system', `failed login attempt for ${email}: ${reason}`);
+      } catch (error) {
+        // If system account doesn't exist, just log to console
+        console.log(`Failed login attempt for ${email}: ${reason} (system account not available)`);
+      }
+    }
   }
 
   async logPasswordChange(adminId: string, username: string): Promise<void> {

@@ -106,12 +106,14 @@ export class FilesController {
         }
       }
 
-      // Set appropriate headers for user avatar
+      // Set appropriate headers for user avatar with cache busting
       res.set({
         'Content-Type': avatarData.mimeType,
         'Content-Length': avatarData.avatar.length.toString(),
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-        'ETag': `"${Buffer.from(uuid).toString('base64')}"` // Simple ETag based on UUID
+        'Cache-Control': 'no-cache, no-store, must-revalidate', // Prevent caching
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'ETag': `"${Buffer.from(uuid).toString('base64')}-${Date.now()}"` // Dynamic ETag
       });
 
       // Send the raw image data

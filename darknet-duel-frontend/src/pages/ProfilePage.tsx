@@ -246,7 +246,7 @@ const ProfilePage: React.FC = () => {
                 <div className="flex flex-col items-center">
                   <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-primary/50 mb-4">
                     <img
-                      src={accountService.getAvatarUrl(displayUser.id || '')}
+                      src={accountService.getAvatarUrl(displayUser.id || '', Date.now().toString())}
                       alt={`${displayUser.username}'s avatar`}
                       className="w-full h-full object-cover"
                       onError={(e) => {

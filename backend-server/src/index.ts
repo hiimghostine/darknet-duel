@@ -60,7 +60,7 @@ app.use(cors({
       console.log(`CORS blocked origin: ${origin}`);
       return callback(null, false);
     }
-    console.log(`CORS allowed origin: ${origin}`);
+    // console.log(`CORS allowed origin: ${origin}`);
     return callback(null, true);
   },
   credentials: true,

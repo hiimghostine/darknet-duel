@@ -274,7 +274,7 @@ const DashboardPage: React.FC = () => {
                     <div className="flex-shrink-0">
                       <div className="w-16 h-16 border-2 border-primary/50 bg-base-300/50 rounded-full overflow-hidden relative">
                         <img
-                          src={user?.id ? accountService.getAvatarUrl(user.id) : logo}
+                          src={user?.id ? accountService.getAvatarUrl(user.id, Date.now().toString()) : logo}
                           alt={`${user?.username}'s avatar`}
                           className="w-full h-full object-cover"
                           onError={(e) => {

@@ -178,6 +178,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       // Refresh user data
       await loadUser();
       
+      // Force refresh avatar by updating the preview with cache buster
+      if (avatarFile) {
+        const cacheBuster = Date.now().toString();
+        setAvatarPreview(accountService.getAvatarUrl(user?.id || '', cacheBuster));
+      }
+      
       addToast({
         title: 'Profile Updated',
         message: 'Your profile has been successfully updated.',
@@ -245,7 +251,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <div className="flex items-center gap-4">
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50">
                 <img
-                  src={avatarPreview || accountService.getAvatarUrl(user?.id || '')}
+                  src={avatarPreview || accountService.getAvatarUrl(user?.id || '', Date.now().toString())}
                   alt="Avatar preview"
                   className="w-full h-full object-cover"
                   onError={(e) => {
