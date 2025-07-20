@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useSettingsStore } from '../store/settings.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 
 interface AppBarProps {
@@ -20,6 +21,7 @@ const AppBar: React.FC<AppBarProps> = ({
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { openSettings } = useSettingsStore();
+  const { triggerClick } = useAudioManager();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -36,7 +38,10 @@ const AppBar: React.FC<AppBarProps> = ({
   return (
     <header className="p-4 border-b border-primary/20 backdrop-blur-sm bg-base-100/80">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => navigate('/dashboard')}>
+        <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200" onClick={() => {
+          triggerClick();
+          navigate('/dashboard');
+        }}>
           <img src={logo} alt="Darknet Duel Logo" className="h-8" />
           <h1 className="text-xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
             DARKNET_DUEL
@@ -46,7 +51,10 @@ const AppBar: React.FC<AppBarProps> = ({
         <div className="flex items-center gap-2">
           {currentPage !== 'dashboard' && (
             <button 
-              onClick={() => navigate('/dashboard')} 
+              onClick={() => {
+                triggerClick();
+                navigate('/dashboard');
+              }} 
               className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             >
               <span className="mr-1">🏠</span> 
@@ -56,7 +64,10 @@ const AppBar: React.FC<AppBarProps> = ({
           
           {currentPage !== 'lobbies' && (
             <button 
-              onClick={() => navigate('/lobbies')} 
+              onClick={() => {
+                triggerClick();
+                navigate('/lobbies');
+              }} 
               className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             >
               <span className="mr-1">🎮</span> 
@@ -65,7 +76,10 @@ const AppBar: React.FC<AppBarProps> = ({
           )}
           
           <button 
-            onClick={() => navigate('/store')} 
+            onClick={() => {
+              triggerClick();
+              navigate('/store');
+            }} 
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
           >
             <span className="mr-1">🛍️</span> 
@@ -73,7 +87,10 @@ const AppBar: React.FC<AppBarProps> = ({
           </button>
           
           <button 
-            onClick={() => navigate(`/profile/${user?.id}`)} 
+            onClick={() => {
+              triggerClick();
+              navigate(`/profile/${user?.id}`);
+            }} 
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Profile"
           >
@@ -82,7 +99,10 @@ const AppBar: React.FC<AppBarProps> = ({
           </button>
           
           <button 
-            onClick={() => navigate('/topup')} 
+            onClick={() => {
+              triggerClick();
+              navigate('/topup');
+            }} 
             className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
             aria-label="Top Up"
           >
@@ -94,7 +114,10 @@ const AppBar: React.FC<AppBarProps> = ({
           {/* Control Panel Button - Only show for mods and admins */}
           {user?.type && ['mod', 'admin'].includes(user.type) && (
             <button 
-              onClick={() => navigate('/admin')} 
+              onClick={() => {
+                triggerClick();
+                navigate('/admin');
+              }} 
               className="btn btn-sm bg-error/20 border-error/50 hover:bg-error/30 text-error btn-cyberpunk"
               aria-label="Control Panel"
             >
@@ -104,7 +127,10 @@ const AppBar: React.FC<AppBarProps> = ({
           )}
           
           <button
-            onClick={openSettings}
+            onClick={() => {
+              triggerClick();
+              openSettings();
+            }}
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Audio Settings"
           >
@@ -113,7 +139,10 @@ const AppBar: React.FC<AppBarProps> = ({
           </button>
           
           <button
-            onClick={handleThemeToggle}
+            onClick={() => {
+              triggerClick();
+              handleThemeToggle();
+            }}
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Toggle Theme"
           >
@@ -121,7 +150,10 @@ const AppBar: React.FC<AppBarProps> = ({
           </button>
           
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              triggerClick();
+              handleLogout();
+            }}
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Logout"
           >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import LoadingScreen from '../components/LoadingScreen';
@@ -10,6 +11,7 @@ const AuthPage: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { triggerClick } = useAudioManager();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -44,6 +46,7 @@ const AuthPage: React.FC = () => {
 
   // Toggle between login and register forms
   const toggleForm = () => {
+    triggerClick();
     setShowRegister(prev => !prev);
   };
 
