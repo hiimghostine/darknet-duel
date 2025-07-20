@@ -689,7 +689,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               )}
               
               {/* Per-card cycle button */}
-              {!targetMode && !isInReactionMode && isInActionMode && (
+              {!targetMode && !isInReactionMode && isActive && (
                 <button 
                   className="absolute -top-1 -left-1 bg-warning text-base-content rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-60"
                   onClick={(e) => {
