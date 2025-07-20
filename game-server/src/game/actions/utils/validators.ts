@@ -254,6 +254,12 @@ export function validateCardTargeting(
       // but prioritize compromised infrastructure for chain effects
       return { valid: true };
       
+    case 'wildcard':
+      // Wildcard cards are exempt from vector validation - they choose their type dynamically
+      // The validation will happen after the wildcard type is chosen
+      console.log(`Wildcard card bypassing vector validation: ${card?.name || 'unknown'}`);
+      return { valid: true };
+      
     // Handle legacy card types for backward compatibility
     case 'attack':
     case 'defense':

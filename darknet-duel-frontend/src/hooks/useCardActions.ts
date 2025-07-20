@@ -127,9 +127,9 @@ export function useCardActions(props: BoardProps) {
       return card.validTargets;
     }
     
-    // Get the card's attack vector
-    const cardAttackVector = getCardAttackVector(card);
-    console.log(`🔍 Card ${card.name} has attack vector: ${cardAttackVector || 'NONE'}`);
+    // Get the card's attack vector - but skip for pure wildcards
+    const cardAttackVector = card.type === 'wildcard' ? undefined : getCardAttackVector(card);
+    console.log(`🔍 Card ${card.name} has attack vector: ${cardAttackVector || 'NONE'} ${card.type === 'wildcard' ? '(wildcard - vector validation skipped)' : ''}`);
     
     // Handle wildcard cards differently
     let effectiveCardType = card.type;
@@ -170,72 +170,79 @@ export function useCardActions(props: BoardProps) {
                 }
                 break;
               case 'exploit':
-                // Exploit cards can target secure, fortified, or fortified_weaken infrastructure + vector compatibility
+                // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'attack':
-                // Attack cards can only target vulnerable infrastructure + vector compatibility
+                // Attack cards can only target vulnerable infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'vulnerable';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'shield':
-                // Shield cards can target secure or vulnerable infrastructure + vector compatibility
+                // Shield cards can target secure or vulnerable infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'secure' || infra.state === 'vulnerable';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'fortify':
-                // Fortify cards can only target shielded infrastructure + vector compatibility
+                // Fortify cards can only target shielded infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'shielded';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'response':
-                // Response cards can only target compromised infrastructure + vector compatibility
+                // Response cards can only target compromised infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'compromised';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'reaction':
-                // Reaction cards can target vulnerable or compromised infrastructure + vector compatibility
+                // Reaction cards can target vulnerable or compromised infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'vulnerable' || infra.state === 'compromised';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
                 break;
               case 'counter-attack':
               case 'counter':
-                // Counter-attack cards can target shielded infrastructure + vector compatibility
+                // Counter-attack cards can target shielded infrastructure
+                // For wildcards, skip vector validation until type is chosen
                 potentialTargets = G.infrastructure
                   .filter((infra: InfrastructureCard) => {
                     const stateMatch = infra.state === 'shielded';
-                    const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+                    const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
                     return stateMatch && vectorMatch;
                   })
                   .map((infra: InfrastructureCard) => infra.id);
@@ -283,7 +290,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'vulnerable';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -294,7 +301,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -304,7 +311,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'secure' || infra.state === 'vulnerable';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -314,7 +321,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'shielded';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -324,7 +331,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'compromised';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -334,7 +341,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'vulnerable' || infra.state === 'compromised';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
@@ -344,7 +351,7 @@ export function useCardActions(props: BoardProps) {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'shielded';
-            const vectorMatch = !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
+            const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
