@@ -533,7 +533,7 @@ const LobbyDetail: React.FC = () => {
         </div>
         
         <p className="text-base-content/80 font-mono text-sm mb-4">
-          Roles will be randomly assigned when the operation begins.
+          The host will be assigned the Attacker role, while the second player will be the Defender.
         </p>
         
         {/* Host transfer notification */}

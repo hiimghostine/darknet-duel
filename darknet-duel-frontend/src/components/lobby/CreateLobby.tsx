@@ -130,7 +130,7 @@ const CreateLobby: React.FC = () => {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
         
-        <div className="grid md:grid-cols-3 gap-3 mt-4">
+        <div className="grid md:grid-cols-2 gap-3 mt-4">
           <button 
             type="button"
             onClick={() => {
@@ -171,22 +171,6 @@ const CreateLobby: React.FC = () => {
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
             <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
             <span className="text-base font-bold block relative z-10">BLITZ</span>
-            <span className="text-xs relative z-10">[ COMING SOON ]</span>
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setSelectedMode('custom')}
-            className={`p-4 border font-mono rounded relative transition-all duration-300 ${
-              selectedMode === 'custom'
-                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-2 ring-base-content/30'
-                : 'border-base-content/30 bg-base-900/60 text-base-content/60 opacity-60 cursor-not-allowed'
-            }`}
-            disabled
-          >
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
-            <span className="text-base font-bold block relative z-10">CUSTOM</span>
             <span className="text-xs relative z-10">[ COMING SOON ]</span>
           </button>
         </div>
@@ -293,7 +277,7 @@ const CreateLobby: React.FC = () => {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
         
-        <p className="text-base-content/80 font-mono text-sm mb-4">In Darknet Duel, players are randomly assigned one of two roles:</p>
+        <p className="text-base-content/80 font-mono text-sm mb-4">In Darknet Duel, the host will be assigned the Attacker role, while the second player will be the Defender:</p>
         
         <div className="grid md:grid-cols-2 gap-6 mb-4">
           <div className="border border-accent/50 bg-base-900/80 p-4 rounded-lg relative overflow-hidden group hover:shadow-accent/20 hover:shadow-md transition-all duration-300">

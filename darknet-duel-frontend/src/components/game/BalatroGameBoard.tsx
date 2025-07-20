@@ -167,6 +167,16 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       }
     }
   }, [G?.message, addToast]);
+
+  // Play turn start sound effect when it becomes the player's turn
+  useEffect(() => {
+    if (isActive && !isProcessingMove) {
+      // Play positive-click three times with 250ms delay each
+      triggerPositiveClick();
+      setTimeout(() => triggerPositiveClick(), 250);
+      setTimeout(() => triggerPositiveClick(), 500);
+    }
+  }, [isActive, isProcessingMove, triggerPositiveClick]);
   
   // Handle player surrender
   const surrender = useCallback(() => {
@@ -1196,6 +1206,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  triggerClick(); // Play click sound on button press
                   cancelTargeting();
                 }}
               >
@@ -1268,7 +1279,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 : 'bg-blue-800/80 border-blue-600/50 text-blue-100 hover:bg-blue-700/90 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/30'
               }
             `}
-            onClick={ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? handleSkipReaction : handleEndTurn}
+            onClick={() => {
+              triggerClick(); // Play click sound on button press
+              ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? handleSkipReaction() : handleEndTurn();
+            }}
             disabled={!isActive || isProcessingMove}
           >
             {ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? 'PASS' : 'END_TURN'}
@@ -1288,6 +1302,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                triggerClick(); // Play click sound on button press
                 cycleCard(currentPlayerObj.hand[0].id);
               }}
               title="Cycle out your current hand for a new card"
@@ -1304,14 +1319,20 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 : 'bg-blue-900/80 border-blue-700/50 text-blue-200 hover:bg-blue-800/90 hover:border-blue-600 hover:shadow-lg hover:shadow-blue-600/30'
               }
             `}
-            onClick={surrender}
+            onClick={() => {
+              triggerClick(); // Play click sound on button press
+              surrender();
+            }}
             disabled={isProcessingMove}
           >
             SURRENDER
           </button>
           {/* Theme Switcher Button - right of Surrender */}
           <button
-            onClick={toggleTheme}
+            onClick={() => {
+              triggerClick(); // Play click sound on button press
+              toggleTheme();
+            }}
             className={`btn btn-sm font-mono font-bold uppercase transition-all duration-200 bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk`}
             aria-label="Toggle Theme"
             style={{ marginLeft: '0.5rem' }}
@@ -1581,7 +1602,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             {targetMode && (
               <button 
                 className="btn btn-sm bg-base-300/80 border-warning/30 text-warning hover:bg-warning/10 font-mono font-bold uppercase"
-                onClick={cancelTargeting}
+                onClick={() => {
+                  triggerClick(); // Play click sound on button press
+                  cancelTargeting();
+                }}
               >
                 CANCEL
               </button>
