@@ -4,6 +4,7 @@ import { Card, CardType, AttackVector } from 'shared-types/card.types';
 import { hasCardFeatures } from '../../utils/typeGuards';
 import { getEffectiveCardType } from '../../../utils/wildcardUtils';
 import { validateCardTargeting } from '../../utils/validators';
+import { TemporaryEffectsManager } from '../../temporaryEffectsManager';
 
 /**
  * Validation utilities for throw card move
@@ -246,10 +247,25 @@ export function validateThrowCardMove(context: ValidationContext): ValidationRes
     return { valid: false, message: infraValidation.message };
   }
   
-  // Step 4: Determine effective card types
+  // Step 4: Check for D301 Advanced Threat Defense blocking reactive attacks
+  const card = playerCardValidation.card!;
+  const targetInfrastructure = infraValidation.targetInfrastructure;
+  
+  if (targetInfrastructure && (card.type === 'counter-attack' || (card.type === 'wildcard' && card.isReactive))) {
+    const hasPreventReactions = TemporaryEffectsManager.hasEffect(G, 'prevent_reactions', targetInfrastructure.id);
+    if (hasPreventReactions) {
+      console.log(`🛡️ D301 BLOCK: Reactive attack card ${card.name} blocked by prevent_reactions effect on infrastructure ${targetInfrastructure.name}`);
+      return {
+        valid: false,
+        message: `${card.name} is blocked by Advanced Threat Defense on ${targetInfrastructure.name}`
+      };
+    }
+  }
+  
+  // Step 5: Determine effective card types
   const { effectiveCardType, validationCardType } = determineEffectiveCardType(
-    playerCardValidation.card!,
-    infraValidation.targetInfrastructure!
+    card,
+    targetInfrastructure
   );
   
   return {

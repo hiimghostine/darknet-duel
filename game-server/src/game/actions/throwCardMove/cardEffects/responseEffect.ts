@@ -13,6 +13,12 @@ export function responseEffect(
   // Make a copy of the infrastructure array
   const newInfrastructure = [...updatedInfrastructure];
   
+  // Special handling for D307 - skip normal response logic as it's handled by wildcard effect
+  if (card.id.startsWith('D307') || card.specialEffect === 'emergency_restore_shield') {
+    console.log(`🚨 Skipping normal response effect for ${card.name} - special effect handles restoration and shielding`);
+    return newInfrastructure; // Return unchanged - wildcard effect already handled it
+  }
+  
   // Response cards recover compromised infrastructure
   if (currentInfra.state === 'compromised') {
     newInfrastructure[infraIndex] = {

@@ -168,40 +168,7 @@ const DarknetDuel: Game<GameState> = {
       return devCheatAddCardMove(props.G, props.ctx, props.playerID, card);
     },
     
-    // Skip reaction during reaction stage
-    skipReaction: (props) => {
-      const { G, events, playerID } = props;
-      
-      // Clear pending reactions for this player
-      const updatedPendingReactions = G.pendingReactions ? 
-        G.pendingReactions.filter(reaction => reaction.target !== playerID) : [];
-      
-      // Return control to the action player if no more pending reactions
-      if (updatedPendingReactions.length === 0) {
-        if (G.currentActionPlayer) {
-          events.setActivePlayers({ value: { [G.currentActionPlayer]: 'action' } });
-        } else {
-          events.setActivePlayers({ currentPlayer: 'action' });
-        }
-      }
-      
-      // Record the action of skipping a reaction
-      const isAttacker = playerID === G.attacker?.id;
-      const newAction: GameAction = {
-        playerRole: isAttacker ? 'attacker' : 'defender',
-        actionType: 'skipReaction',
-        timestamp: Date.now(),
-        payload: {}
-      };
-      
-      return {
-        ...G,
-        pendingReactions: updatedPendingReactions,
-        reactionComplete: updatedPendingReactions.length === 0,
-        actions: [...G.actions, newAction],
-        message: 'Reaction skipped'
-      };
-    },
+    // NOTE: skipReaction moved to reaction stage moves only - no global skipReaction
   },
   
   // Check if the game has ended

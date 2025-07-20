@@ -28,9 +28,15 @@ export function validateCardTargeting(
     }
     
     // Check if restoration is prevented
-    if (cardType === 'response' && 
+    if (cardType === 'response' &&
         TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_restore', infrastructure.id)) {
       return { valid: false, message: "This infrastructure cannot be restored" };
+    }
+    
+    // Check if exploits are prevented by Defensive Hardening Protocol
+    if (cardType === 'exploit' &&
+        TemporaryEffectsManager.hasEffect(gameState as GameState, 'prevent_exploits', infrastructure.id)) {
+      return { valid: false, message: "This infrastructure is protected from exploit cards" };
     }
     
     // PHASE 2: Check for chain vulnerability - makes all exploits valid on this infra
@@ -99,17 +105,43 @@ export function validateCardTargeting(
     }
   }
   
+  // Helper function to check if attack vector matches infrastructure vulnerabilities
+  const checkVectorCompatibility = (attackVector?: AttackVector): { valid: boolean; message?: string } => {
+    if (!attackVector) {
+      return { valid: true }; // No vector specified, allow it
+    }
+    
+    // Check if infrastructure has vulnerableVectors (for targeting)
+    if (infrastructure.vulnerableVectors && infrastructure.vulnerableVectors.length > 0) {
+      if (!infrastructure.vulnerableVectors.includes(attackVector)) {
+        return {
+          valid: false,
+          message: `This infrastructure is not vulnerable to ${attackVector} attacks. Vulnerable to: ${infrastructure.vulnerableVectors.join(', ')}`
+        };
+      }
+    }
+    
+    return { valid: true };
+  };
+
   switch (cardType) {
     case 'exploit':
       // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
-      if (infrastructure.state !== 'secure' && 
-          infrastructure.state !== 'fortified' && 
+      if (infrastructure.state !== 'secure' &&
+          infrastructure.state !== 'fortified' &&
           infrastructure.state !== 'fortified_weaken') {
-        return { 
-          valid: false, 
-          message: "Exploit cards can only target secure or fortified infrastructure" 
+        return {
+          valid: false,
+          message: "Exploit cards can only target secure or fortified infrastructure"
         };
       }
+      
+      // Check attack vector compatibility for exploit cards
+      const exploitVectorCheck = checkVectorCompatibility(attackVector);
+      if (!exploitVectorCheck.valid) {
+        return exploitVectorCheck;
+      }
+      
       return { valid: true };
       
     case 'attack':
@@ -152,6 +184,13 @@ export function validateCardTargeting(
           message: "Shield cards can only target secure or vulnerable infrastructure"
         };
       }
+      
+      // Check attack vector compatibility for shield cards
+      const shieldVectorCheck = checkVectorCompatibility(attackVector);
+      if (!shieldVectorCheck.valid) {
+        return shieldVectorCheck;
+      }
+      
       return { valid: true };
       
     case 'fortify':
@@ -159,6 +198,13 @@ export function validateCardTargeting(
       if (infrastructure.state !== 'shielded') {
         return { valid: false, message: "Fortify cards can only target shielded infrastructure" };
       }
+      
+      // Check attack vector compatibility for fortify cards
+      const fortifyVectorCheck = checkVectorCompatibility(attackVector);
+      if (!fortifyVectorCheck.valid) {
+        return fortifyVectorCheck;
+      }
+      
       return { valid: true };
       
     case 'response':
@@ -166,6 +212,13 @@ export function validateCardTargeting(
       if (infrastructure.state !== 'compromised') {
         return { valid: false, message: "Response cards can only target compromised infrastructure" };
       }
+      
+      // Check attack vector compatibility for response cards
+      const responseVectorCheck = checkVectorCompatibility(attackVector);
+      if (!responseVectorCheck.valid) {
+        return responseVectorCheck;
+      }
+      
       return { valid: true };
       
     case 'counter-attack':
@@ -174,23 +227,43 @@ export function validateCardTargeting(
       if (infrastructure.state !== 'shielded') {
         return { valid: false, message: "Counter-attack cards can only target shielded infrastructure" };
       }
+      
+      // Check attack vector compatibility for counter-attack cards
+      const counterVectorCheck = checkVectorCompatibility(attackVector);
+      if (!counterVectorCheck.valid) {
+        return counterVectorCheck;
+      }
+      
       return { valid: true };
 
     case 'reaction':
       // Reaction cards can target vulnerable or compromised infrastructure
-      if (infrastructure.state !== 'vulnerable' && 
-          infrastructure.state !== 'compromised' && 
+      if (infrastructure.state !== 'vulnerable' &&
+          infrastructure.state !== 'compromised' &&
           (!infrastructure.vulnerabilities || infrastructure.vulnerabilities.length === 0)) {
-        return { 
-          valid: false, 
-          message: "Reaction cards can only target vulnerable or compromised infrastructure" 
+        return {
+          valid: false,
+          message: "Reaction cards can only target vulnerable or compromised infrastructure"
         };
       }
+      
+      // Check attack vector compatibility for reaction cards
+      const reactionVectorCheck = checkVectorCompatibility(attackVector);
+      if (!reactionVectorCheck.valid) {
+        return reactionVectorCheck;
+      }
+      
       return { valid: true };
       
     case 'special':
       // Special effect cards (like lateral movement) can generally target any infrastructure
       // but prioritize compromised infrastructure for chain effects
+      return { valid: true };
+      
+    case 'wildcard':
+      // Wildcard cards are exempt from vector validation - they choose their type dynamically
+      // The validation will happen after the wildcard type is chosen
+      console.log(`Wildcard card bypassing vector validation: ${card?.name || 'unknown'}`);
       return { valid: true };
       
     // Handle legacy card types for backward compatibility

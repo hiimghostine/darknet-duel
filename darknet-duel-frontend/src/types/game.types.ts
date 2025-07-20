@@ -3,8 +3,8 @@
 // Import card types - these should be the only imports from shared-types
 import type { Card, CardType } from 'shared-types/card.types';
 
-// Define AttackVector locally to avoid import issues
-export type AttackVector = 'malware' | 'phishing' | 'vulnerability' | 'social' | 'physical';
+// Define AttackVector locally to match backend - using the 4 correct vectors
+export type AttackVector = 'network' | 'web' | 'social' | 'malware';
 
 // Base types
 export type PlayerRole = 'attacker' | 'defender';
@@ -313,7 +313,7 @@ export interface GameState {
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax';
+          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'maintenance_cost';
     targetId?: string;
     playerId?: string;
     duration: number;

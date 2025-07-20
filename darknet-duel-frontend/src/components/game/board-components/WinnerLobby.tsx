@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import type { GameState } from 'shared-types/game.types';
 import LobbyChat from '../../lobby/LobbyChat';
+import { useGameCredentials } from '../../../hooks/useGameCredentials';
+import { useGameConnection } from '../../../hooks/useGameConnection';
 
 interface WinnerLobbyProps {
   G: GameState;
@@ -15,14 +18,19 @@ interface WinnerLobbyProps {
   matchID?: string;
 }
 
-const WinnerLobby: React.FC<WinnerLobbyProps> = ({ 
-  G, 
+const WinnerLobby: React.FC<WinnerLobbyProps> = ({
+  G,
   playerID,
   moves,
   isAttacker,
   matchID
 }) => {
+  const navigate = useNavigate();
   const isWinner = G.winner === (isAttacker ? 'attacker' : 'defender');
+  
+  // Use the same hooks as GameClient for proper cleanup
+  const { clearCredentials } = useGameCredentials(matchID);
+  const { leaveMatch } = useGameConnection(matchID, playerID || null, null);
   
   // Format duration from milliseconds to minutes:seconds
   const formatDuration = (ms: number) => {
@@ -39,10 +47,26 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     }
   };
   
-  // Handle surrender
-  const handleSurrender = () => {
-    if (moves.surrender) {
-      moves.surrender();
+  // Handle leaving the game (replacing surrender for post-game)
+  const handleLeaveGame = async () => {
+    const confirmed = window.confirm('Are you sure you want to leave the game? You will return to the lobby.');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      // Clean up game credentials and connection
+      if (matchID && playerID) {
+        await leaveMatch();
+        clearCredentials();
+      }
+      
+      // Navigate back to lobbies
+      navigate('/lobbies');
+    } catch (error) {
+      console.error('Error leaving game:', error);
+      // Still navigate even if cleanup fails
+      navigate('/lobbies');
     }
   };
 
@@ -166,16 +190,14 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
               )}
             </motion.button>
             
-            {moves.surrender && (
-              <motion.button 
-                onClick={handleSurrender}
-                className="btn btn-sm btn-error font-mono"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                🚪 EXIT_NODE
-              </motion.button>
-            )}
+            <motion.button
+              onClick={handleLeaveGame}
+              className="btn btn-sm btn-error font-mono"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              🚪 EXIT_NODE
+            </motion.button>
           </div>
         </div>
       </motion.header>

@@ -16,6 +16,9 @@ import { useTurnActions } from '../../hooks/useTurnActions';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameBoardData } from '../../hooks/useGameBoardData';
 
+// Import toast notifications
+import { useToastStore } from '../../store/toast.store';
+
 // Import overlay components
 import ChainEffectUI from './board-components/ChainEffectUI';
 import WildcardChoiceUI from './board-components/WildcardChoiceUI';
@@ -62,6 +65,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   // Get matchID from URL params
   const { matchID } = useParams<{ matchID: string }>();
+  
+  // Toast notifications
+  const { addToast } = useToastStore();
   
   // Use optimized memoization strategies
   const memoizedG = useMemoizedValue(G);
@@ -131,6 +137,26 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [targetMode, cancelTargeting]);
+
+  // Monitor game messages for errors and show toast notifications
+  useEffect(() => {
+    if (G && G.message) {
+      // Check for D301 blocking messages or other error messages
+      if (G.message.includes('blocked by Advanced Threat Defense') ||
+          G.message.includes('Not enough action points') ||
+          G.message.includes('Invalid target') ||
+          G.message.includes('Validation failed')) {
+        
+        // Show error toast notification
+        addToast({
+          type: 'error',
+          title: 'Move Blocked',
+          message: G.message,
+          duration: 4000
+        });
+      }
+    }
+  }, [G?.message, addToast]);
   
   // Handle player surrender
   const surrender = useCallback(() => {
@@ -402,12 +428,30 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           // Proper reaction mode filtering - only reactive cards can be played
           let isPlayable = false;
           if (!targetMode && isActive && ctx.phase === 'playing') {
+            // Special handling for D307 - can be played in both normal and reaction modes
+            const isD307 = card.id?.startsWith('D307') || card.specialEffect === 'emergency_restore_shield';
+            
             if (isInReactionMode) {
               // In reaction mode, only reactive cards can be played
-              isPlayable = isReactiveCardObject(card) && card.playable;
+              const isReactiveCard = isReactiveCardObject(card, G);
+              if (isReactiveCard && card.playable) {
+                if (isD307) {
+                  // D307 special condition: only playable if there's compromised infrastructure
+                  const hasCompromisedInfra = G.infrastructure?.some(infra => infra.state === 'compromised') || false;
+                  isPlayable = hasCompromisedInfra;
+                } else {
+                  isPlayable = true;
+                }
+              }
             } else if (isInActionMode) {
               // In action mode, all playable cards can be played
-              isPlayable = card.playable;
+              if (isD307) {
+                // D307 special condition: only playable if there's compromised infrastructure
+                const hasCompromisedInfra = G.infrastructure?.some(infra => infra.state === 'compromised') || false;
+                isPlayable = card.playable && hasCompromisedInfra;
+              } else {
+                isPlayable = card.playable;
+              }
             }
           }
           
@@ -420,8 +464,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                                  'border-l-accent';
           
           // Special styling for reactive cards in reaction mode
-          const isReactiveCard = isReactiveCardObject(card);
-          const reactionModeClass = isInReactionMode && isReactiveCard ? 
+          const isReactiveCard = isReactiveCardObject(card, G);
+          const reactionModeClass = isInReactionMode && isReactiveCard ?
             'ring-2 ring-accent animate-pulse bg-accent/10' : '';
           
           return (
@@ -443,7 +487,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                   console.log('🚫 Card not playable:', {
                     cardName: card.name,
                     isInReactionMode,
-                    isReactive: isReactiveCardObject(card),
+                    isReactive: isReactiveCardObject(card, G),
                     playable: card.playable
                   });
                   return;

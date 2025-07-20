@@ -8,7 +8,7 @@ interface GlobalEffectsIndicatorProps {
 
 interface TemporaryEffect {
   type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-        'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax';
+        'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'maintenance_cost';
   targetId?: string;
   playerId?: string;
   duration: number;
@@ -17,14 +17,17 @@ interface TemporaryEffect {
     taxedCardType?: string;
     taxAmount?: number;
     description?: string;
+    costType?: 'vulnerable' | 'shielded';
+    count?: number;
+    cost?: number;
     [key: string]: any;
   };
 }
 
 const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameState }) => {
   // Filter for global effects (effects without a specific targetId)
-  const globalEffects = gameState.temporaryEffects?.filter((effect: TemporaryEffect) => 
-    !effect.targetId || effect.type === 'temporary_tax'
+  const globalEffects = gameState.temporaryEffects?.filter((effect: TemporaryEffect) =>
+    !effect.targetId || effect.type === 'temporary_tax' || effect.type === 'maintenance_cost'
   ) || [];
 
   const getEffectIcon = (type: string) => {
@@ -37,6 +40,8 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
         return '🕸️';
       case 'cost_reduction':
         return '💰';
+      case 'maintenance_cost':
+        return '⚠️';
       default:
         return '⚡';
     }
@@ -52,6 +57,9 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
         return 'Honeypot Active';
       case 'cost_reduction':
         return 'Cost Reduction';
+      case 'maintenance_cost':
+        const costType = effect.metadata?.costType || 'infrastructure';
+        return `${costType === 'vulnerable' ? 'Vulnerable' : 'Shielded'} Infrastructure Maintenance`;
       default:
         return 'Active Effect';
     }
@@ -69,6 +77,22 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
         return 'Decoy systems are monitoring for intrusions';
       case 'cost_reduction':
         return 'Cards cost less action points to play';
+      case 'maintenance_cost':
+        const costType = effect.metadata?.costType || 'infrastructure';
+        const count = effect.metadata?.count || 0;
+        const cost = effect.metadata?.cost || 0;
+        const canPay = effect.metadata?.canPay !== false;
+        const pendingRemoval = effect.metadata?.pendingRemoval === true;
+        const leftWithZeroAP = effect.metadata?.leftWithZeroAP === true;
+        
+        if (pendingRemoval) {
+          if (leftWithZeroAP) {
+            return `💥 MAINTENANCE PENALTY 💥\nPaid ${cost} AP for ${count} ${costType} infrastructure but left with 0 AP!\nNext round: Random ${costType} infrastructure will be lost!`;
+          }
+          return `💥 MAINTENANCE FAILURE 💥\nCannot pay ${cost} AP for ${count} ${costType} infrastructure!\nNext round: Random ${costType} infrastructure will be lost!`;
+        }
+        
+        return `⚡ MAINTENANCE PROTOCOL ACTIVE ⚡\nPaying ${cost} AP per round for ${count} ${costType} infrastructure.\nFormula: ${count} infrastructure - 2 = ${cost} AP cost per round\n${canPay ? '✅ Payment successful' : '💥 Payment failed - penalty incoming!'}`;
       default:
         return effect.metadata?.description || 'Special effect is active';
     }
@@ -83,15 +107,17 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
   const getEffectColor = (type: string) => {
     switch (type) {
       case 'temporary_tax':
-        return 'bg-gradient-to-br from-amber-900/90 to-orange-900/90 text-amber-100 border-amber-400/60 shadow-amber-400/30';
+        return 'bg-gradient-to-br from-warning/90 to-accent/90 text-warning-content border-warning/60 shadow-lg shadow-warning/30';
       case 'quantum_protection':
-        return 'bg-gradient-to-br from-cyan-900/90 to-blue-900/90 text-cyan-100 border-cyan-400/60 shadow-cyan-400/30';
+        return 'bg-gradient-to-br from-info/90 to-primary/90 text-info-content border-info/60 shadow-lg shadow-info/30';
       case 'honeypot':
-        return 'bg-gradient-to-br from-purple-900/90 to-pink-900/90 text-purple-100 border-purple-400/60 shadow-purple-400/30';
+        return 'bg-gradient-to-br from-secondary/90 to-accent/90 text-secondary-content border-secondary/60 shadow-lg shadow-secondary/30';
       case 'cost_reduction':
-        return 'bg-gradient-to-br from-green-900/90 to-emerald-900/90 text-green-100 border-green-400/60 shadow-green-400/30';
+        return 'bg-gradient-to-br from-success/90 to-primary/90 text-success-content border-success/60 shadow-lg shadow-success/30';
+      case 'maintenance_cost':
+        return 'bg-gradient-to-br from-error/90 to-warning/90 text-error-content border-error/60 shadow-lg shadow-error/30';
       default:
-        return 'bg-gradient-to-br from-slate-900/90 to-gray-900/90 text-slate-100 border-slate-400/60 shadow-slate-400/30';
+        return 'bg-gradient-to-br from-neutral/90 to-base-300/90 text-neutral-content border-neutral/60 shadow-lg shadow-neutral/30';
     }
   };
 
@@ -100,7 +126,7 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
   }
 
   return (
-    <div className="fixed top-20 right-4 z-50 space-y-2">
+    <div className="fixed top-20 right-4 z-50 space-y-3">
       <AnimatePresence>
         {globalEffects.map((effect, index) => (
           <motion.div
@@ -108,21 +134,16 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
             initial={{ opacity: 0, x: 100, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 100, scale: 0.8 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
+            transition={{
+              type: "spring",
+              stiffness: 300,
               damping: 30,
-              delay: index * 0.1 
+              delay: index * 0.1
             }}
-            className={`relative w-80 backdrop-blur-sm border-2 rounded-lg font-mono ${getEffectColor(effect.type)} shadow-2xl`}
+            className={`card card-compact w-80 backdrop-blur-sm border-2 ${getEffectColor(effect.type)} shadow-2xl`}
           >
-            {/* Cyberpunk corner brackets */}
-            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-current"></div>
-            <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-current"></div>
-            <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-current"></div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-current"></div>
-            
-            <div className="p-4">
+            {/* DaisyUI Card structure */}
+            <div className="card-body">
               <div className="flex items-center gap-3">
                 <motion.div
                   className="text-2xl"
@@ -139,7 +160,7 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
                   {getEffectIcon(effect.type)}
                 </motion.div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold uppercase tracking-wider">
+                  <h3 className="card-title text-sm font-bold uppercase tracking-wider">
                     {getEffectTitle(effect)}
                   </h3>
                   <p className="text-xs opacity-90 leading-tight">
@@ -148,30 +169,73 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
                 </div>
               </div>
               
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-current/30">
-                <div className="text-xs font-mono uppercase tracking-wide bg-black/30 px-2 py-1 rounded border border-current/50">
+              <div className="card-actions justify-between items-center mt-3 pt-2 border-t border-current/30">
+                <div className="badge badge-outline text-xs font-mono">
                   {getRemainingTurns(effect.duration)} remaining
                 </div>
                 <motion.div
-                  className="relative w-8 h-8 rounded-full border-2 border-current/50 flex items-center justify-center text-xs font-bold"
+                  className="radial-progress text-xs font-bold"
                   style={{
-                    background: `conic-gradient(from 0deg, currentColor ${Math.max(10, (effect.duration / 4) * 100)}%, transparent ${Math.max(10, (effect.duration / 4) * 100)}%)`
-                  }}
+                    '--value': Math.max(10, (effect.duration / 4) * 100),
+                    '--size': '2rem',
+                    '--thickness': '3px'
+                  } as any}
                   animate={{
-                    background: `conic-gradient(from 0deg, currentColor ${Math.max(10, (effect.duration / 4) * 100)}%, transparent ${Math.max(10, (effect.duration / 4) * 100)}%)`
-                  }}
+                    '--value': Math.max(10, (effect.duration / 4) * 100)
+                  } as any}
                   transition={{ duration: 0.5 }}
                 >
-                  <div className="absolute inset-1 bg-black/60 rounded-full flex items-center justify-center">
-                    {effect.duration}
-                  </div>
+                  {effect.duration}
                 </motion.div>
               </div>
+
+              {/* Enhanced pulse animation for maintenance_cost */}
+              {effect.type === 'maintenance_cost' && (
+                <>
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: [
+                        "0 0 0 0 rgba(239, 68, 68, 0.8), inset 0 0 30px rgba(239, 68, 68, 0.2)",
+                        "0 0 0 12px rgba(239, 68, 68, 0), inset 0 0 50px rgba(239, 68, 68, 0.4)",
+                      ],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      repeatType: "loop",
+                    }}
+                  />
+                  {/* Additional warning stripes for maintenance */}
+                  <motion.div
+                    className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-error to-transparent"
+                    animate={{
+                      opacity: [0.3, 1, 0.3],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-error to-transparent"
+                    animate={{
+                      opacity: [1, 0.3, 1],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
+                  />
+                </>
+              )}
 
               {/* Enhanced pulse animation for temporary_tax */}
               {effect.type === 'temporary_tax' && (
                 <motion.div
-                  className="absolute inset-0 rounded-lg pointer-events-none"
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
                   animate={{
                     boxShadow: [
                       "0 0 0 0 rgba(251, 191, 36, 0.6), inset 0 0 20px rgba(251, 191, 36, 0.1)",
@@ -188,7 +252,7 @@ const GlobalEffectsIndicator: React.FC<GlobalEffectsIndicatorProps> = ({ gameSta
               
               {/* Scanning line effect */}
               <motion.div
-                className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-60"
+                className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-60 rounded-full"
                 animate={{
                   top: ["0%", "100%"],
                 }}

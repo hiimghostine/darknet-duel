@@ -5,6 +5,7 @@ import { isAttackerCard, isReactiveCardObject } from '../../../types/card.types'
 import { getAvailableCardTypes } from '../../../utils/wildcardTypeUtils';
 
 const PlayerHand: React.FC<PlayerHandProps> = ({
+  G,
   player,
   onPlayCard,
   onCycleCard,
@@ -52,13 +53,13 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
     // In reaction mode, only reactive cards can be played
     if (isInReactionMode) {
       console.log('👀 In reaction mode with card:', card.name);
-      if (isReactiveCardObject(card) && card.playable) {
+      if (isReactiveCardObject(card, G) && card.playable) {
         console.log('✅ Playing reactive card in reaction mode:', card.name);
         onPlayCard(card, event);
       } else {
-        console.log('❌ Card not playable in reaction mode:', { 
-          isReactive: isReactiveCardObject(card), 
-          playable: card.playable 
+        console.log('❌ Card not playable in reaction mode:', {
+          isReactive: isReactiveCardObject(card, G),
+          playable: card.playable
         });
       }
       return; // All other card types can't be played in reaction mode
@@ -104,8 +105,8 @@ const PlayerHand: React.FC<PlayerHandProps> = ({
     <div className="player-hand">
       {player.hand.map((card: ExtendedCard) => {
         // Determine if card is playable based on game state
-        const isPlayable = card.playable && isActive && 
-          (!isInReactionMode || (isInReactionMode && isReactiveCardObject(card)));
+        const isPlayable = card.playable && isActive &&
+          (!isInReactionMode || (isInReactionMode && isReactiveCardObject(card, G)));
         
         // Add cycle button as an overlay on the card
         const cycleButton = !targetMode && !isInReactionMode && (

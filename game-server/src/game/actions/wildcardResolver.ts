@@ -59,6 +59,11 @@ export class WildcardResolver {
       return [card.type]; // Not a wildcard, so only its own type is available
     }
     
+    // Special case for Incident Containment Protocol (D307) - can only be played as response
+    if (card.id.startsWith('D307') || card.specialEffect === 'emergency_restore_shield') {
+      return ['response'];
+    }
+    
     // Get basic available types from the card
     const basicTypes = getAvailableCardTypes(card.wildcardType);
     
@@ -86,6 +91,11 @@ export class WildcardResolver {
       return false;
     }
     
+    // Special case for Incident Containment Protocol (D307) - can only be played as response
+    if (card.id.startsWith('D307') || card.specialEffect === 'emergency_restore_shield') {
+      return asType === 'response';
+    }
+    
     // Check if the type is in the available types for this card
     const availableTypes = getAvailableCardTypes(card.wildcardType);
     if (!availableTypes.includes(asType)) {
@@ -105,7 +115,7 @@ export class WildcardResolver {
     switch (asType) {
       case 'exploit':
         // Can only exploit secure or shield-protected infrastructure
-        return targetInfrastructure.state === 'secure' || 
+        return targetInfrastructure.state === 'secure' ||
                targetInfrastructure.state === 'shielded';
       
       case 'attack':
@@ -186,10 +196,22 @@ export class WildcardResolver {
         }
         break;
         
-      case 'D301': // Zero Trust Architecture
-        // This needs special handling in the validation system
+      case 'D301': // Advanced Threat Defense
         if (context.targetInfrastructure) {
-          updatedGameState.message = `${card.name} requires 2 matching exploits to compromise`;
+          // Prevents reactive attack cards from being played on this infrastructure
+          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+            type: 'prevent_reactions',
+            targetId: context.targetInfrastructure.id,
+            playerId: context.playerID,
+            duration: 2, // Lasts for a full round (both attacker and defender turns)
+            sourceCardId: card.id,
+            metadata: {
+              preventType: 'reactive_attacks',
+              description: 'Target infrastructure cannot be compromised by reactive attack cards'
+            }
+          });
+          
+          updatedGameState.message = `${card.name} prevents reactive attacks on ${context.targetInfrastructure.name} for 1 turn`;
         }
         break;
         
@@ -212,6 +234,10 @@ export class WildcardResolver {
         
         updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
         console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
+        break;
+        
+      default:
+        // Card-specific ID handling moved to specialEffect section to avoid duplication
         break;
         
     }
@@ -373,6 +399,25 @@ export class WildcardResolver {
           }
           break;
         
+        case 'prevent_reactive_attacks':
+          // Advanced Threat Defense - Prevent reactive attack cards for 1 round
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+              type: 'prevent_reactions',
+              targetId: context.targetInfrastructure.id,
+              playerId: context.playerID,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
+              sourceCardId: card.id,
+              metadata: {
+                preventType: 'reactive_attacks',
+                description: 'Target infrastructure cannot be compromised by reactive attack cards'
+              }
+            });
+            
+            updatedGameState.message = `${card.name} prevents reactive attacks on ${context.targetInfrastructure.name} for 1 turn`;
+          }
+          break;
+        
         case 'prevent_restore':
           // Prevent restore effects for 1 round
           if (context.targetInfrastructure) {
@@ -393,6 +438,25 @@ export class WildcardResolver {
             duration: 0, // Immediate effect
             sourceCardId: card.id
           });
+          break;
+        
+        case 'prevent_exploits':
+          // Defensive Hardening Protocol - Prevent exploit cards for 1 round
+          if (context.targetInfrastructure) {
+            updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
+              type: 'prevent_exploits',
+              targetId: context.targetInfrastructure.id,
+              playerId: context.playerID,
+              duration: 2, // Lasts for a full round (both attacker and defender turns)
+              sourceCardId: card.id,
+              metadata: {
+                preventType: 'exploits',
+                description: 'Target infrastructure cannot be made vulnerable by Exploit cards'
+              }
+            });
+            
+            updatedGameState.message = `${card.name} prevents exploit cards on ${context.targetInfrastructure.name} for 1 turn`;
+          }
           break;
         
         case 'discard_redraw':
@@ -524,6 +588,48 @@ export class WildcardResolver {
           
           updatedGameState.message = `${card.name}: Honeypot network deployed! Exploit cards will trigger additional discard for ${duration} rounds.`;
           console.log(`✅ Temporary tax effect applied for ${duration} rounds`);
+          break;
+          
+        case 'emergency_restore_shield':
+          // Handle Incident Containment Protocol (D307) effect - MASS EFFECT
+          console.log(`🚨 Incident Containment Protocol (${card.id}) detected! Applying emergency_restore_shield effect to ALL compromised infrastructure`);
+          
+          if (context.targetInfrastructure && context.targetInfrastructure.state === 'compromised') {
+            // Restore ALL compromised infrastructure to shielded state (not just the target)
+            if (updatedGameState.infrastructure) {
+              let restoredCount = 0;
+              updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+                if (infra.state === 'compromised') {
+                  restoredCount++;
+                  console.log(`🔧 Emergency containment: ${infra.name} from compromised to shielded`);
+                  return {
+                    ...infra,
+                    state: 'shielded' as InfrastructureState, // Restore and immediately shield
+                    vulnerabilities: [], // Clear vulnerabilities like regular response cards
+                    shields: [
+                      ...(infra.shields || []),
+                      {
+                        vector: 'network' as AttackVector, // Default shield type for emergency protocol
+                        appliedBy: card.id,
+                        appliedByPlayer: context.playerID || '',
+                        timestamp: Date.now()
+                      }
+                    ]
+                  };
+                }
+                return infra;
+              });
+              
+              updatedGameState.message = `${card.name}: Emergency containment protocol activated! Restored and shielded ${restoredCount} compromised infrastructure.`;
+              console.log(`✅ Emergency containment completed: ${restoredCount} infrastructure restored and shielded`);
+            } else {
+              console.log(`❌ Emergency containment failed: No infrastructure array found`);
+              updatedGameState.message = `${card.name} failed: No infrastructure to restore`;
+            }
+          } else {
+            console.log(`❌ Emergency containment failed: Target not compromised or missing`);
+            updatedGameState.message = `${card.name} can only target compromised infrastructure`;
+          }
           break;
           
         default:

@@ -176,7 +176,14 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
   turn: {
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
+      
       const isAttacker = G.currentTurn === 'attacker';
+      
+      // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
+      if (isAttacker) {
+        console.log(`🔄 NEW ROUND ${G.currentRound}: Processing maintenance costs`);
+        updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG);
+      }
       
       events.setActivePlayers({ currentPlayer: 'action' });
       
