@@ -176,21 +176,35 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
   turn: {
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
-      
       const isAttacker = G.currentTurn === 'attacker';
-      
+
+      // Add AP at the start of the turn
+      if (isAttacker && updatedG.attacker) {
+        const { updateActionPoints } = require('./playerManager');
+        updatedG = {
+          ...updatedG,
+          attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
+        };
+      } else if (!isAttacker && updatedG.defender) {
+        const { updateActionPoints } = require('./playerManager');
+        updatedG = {
+          ...updatedG,
+          defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
+        };
+      }
+
       // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
       if (isAttacker) {
         console.log(`🔄 NEW ROUND ${G.currentRound}: Processing maintenance costs`);
         updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG);
       }
-      
+
       events.setActivePlayers({ currentPlayer: 'action' });
-      
-      if (isAttacker && G.attacker) {
-        console.log(`Attacker turn start: AP ${G.attacker.actionPoints}/${G.gameConfig.maxActionPoints}`);
-      } else if (!isAttacker && G.defender) {
-        console.log(`Defender turn start: AP ${G.defender.actionPoints}/${G.gameConfig.maxActionPoints}`);
+
+      if (isAttacker && updatedG.attacker) {
+        console.log(`Attacker turn start: AP ${updatedG.attacker.actionPoints}/${updatedG.gameConfig.maxActionPoints}`);
+      } else if (!isAttacker && updatedG.defender) {
+        console.log(`Defender turn start: AP ${updatedG.defender.actionPoints}/${updatedG.gameConfig.maxActionPoints}`);
       }
       
       return {

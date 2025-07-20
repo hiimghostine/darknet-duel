@@ -22,7 +22,7 @@ export const createInitialState = (): GameState => {
       maxTurns: 15,            // Game length: 15 rounds maximum
       startingHandSize: 5,     // Each player draws 5 cards initially
       infrastructureCount: 5,   // 5 infrastructure cards (network, web, data, user, critical systems)
-      initialActionPoints: 2,   // Starting AP at game start - both players start with 2 AP
+      initialActionPoints: 0,   // Starting AP at game start - both players start with 0 AP
       attackerActionPointsPerTurn: 2,  // Attacker gets 2 AP per turn
       defenderActionPointsPerTurn: 3,  // Defender gets 3 AP per turn
       maxActionPoints: 10,      // Maximum AP cap - AP carries over between turns up to 10
