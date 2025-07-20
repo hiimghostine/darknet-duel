@@ -10,7 +10,8 @@ export const cycleCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   const cardIdStr = String(cardId);
   
   // Ensure we have proper player role properties preserved
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use boardgame.io player IDs for validation
+  const isAttacker = playerID === '0';
   const player = isAttacker ? G.attacker : G.defender;
   
   // Exit early if player data is missing
@@ -59,8 +60,11 @@ export const cycleCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     updatedPlayer.freeCardCyclesUsed += 1;
   }
   
-  // Draw a new card
-  updatedPlayer = drawCard(updatedPlayer);
+  // Draw a new card and insert it at the same position as the cycled card
+  const playerWithNewCard = drawCard(updatedPlayer);
+  const newCard = playerWithNewCard.hand[playerWithNewCard.hand.length - 1]; // Get the newly drawn card
+  // Insert the new card at the same position where the old card was removed
+  updatedPlayer.hand.splice(cardIndex, 0, newCard);
   
   // Record action
   const newAction: GameAction = {

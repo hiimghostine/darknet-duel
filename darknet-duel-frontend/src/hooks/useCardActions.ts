@@ -10,8 +10,12 @@ import { getAvailableCardTypes } from '../utils/wildcardTypeUtils';
  * Hook for card action management in the game
  * Handles playing cards, cycling cards, targeting, and card throws
  */
-export function useCardActions(props: BoardProps) {
-  const { G, moves, isActive } = props;
+export function useCardActions(props: BoardProps & {
+  triggerClick?: () => void;
+  triggerPositiveClick?: () => void;
+  triggerNegativeClick?: () => void;
+}) {
+  const { G, moves, isActive, triggerClick, triggerPositiveClick, triggerNegativeClick } = props;
   
   // Card selection and targeting states
   const [selectedCard, setSelectedCard] = useState<ExtendedCard | null>(null);
@@ -397,11 +401,13 @@ export function useCardActions(props: BoardProps) {
   const playCard = (card: ExtendedCard, event?: React.MouseEvent) => {
     if (!card || !isActive) return;
     if (event) event.stopPropagation();
+    if (triggerClick) triggerClick(); // Play click SFX on any card click
     if (targetMode) return;
     
     // Special handling for Memory Corruption Attack - use throwCard with dummy target
     if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
       console.log("🔥 Playing Memory Corruption Attack directly");
+      if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
       // Use throwCard with a dummy target since validation will skip infrastructure checks
       moves.throwCard(card.id, 'dummy_target');
       return;
@@ -410,6 +416,7 @@ export function useCardActions(props: BoardProps) {
     // Special handling for Emergency Response Team (D303) - use throwCard with dummy target
     if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure') {
       console.log("🚨 Playing Emergency Response Team directly");
+      if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
       // Use throwCard with a dummy target since validation will skip infrastructure checks
       moves.throwCard(card.id, 'dummy_target');
       return;
@@ -427,12 +434,14 @@ export function useCardActions(props: BoardProps) {
         return;
       } else {
         console.log("Card requires targeting but no valid targets available");
+        if (triggerNegativeClick) triggerNegativeClick(); // Play negative SFX on invalid move
         return;
       }
     }
     
     // Direct play for cards that don't need targeting
     console.log("Playing card:", card.name);
+    if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
     moves.playCard(card.id);
   };
 
@@ -464,6 +473,7 @@ export function useCardActions(props: BoardProps) {
    */
   const throwCard = (card: ExtendedCard) => {
     if (!card || !isActive) return;
+    if (triggerClick) triggerClick(); // Play click SFX on any card click
     if (targetMode) return;
     
     // Check if this card needs targeting - handles both regular and wildcard cards
@@ -477,6 +487,7 @@ export function useCardActions(props: BoardProps) {
         setValidTargets(targets);
       } else {
         console.log(`No valid targets found for ${card.name} card`);
+        if (triggerNegativeClick) triggerNegativeClick(); // Play negative SFX on invalid move
       }
     }
   };
@@ -491,6 +502,7 @@ export function useCardActions(props: BoardProps) {
     // Check if this is a valid target
     if (!validTargets.includes(infraId)) {
       console.log("Invalid target:", infraId);
+      if (triggerNegativeClick) triggerNegativeClick(); // Play negative SFX on invalid move
       return;
     }
     
@@ -503,6 +515,7 @@ export function useCardActions(props: BoardProps) {
       // Use throwCard for targeted card plays instead of playCard
       // throwCard properly handles both the card and infrastructure target
       console.log(`DEBUG: Calling moves.throwCard with cardId: ${selectedCard.id}, infraId: ${infraId}`);
+      if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
       moves.throwCard(selectedCard.id, infraId);
       resetTargeting();
     }, 300);

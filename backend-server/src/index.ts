@@ -121,7 +121,7 @@ app.get('/api/games/:id', (req, res) => {
 
 app.get('/api/players/:id/rating', (req, res) => {
   // TODO: Implement player rating retrieval (placeholder)
-  res.status(200).json({ playerId: req.params.id, rating: 1200 });
+  res.status(200).json({ playerId: req.params.id, rating: 1000 });
 });
 
 /**

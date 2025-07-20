@@ -82,7 +82,11 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
         {onCancel && (
           <button 
             className="cancel-chain-button" 
-            onClick={onCancel}
+            onClick={() => {
+              // Note: We don't have access to triggerClick here, but this is a cancel action
+              // so it would be appropriate for a negative click sound if available
+              onCancel();
+            }}
           >
             Skip Chain Effect
           </button>

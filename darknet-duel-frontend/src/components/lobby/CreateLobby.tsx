@@ -2,22 +2,44 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
-import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle } from 'react-icons/fa';
+import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle, FaTag } from 'react-icons/fa';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { useThemeStore } from '../../store/theme.store';
 
 const CreateLobby: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { triggerClick } = useAudioManager();
+  const { theme } = useThemeStore();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<'standard' | 'blitz' | 'custom'>('standard');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [lobbyName, setLobbyName] = useState('');
+
+  // Predefined cyberpunk lobby names
+  const cyberpunkLobbyNames = [
+    'NEON_UNDERGROUND',
+    'DIGITAL_SHADOWS',
+    'CYBER_MAELSTROM',
+    'MATRIX_BREACH',
+    'SYSTEM_CORRUPTION',
+    'NEURAL_INTRUSION',
+    'QUANTUM_HACK'
+  ];
+
+  const getRandomLobbyName = () => {
+    return cyberpunkLobbyNames[Math.floor(Math.random() * cyberpunkLobbyNames.length)];
+  };
+
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
       return;
     }
+    
+    // Use random name if lobby name is blank
+    const finalLobbyName = lobbyName.trim() || getRandomLobbyName();
     
     setIsCreating(true);
     setError(null);
@@ -27,11 +49,13 @@ const CreateLobby: React.FC = () => {
       interface GameSettings {
         gameMode: string;
         isPrivate: boolean;
+        lobbyName: string;
       }
       
       const settings: GameSettings = {
         gameMode: 'standard',
-        isPrivate: isPrivate
+        isPrivate: isPrivate,
+        lobbyName: finalLobbyName
       };
       
       const matchID = await lobbyService.createMatch(2, settings);
@@ -106,7 +130,7 @@ const CreateLobby: React.FC = () => {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
         
-        <div className="grid md:grid-cols-3 gap-3 mt-4">
+        <div className="grid md:grid-cols-2 gap-3 mt-4">
           <button 
             type="button"
             onClick={() => {
@@ -147,22 +171,6 @@ const CreateLobby: React.FC = () => {
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
             <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
             <span className="text-base font-bold block relative z-10">BLITZ</span>
-            <span className="text-xs relative z-10">[ COMING SOON ]</span>
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setSelectedMode('custom')}
-            className={`p-4 border font-mono rounded relative transition-all duration-300 ${
-              selectedMode === 'custom'
-                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-2 ring-base-content/30'
-                : 'border-base-content/30 bg-base-900/60 text-base-content/60 opacity-60 cursor-not-allowed'
-            }`}
-            disabled
-          >
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
-            <span className="text-base font-bold block relative z-10">CUSTOM</span>
             <span className="text-xs relative z-10">[ COMING SOON ]</span>
           </button>
         </div>
@@ -235,6 +243,33 @@ const CreateLobby: React.FC = () => {
         </div>
       </div>
       
+      {/* Lobby Name */}
+      <div className="mb-8">
+        <div className="flex items-center mb-3">
+          <FaTag className="text-primary mr-2" />
+          <h3 className="text-xl font-mono text-primary">LOBBY IDENTIFICATION</h3>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        
+        <div className="mt-4">
+          <input
+            type="text"
+            value={lobbyName}
+            onChange={(e) => setLobbyName(e.target.value)}
+            placeholder="Enter lobby name..."
+            maxLength={50}
+            className={`w-full px-4 py-3 border font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200 ${
+              theme === 'cyberpunk-dark' 
+                ? 'bg-base-900/80 border-primary/30 text-primary' 
+                : 'bg-base-100/80 border-primary/40 text-primary'
+            }`}
+          />
+          <div className="mt-2 text-xs text-primary/60 font-mono">
+            Choose a descriptive name for your lobby (max 50 characters). Leave blank for a random cyberpunk name.
+          </div>
+        </div>
+      </div>
+      
       <div className="mb-8">
         <div className="flex items-center mb-3">
           <FaUserSecret className="text-primary mr-2" />
@@ -242,7 +277,7 @@ const CreateLobby: React.FC = () => {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
         
-        <p className="text-base-content/80 font-mono text-sm mb-4">In Darknet Duel, players are randomly assigned one of two roles:</p>
+        <p className="text-base-content/80 font-mono text-sm mb-4">In Darknet Duel, the host will be assigned the Attacker role, while the second player will be the Defender:</p>
         
         <div className="grid md:grid-cols-2 gap-6 mb-4">
           <div className="border border-accent/50 bg-base-900/80 p-4 rounded-lg relative overflow-hidden group hover:shadow-accent/20 hover:shadow-md transition-all duration-300">

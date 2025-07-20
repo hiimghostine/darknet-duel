@@ -141,15 +141,18 @@ export const reactionStageMoves = {
   
   skipReaction: function skipReaction({ G, ctx, playerID, events }: MoveParams<GameState>) {
     console.log(`🔄 SKIP REACTION: Player ${playerID} is skipping reaction`);
-    
-    // Skip the reaction and clear pending reactions for this player
-    
-    // Clear pending reactions for this player
+
+    // Map boardgame.io playerID ("0"/"1") to UUID
+    let uuid = playerID;
+    if (G.attacker && playerID === "0") uuid = G.attacker.id;
+    if (G.defender && playerID === "1") uuid = G.defender.id;
+
+    // Clear pending reactions for this player (using UUID)
     const updatedPendingReactions = G.pendingReactions ?
-      G.pendingReactions.filter(reaction => reaction.target !== playerID) : [];
-    
+      G.pendingReactions.filter(reaction => reaction.target !== uuid) : [];
+
     console.log(`🔄 SKIP REACTION: Pending reactions before: ${G.pendingReactions?.length || 0}, after: ${updatedPendingReactions.length}`);
-    
+
     // Return control to the action player if no more pending reactions
     if (updatedPendingReactions.length === 0) {
       console.log(`🔄 SKIP REACTION: No more pending reactions, returning to action stage`);
@@ -164,18 +167,18 @@ export const reactionStageMoves = {
     } else {
       console.log(`🔄 SKIP REACTION: Still have ${updatedPendingReactions.length} pending reactions`);
     }
-    
+
     // Record the action of skipping a reaction
-    const isAttacker = playerID === G.attacker?.id;
+    const isAttacker = uuid === G.attacker?.id;
     const newAction: GameAction = {
       playerRole: isAttacker ? 'attacker' : 'defender',
       actionType: 'skipReaction',
       timestamp: Date.now(),
       payload: {}
     };
-    
+
     console.log(`🔄 SKIP REACTION: Completed for ${isAttacker ? 'attacker' : 'defender'}`);
-    
+
     return {
       ...G,
       pendingReactions: updatedPendingReactions,

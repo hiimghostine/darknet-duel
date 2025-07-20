@@ -14,7 +14,7 @@ export class LobbyCleanupService {
   private cleanupInterval: NodeJS.Timeout | null = null;
   private CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // Run every 5 minutes by default
   private ABANDONED_GAME_TTL_MS = 30 * 60 * 1000; // Remove abandoned games after 30 minutes by default
-  private INACTIVE_GAME_TTL_MS = 2 * 60 * 60 * 1000; // Remove inactive games after 2 hours by default
+  private INACTIVE_GAME_TTL_MS = 5 * 60 * 1000; // Remove inactive games after 5 minutes by default
 
   constructor(server: ReturnType<typeof Server>) {
     this.server = server;
@@ -123,6 +123,29 @@ export class LobbyCleanupService {
   }
 
   /**
+   * Immediately remove a specific completed game (winner or abandoned)
+   * @param matchID The ID of the match to remove
+   */
+  public async removeCompletedGame(matchID: string): Promise<boolean> {
+    try {
+      if (!this.server.db) return false;
+      const matchDetails = await this.server.db.fetch(matchID, { state: true });
+      if (!matchDetails) return false;
+      const gameState = matchDetails.state?.G as GameState;
+      // Remove if the game is over (has a winner or is abandoned)
+      const isCompleted = gameState?.gamePhase === 'gameOver' && (gameState?.winner !== undefined);
+      if (isCompleted) {
+        await this.server.db.wipe(matchID);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Error removing completed game ${matchID}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * The main cleanup routine that removes abandoned or inactive games
    */
   private async cleanupAbandonedGames(): Promise<void> {
@@ -193,7 +216,12 @@ export class LobbyCleanupService {
               removalReason = `abandoned game (removed after ${Math.round(abandonedGracePeriod/1000)}s grace period)`;  
             }
           }
-          // Remove inactive games with no connected players
+          // Do NOT remove completed games (with a winner) after inactivity
+          else if (gameState?.winner && gameState?.winner !== 'abandoned') {
+            // Completed games with a winner are kept indefinitely (or until a manual/admin cleanup)
+            shouldRemove = false;
+          }
+          // Remove inactive games with no connected players (not completed or abandoned)
           else if (!hasAnyConnectedPlayers && timeSinceUpdate >= this.INACTIVE_GAME_TTL_MS) {
             shouldRemove = true;
             removalReason = `inactive with no connected players (${Math.round(timeSinceUpdate / 60000)} minutes old)`;

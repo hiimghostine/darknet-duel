@@ -9,11 +9,13 @@ import UserTypeTag from '../UserTypeTag';
 import accountService from '../../services/account.service';
 import storeService from '../../services/store.service';
 import logo from '../../assets/logo.png';
+import { useAudioManager } from '../../hooks/useAudioManager';
 
 const LobbyDetail: React.FC = () => {
   const { matchID = '' } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { triggerClick, triggerNegativeClick, triggerPositiveClick } = useAudioManager();
   const [match, setMatch] = useState<GameMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +25,7 @@ const LobbyDetail: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [opponentData, setOpponentData] = useState<any>(null);
+  const [bothPlayersReady, setBothPlayersReady] = useState(false);
 
   // Track previous player slots for detecting host transfers using ref to avoid dependency issues
   const prevPlayerIDsRef = useRef<{[key: string]: number}>({});
@@ -104,10 +107,34 @@ const LobbyDetail: React.FC = () => {
           // User is not part of this match
           navigate('/lobbies');
         }
-      }
+              } else {
+          // Match not found - likely deleted due to inactivity
+          if (isBackgroundFetch) {
+            // Only show notification and redirect on background fetches (polling)
+            // This prevents showing the notification on initial load
+            console.log('Lobby not found - likely deleted due to inactivity');
+            
+            // Clean up local storage
+            localStorage.removeItem(`match_${matchID}_playerID`);
+            localStorage.removeItem(`match_${matchID}_credentials`);
+            
+            // Play negative sound effect for lobby timeout
+            triggerNegativeClick();
+            
+            // Show notification and redirect
+            setError('This lobby has been deleted due to inactivity. Redirecting to lobby browser...');
+            
+            // Redirect after a short delay to show the notification
+            setTimeout(() => {
+              navigate('/lobbies');
+            }, 2000);
+          }
+        }
     } catch (err) {
       console.error('Error fetching match details:', err);
-      setError('Failed to load lobby details');
+      if (!isBackgroundFetch) {
+        setError('Failed to load lobby details');
+      }
     } finally {
       setLoading(false);
       if (isBackgroundFetch) setIsPolling(false);
@@ -151,6 +178,21 @@ const LobbyDetail: React.FC = () => {
     }
   }, [match, currentPlayerID]);
 
+  // Check if both players are ready and play sound effect
+  useEffect(() => {
+    if (match) {
+      const areReady = areBothPlayersReady();
+      if (areReady && !bothPlayersReady) {
+        // Both players just became ready
+        triggerPositiveClick();
+        setBothPlayersReady(true);
+      } else if (!areReady && bothPlayersReady) {
+        // Players are no longer both ready
+        setBothPlayersReady(false);
+      }
+    }
+  }, [match, bothPlayersReady, triggerPositiveClick]);
+
   // Handle ready status change
   const handleReadyToggle = async () => {
     if (!matchID) return;
@@ -159,10 +201,13 @@ const LobbyDetail: React.FC = () => {
       const success = await lobbyService.updateReadyStatus(matchID, !isReady);
       if (success) {
         setIsReady(!isReady);
+      } else {
+        triggerNegativeClick(); // Play negative click sound on failure
       }
     } catch (err) {
       console.error('Error updating ready status:', err);
       setError('Failed to update ready status');
+      triggerNegativeClick(); // Play negative click sound on error
     }
   };
   
@@ -218,14 +263,10 @@ const LobbyDetail: React.FC = () => {
       const opponentInfo = getOpponentInfo();
       if (opponentInfo.name !== 'Waiting for opponent...' && opponentInfo.name !== 'Unknown') {
         try {
-          // Try to get opponent data by username (this is a simplified approach)
-          // In a real implementation, you'd need the opponent's user ID
-          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/account/search?username=${opponentInfo.name}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              setOpponentData(data.data);
-            }
+          // Use the account service to search for opponent data by username
+          const opponentData = await accountService.searchAccountByUsername(opponentInfo.name);
+          if (opponentData) {
+            setOpponentData(opponentData);
           }
         } catch (error) {
           console.error('Failed to fetch opponent data:', error);
@@ -272,6 +313,11 @@ const LobbyDetail: React.FC = () => {
 
   const opponentInfo = getOpponentInfo();
   const gameMode = match.setupData?.gameMode || 'standard';
+  
+  // Determine who the host is (player in slot 0)
+  const hostPlayer = match.players.find(p => p.id === 0);
+  const isCurrentPlayerHost = currentPlayerID === '0';
+  const isOpponentHost = !isCurrentPlayerHost && hostPlayer?.name;
 
   return (
     <>
@@ -307,15 +353,22 @@ const LobbyDetail: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
           <div className="flex items-center">
-            <h2 className="text-2xl font-mono text-primary glitch-text">LOBBY #{matchID.substring(0, 8)}</h2>
+            <h2 className="text-2xl font-mono text-primary glitch-text">
+              {match.setupData?.lobbyName || 'Unnamed Lobby'}
+            </h2>
           </div>
-          {match?.setupData.isPrivate && (
-            <div className="mt-2 flex items-center gap-2">
-              <FaLock className="text-primary/70 text-sm" />
-              <span className="text-xs font-mono text-primary/70">PRIVATE LOBBY</span>
-              <span className="text-xs font-mono text-primary/50">ID: {matchID}</span>
-            </div>
-          )}
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-sm font-mono text-primary/70">LOBBY #{matchID.substring(0, 8)}</span>
+            {match?.setupData.isPrivate && (
+              <>
+                <span className="text-primary/50">•</span>
+                <div className="flex items-center gap-1">
+                  <FaLock className="text-primary/70 text-xs" />
+                  <span className="text-xs font-mono text-primary/70">PRIVATE</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="px-3 py-1 bg-primary/20 border border-primary/40 text-primary font-mono text-xs rounded-md uppercase">
           <div className="flex items-center">
@@ -378,7 +431,10 @@ const LobbyDetail: React.FC = () => {
           </div>
           
           <button 
-            onClick={handleReadyToggle}
+            onClick={() => {
+              triggerClick(); // Play click sound on button press
+              handleReadyToggle();
+            }}
             className={`w-full py-2 px-4 font-mono text-sm rounded flex items-center justify-center transition-colors duration-300 ${isReady 
               ? 'bg-red-900/30 border border-red-700/50 text-red-500 hover:bg-red-900/50' 
               : 'bg-green-900/30 border border-green-500/50 text-green-500 hover:bg-green-900/50'}`}
@@ -443,6 +499,11 @@ const LobbyDetail: React.FC = () => {
                 {opponentInfo.name}
               </div>
               {opponentData?.type && <UserTypeTag userType={opponentData.type} />}
+              {isOpponentHost && (
+                <div className="px-2 py-0.5 bg-secondary/20 border border-secondary/40 text-secondary text-xs font-mono rounded">
+                  HOST
+                </div>
+              )}
             </div>
           </div>
           
@@ -472,7 +533,7 @@ const LobbyDetail: React.FC = () => {
         </div>
         
         <p className="text-base-content/80 font-mono text-sm mb-4">
-          Roles will be randomly assigned when the operation begins.
+          The host will be assigned the Attacker role, while the second player will be the Defender.
         </p>
         
         {/* Host transfer notification */}

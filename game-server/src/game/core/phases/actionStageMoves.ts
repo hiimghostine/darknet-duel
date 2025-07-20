@@ -200,19 +200,6 @@ export const actionStageMoves = {
     // Reset free card cycles counter for next turn
     updatedPlayer.freeCardCyclesUsed = 0;
     
-    // Add next turn's action points now rather than waiting for next turn
-    // This gives immediate feedback to the player about their next turn's AP
-    const apPerTurn = isAttacker ? 
-      G.gameConfig.attackerActionPointsPerTurn : 
-      G.gameConfig.defenderActionPointsPerTurn;
-      
-    updatedPlayer.actionPoints = Math.min(
-      updatedPlayer.actionPoints + apPerTurn,
-      G.gameConfig.maxActionPoints
-    );
-    
-    console.log(`End turn: Added ${apPerTurn} AP for ${isAttacker ? 'attacker' : 'defender'}, now ${updatedPlayer.actionPoints}/${G.gameConfig.maxActionPoints}`);
-    
     // Update game state
     const updatedG = {
       ...G,

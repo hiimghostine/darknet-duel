@@ -421,13 +421,20 @@ const LobbyBrowser: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-col flex-1 gap-4">
-                  {/* Status badge based on lobby state */}
-                  {match.setupData.state && (
-                    <div className={`px-2 py-1 text-xs font-mono rounded-md flex items-center self-end ${getLobbyStateStyles(match.setupData.state)}`}>
-                      {getLobbyStateIcon(match.setupData.state)}
-                      <span className="ml-1">{getLobbyStateLabel(match.setupData.state)}</span>
-                    </div>
-                  )}
+                  {/* Lobby Name and Status Badge Inline */}
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <h3 className="text-lg font-mono font-bold text-base-content truncate max-w-[70%]">
+                      {match.setupData?.lobbyName || 'Unnamed Lobby'}
+                    </h3>
+                    {match.setupData.state && (
+                      <div className={`px-2 py-1 text-xs font-mono rounded-md flex items-center ${getLobbyStateStyles(match.setupData.state)}`}
+                        style={{ minWidth: '80px', justifyContent: 'center' }}>
+                        {getLobbyStateIcon(match.setupData.state)}
+                        <span className="ml-1">{getLobbyStateLabel(match.setupData.state)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* End Inline Header */}
                   
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2">

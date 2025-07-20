@@ -10,10 +10,10 @@ import purchaseSuccessfulWav from '../assets/sfx/purchase-successful.wav';
 import sendMsgWav from '../assets/sfx/send-msg.wav';
 import recvMsgWav from '../assets/sfx/recv-msg.wav';
 
-import endCreditsM4a from '../assets/bgm/end-credits-loop.m4a';
-import unpluggedFromMatrixM4a from '../assets/bgm/unplugged-from-the-matrix-loop.m4a';
-import systemHasFailedM4a from '../assets/bgm/the-system-has-failed-loop.m4a';
-import theDropM4a from '../assets/bgm/the-drop-loop.m4a';
+import endCreditsOgg from '../assets/bgm/end-credits-loop.ogg';
+import unpluggedFromMatrixOgg from '../assets/bgm/unplugged-from-the-matrix-loop.ogg';
+import systemHasFailedOgg from '../assets/bgm/the-system-has-failed-loop.ogg';
+import theDropOgg from '../assets/bgm/the-drop-loop.ogg';
 
 // SFX mapping
 const SFX_FILES = {
@@ -29,10 +29,10 @@ const SFX_FILES = {
 
 // BGM mapping
 const BGM_FILES = {
-  'end-credits': endCreditsM4a,
-  'unplugged-from-the-matrix': unpluggedFromMatrixM4a,
-  'the-system-has-failed': systemHasFailedM4a,
-  'the-drop': theDropM4a,
+  'end-credits': endCreditsOgg,
+  'unplugged-from-the-matrix': unpluggedFromMatrixOgg,
+  'the-system-has-failed': systemHasFailedOgg,
+  'the-drop': theDropOgg,
 } as const;
 
 console.log('🎵 BGM_FILES loaded:', Object.keys(BGM_FILES));

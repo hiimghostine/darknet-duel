@@ -19,7 +19,7 @@ interface RatingData {
 export class RatingService {
   // Constants for ELO calculation
   private K_FACTOR = 32; // How much a single game can affect rating
-  private DEFAULT_RATING = 1200; // Starting rating for new players
+  private DEFAULT_RATING = 1000; // Starting rating for new players
   
   /**
    * Update player ratings based on game results

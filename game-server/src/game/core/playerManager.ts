@@ -20,8 +20,8 @@ export const initializePlayer = (playerId: string, role: PlayerRole, gameConfig:
     name: `Player ${playerId}`, // Adding name property with a default value
     role: role, // Explicitly set the player role
     resources: gameConfig.initialResources,
-    // Initialize action points according to game configuration
-    actionPoints: gameConfig.initialActionPoints,
+    // Initialize action points to 0 at game start
+    actionPoints: 0,
     freeCardCyclesUsed: 0, // Reset card cycles used counter
     deck: deck,
     hand: [],
@@ -55,7 +55,7 @@ export const initializePlayerWithData = (
     realUserId: userData.id,     // ✅ Store real user UUID separately
     role: role,
     resources: gameConfig.initialResources,
-    actionPoints: gameConfig.initialActionPoints,
+    actionPoints: 0,
     freeCardCyclesUsed: 0,
     deck: deck,
     hand: [],

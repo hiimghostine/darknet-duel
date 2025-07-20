@@ -5,6 +5,7 @@ import type { GameState } from 'shared-types/game.types';
 import LobbyChat from '../../lobby/LobbyChat';
 import { useGameCredentials } from '../../../hooks/useGameCredentials';
 import { useGameConnection } from '../../../hooks/useGameConnection';
+import { playBGM, stopBGM } from '../../../utils/audioHandler';
 
 interface WinnerLobbyProps {
   G: GameState;
@@ -28,6 +29,20 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
   const navigate = useNavigate();
   const isWinner = G.winner === (isAttacker ? 'attacker' : 'defender');
   
+  // Play victory/defeat BGM on mount and suppress global BGM manager
+  React.useEffect(() => {
+    window.__suppressGlobalBGM = true;
+    if (isWinner) {
+      playBGM('end-credits');
+    } else {
+      playBGM('unplugged-from-the-matrix');
+    }
+    return () => {
+      window.__suppressGlobalBGM = false;
+      stopBGM();
+    };
+  }, [isWinner]);
+
   // Use the same hooks as GameClient for proper cleanup
   const { clearCredentials } = useGameCredentials(matchID);
   const { leaveMatch } = useGameConnection(matchID, playerID || null, null);
@@ -55,13 +70,8 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     }
 
     try {
-      // Clean up game credentials and connection
-      if (matchID && playerID) {
-        await leaveMatch();
-        clearCredentials();
-      }
-      
-      // Navigate back to lobbies
+      // Do NOT clean up game credentials or connection here; just navigate away
+      // This prevents the lobby from being removed while still being polled
       navigate('/lobbies');
     } catch (error) {
       console.error('Error leaving game:', error);
@@ -169,26 +179,7 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
           </div>
           
           <div className="flex gap-3">
-            <motion.button 
-              onClick={handleRematchRequest}
-              disabled={currentPlayerRequestedRematch || false}
-              className={`btn btn-sm font-mono ${
-                currentPlayerRequestedRematch 
-                  ? 'btn-success' 
-                  : 'btn-primary'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {currentPlayerRequestedRematch ? (
-                <>
-                  <span className="loading loading-dots loading-xs"></span>
-                  REMATCH_REQUESTED
-                </>
-              ) : (
-                <>🔄 REQUEST_REMATCH</>
-              )}
-            </motion.button>
+
             
             <motion.button
               onClick={handleLeaveGame}
@@ -246,6 +237,11 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
                   ? `MISSION_SUCCESS: Network ${isAttacker ? 'compromised' : 'defended'} successfully!`
                   : `MISSION_FAILED: Your ${isAttacker ? 'attack' : 'defense'} operation has failed!`
                 }
+              </p>
+              {/* Creds earned message */}
+              <p className={`text-lg font-bold mb-2 ${isWinner ? 'text-success' : 'text-info'}`}
+                 style={{ marginTop: '1rem' }}>
+                {isWinner ? 'You earned 10 creds!' : 'You earned 5 creds!'}
               </p>
               {G.gameStats?.winReason && (
                 <p className="text-sm text-base-content/70">
@@ -393,26 +389,7 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
               </div>
             </div>
 
-            {/* Performance Analytics Preview */}
-            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
-              <div className="bg-base-200 border border-primary/20 border-dashed p-6 relative opacity-60">
-                <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-                
-                <div className="text-center">
-                  <div className="text-4xl mb-4">📊</div>
-                  <h3 className="font-mono text-primary text-lg mb-2">ANALYTICS_MODULE</h3>
-                  <p className="font-mono text-sm text-base-content/70">
-                    Advanced performance metrics and tactical analysis
-                  </p>
-                  <p className="font-mono text-xs text-primary mt-4">
-                    [MODULE_STATUS: UNDER_DEVELOPMENT]
-                  </p>
-                </div>
-              </div>
-            </div>
+            
           </motion.div>
 
           {/* Post-Game Communications */}
@@ -449,3 +426,9 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
 };
 
 export default WinnerLobby;
+
+declare global {
+  interface Window {
+    __suppressGlobalBGM?: boolean;
+  }
+}
