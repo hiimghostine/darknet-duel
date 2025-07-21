@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Import types
 import type { GameComponentProps } from './types';
@@ -391,20 +392,13 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                 </div>
               )}
               
-              {/* Per-card cycle button */}
+              {/* Enhanced Per-card cycle button with animations */}
               {!targetMode && !isInReactionMode && isActive && (
-                <button 
-                  className="absolute -top-1 -left-1 bg-warning text-base-content rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold hover:scale-110 transition-transform z-60"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    console.log('🔄 Cycling card:', card.name);
-                    cycleCard(card.id);
-                  }}
-                  title="Cycle this card"
-                >
-                  ↻
-                </button>
+                <CycleCardButton
+                  cardId={card.id}
+                  cardName={card.name}
+                  onCycle={cycleCard}
+                />
               )}
             </div>
           );
@@ -452,6 +446,86 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
         )}
       </div>
     </div>
+  );
+};
+
+// Enhanced Cycle Card Button Component with animations
+interface CycleCardButtonProps {
+  cardId: string;
+  cardName: string;
+  onCycle: (cardId: string) => void;
+}
+
+const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onCycle }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const { triggerClick } = useAudioManager();
+
+  const handleCycle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (isAnimating) return; // Prevent spam clicking
+    
+    setIsAnimating(true);
+    triggerClick();
+    console.log('🔄 Cycling card:', cardName);
+    
+    // Call the cycle function
+    onCycle(cardId);
+    
+    // Reset animation state after a delay
+    setTimeout(() => setIsAnimating(false), 800);
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.button
+        className="absolute -top-2 -left-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold shadow-lg border-2 border-amber-300/50"
+        onClick={handleCycle}
+        title="Cycle this card"
+        whileHover={{
+          scale: 1.15,
+          rotate: 15,
+          boxShadow: "0 0 20px rgba(251, 191, 36, 0.6)"
+        }}
+        whileTap={{ scale: 0.95 }}
+        animate={isAnimating ? {
+          rotate: [0, 360],
+          scale: [1, 1.2, 1],
+          boxShadow: [
+            "0 0 10px rgba(251, 191, 36, 0.4)",
+            "0 0 25px rgba(251, 191, 36, 0.8)",
+            "0 0 10px rgba(251, 191, 36, 0.4)"
+          ]
+        } : {
+          rotate: 0,
+          scale: 1
+        }}
+        transition={{
+          duration: isAnimating ? 0.8 : 0.2,
+          ease: "easeInOut"
+        }}
+        disabled={isAnimating}
+        style={{
+          cursor: isAnimating ? 'wait' : 'pointer',
+          zIndex: 9999 // Ensure it's always on top
+        }}
+      >
+        <motion.span
+          animate={isAnimating ? {
+            rotate: [0, 360, 720]
+          } : {
+            rotate: 0
+          }}
+          transition={{
+            duration: isAnimating ? 0.8 : 0,
+            ease: "easeInOut"
+          }}
+        >
+          🔄
+        </motion.span>
+      </motion.button>
+    </AnimatePresence>
   );
 };
 
