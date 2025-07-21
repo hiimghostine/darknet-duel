@@ -88,8 +88,9 @@ export function getAvailableCardTypes(wildcardType?: CardType[] | string): CardT
     case 'exploit-attack':
       return ['exploit', 'attack'];
     case 'special':
-      // Special cards like Security Automation Suite can be shield or fortify
-      return ['shield', 'fortify'];
+      // Special cards need context-based determination
+      // For now, return empty array to force manual selection
+      return [];
     default:
       // Try to interpret as a single card type
       return isValidCardType(wildcardType) ? [wildcardType as CardType] : [];

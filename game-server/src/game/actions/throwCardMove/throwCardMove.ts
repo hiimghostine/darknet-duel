@@ -299,8 +299,16 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       };
     }
     
-    // Get available types for this wildcard
-    const availableTypes = getAvailableCardTypes(card!.wildcardType);
+    // Get available types for this wildcard using context-aware resolver
+    const { WildcardResolver } = require('../wildcardResolver');
+    const wildcardContext = {
+      gameState: G,
+      playerRole: isAttacker ? 'attacker' : 'defender',
+      card: extendedCard,
+      targetInfrastructure: targetInfrastructure,
+      playerID: playerID
+    };
+    const availableTypes = WildcardResolver.getAvailableTypes(extendedCard, wildcardContext);
     console.log(`Available wildcard types:`, availableTypes);
     
     // Smart auto-selection: Choose the best type based on target infrastructure state
@@ -376,12 +384,41 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           }
         }
       }
-      // For special wildcards with only one type, auto-select it
-      else if (card!.wildcardType === 'special' && availableTypes.length === 1) {
+      // Special handling for attacker special wildcards like Lateral Movement (A303)
+      else if (card!.wildcardType === 'special' && isAttacker && targetInfrastructure) {
+        console.log(`Attacker special wildcard ${card!.name} - using infrastructure-based auto-selection`);
+        switch (targetInfrastructure.state) {
+          case 'secure':
+          case 'fortified':
+          case 'fortified_weaken':
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - auto-selecting exploit for ${targetInfrastructure.state} infrastructure`);
+            break;
+          case 'vulnerable':
+            autoSelectedType = 'attack';
+            console.log(`Special wildcard ${card!.name} - auto-selecting attack for vulnerable infrastructure`);
+            break;
+          case 'shielded':
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - auto-selecting exploit for shielded infrastructure`);
+            break;
+          case 'compromised':
+            // For compromised infrastructure, use special effects if available
+            autoSelectedType = 'special';
+            console.log(`Special wildcard ${card!.name} - auto-selecting special for compromised infrastructure`);
+            break;
+          default:
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - defaulting to exploit`);
+            break;
+        }
+      }
+      // For defender special wildcards, keep the existing logic
+      else if (card!.wildcardType === 'special' && !isAttacker && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
-        console.log(`Special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
+        console.log(`Defender special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
       } else if (card!.wildcardType === 'special') {
-        console.log(`Special wildcard ${card!.name} - skipping auto-selection (multiple types)`);
+        console.log(`Special wildcard ${card!.name} - skipping auto-selection (no valid logic found)`);
         autoSelectedType = null;
       } else if (availableTypes.length === 1) {
         // Handle single-type wildcards by auto-selecting the only available type

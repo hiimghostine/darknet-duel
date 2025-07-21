@@ -57,7 +57,27 @@ export function getWildcardAttackVector(card: Card, targetInfrastructure: any): 
     return undefined;
   }
   
-  // Use the target infrastructure's first vulnerable vector as default
+  // For special wildcards, use a more intelligent approach
+  if (card.wildcardType === 'special') {
+    // Check if target infrastructure has vulnerabilities
+    if (targetInfrastructure.vulnerableVectors && targetInfrastructure.vulnerableVectors.length > 0) {
+      // Prefer network over other vectors for special wildcards
+      if (targetInfrastructure.vulnerableVectors.includes('network')) {
+        console.log(`Using preferred network attack vector for special wildcard: network`);
+        return 'network';
+      }
+      // Otherwise use the first available vector
+      const vector = targetInfrastructure.vulnerableVectors[0] as AttackVector;
+      console.log(`Using available attack vector for special wildcard: ${vector}`);
+      return vector;
+    }
+    
+    // For special wildcards without vulnerabilities, default to network
+    console.log(`Using default network attack vector for special wildcard`);
+    return 'network';
+  }
+  
+  // Use the target infrastructure's first vulnerable vector as default for other wildcards
   if (targetInfrastructure.vulnerableVectors && targetInfrastructure.vulnerableVectors.length > 0) {
     const vector = targetInfrastructure.vulnerableVectors[0] as AttackVector;
     console.log(`Using default attack vector for wildcard: ${vector}`);

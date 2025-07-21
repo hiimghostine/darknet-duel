@@ -64,6 +64,17 @@ export class WildcardResolver {
       return ['response'];
     }
     
+    // Special handling for 'special' wildcards based on player role
+    if (card.wildcardType === 'special') {
+      if (context.playerRole === 'attacker') {
+        // Attacker special wildcards (like Lateral Movement) can be exploit or attack
+        return ['exploit', 'attack'];
+      } else {
+        // Defender special wildcards can be shield or fortify
+        return ['shield', 'fortify'];
+      }
+    }
+    
     // Get basic available types from the card
     const basicTypes = getAvailableCardTypes(card.wildcardType);
     
@@ -431,13 +442,11 @@ export class WildcardResolver {
           break;
           
         case 'chain_vulnerability':
-          // Mark that we need to make another infrastructure vulnerable
-          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
-            type: 'chain_vulnerability',
-            playerId: context.playerID,
-            duration: 0, // Immediate effect
-            sourceCardId: card.id
-          });
+          // Trigger chain vulnerability effect for Lateral Movement
+          console.log(`🔗 Chain vulnerability effect triggered for ${card.name}`);
+          const { handleChainVulnerability } = require('./chainEffects');
+          updatedGameState = handleChainVulnerability(updatedGameState, card, context.playerID || '');
+          console.log(`🔗 Chain vulnerability handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
           break;
         
         case 'prevent_exploits':
