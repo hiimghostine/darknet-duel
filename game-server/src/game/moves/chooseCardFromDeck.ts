@@ -11,7 +11,11 @@ export const chooseCardFromDeckMove = (
   playerID: string,
   selectedCardId: string
 ): GameState => {
-  console.log(`Player ${playerID} choosing card from deck: ${selectedCardId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: Player ${playerID} choosing card from deck: ${selectedCardId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: selectedCardId type: ${typeof selectedCardId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: G.pendingCardChoice exists: ${!!G.pendingCardChoice}`);
+  console.log(`🎯 DECK CHOICE DEBUG: pendingCardChoice.playerId: ${G.pendingCardChoice?.playerId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: pendingCardChoice.availableCards count: ${G.pendingCardChoice?.availableCards?.length}`);
   
   // Verify player is the one who triggered the card choice
   if (!G.pendingCardChoice || G.pendingCardChoice.playerId !== playerID) {
@@ -22,13 +26,19 @@ export const chooseCardFromDeckMove = (
   }
   
   // Verify the selected card is in the available cards
+  console.log(`🎯 DECK CHOICE DEBUG: Available card IDs:`, G.pendingCardChoice.availableCards.map(c => c.id));
+  console.log(`🎯 DECK CHOICE DEBUG: Looking for selectedCardId: ${selectedCardId}`);
+  
   const selectedCard = G.pendingCardChoice.availableCards.find(card => card.id === selectedCardId);
   if (!selectedCard) {
+    console.log(`🎯 DECK CHOICE DEBUG: CARD NOT FOUND! Returning early with error.`);
     return {
       ...G,
       message: "Invalid card selection"
     };
   }
+  
+  console.log(`🎯 DECK CHOICE DEBUG: Card found successfully: ${selectedCard.name}`);
   
   const isAttacker = playerID === G.attacker?.id;
   const currentPlayer = isAttacker ? G.attacker : G.defender;
@@ -73,7 +83,7 @@ export const chooseCardFromDeckMove = (
   };
   
   // Return updated game state
-  return {
+  const finalState = {
     ...G,
     attacker: isAttacker ? updatedPlayer : G.attacker,
     defender: !isAttacker ? updatedPlayer : G.defender,
@@ -81,4 +91,10 @@ export const chooseCardFromDeckMove = (
     pendingCardChoice: undefined, // Clear the pending choice
     message: `${selectedCard.name} added to hand`
   };
+  
+  console.log(`🎯 DECK CHOICE DEBUG: Clearing pendingCardChoice - was ${!!G.pendingCardChoice}, now ${!!finalState.pendingCardChoice}`);
+  console.log(`🎯 DECK CHOICE DEBUG: Final state message: ${finalState.message}`);
+  console.log(`🎯 DECK CHOICE DEBUG: Updated hand size: ${updatedPlayer.hand.length}`);
+  
+  return finalState;
 };

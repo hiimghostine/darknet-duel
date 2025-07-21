@@ -61,10 +61,15 @@ const CardSelectionUI: React.FC<CardSelectionUIProps> = ({
         
         <div className="available-cards-grid">
           {availableCards.map((card) => (
-            <div 
-              key={card.id} 
+            <div
+              key={card.id}
               className="selectable-card"
-              onClick={() => onChooseCard(card.id)}
+              onClick={() => {
+                console.log(`🎯 CARD SELECTION UI DEBUG: Card clicked: ${card.id}`);
+                console.log(`🎯 CARD SELECTION UI DEBUG: Card name: ${card.name}`);
+                console.log(`🎯 CARD SELECTION UI DEBUG: Calling onChooseCard...`);
+                onChooseCard(card.id);
+              }}
             >
               <CardDisplay 
                 card={card} 

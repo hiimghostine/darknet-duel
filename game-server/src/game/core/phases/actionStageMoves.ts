@@ -237,18 +237,26 @@ export const actionStageMoves = {
   
   // Card selection from deck functionality (A306 AI-Powered Attack)
   chooseCardFromDeck: ({ G, ctx, playerID, events }, selectedCardId) => {
+    console.log(`🎯 ACTION STAGE DEBUG: chooseCardFromDeck called with selectedCardId: ${selectedCardId}`);
+    console.log(`🎯 ACTION STAGE DEBUG: playerID: ${playerID}, typeof selectedCardId: ${typeof selectedCardId}`);
+    
     const { chooseCardFromDeckMove } = require('../../moves/chooseCardFromDeck');
     const updatedG = chooseCardFromDeckMove(G, ctx, playerID, selectedCardId);
     
+    console.log(`🎯 ACTION STAGE DEBUG: Move completed. pendingCardChoice cleared: ${!updatedG.pendingCardChoice}`);
+    
     // After card selection is resolved, transition to reaction phase
     if (!updatedG.pendingCardChoice) {
-      console.log('DEBUG: Card selection completed, transitioning to reaction phase');
+      console.log('🎯 ACTION STAGE DEBUG: Card selection completed, transitioning to reaction phase');
       // Card selection completed, now allow reaction to the original card
       // FIXED: Use boardgame.io player IDs for opponent lookup
       const opponentID = playerID === '0' ? '1' : '0';
+      console.log(`🎯 ACTION STAGE DEBUG: Setting opponent ${opponentID} to reaction stage`);
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }
+    } else {
+      console.log('🎯 ACTION STAGE DEBUG: pendingCardChoice still exists, not transitioning to reaction');
     }
     
     return updatedG;

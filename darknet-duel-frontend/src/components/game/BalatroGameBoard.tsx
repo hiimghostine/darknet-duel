@@ -328,10 +328,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   }, [moves]);
   
   const handleChooseCardFromDeck = useCallback((cardId: string) => {
+    console.log(`🎯 FRONTEND DEBUG: handleChooseCardFromDeck called with cardId: ${cardId}`);
+    console.log(`🎯 FRONTEND DEBUG: typeof cardId: ${typeof cardId}`);
+    console.log(`🎯 FRONTEND DEBUG: moves.chooseCardFromDeck available: ${!!moves.chooseCardFromDeck}`);
+    console.log(`🎯 FRONTEND DEBUG: Current pendingCardChoice: ${!!memoizedG.pendingCardChoice}`);
+    
     if (moves.chooseCardFromDeck) {
+      console.log(`🎯 FRONTEND DEBUG: Calling moves.chooseCardFromDeck with: ${cardId}`);
       moves.chooseCardFromDeck(cardId);
+      console.log(`🎯 FRONTEND DEBUG: Move call completed`);
+    } else {
+      console.error(`🎯 FRONTEND DEBUG: chooseCardFromDeck move not available!`);
     }
-  }, [moves]);
+  }, [moves, memoizedG.pendingCardChoice]);
 
   // Developer cheat handler
   const handleCheatAddCard = useCallback((card: any) => {
