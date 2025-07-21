@@ -77,7 +77,8 @@ export const chooseCardFromDeckMove = (
   // FIXED: Use the player who originally triggered the card choice, not the current active player
   // This prevents issues when the game has transitioned to reaction stage between choice setup and execution
   const originalPlayerId = G.pendingCardChoice.playerId;
-  const isAttacker = originalPlayerId === G.attacker?.id;
+  // Compare with BoardGame.io player ID (0 = attacker, 1 = defender) since pendingCardChoice stores BoardGame.io IDs
+  const isAttacker = originalPlayerId === '0';
   const currentPlayer = isAttacker ? G.attacker : G.defender;
   
   console.log(`🎯 DECK CHOICE DEBUG: originalPlayerId (from pendingCardChoice): ${originalPlayerId}`);

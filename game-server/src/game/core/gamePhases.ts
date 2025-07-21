@@ -336,7 +336,7 @@ export const gameOverPhase = {
                 id: Date.now().toString(),
                 sender: 'system',
                 senderRole: 'attacker' as PlayerRole,
-                content: `${playerID === G.attacker?.id ? 'Attacker' : 'Defender'} has requested a rematch!`,
+                content: `${playerID === '0' ? 'Attacker' : 'Defender'} has requested a rematch!`,
                 timestamp: Date.now(),
                 isSystem: true
               };

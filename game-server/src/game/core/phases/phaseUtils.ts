@@ -70,10 +70,11 @@ export function canGameStart(G: GameState, ctx: Ctx): boolean {
  * Helper to get opponent player ID
  */
 export function getOpponentId(G: GameState, playerID: string): string | undefined {
-  if (playerID === G.attacker?.id) {
-    return G.defender?.id;
-  } else if (playerID === G.defender?.id) {
-    return G.attacker?.id;
+  // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
+  if (playerID === '0') {
+    return '1'; // Attacker's opponent is defender
+  } else if (playerID === '1') {
+    return '0'; // Defender's opponent is attacker
   }
   return undefined;
 }

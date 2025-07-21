@@ -56,11 +56,11 @@ const DarknetDuel: Game<GameState> = {
     // Send chat message
     sendChatMessage: ({ G, playerID }, message) => {
       // Determine player role based on game state
-      // Default to attacker if we can't determine, but we'll always try to get the correct role
+      // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
       let senderRole: PlayerRole = 'attacker';
-      if (playerID === G.attacker?.id) {
+      if (playerID === '0') {
         senderRole = 'attacker';
-      } else if (playerID === G.defender?.id) {
+      } else if (playerID === '1') {
         senderRole = 'defender';
       }
       

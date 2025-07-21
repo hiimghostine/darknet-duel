@@ -83,7 +83,8 @@ export const reactionStageMoves = {
     }
     
     // Get the card from the player's hand
-    const isAttacker = G.attacker.id === playerID;
+    // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
+    const isAttacker = playerID === '0';
     const currentPlayer = isAttacker ? G.attacker : G.defender;
     
     // Find the card in player's hand
@@ -169,7 +170,8 @@ export const reactionStageMoves = {
     }
 
     // Record the action of skipping a reaction
-    const isAttacker = uuid === G.attacker?.id;
+    // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
+    const isAttacker = playerID === '0';
     const newAction: GameAction = {
       playerRole: isAttacker ? 'attacker' : 'defender',
       actionType: 'skipReaction',

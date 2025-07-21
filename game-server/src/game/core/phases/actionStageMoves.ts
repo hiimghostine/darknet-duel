@@ -48,7 +48,8 @@ export const actionStageMoves = {
     }
     
     // Determine player role
-    const senderRole = playerID === G.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
+    // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
+    const senderRole = playerID === '0' ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
     
     // Add message to chat
     const newMessage = {

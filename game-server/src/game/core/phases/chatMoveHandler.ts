@@ -67,10 +67,11 @@ export function handleChatMessageImmutable({ G, playerID }: MoveParams<GameState
   };
   
   // Determine player role
+  // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
   let senderRole: PlayerRole = 'attacker';
-  if (playerID === G.attacker?.id) {
+  if (playerID === '0') {
     senderRole = 'attacker';
-  } else if (playerID === G.defender?.id) {
+  } else if (playerID === '1') {
     senderRole = 'defender';
   }
   
