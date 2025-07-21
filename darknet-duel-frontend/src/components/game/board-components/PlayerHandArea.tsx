@@ -66,13 +66,82 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     }
   };
 
+  // Helper function to sort and group cards by vector (category) first, then by type
+  const sortAndGroupCards = (hand: any[]) => {
+    if (!hand || hand.length === 0) return [];
+
+    // Define the order for attacker cards
+    const attackerTypeOrder = ['exploit', 'attack', 'counter-attack', 'counter', 'wildcard'];
+    // Define the order for defender cards
+    const defenderTypeOrder = ['shield', 'fortify', 'response', 'reaction', 'wildcard'];
+    
+    // Define category/vector order (network, web, social, malware, physical, any)
+    const categoryOrder = ['network', 'web', 'social', 'physical', 'malware', 'any'];
+    
+    const typeOrder = isAttacker ? attackerTypeOrder : defenderTypeOrder;
+    
+    // Group cards by category/vector first
+    const groupedByCategory = hand.reduce((groups: any, card: any) => {
+      const category = card.metadata?.category || card.category || 'any';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(card);
+      return groups;
+    }, {});
+    
+    // Within each category, sort by type order, then by name
+    Object.keys(groupedByCategory).forEach(category => {
+      groupedByCategory[category].sort((a: any, b: any) => {
+        const aType = a.type || a.cardType;
+        const bType = b.type || b.cardType;
+        
+        // First sort by type order
+        const aTypeIndex = typeOrder.indexOf(aType);
+        const bTypeIndex = typeOrder.indexOf(bType);
+        
+        // If both types are in the order, sort by index
+        if (aTypeIndex !== -1 && bTypeIndex !== -1) {
+          if (aTypeIndex !== bTypeIndex) {
+            return aTypeIndex - bTypeIndex;
+          }
+        } else if (aTypeIndex !== -1) {
+          return -1; // a comes first
+        } else if (bTypeIndex !== -1) {
+          return 1; // b comes first
+        }
+        
+        // Then sort by name
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    });
+    
+    // Flatten back to array in category order
+    const sortedCards: any[] = [];
+    categoryOrder.forEach(category => {
+      if (groupedByCategory[category]) {
+        sortedCards.push(...groupedByCategory[category]);
+      }
+    });
+    
+    // Add any remaining categories not in the predefined order
+    Object.keys(groupedByCategory).forEach(category => {
+      if (!categoryOrder.includes(category)) {
+        sortedCards.push(...groupedByCategory[category]);
+      }
+    });
+    
+    return sortedCards;
+  };
+
   // Render player hand (face-up cards)
   const renderPlayerHand = () => {
     const hand = currentPlayerObj?.hand || [];
+    const sortedHand = sortAndGroupCards(hand);
     
     return (
       <div className="flex flex-wrap gap-2 justify-center max-w-4xl lg:gap-2 gap-1">
-        {hand.map((card: any, index: number) => {
+        {sortedHand.map((card: any, index: number) => {
           const isSelected = selectedCard === card.id;
           const cardType = card.type || card.cardType;
           const currentStage = ctx.activePlayers && playerID ? ctx.activePlayers[playerID] : null;
