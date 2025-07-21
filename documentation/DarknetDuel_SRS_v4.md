@@ -110,7 +110,7 @@ The system consists of the following major modules:
   - Transaction 1.4: Role-based access (admin, moderator, player)
 
 - **Module 2: Lobby and Matchmaking (Game Server + Frontend)**
-  - Transaction 2.1: Lobby browser and filtering
+  - Transaction 2.1: Lobby browser
   - Transaction 2.2: Create/join/leave lobbies
   - Transaction 2.3: Real-time lobby updates
   - Transaction 2.4: Lobby chat
@@ -256,7 +256,7 @@ The system consists of the following major modules:
   - Transaction 1.4: Role-based access (admin, moderator, player)
 
 - **Module 2: Lobby and Matchmaking (Game Server + Frontend)**
-  - Transaction 2.1: Lobby browser and filtering
+  - Transaction 2.1: Lobby browser
   - Transaction 2.2: Create/join/leave lobbies
   - Transaction 2.3: Real-time lobby updates
   - Transaction 2.4: Lobby chat

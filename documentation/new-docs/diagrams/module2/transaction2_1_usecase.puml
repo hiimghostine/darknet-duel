@@ -3,8 +3,6 @@ left to right direction
 actor "Player" as Player
 rectangle "Lobby & Matchmaking System" {
   usecase "Browse Lobbies" as UC2_1A
-  usecase "Filter Lobbies" as UC2_1B
 }
 Player --> UC2_1A
-Player --> UC2_1B
 @enduml 
