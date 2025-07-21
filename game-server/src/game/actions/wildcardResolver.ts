@@ -699,25 +699,26 @@ export class WildcardResolver {
       console.log(`🔍 DEBUG A305: context.playerID="${context.playerID}", context.playerRole="${context.playerRole}"`);
       console.log(`🔍 DEBUG A305: gameState.attacker.id="${context.gameState.attacker?.id}", gameState.defender.id="${context.gameState.defender?.id}"`);
       
-      // Multi-Stage Malware: Create persistent effect to watch for compromise
+      // FIXED: Use a more robust condition for state transitions
+      // Allow transition from any state to compromised, not just vulnerable to compromised
       const persistentEffect: PersistentEffect = {
         type: 'on_compromise',
         targetId: context.targetInfrastructure.id,
         playerId: context.playerID,
         sourceCardId: card.id,
         condition: {
-          fromState: 'vulnerable',  // Only trigger when going from vulnerable to compromised
+          fromState: 'any',  // FIXED: Accept any source state, since wildcards can be used in various scenarios
           toState: 'compromised'
         },
         reward: {
           effect: 'gain_ap',
-          amount: card.onCompromise?.amount || 1
+          amount: card.onCompromise?.amount || 2  // Use the correct amount from the card definition
         },
         autoRemove: true,  // Remove after triggering once
         triggered: false
       };
       
-      console.log(`🔍 DEBUG A305: Created persistent effect with playerId="${persistentEffect.playerId}"`);
+      console.log(`🔍 DEBUG A305: Created persistent effect with playerId="${persistentEffect.playerId}" (condition: ${persistentEffect.condition.fromState} → ${persistentEffect.condition.toState})`);
       updatedGameState = TemporaryEffectsManager.addPersistentEffect(updatedGameState, persistentEffect);
       updatedGameState.message = `${card.name} is monitoring ${context.targetInfrastructure.name} for compromise...`;
       

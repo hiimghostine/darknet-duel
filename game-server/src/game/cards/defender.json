@@ -350,10 +350,10 @@
       "cost": 2,
       "description": "Coordinated intelligence gathering and response",
       "flavor": "Knowledge is power, and power is protection",
-      "effect": "Can be played as any card type. Look at attacker's hand and force them to discard 2 cards of your choice. Draw 1 card.",
+      "effect": "Can be played as any Shield or Fortify card. Look at attacker's hand and force them to discard 2 cards of your choice. Draw 1 card.",
       "img": "threat_intel",
       "isReactive": false,
-      "wildcardType": "any",
+      "wildcardType": "shield_or_fortify",
       "specialEffect": "intel_disrupt"
     },
     {
@@ -379,11 +379,11 @@
       "cost": 2,
       "description": "Automated defensive network coordination",
       "flavor": "Why secure one system when you can secure them all?",
-      "effect": "After shielding or fortifying infrastructure, immediately make another infrastructure shielded.",
+      "effect": "Can be played as any Shield or Fortify card. After shielding or fortifying infrastructure, immediately make another infrastructure shielded.",
       "img": "automation_suite",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "special",
+      "wildcardType": "shield_or_fortify",
       "specialEffect": "chain_security"
     },
     {
@@ -409,11 +409,11 @@
       "cost": 2,
       "description": "Decoy systems that detect and punish intrusions",
       "flavor": "The sweetest traps catch the greediest flies",
-      "effect": "Can be played as any card type. For the next 2 rounds, whenever attacker plays an exploit card, they must discard 1 additional card.",
+      "effect": "Can be played as any Shield or Fortify card. For the next 2 rounds, whenever attacker plays an exploit card, they must discard 1 additional card.",
       "img": "honeypot",
       "isReactive": false,
       "target": "game_state",
-      "wildcardType": "any",
+      "wildcardType": "shield_or_fortify",
       "specialEffect": "temporary_tax",
       "duration": 2
     },

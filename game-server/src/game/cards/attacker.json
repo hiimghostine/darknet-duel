@@ -427,12 +427,12 @@
       "cost": 2,
       "description": "Complex malware with multiple phases",
       "flavor": "It's not just what it does now, but what it will do next",
-      "effect": "Can be played as any Exploit card. If the infrastructure becomes compromised, gain 1 AP.",
+      "effect": "Can be played as any Exploit card. If the infrastructure becomes compromised, gain 2 AP.",
       "img": "multistage",
       "isReactive": false,
       "target": "any",
       "wildcardType": "exploit",
-      "onCompromise": {"effect": "gain_ap", "amount": 1}
+      "onCompromise": {"effect": "gain_ap", "amount": 2}
     },
     {
       "id": "A306",
@@ -442,11 +442,11 @@
       "cost": 2,
       "description": "Uses machine learning to optimize attacks",
       "flavor": "The attack that learns as it goes",
-      "effect": "Can be played as any card type. Look at the top 3 cards of your deck and place one in your hand.",
+      "effect": "Can be played as any Exploit or Attack card. Look at the top 3 cards of your deck and place one in your hand.",
       "img": "ai_attack",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "any",
+      "wildcardType": "exploit-attack",
       "draw": 1,
       "lookAt": 3
     },

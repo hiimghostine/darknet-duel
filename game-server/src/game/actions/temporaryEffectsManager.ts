@@ -146,19 +146,29 @@ export class TemporaryEffectsManager {
 
     // Update triggered effects and remove auto-remove effects
     if (triggeredEffects.length > 0) {
+      console.log(`🎯 Processing ${triggeredEffects.length} triggered effects`);
+      
+      // FIXED: First mark effects as triggered, then filter out auto-remove effects
       const updatedPersistentEffects = gameState.persistentEffects.map(effect => {
         if (triggeredEffects.includes(effect.sourceCardId)) {
+          console.log(`✅ Marking effect from ${effect.sourceCardId} as triggered (autoRemove: ${effect.autoRemove})`);
           return { ...effect, triggered: true };
         }
         return effect;
-      }).filter(effect => !(effect.triggered && effect.autoRemove));
+      }).filter(effect => {
+        const shouldRemove = effect.triggered && effect.autoRemove;
+        if (shouldRemove) {
+          console.log(`🗑️ Removing auto-remove effect from ${effect.sourceCardId} (type: ${effect.type})`);
+        }
+        return !shouldRemove;
+      });
 
       updatedGameState = {
         ...updatedGameState,
         persistentEffects: updatedPersistentEffects
       };
 
-      console.log(`🧹 Updated persistent effects. Remaining: ${updatedPersistentEffects.length}`);
+      console.log(`🧹 Updated persistent effects. Before: ${gameState.persistentEffects.length}, After: ${updatedPersistentEffects.length}`);
     }
 
     return updatedGameState;
@@ -172,8 +182,22 @@ export class TemporaryEffectsManager {
     console.log(`🔍 DEBUG REWARD: gameState.attacker.id="${gameState.attacker?.id}"`);
     console.log(`🔍 DEBUG REWARD: gameState.defender.id="${gameState.defender?.id}"`);
     
-    const isAttacker = effect.playerId === gameState.attacker?.id;
-    const currentPlayer = isAttacker ? gameState.attacker : gameState.defender;
+    // FIXED: Handle both BoardGame.io player IDs ('0', '1') and game player IDs
+    let isAttacker: boolean;
+    let currentPlayer: any;
+    
+    // First try exact match with game player IDs
+    if (effect.playerId === gameState.attacker?.id) {
+      isAttacker = true;
+      currentPlayer = gameState.attacker;
+    } else if (effect.playerId === gameState.defender?.id) {
+      isAttacker = false;
+      currentPlayer = gameState.defender;
+    } else {
+      // Fallback: try BoardGame.io player IDs ('0' = attacker, '1' = defender)
+      isAttacker = effect.playerId === '0';
+      currentPlayer = isAttacker ? gameState.attacker : gameState.defender;
+    }
     
     console.log(`🔍 DEBUG REWARD: isAttacker=${isAttacker}, currentPlayer.name="${currentPlayer?.name}"`);
 

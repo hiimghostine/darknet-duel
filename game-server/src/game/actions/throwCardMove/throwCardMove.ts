@@ -675,26 +675,46 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           return { ...infra };
         });
         
+        // FIXED: Process persistent effects for wildcards too!
+        // Start with base game state that includes wildcard effects and updated player
+        let gameStateWithPersistentEffects: GameState = {
+          ...gameStateWithWildcardEffects,
+          attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker || G.attacker!,
+          defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender || G.defender!
+        };
+
+        if (G.infrastructure && cleanInfrastructure !== G.infrastructure) {
+          console.log(`🎯 Checking persistent effects after wildcard card effect`);
+          // Check each infrastructure for state changes
+          for (let i = 0; i < Math.min(G.infrastructure.length, cleanInfrastructure.length); i++) {
+            const oldInfra = G.infrastructure[i];
+            const newInfra = cleanInfrastructure[i];
+            if (oldInfra.state !== newInfra.state) {
+              console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+              gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+                gameStateWithPersistentEffects,
+                newInfra.id,
+                oldInfra.state,
+                newInfra.state
+              );
+            }
+          }
+        }
+        
         // Check if we have a pending chain choice - if so, don't trigger reactions yet
         const hasPendingChainChoice = gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice;
         
         const finalState = {
-          ...G, // Use original game state as base
-          attacker: isAttacker ? updatedPlayer : G.attacker,
-          defender: !isAttacker ? updatedPlayer : G.defender,
+          ...gameStateWithPersistentEffects, // Use the state with processed persistent effects
           infrastructure: cleanInfrastructure,
-          actions: [...G.actions, newAction],
-          message: gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType}${targetInfrastructure ? ` on ${targetInfrastructure.name}` : ' targeting opponent hand'}`,
+          actions: [...gameStateWithPersistentEffects.actions, newAction],
+          message: gameStateWithPersistentEffects.message || gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType}${targetInfrastructure ? ` on ${targetInfrastructure.name}` : ' targeting opponent hand'}`,
           attackerScore,
           defenderScore,
-          // Include all wildcard effects properties
-          temporaryEffects: gameStateWithWildcardEffects.temporaryEffects || G.temporaryEffects,
-          persistentEffects: gameStateWithWildcardEffects.persistentEffects || G.persistentEffects,
-          pendingCardChoice: gameStateWithWildcardEffects.pendingCardChoice || G.pendingCardChoice,
           // Include hand choice (important for D302 Threat Intelligence Network) - prioritize the one from wildcard effects
-          pendingHandChoice: gameStateWithWildcardEffects.pendingHandChoice || G.pendingHandChoice,
+          pendingHandChoice: gameStateWithPersistentEffects.pendingHandChoice || gameStateWithWildcardEffects.pendingHandChoice || G.pendingHandChoice,
           // Include chain choice (important for Lateral Movement) - prioritize the one from wildcard effects
-          pendingChainChoice: gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
+          pendingChainChoice: gameStateWithPersistentEffects.pendingChainChoice || gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
         };
         
         console.log(`DEBUG: Final state has pendingChainChoice: ${finalState.pendingChainChoice ? 'YES' : 'NO'}`);
