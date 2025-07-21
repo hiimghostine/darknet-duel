@@ -157,34 +157,6 @@ function handleSpecialEffect(
     return updatedInfra;
   }
   
-  // Handle Security Automation Suite (D304) chain security effect
-  if (card.name === 'Security Automation Suite' || card.id === 'D304' || card.id.startsWith('D304')) {
-    console.log('Security Automation Suite card - triggering chain security effect');
-    
-    if (!gameState || !playerID) {
-      console.warn('Missing gameState or playerID for Security Automation Suite effect');
-      return allInfrastructure;
-    }
-    
-    // The initial shield/fortify effect should already be applied
-    // Just trigger the chain security effect without re-applying the effect
-    const updatedGameState = handleChainSecurity(
-      { ...gameState, infrastructure: allInfrastructure },
-      card,
-      playerID
-    );
-    
-    // Update the game state with the pending chain choice
-    if (updatedGameState.pendingChainChoice) {
-      // Modify the game state reference to include the pending choice
-      if (gameState) {
-        gameState.pendingChainChoice = updatedGameState.pendingChainChoice;
-        gameState.message = `${card.name} played! Choose another infrastructure to shield.`;
-      }
-    }
-    
-    return allInfrastructure;
-  }
   
   // Default behavior for other special cards
   console.log(`Unknown special card: ${card.name}, applying default exploit effect`);

@@ -330,19 +330,6 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           };
         }
       }
-      else
-      // Special handling for Security Automation Suite (D304) - auto-select based on target state
-      if (card!.id === 'D304' || card!.id.startsWith('D304')) {
-        if (targetInfrastructure) {
-          if (targetInfrastructure.state === 'secure' || targetInfrastructure.state === 'vulnerable') {
-            autoSelectedType = 'shield';
-            console.log(`Security Automation Suite - auto-selecting shield for ${targetInfrastructure.state} infrastructure`);
-          } else if (targetInfrastructure.state === 'shielded') {
-            autoSelectedType = 'fortify';
-            console.log(`Security Automation Suite - auto-selecting fortify for shielded infrastructure`);
-          }
-        }
-      }
       // Special handling for Honeypot Network (D306) - defender wildcard that acts defensively
       else if (card!.id === 'D306' || card!.id.startsWith('D306')) {
         if (targetInfrastructure) {
@@ -589,22 +576,6 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           );
         }
         
-        // Special handling for Security Automation Suite chain security effect
-        if (card!.id === 'D304' || card!.id.startsWith('D304')) {
-          console.log(`Triggering chain security effect for ${card!.name}`);
-          const { handleChainSecurity } = require('../chainEffects');
-          const chainGameState = handleChainSecurity(
-            { ...gameStateWithWildcardEffects, infrastructure: effectResult },
-            extendedCard,
-            playerID
-          );
-          
-          // Update the game state with the pending chain choice
-          if (chainGameState.pendingChainChoice) {
-            gameStateWithWildcardEffects.pendingChainChoice = chainGameState.pendingChainChoice;
-            gameStateWithWildcardEffects.message = `${card!.name} played! Choose another infrastructure to shield.`;
-          }
-        }
       } else {
         // For hand-targeting cards, we already applied the effect via wildcard resolver
         // Just return the current infrastructure unchanged
