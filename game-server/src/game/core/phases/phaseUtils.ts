@@ -105,44 +105,46 @@ export function isReactionEligible(cardType: string): boolean {
 
 /**
  * Helper to calculate game win conditions
+ * Uses the same logic as the main checkGameEnd function for consistency
  */
 export function checkWinConditions(G: GameState): { hasWinner: boolean; winner?: string; reason?: string } {
-  // Check if we've reached the round limit (15 rounds)
-  if (G.currentRound > 15) {
-    if (G.attackerScore > G.defenderScore) {
-      return { hasWinner: true, winner: 'attacker', reason: 'Maximum rounds reached - attacker wins by score' };
-    } else if (G.defenderScore > G.attackerScore) {
-      return { hasWinner: true, winner: 'defender', reason: 'Maximum rounds reached - defender wins by score' };
+  // Import and use the authoritative checkGameEnd function
+  const { checkGameEnd } = require('../gameState');
+  const gameEndResult = checkGameEnd(G);
+  
+  if (gameEndResult) {
+    // Determine the reason based on the win condition
+    let reason = 'Unknown';
+    
+    // Check if max turns reached
+    if (G.turnNumber > G.gameConfig.maxTurns) {
+      reason = 'Maximum turns reached - defender wins by default';
     } else {
-      return { hasWinner: true, reason: 'Maximum rounds reached - draw' };
+      // Check infrastructure control
+      let attackerControlled = 0;
+      let defenderControlled = 0;
+      
+      G.infrastructure?.forEach(infra => {
+        if (infra.state === 'compromised') {
+          attackerControlled++;
+        } else if (infra.state === 'fortified' || infra.state === 'fortified_weaken') {
+          defenderControlled++;
+        }
+      });
+      
+      const infrastructureThreshold = Math.ceil((G.infrastructure?.length || 0) / 2) + 1;
+      
+      if (attackerControlled >= infrastructureThreshold) {
+        reason = `Attacker controlled ${attackerControlled} infrastructure cards`;
+      } else if (defenderControlled >= infrastructureThreshold) {
+        reason = `Defender fortified ${defenderControlled} infrastructure cards`;
+      }
     }
-  }
-
-  // Check infrastructure control
-  let attackerControlled = 0;
-  let defenderControlled = 0;
-  
-  G.infrastructure?.forEach(infra => {
-    if (infra.state === 'compromised') {
-      attackerControlled++;
-    } else if (infra.state === 'fortified' || infra.state === 'fortified_weaken') {
-      defenderControlled++;
-    }
-  });
-  
-  const infrastructureThreshold = Math.ceil((G.infrastructure?.length || 0) / 2) + 1;
-  
-  if (attackerControlled >= infrastructureThreshold) {
-    return { 
-      hasWinner: true, 
-      winner: 'attacker', 
-      reason: `Attacker controlled ${attackerControlled} infrastructure cards` 
-    };
-  } else if (defenderControlled >= infrastructureThreshold) {
-    return { 
-      hasWinner: true, 
-      winner: 'defender', 
-      reason: `Defender fortified ${defenderControlled} infrastructure cards` 
+    
+    return {
+      hasWinner: true,
+      winner: gameEndResult.winner,
+      reason
     };
   }
 

@@ -6,6 +6,7 @@ import LobbyChat from '../../lobby/LobbyChat';
 import { useGameCredentials } from '../../../hooks/useGameCredentials';
 import { useGameConnection } from '../../../hooks/useGameConnection';
 import { playBGM, stopBGM } from '../../../utils/audioHandler';
+import { validateAndCorrectWinner, getWinReason } from '../../../utils/winConditionUtils';
 
 interface WinnerLobbyProps {
   G: GameState;
@@ -27,7 +28,13 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
   matchID
 }) => {
   const navigate = useNavigate();
-  const isWinner = G.winner === (isAttacker ? 'attacker' : 'defender');
+  
+  // Validate and correct the winner using the authoritative win logic
+  const validatedWinner = validateAndCorrectWinner(G);
+  const isWinner = validatedWinner === (isAttacker ? 'attacker' : 'defender');
+  
+  // Get the proper win reason
+  const winReason = getWinReason(G, validatedWinner);
   
   // Play victory/defeat BGM on mount and suppress global BGM manager
   React.useEffect(() => {
@@ -54,6 +61,40 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     const seconds = totalSeconds % 60;
     return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
   };
+
+  // FIXED: Calculate fallback statistics when G.gameStats is missing or incomplete
+  const calculateFallbackStats = () => {
+    // Fallback game duration calculation
+    const gameStartTime = G.actions?.length > 0 ? G.actions[0].timestamp : Date.now();
+    const gameEndTime = Date.now();
+    const fallbackDuration = gameEndTime - gameStartTime;
+    
+    // Fallback cards played calculation
+    const fallbackCardsPlayed = G.actions?.filter(action => {
+      return action.actionType === 'playCard' ||
+             action.actionType === 'throwCard' ||
+             action.actionType === 'cycleCard';
+    }).length || 0;
+    
+    // Fallback infrastructure changes calculation
+    const fallbackInfrastructureChanged = G.actions?.filter(action => {
+      return action.payload &&
+             (action.payload.infrastructureId !== undefined ||
+              action.payload.oldState !== undefined ||
+              action.payload.newState !== undefined ||
+              action.actionType === 'throwCard');
+    }).length || 0;
+    
+    return {
+      gameDuration: fallbackDuration,
+      cardsPlayed: fallbackCardsPlayed,
+      infrastructureChanged: fallbackInfrastructureChanged,
+      winReason: winReason
+    };
+  };
+
+  // Use gameStats if available, otherwise calculate fallbacks
+  const stats = G.gameStats || calculateFallbackStats();
 
   // Request rematch
   const handleRematchRequest = () => {
@@ -243,11 +284,9 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
                  style={{ marginTop: '1rem' }}>
                 {isWinner ? 'You earned 10 creds!' : 'You earned 5 creds!'}
               </p>
-              {G.gameStats?.winReason && (
-                <p className="text-sm text-base-content/70">
-                  TERMINATION_REASON: {G.gameStats.winReason}
-                </p>
-              )}
+              <p className="text-sm text-base-content/70">
+                TERMINATION_REASON: {winReason}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -298,37 +337,37 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
                   <div className="text-xs text-base-content/70 font-mono">STATUS: ARCHIVED</div>
                 </div>
                 
-                {G.gameStats ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
-                      <div className="text-2xl font-mono mb-2 text-primary">
-                        {formatDuration(G.gameStats.gameDuration)}
-                      </div>
-                      <div className="text-xs text-primary font-mono">DURATION</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                    <div className="text-2xl font-mono mb-2 text-primary">
+                      {formatDuration(stats.gameDuration)}
                     </div>
-                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
-                      <div className="text-2xl font-mono mb-2 text-primary">
-                        {G.gameStats.cardsPlayed}
-                      </div>
-                      <div className="text-xs text-primary font-mono">CARDS_PLAYED</div>
-                    </div>
-                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
-                      <div className="text-2xl font-mono mb-2 text-primary">
-                        {G.turnNumber}
-                      </div>
-                      <div className="text-xs text-primary font-mono">TURNS</div>
-                    </div>
-                    <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
-                      <div className="text-2xl font-mono mb-2 text-primary">
-                        {G.gameStats.infrastructureChanged}
-                      </div>
-                      <div className="text-xs text-primary font-mono">INFRA_CHANGES</div>
-                    </div>
+                    <div className="text-xs text-primary font-mono">DURATION</div>
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <span className="loading loading-spinner loading-lg text-primary"></span>
-                    <p className="mt-4 font-mono text-sm">COMPILING_STATISTICS...</p>
+                  <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                    <div className="text-2xl font-mono mb-2 text-primary">
+                      {stats.cardsPlayed}
+                    </div>
+                    <div className="text-xs text-primary font-mono">CARDS_PLAYED</div>
+                  </div>
+                  <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                    <div className="text-2xl font-mono mb-2 text-primary">
+                      {G.turnNumber}
+                    </div>
+                    <div className="text-xs text-primary font-mono">TURNS</div>
+                  </div>
+                  <div className="border border-primary/30 bg-base-300/50 p-4 text-center">
+                    <div className="text-2xl font-mono mb-2 text-primary">
+                      {stats.infrastructureChanged}
+                    </div>
+                    <div className="text-xs text-primary font-mono">INFRA_CHANGES</div>
+                  </div>
+                </div>
+                {!G.gameStats && (
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-base-content/70 font-mono">
+                      ⚠️ STATS_CALCULATED_CLIENT_SIDE
+                    </p>
                   </div>
                 )}
               </div>

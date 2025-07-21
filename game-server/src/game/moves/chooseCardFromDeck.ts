@@ -16,7 +16,11 @@ export const chooseCardFromDeckMove = (
   console.log(`🎯 DECK CHOICE DEBUG: Player ${playerID} choosing card from deck: ${selectedCardId}`);
   console.log(`🎯 DECK CHOICE DEBUG: selectedCardId type: ${typeof selectedCardId}`);
   console.log(`🎯 DECK CHOICE DEBUG: G.pendingCardChoice exists: ${!!G.pendingCardChoice}`);
-  console.log(`🎯 DECK CHOICE DEBUG: pendingCardChoice.playerId: ${G.pendingCardChoice?.playerId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: pendingCardChoice.playerId: ${G.pendingCardChoice?.playerId} (type: ${typeof G.pendingCardChoice?.playerId})`);
+  console.log(`🎯 DECK CHOICE DEBUG: playerID: ${playerID} (type: ${typeof playerID})`);
+  console.log(`🎯 DECK CHOICE DEBUG: playerID === pendingCardChoice.playerId: ${playerID === G.pendingCardChoice?.playerId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: G.attacker?.id: ${G.attacker?.id} (type: ${typeof G.attacker?.id})`);
+  console.log(`🎯 DECK CHOICE DEBUG: G.defender?.id: ${G.defender?.id} (type: ${typeof G.defender?.id})`);
   console.log(`🎯 DECK CHOICE DEBUG: pendingCardChoice.availableCards count: ${G.pendingCardChoice?.availableCards?.length}`);
   
   // DEFENSIVE: Validate input parameters
@@ -70,8 +74,17 @@ export const chooseCardFromDeckMove = (
   
   console.log(`🎯 DECK CHOICE DEBUG: Card found successfully: ${selectedCard.name}`);
   
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use the player who originally triggered the card choice, not the current active player
+  // This prevents issues when the game has transitioned to reaction stage between choice setup and execution
+  const originalPlayerId = G.pendingCardChoice.playerId;
+  const isAttacker = originalPlayerId === G.attacker?.id;
   const currentPlayer = isAttacker ? G.attacker : G.defender;
+  
+  console.log(`🎯 DECK CHOICE DEBUG: originalPlayerId (from pendingCardChoice): ${originalPlayerId}`);
+  console.log(`🎯 DECK CHOICE DEBUG: current playerID: ${playerID}`);
+  console.log(`🎯 DECK CHOICE DEBUG: isAttacker: ${isAttacker}`);
+  console.log(`🎯 DECK CHOICE DEBUG: currentPlayer role: ${currentPlayer?.role}`);
+  console.log(`🎯 DECK CHOICE DEBUG: currentPlayer.id: ${currentPlayer?.id}`);
   
   // DEFENSIVE: Validate player exists
   if (!currentPlayer) {
