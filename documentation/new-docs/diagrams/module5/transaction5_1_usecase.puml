@@ -1,0 +1,8 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Statistics System" {
+  usecase "View Match Result" as UC5_1A
+}
+Player --> UC5_1A
+@enduml 

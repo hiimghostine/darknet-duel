@@ -1,0 +1,22 @@
+@startuml
+start
+:Player views currency balances;
+repeat
+  :Player plays a match;
+  if (Player wins?) then (yes)
+    :System awards 10 Creds;
+  else (no)
+    :System awards 5 Creds;
+  endif
+  :Notify player of updated balance;
+  :Player spends currency;
+  :System checks if player has enough currency;
+  if (Sufficient balance?) then (yes)
+    :System deducts currency and processes transaction;
+    :Notify player of updated balance;
+  else (no)
+    :Show insufficient funds error;
+  endif
+repeat while (Player continues playing/spending)
+stop
+@enduml 

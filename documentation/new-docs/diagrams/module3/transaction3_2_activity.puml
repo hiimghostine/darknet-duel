@@ -6,7 +6,9 @@ start
 if (Card requires target?) then (yes)
   :Player selects target(s);
 endif
-:System validates action and applies effects;
+:System enters reaction phase;
+:Opponent may play reaction/counter card or pass;
+:System validates reaction (if any) and applies effects in correct order;
 :System updates game state;
 :System notifies all players;
 :Turn passes to next player;

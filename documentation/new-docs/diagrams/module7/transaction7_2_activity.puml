@@ -1,0 +1,9 @@
+@startuml
+start
+:Player submits report;
+:System records report and sets status to open;
+:Admin/moderator reviews report;
+:Admin/moderator takes action (warn, ban, dismiss, etc.);
+:System updates report status and logs resolution;
+stop
+@enduml 

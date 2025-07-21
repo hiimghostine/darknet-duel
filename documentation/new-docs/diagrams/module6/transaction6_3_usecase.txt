@@ -1,0 +1,18 @@
+Use Case: Payment Integration (for Top-Up)
+
+Description: Allows players to purchase in-game currency (Creds, Crypts) using real money through integrated payment providers. The system processes payments, credits currency to the player's account, and notifies the player of the result.
+
+Actors: Player
+
+Preconditions: Player is authenticated and initiates a top-up request.
+
+Main Flow:
+1. Player initiates a top-up and selects the amount/currency package.
+2. System redirects player to the payment provider or displays payment modal.
+3. Player completes the payment process.
+4. System verifies payment with the provider.
+5. If successful, system credits the purchased currency to the player's account.
+6. System notifies the player of the successful top-up.
+7. If payment fails, system notifies the player of the failure.
+
+Postconditions: Player's account is credited with purchased currency if payment is successful. 
