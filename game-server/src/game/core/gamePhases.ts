@@ -178,19 +178,21 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
       const isAttacker = G.currentTurn === 'attacker';
 
-      // Add AP at the start of the turn
-      if (isAttacker && updatedG.attacker) {
-        const { updateActionPoints } = require('./playerManager');
-        updatedG = {
-          ...updatedG,
-          attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
-        };
-      } else if (!isAttacker && updatedG.defender) {
-        const { updateActionPoints } = require('./playerManager');
-        updatedG = {
-          ...updatedG,
-          defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
-        };
+      // Add AP at the start of the turn ONLY starting from round 2
+      if (updatedG.currentRound >= 2) {
+        if (isAttacker && updatedG.attacker) {
+          const { updateActionPoints } = require('./playerManager');
+          updatedG = {
+            ...updatedG,
+            attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
+          };
+        } else if (!isAttacker && updatedG.defender) {
+          const { updateActionPoints } = require('./playerManager');
+          updatedG = {
+            ...updatedG,
+            defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
+          };
+        }
       }
 
       // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
