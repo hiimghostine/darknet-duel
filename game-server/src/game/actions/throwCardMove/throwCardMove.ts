@@ -817,8 +817,11 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   }
   
   // Check if this card should trigger reaction phase
+  // Attack/exploit cards trigger reactions from defenders
+  // Shield/fortify cards trigger reactions from attackers (counter-attacks)
   const shouldTriggerReaction = !extendedCard.preventReaction &&
-                              (effectiveCardType === 'attack' || effectiveCardType === 'exploit');
+                              (effectiveCardType === 'attack' || effectiveCardType === 'exploit' ||
+                               effectiveCardType === 'shield' || effectiveCardType === 'fortify');
   
   // Calculate scores based on infrastructure states
   const { attackerScore, defenderScore } = calculateScores(newInfrastructure);

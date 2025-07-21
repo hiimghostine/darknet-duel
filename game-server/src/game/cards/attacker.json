@@ -397,11 +397,11 @@
       "cost": 2,
       "description": "Expands access across network segments",
       "flavor": "Why settle for one system when you can have them all?",
-      "effect": "After compromising infrastructure, immediately make another infrastructure vulnerable without playing an Exploit card.",
+      "effect": "Can be played as any Exploit or Attack card. After compromising infrastructure with this card, immediately make another infrastructure vulnerable.",
       "img": "lateral",
       "isReactive": false,
       "target": "any",
-      "wildcardType": "special",
+      "wildcardType": "exploit-attack",
       "specialEffect": "chain_vulnerability"
     },
     {
