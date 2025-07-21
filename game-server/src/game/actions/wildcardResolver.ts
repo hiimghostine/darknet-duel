@@ -691,6 +691,8 @@ export class WildcardResolver {
     
     if (card.id.startsWith('A305') && context.targetInfrastructure && context.playerID) {
       console.log(`✅ A305 Multi-Stage Malware detected! Creating persistent effect for ${context.targetInfrastructure.name}`);
+      console.log(`🔍 DEBUG A305: context.playerID="${context.playerID}", context.playerRole="${context.playerRole}"`);
+      console.log(`🔍 DEBUG A305: gameState.attacker.id="${context.gameState.attacker?.id}", gameState.defender.id="${context.gameState.defender?.id}"`);
       
       // Multi-Stage Malware: Create persistent effect to watch for compromise
       const persistentEffect: PersistentEffect = {
@@ -710,6 +712,7 @@ export class WildcardResolver {
         triggered: false
       };
       
+      console.log(`🔍 DEBUG A305: Created persistent effect with playerId="${persistentEffect.playerId}"`);
       updatedGameState = TemporaryEffectsManager.addPersistentEffect(updatedGameState, persistentEffect);
       updatedGameState.message = `${card.name} is monitoring ${context.targetInfrastructure.name} for compromise...`;
       

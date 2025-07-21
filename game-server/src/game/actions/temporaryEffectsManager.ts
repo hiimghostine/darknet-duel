@@ -168,8 +168,14 @@ export class TemporaryEffectsManager {
    * Apply the reward from a persistent effect
    */
   private static applyPersistentReward(gameState: GameState, effect: PersistentEffect): GameState {
+    console.log(`🔍 DEBUG REWARD: effect.playerId="${effect.playerId}"`);
+    console.log(`🔍 DEBUG REWARD: gameState.attacker.id="${gameState.attacker?.id}"`);
+    console.log(`🔍 DEBUG REWARD: gameState.defender.id="${gameState.defender?.id}"`);
+    
     const isAttacker = effect.playerId === gameState.attacker?.id;
     const currentPlayer = isAttacker ? gameState.attacker : gameState.defender;
+    
+    console.log(`🔍 DEBUG REWARD: isAttacker=${isAttacker}, currentPlayer.name="${currentPlayer?.name}"`);
 
     if (!currentPlayer) {
       console.error(`❌ Could not find player ${effect.playerId} for persistent effect reward`);
