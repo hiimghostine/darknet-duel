@@ -3,7 +3,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Path to the diagrams directory (relative to this script)
-DIAGRAMS_DIR = os.path.join(os.path.dirname(__file__), 'new-docs', 'diagrams')
+DIAGRAMS_DIR = os.path.join(os.path.dirname(__file__), 'new-docs', 'SDD')
 # Path to plantuml.jar (relative to this script)
 PLANTUML_JAR = os.path.join(os.path.dirname(__file__), 'plantuml.jar')
 
