@@ -1,0 +1,181 @@
+@startuml
+
+title Infrastructure State Tracking - Sequence Diagram
+
+actor "Player" as Player
+participant "CardComponent" as CardComp
+participant "InfrastructureComponent" as InfraComp
+participant "StateTransitionAnimator" as Animator
+participant "WebSocketService" as WebSocket
+participant "GameSocketHandler" as SocketHandler
+participant "InfrastructureController" as InfraCtrl
+participant "StateManager" as StateManager
+participant "EffectService" as EffectService
+participant "InfrastructureRepository" as InfraRepo
+database "Database" as DB
+
+' Initial state
+Player -> CardComp: Select attack card
+activate CardComp
+CardComp -> CardComp: Mark card as selected
+CardComp --> Player: Card selected
+deactivate CardComp
+
+' Player selects infrastructure target
+Player -> InfraComp: Click infrastructure card as target
+activate InfraComp
+InfraComp -> WebSocket: sendMessage(PLAY_CARD, {cardId, targetId})
+activate WebSocket
+WebSocket -> SocketHandler: PLAY_CARD message
+activate SocketHandler
+SocketHandler -> InfraCtrl: processCardAction(cardId, targetId)
+activate InfraCtrl
+
+' Apply card effects to infrastructure
+InfraCtrl -> StateManager: applyEffect(infraId, effect)
+activate StateManager
+StateManager -> InfraRepo: findById(infraId)
+InfraRepo -> DB: SELECT * FROM infrastructure WHERE id = ?
+DB --> InfraRepo: Infrastructure data
+InfraRepo --> StateManager: Infrastructure object
+
+' Determine state transition
+StateManager -> StateManager: determineStateTransition(infrastructure, effect)
+note right: Evaluate if the effect \nchanges infrastructure state
+
+alt State changes to VULNERABLE
+    StateManager -> EffectService: createEffect(cardId, "VULNERABILITY", value)
+    activate EffectService
+    EffectService -> EffectService: createEffectInstance()
+    EffectService --> StateManager: Vulnerability effect
+    deactivate EffectService
+    StateManager -> Infrastructure: changeState(VULNERABLE)
+    StateManager -> Infrastructure: applySecurityChange(-value)
+else State changes to COMPROMISED
+    StateManager -> EffectService: createEffect(cardId, "COMPROMISE", value)
+    activate EffectService
+    EffectService -> EffectService: createEffectInstance()
+    EffectService --> StateManager: Compromise effect
+    deactivate EffectService
+    StateManager -> Infrastructure: changeState(COMPROMISED)
+    StateManager -> Infrastructure: changeController(attackerId)
+else State changes to SECURED
+    StateManager -> EffectService: createEffect(cardId, "SECURITY", value)
+    activate EffectService
+    EffectService -> EffectService: createEffectInstance()
+    EffectService --> StateManager: Security effect
+    deactivate EffectService
+    StateManager -> Infrastructure: changeState(SECURE)
+    StateManager -> Infrastructure: applySecurityChange(value)
+else State changes to FORTIFIED
+    StateManager -> EffectService: createEffect(cardId, "FORTIFICATION", value)
+    activate EffectService
+    EffectService -> EffectService: createEffectInstance()
+    EffectService --> StateManager: Fortification effect
+    deactivate EffectService
+    StateManager -> Infrastructure: changeState(FORTIFIED)
+    StateManager -> Infrastructure: applySecurityChange(value)
+end
+
+' Calculate new security points
+StateManager -> Infrastructure: calculateTotalSecurityPoints()
+Infrastructure --> StateManager: Updated security points
+
+' Save changes to database
+StateManager -> InfraRepo: save(infrastructure)
+InfraRepo -> DB: UPDATE infrastructure SET state = ?, controlling_player_id = ?, security_points = ?
+DB --> InfraRepo: Update confirmation
+InfraRepo --> StateManager: Updated Infrastructure
+
+' Create result object
+StateManager -> StateManager: createStateChangeResult()
+StateManager --> InfraCtrl: StateChangeResult
+deactivate StateManager
+
+' Notify clients
+InfraCtrl -> SocketHandler: broadcastToGame(gameId, INFRASTRUCTURE_UPDATED message)
+InfraCtrl --> SocketHandler: Processing complete
+deactivate InfraCtrl
+SocketHandler -> WebSocket: INFRASTRUCTURE_UPDATED message
+deactivate SocketHandler
+
+' Client-side state update
+WebSocket -> InfraComp: onInfrastructureUpdated(infraUpdate)
+deactivate WebSocket
+activate InfraComp
+
+' Check for state changes
+InfraComp -> InfraComp: detectStateChanges(oldState, newState)
+
+alt State changed
+    InfraComp -> Animator: animateStateChange(infraId, oldState, newState)
+    activate Animator
+    Animator -> Animator: createStateTransitionAnimation()
+    Animator -> Animator: executeAnimation()
+    Animator --> InfraComp: Animation complete
+    deactivate Animator
+end
+
+alt Control changed
+    InfraComp -> Animator: animateControlChange(infraId, oldController, newController)
+    activate Animator
+    Animator -> Animator: createControlTransitionAnimation()
+    Animator -> Animator: executeAnimation()
+    Animator --> InfraComp: Animation complete
+    deactivate Animator
+end
+
+alt Security points changed
+    InfraComp -> Animator: animateSecurityChange(infraId, oldValue, newValue)
+    activate Animator
+    Animator -> Animator: createSecurityChangeAnimation()
+    Animator -> Animator: executeAnimation()
+    Animator --> InfraComp: Animation complete
+    deactivate Animator
+end
+
+' Update component state
+InfraComp -> InfraComp: updateState(newState)
+InfraComp -> InfraComp: updateControl(newController)
+InfraComp -> InfraComp: updateSecurityPoints(newPoints)
+InfraComp -> InfraComp: render()
+InfraComp --> Player: Visual update of infrastructure state
+deactivate InfraComp
+
+' Later - timer-based effect expiration check
+SocketHandler -> InfraCtrl: checkExpiredEffects()
+activate InfraCtrl
+InfraCtrl -> StateManager: removeExpiredEffects(gameId)
+activate StateManager
+StateManager -> EffectService: getExpiredEffects(gameId)
+activate EffectService
+EffectService -> DB: SELECT * FROM effects WHERE game_id = ? AND expires_at < NOW()
+DB --> EffectService: Expired effects
+EffectService --> StateManager: List of expired effects
+deactivate EffectService
+
+loop For each expired effect
+    StateManager -> StateManager: processEffectExpiration(effect)
+    StateManager -> InfraRepo: findById(effect.targetId)
+    InfraRepo -> DB: SELECT * FROM infrastructure WHERE id = ?
+    DB --> InfraRepo: Infrastructure data
+    InfraRepo --> StateManager: Infrastructure object
+    StateManager -> Infrastructure: removeEffect(effectId)
+    StateManager -> Infrastructure: recalculateState()
+    StateManager -> Infrastructure: calculateTotalSecurityPoints()
+    StateManager -> InfraRepo: save(infrastructure)
+    InfraRepo -> DB: UPDATE infrastructure...
+    DB --> InfraRepo: Update confirmation
+    InfraRepo --> StateManager: Updated Infrastructure
+end
+
+StateManager --> InfraCtrl: Expired effects processed
+deactivate StateManager
+InfraCtrl -> SocketHandler: broadcastInfrastructureUpdates(gameId, updates)
+deactivate InfraCtrl
+SocketHandler -> WebSocket: INFRASTRUCTURE_UPDATED message (multiple)
+WebSocket -> InfraComp: onInfrastructureUpdated(infraUpdate)
+
+' Client repeats animation and update steps as before
+
+@enduml

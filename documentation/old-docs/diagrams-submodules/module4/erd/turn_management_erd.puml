@@ -1,0 +1,93 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Turn Management - Entity Relationship Diagram
+
+table(games) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    game_status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    current_turn INT not_null
+    foreign_key(current_player_id) BIGINT not_null
+    turn_phase ENUM('DRAW_PHASE', 'ACTION_PHASE', 'END_PHASE') not_null
+    action_points_remaining INT not_null
+    turn_start_time TIMESTAMP not_null
+    turn_time_limit_seconds INT not_null
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP not_null
+}
+
+table(turn_records) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    turn_number INT not_null
+    foreign_key(player_id) BIGINT not_null
+    start_time TIMESTAMP not_null
+    end_time TIMESTAMP
+    duration_seconds INT
+    action_points_used INT not_null
+    cards_played INT not_null
+    actions_summary JSON
+    timed_out BOOLEAN not_null
+}
+
+table(phase_transitions) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(turn_record_id) BIGINT not_null
+    from_phase ENUM('DRAW_PHASE', 'ACTION_PHASE', 'END_PHASE') not_null
+    to_phase ENUM('DRAW_PHASE', 'ACTION_PHASE', 'END_PHASE') not_null
+    transition_time TIMESTAMP not_null
+    triggered_by ENUM('PLAYER', 'SYSTEM', 'AUTO') not_null
+}
+
+table(action_point_usages) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(turn_record_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    action_type VARCHAR(50) not_null
+    points_used INT not_null
+    timestamp TIMESTAMP not_null
+    target_entity_type VARCHAR(50)
+    foreign_key(target_entity_id) BIGINT
+}
+
+table(game_players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    player_order INT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+}
+
+table(game_configs) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    turn_time_limit_seconds INT not_null
+    action_points_per_turn INT not_null
+    max_turns INT
+    allow_card_drawing BOOLEAN not_null
+    phase_auto_transition BOOLEAN not_null
+}
+
+' Relationships
+games ||--o{ turn_records : "records"
+games ||--o{ phase_transitions : "has"
+games ||--o{ action_point_usages : "logs"
+games ||--o{ game_players : "has"
+games ||--|| game_configs : "configured by"
+turn_records ||--o{ phase_transitions : "contains"
+turn_records ||--o{ action_point_usages : "tracks"
+game_players }o--|| users : "represents"
+
+@enduml

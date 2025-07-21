@@ -1,0 +1,90 @@
+@startuml
+
+title Match Result Display - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "GameResultScreen" as GameResultScreen {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "WinConditionExplainer" as WinConditionExplainer {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "ResultStatsDisplay" as ResultStatsDisplay {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "FeedbackForm" as FeedbackForm {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "GameResultProvider" as GameResultProvider {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useGameResult" as useGameResult {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class ResultController {
+        -attributes
+        + methods()
+    }
+
+    class GameResultService {
+        -attributes
+        + methods()
+    }
+
+    class FeedbackService {
+        -attributes
+        + methods()
+    }
+
+    class GameResult {
+        -attributes
+        + methods()
+    }
+
+    class GameStats {
+        -attributes
+        + methods()
+    }
+
+    class GameEvent {
+        -attributes
+        + methods()
+    }
+
+    class Feedback {
+        -attributes
+        + methods()
+    }
+
+}
+
+GameResultScreen ..> ResultController : API calls
+
+@enduml

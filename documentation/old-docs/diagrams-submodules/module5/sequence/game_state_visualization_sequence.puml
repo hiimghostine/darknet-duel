@@ -1,0 +1,182 @@
+@startuml
+
+title Game State Visualization - Sequence Diagram
+
+actor "Player" as Player
+participant "GameBoardComponent" as GameBoard
+participant "PlayerHandComponent" as PlayerHand
+participant "GameStateRenderer" as Renderer
+participant "AnimationManager" as AnimMgr
+participant "WebSocketService" as WebSocket
+participant "GameSocketHandler" as SocketHandler
+participant "GameStateController" as GameStateCtrl
+participant "ViewModelService" as ViewModelService
+participant "GameRepository" as GameRepo
+participant "InfrastructureRepository" as InfraRepo
+participant "CardRepository" as CardRepo
+database "Database" as DB
+
+' Game initialization
+Player -> GameBoard: Load game page
+activate GameBoard
+GameBoard -> Renderer: initialize(gameId)
+activate Renderer
+Renderer -> WebSocket: connect(gameId)
+activate WebSocket
+WebSocket -> SocketHandler: WebSocket connection
+activate SocketHandler
+SocketHandler -> SocketHandler: authenticateConnection()
+SocketHandler --> WebSocket: Connection established
+deactivate SocketHandler
+WebSocket --> Renderer: Connection ready
+deactivate WebSocket
+
+' Request initial game state
+Renderer -> WebSocket: sendMessage(GAME_STATE_REQUEST, {gameId, playerId})
+activate WebSocket
+WebSocket -> SocketHandler: GAME_STATE_REQUEST message
+activate SocketHandler
+SocketHandler -> GameStateCtrl: handleGameStateRequest(session, message)
+activate GameStateCtrl
+GameStateCtrl -> ViewModelService: createGameViewModel(gameId)
+activate ViewModelService
+
+' Build the view model from database
+ViewModelService -> GameRepo: findById(gameId)
+GameRepo -> DB: SELECT * FROM games WHERE id = ?
+DB --> GameRepo: Game data
+GameRepo --> ViewModelService: Game entity
+
+ViewModelService -> InfraRepo: findByGameId(gameId)
+InfraRepo -> DB: SELECT * FROM infrastructure WHERE game_id = ?
+DB --> InfraRepo: Infrastructure data
+InfraRepo --> ViewModelService: Infrastructure entities
+
+ViewModelService -> CardRepo: findByGameAndPlayer(gameId, playerId)
+CardRepo -> DB: SELECT * FROM player_cards WHERE game_id = ? AND player_id = ?
+DB --> CardRepo: Player's cards
+CardRepo --> ViewModelService: Card entities
+
+' Filter data based on player visibility
+ViewModelService -> ViewModelService: filterForPlayer(gameStateDTO, playerId)
+ViewModelService --> GameStateCtrl: GameStateDTO
+deactivate ViewModelService
+
+GameStateCtrl -> SocketHandler: sendToSession(session, GAME_STATE message)
+deactivate GameStateCtrl
+SocketHandler -> WebSocket: GAME_STATE message
+deactivate SocketHandler
+WebSocket -> Renderer: onGameStateReceived(gameState)
+deactivate WebSocket
+
+' Initialize board layout
+Renderer -> Renderer: initializeLayout()
+Renderer -> GameBoard: updateGameState(gameState)
+Renderer -> PlayerHand: updateCards(gameState.playerHand)
+Renderer -> AnimMgr: initialize()
+Renderer --> GameBoard: Initialization complete
+deactivate Renderer
+
+' Render the game board
+GameBoard -> GameBoard: positionElements()
+GameBoard -> PlayerHand: render()
+activate PlayerHand
+PlayerHand -> PlayerHand: arrangeCards()
+PlayerHand --> GameBoard: Hand rendered
+deactivate PlayerHand
+GameBoard -> GameBoard: renderInfrastructure()
+GameBoard -> GameBoard: renderGameStatus()
+GameBoard --> Player: Game board displayed
+deactivate GameBoard
+
+note right of Player: Game is now visible and playable
+
+' Game state update (from server)
+SocketHandler -> WebSocket: GAME_STATE_UPDATE message
+activate WebSocket
+WebSocket -> Renderer: onGameStateUpdate(updateMessage)
+activate Renderer
+
+alt Full update
+    Renderer -> GameBoard: updateGameState(updateMessage.gameState)
+    activate GameBoard
+    GameBoard -> GameBoard: updateAllElements()
+    GameBoard --> Renderer: Board updated
+    deactivate GameBoard
+    Renderer -> PlayerHand: updateCards(updateMessage.gameState.playerHand)
+    activate PlayerHand
+    PlayerHand -> PlayerHand: arrangeCards()
+    PlayerHand --> Renderer: Hand updated
+    deactivate PlayerHand
+else Partial update
+    Renderer -> Renderer: processPartialUpdate(updateMessage)
+    
+    alt Infrastructure updated
+        Renderer -> GameBoard: updateInfrastructure(updateMessage.infrastructures)
+        activate GameBoard
+        GameBoard -> GameBoard: updateInfrastructureElements()
+        GameBoard --> Renderer: Infrastructure updated
+        deactivate GameBoard
+    end
+    
+    alt Hand updated
+        Renderer -> PlayerHand: updateCards(updateMessage.cards)
+        activate PlayerHand
+        PlayerHand -> PlayerHand: arrangeCards()
+        PlayerHand --> Renderer: Hand updated
+        deactivate PlayerHand
+    end
+    
+    alt Game status updated
+        Renderer -> GameBoard: updateGameStatus(updateMessage.status)
+        activate GameBoard
+        GameBoard -> GameBoard: updateStatusElements()
+        GameBoard --> Renderer: Status updated
+        deactivate GameBoard
+    end
+end
+
+' Queue animations if needed
+Renderer -> AnimMgr: queueAnimation(animation)
+activate AnimMgr
+AnimMgr -> AnimMgr: addAnimation(animation)
+AnimMgr -> AnimMgr: playNext()
+AnimMgr -> AnimMgr: executeAnimation()
+AnimMgr --> Renderer: Animation started
+deactivate AnimMgr
+
+Renderer --> WebSocket: Update processed
+deactivate Renderer
+deactivate WebSocket
+
+' User interaction with game board
+Player -> GameBoard: Click card in hand
+activate GameBoard
+GameBoard -> PlayerHand: handleCardSelect(cardId)
+activate PlayerHand
+PlayerHand -> PlayerHand: selectCard(cardId)
+PlayerHand -> WebSocket: sendMessage(CARD_SELECTED, {cardId})
+PlayerHand -> PlayerHand: highlightCard(cardId)
+PlayerHand --> GameBoard: Card selected
+deactivate PlayerHand
+GameBoard --> Player: Visual feedback of selection
+deactivate GameBoard
+
+' Window resize handling
+Player -> Player: Resize browser window
+Player -> GameBoard: onWindowResize event
+activate GameBoard
+GameBoard -> Renderer: handleWindowResize()
+activate Renderer
+Renderer -> Renderer: calculateNewLayout()
+Renderer -> GameBoard: updateLayout(newLayout)
+Renderer -> PlayerHand: updateLayout(newLayout)
+Renderer --> GameBoard: Layout updated
+deactivate Renderer
+GameBoard -> GameBoard: positionElements()
+GameBoard -> PlayerHand: arrangeCards()
+GameBoard -> GameBoard: render()
+GameBoard --> Player: Resized board displayed
+deactivate GameBoard
+
+@enduml

@@ -1,0 +1,19 @@
+Use Case: Profile Management
+
+Description: Allows users to view and edit their profile information, upload an avatar, and view their game statistics.
+
+Actors: User
+
+Preconditions: User is authenticated.
+
+Main Flow:
+1. User requests to view profile.
+2. System retrieves and displays profile data.
+3. User selects edit option and modifies profile information.
+4. System validates and updates profile data.
+5. User uploads a new avatar (optional).
+6. System validates and stores the avatar image.
+7. User views game statistics.
+8. System retrieves and displays stats.
+
+Postconditions: User profile is updated and stats are viewable. 

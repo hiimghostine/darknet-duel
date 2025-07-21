@@ -1,0 +1,66 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Lobby Joining - Entity Relationship Diagram
+
+table(lobbies) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    foreign_key(host_id) BIGINT not_null
+    is_private BOOLEAN not_null
+    unique(lobby_code) VARCHAR(20)
+    player_limit INT not_null
+    status ENUM('WAITING', 'IN_PROGRESS', 'COMPLETED') not_null
+    created_at TIMESTAMP not_null
+}
+
+table(lobby_memberships) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    join_time TIMESTAMP not_null
+    role ENUM('HOST', 'PLAYER') not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    status ENUM('WAITING', 'READY', 'PLAYING') not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    status ENUM('ONLINE', 'OFFLINE', 'IN_GAME') not_null
+}
+
+table(lobby_invitations) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    foreign_key(sender_id) BIGINT not_null
+    foreign_key(recipient_id) BIGINT not_null
+    invitation_code VARCHAR(50) not_null
+    status ENUM('PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED') not_null
+    sent_at TIMESTAMP not_null
+    expires_at TIMESTAMP not_null
+}
+
+table(lobby_join_history) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(lobby_id) BIGINT not_null
+    join_time TIMESTAMP not_null
+    leave_time TIMESTAMP
+    join_method ENUM('BROWSER', 'CODE', 'INVITATION') not_null
+    session_duration INT
+}
+
+lobbies ||--o{ lobby_memberships : "has"
+users ||--o{ lobby_memberships : "joins"
+lobbies ||--o{ lobby_invitations : "has"
+users ||--o{ lobby_invitations : "sends"
+users ||--o{ lobby_invitations : "receives"
+users ||--o{ lobby_join_history : "has"
+lobbies ||--o{ lobby_join_history : "records"
+
+@enduml

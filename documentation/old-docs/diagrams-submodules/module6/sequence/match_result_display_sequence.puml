@@ -1,0 +1,175 @@
+@startuml
+
+title Match Result Display - Sequence Diagram
+
+actor "Player" as Player
+participant "GameResultScreen" as ResultScreen
+participant "WinConditionExplainer" as Explainer
+participant "ResultStatsDisplay" as StatsDisplay
+participant "FeedbackForm" as Feedback
+participant "ApiService" as ApiService
+participant "ResultController" as ResultCtrl
+participant "GameResultService" as ResultService
+participant "FeedbackService" as FeedbackSvc
+participant "PlayerRepository" as PlayerRepo
+participant "GameRepository" as GameRepo
+database "Database" as DB
+
+' Game end and redirect to results screen
+Player -> ResultScreen: Navigated to after game end
+activate ResultScreen
+ResultScreen -> ResultScreen: initialize(gameId)
+ResultScreen -> ApiService: getGameResult(gameId)
+activate ApiService
+ApiService -> ResultCtrl: GET /api/results/{gameId}
+activate ResultCtrl
+
+' Backend processing to generate result
+ResultCtrl -> ResultService: getGameResultById(gameId)
+activate ResultService
+ResultService -> GameRepo: findById(gameId)
+GameRepo -> DB: SELECT * FROM games WHERE id = ?
+DB --> GameRepo: Game data
+GameRepo --> ResultService: Game entity
+
+' Check if result already exists
+ResultService -> DB: SELECT * FROM game_results WHERE game_id = ?
+DB --> ResultService: Game result (if exists)
+
+alt Result exists
+    ResultService --> ResultCtrl: Existing GameResult
+else Result doesn't exist
+    ' Generate new result
+    ResultService -> PlayerRepo: findByGameId(gameId)
+    PlayerRepo -> DB: SELECT * FROM players WHERE game_id = ?
+    DB --> PlayerRepo: Player data
+    PlayerRepo --> ResultService: Player entities
+    
+    ResultService -> DB: SELECT * FROM infrastructure WHERE game_id = ?
+    DB --> ResultService: Infrastructure data
+    
+    ResultService -> DB: SELECT * FROM card_played_logs WHERE game_id = ?
+    DB --> ResultService: Card play history
+    
+    ' Determine win condition and calculate scores
+    ResultService -> ResultService: determineWinCondition(gameData)
+    ResultService -> ResultService: calculateFinalScores()
+    
+    ' Create and save result
+    ResultService -> ResultService: createGameResult()
+    ResultService -> DB: INSERT INTO game_results VALUES (...)
+    DB --> ResultService: Insert confirmation
+    
+    ResultService --> ResultCtrl: New GameResult
+end
+
+' Transform to DTO
+ResultService -> ResultService: mapToGameResultDTO(result)
+ResultService --> ResultCtrl: GameResultDTO
+deactivate ResultService
+
+ResultCtrl --> ApiService: GameResultDTO JSON
+deactivate ResultCtrl
+ApiService --> ResultScreen: GameResultDTO object
+deactivate ApiService
+
+' Update UI components with result data
+ResultScreen -> Explainer: setWinCondition(result.winCondition, result.finalScore)
+activate Explainer
+Explainer -> Explainer: generateExplanation()
+Explainer --> ResultScreen: Explanation ready
+deactivate Explainer
+
+' Load detailed stats
+ResultScreen -> ApiService: getDetailedGameResult(gameId)
+activate ApiService
+ApiService -> ResultCtrl: GET /api/results/games/{gameId}/details
+activate ResultCtrl
+ResultCtrl -> ResultService: getDetailedGameResult(gameId)
+activate ResultService
+ResultService -> DB: SELECT * FROM detailed_game_results WHERE game_id = ?
+DB --> ResultService: Detailed result
+ResultService -> ResultService: calculateGameStats(gameId)
+ResultService -> ResultService: identifyKeyEvents(gameId)
+ResultService -> ResultService: findMvpCard(gameId)
+ResultService --> ResultCtrl: DetailedGameResultDTO
+deactivate ResultService
+ResultCtrl --> ApiService: DetailedGameResultDTO JSON
+deactivate ResultCtrl
+ApiService --> ResultScreen: DetailedGameResultDTO object
+deactivate ApiService
+
+ResultScreen -> StatsDisplay: setGameStats(result.gameStats)
+activate StatsDisplay
+StatsDisplay -> StatsDisplay: processStats()
+StatsDisplay -> StatsDisplay: highlightKeyStats()
+StatsDisplay --> ResultScreen: Stats ready
+deactivate StatsDisplay
+
+' Play victory/defeat animation based on result
+alt Player won
+    ResultScreen -> ResultScreen: playVictoryAnimation()
+else Player lost
+    ResultScreen -> ResultScreen: playDefeatAnimation()
+end
+
+ResultScreen --> Player: Display game result screen
+deactivate ResultScreen
+
+' Player views result details
+Player -> StatsDisplay: toggleExpandedView()
+activate StatsDisplay
+StatsDisplay -> StatsDisplay: setExpandedView(true)
+StatsDisplay -> StatsDisplay: render()
+StatsDisplay --> Player: Expanded stats view
+deactivate StatsDisplay
+
+' Player submits feedback
+Player -> Feedback: setRating(4)
+activate Feedback
+Feedback -> Feedback: updateRating(4)
+Feedback --> Player: Rating updated
+deactivate Feedback
+
+Player -> Feedback: setComment("Great game!")
+activate Feedback
+Feedback -> Feedback: updateComment("Great game!")
+Feedback --> Player: Comment updated
+deactivate Feedback
+
+Player -> Feedback: toggleCategory("GAMEPLAY")
+activate Feedback
+Feedback -> Feedback: updateCategories()
+Feedback --> Player: Category toggled
+deactivate Feedback
+
+Player -> Feedback: submitFeedback()
+activate Feedback
+Feedback -> Feedback: validateFeedback()
+Feedback -> ApiService: submitFeedback(feedbackData)
+activate ApiService
+ApiService -> ResultCtrl: POST /api/results/{gameId}/feedback
+activate ResultCtrl
+ResultCtrl -> FeedbackSvc: saveFeedback(feedback)
+activate FeedbackSvc
+FeedbackSvc -> DB: INSERT INTO feedback VALUES (...)
+DB --> FeedbackSvc: Insert confirmation
+FeedbackSvc --> ResultCtrl: Feedback saved
+deactivate FeedbackSvc
+ResultCtrl --> ApiService: Success response
+deactivate ResultCtrl
+ApiService --> Feedback: Submit success
+deactivate ApiService
+Feedback -> Feedback: setFeedbackSubmitted(true)
+Feedback -> Feedback: showConfirmation()
+Feedback --> Player: Feedback confirmation
+deactivate Feedback
+
+' Player navigates away
+Player -> ResultScreen: handleReturnToLobby()
+activate ResultScreen
+ResultScreen -> ResultScreen: navigateToLobby()
+ResultScreen --> Player: Redirect to lobby
+deactivate ResultScreen
+
+@enduml

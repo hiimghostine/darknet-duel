@@ -1,0 +1,97 @@
+@startuml
+
+title Lobby Joining - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "LobbyBrowserPage" as LobbyBrowserPage {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "LobbyBrowser" as LobbyBrowser {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "LobbyFilterForm" as LobbyFilterForm {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "LobbyCard" as LobbyCard {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "PrivateLobbyJoin" as PrivateLobbyJoin {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "LobbyProvider" as LobbyProvider {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useLobbyJoin" as useLobbyJoin {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class LobbyController {
+        -attributes
+        + methods()
+    }
+
+    class LobbyService {
+        -attributes
+        + methods()
+    }
+
+    class LobbyRepository {
+        -attributes
+        + methods()
+    }
+
+    class LobbyMembershipRepository {
+        -attributes
+        + methods()
+    }
+
+    class Lobby {
+        -attributes
+        + methods()
+    }
+
+    class LobbyMembership {
+        -attributes
+        + methods()
+    }
+
+    class LobbyJoinException {
+        -attributes
+        + methods()
+    }
+
+}
+
+LobbyBrowserPage ..> LobbyController : API calls
+
+@enduml
