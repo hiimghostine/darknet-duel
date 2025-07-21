@@ -168,7 +168,33 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     };
   }
   
-  // Phase 5: Handle hand management (remove card from hand) - MOVED EARLIER
+  // Phase 5: Handle wildcard validation BEFORE hand management
+  if (card!.type === 'wildcard' && card!.wildcardType && targetInfrastructure) {
+    console.log(`Wildcard card detected: ${card!.name} with wildcardType: ${card!.wildcardType}`);
+    
+    // Get available types for this wildcard using context-aware resolver
+    const { WildcardResolver } = require('../wildcardResolver');
+    const wildcardContext = {
+      gameState: G,
+      playerRole: isAttacker ? 'attacker' : 'defender',
+      card: extendedCard,
+      targetInfrastructure: targetInfrastructure,
+      playerID: playerID
+    };
+    const availableTypes = WildcardResolver.getAvailableTypes(extendedCard, wildcardContext);
+    console.log(`Available wildcard types:`, availableTypes);
+    
+    // If no valid types available for this target, reject the move
+    if (availableTypes.length === 0) {
+      console.log(`🚫 INVALID MOVE: No valid wildcard types available for target ${targetInfrastructure.name} (${targetInfrastructure.state})`);
+      return {
+        ...G,
+        message: `${card!.name} cannot target ${targetInfrastructure.name} in its current state (${targetInfrastructure.state})`
+      };
+    }
+  }
+  
+  // Phase 6: Handle hand management (remove card from hand) - MOVED AFTER validation
   const newHand = [...player!.hand];
   const cardIndex = newHand.findIndex(c => c.id === cardId);
   newHand.splice(cardIndex, 1);
@@ -180,7 +206,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     actionPoints: player!.actionPoints - effectiveCost
   };
 
-  // Check for temporary_tax effects that apply to this card type
+  // Phase 7: Check for temporary_tax effects that apply to this card type
   // This creates a pending hand choice for the player to select which cards to discard
   // Skip tax check if this is a continuation after tax has already been paid
   if (effectiveCardType === 'exploit' && isAttacker && !skipTaxCheck) {
@@ -229,7 +255,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     }
   }
 
-  // Phase 6: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
+  // Phase 8: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
   if (card!.type === 'wildcard' && card!.wildcardType) {
     console.log(`Wildcard card detected at source: ${card!.name} with wildcardType: ${card!.wildcardType}`);
     
@@ -715,7 +741,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     };
   }
   
-  // Phase 7: Handle regular (non-wildcard) cards (PRESERVED FROM ORIGINAL)
+  // Phase 9: Handle regular (non-wildcard) cards (PRESERVED FROM ORIGINAL)
   // Create a deep copy of the card to ensure all properties are preserved during serialization
   const cardCopy = JSON.parse(JSON.stringify(card));
   

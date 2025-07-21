@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import type { Card } from 'shared-types/card.types';
 import CardDisplay from './CardDisplay';
 import '../../../styles/card-selection.css';
@@ -22,6 +22,34 @@ const CardSelectionUI: React.FC<CardSelectionUIProps> = ({
   onChooseCard,
   onCancel
 }) => {
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // DEFENSIVE: Validate pendingChoice structure
+  if (!pendingChoice || !pendingChoice.availableCards) {
+    console.error('🎯 CARD SELECTION UI ERROR: Invalid pendingChoice structure');
+    return (
+      <div className="card-selection-overlay">
+        <div className="card-selection-container">
+          <div className="card-selection-header">
+            <h3>Selection Error</h3>
+            <p className="card-selection-description error">
+              Invalid card selection state. Please try again.
+            </p>
+          </div>
+          {onCancel && (
+            <button
+              className="cancel-selection-button"
+              onClick={onCancel}
+            >
+              Close
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
   const { availableCards, choiceType, sourceCardId } = pendingChoice;
   
   const getTitle = () => {
@@ -50,6 +78,45 @@ const CardSelectionUI: React.FC<CardSelectionUIProps> = ({
     }
   };
   
+  // ROBUST: Handle card selection with validation and feedback
+  const handleCardSelection = useCallback((card: Card) => {
+    console.log(`🎯 CARD SELECTION UI DEBUG: Card clicked: ${card.id}`);
+    console.log(`🎯 CARD SELECTION UI DEBUG: Card name: ${card.name}`);
+    console.log(`🎯 CARD SELECTION UI DEBUG: Current processing state: ${isProcessing}`);
+    
+    // DEFENSIVE: Prevent double-clicks during processing
+    if (isProcessing) {
+      console.log(`🎯 CARD SELECTION UI DEBUG: Ignoring click - already processing`);
+      return;
+    }
+    
+    // DEFENSIVE: Validate card object
+    if (!card || !card.id || typeof card.id !== 'string') {
+      console.error(`🎯 CARD SELECTION UI ERROR: Invalid card object:`, card);
+      return;
+    }
+    
+    // Set processing state and selected card for visual feedback
+    setSelectedCardId(card.id);
+    setIsProcessing(true);
+    
+    console.log(`🎯 CARD SELECTION UI DEBUG: Calling onChooseCard...`);
+    
+    try {
+      onChooseCard(card.id);
+      
+      // Reset processing state after a short delay to prevent rapid clicking
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error(`🎯 CARD SELECTION UI ERROR: Failed to process card selection:`, error);
+      setIsProcessing(false);
+      setSelectedCardId(null);
+    }
+  }, [onChooseCard, isProcessing]);
+  
   return (
     <div className="card-selection-overlay">
       <div className="card-selection-container">
@@ -57,30 +124,45 @@ const CardSelectionUI: React.FC<CardSelectionUIProps> = ({
           <h3>{getTitle()}</h3>
           <p className="card-selection-description">{getDescription()}</p>
           <p className="source-card-info">Source: {sourceCardId}</p>
+          {isProcessing && (
+            <p className="processing-indicator">
+              🔄 Processing your selection...
+            </p>
+          )}
         </div>
         
         <div className="available-cards-grid">
-          {availableCards.map((card) => (
-            <div
-              key={card.id}
-              className="selectable-card"
-              onClick={() => {
-                console.log(`🎯 CARD SELECTION UI DEBUG: Card clicked: ${card.id}`);
-                console.log(`🎯 CARD SELECTION UI DEBUG: Card name: ${card.name}`);
-                console.log(`🎯 CARD SELECTION UI DEBUG: Calling onChooseCard...`);
-                onChooseCard(card.id);
-              }}
-            >
-              <CardDisplay 
-                card={card} 
-                showDetails={true}
-                className="card-selection-card"
-              />
-              <div className="select-card-button">
-                Select This Card
+          {availableCards.map((card) => {
+            // DEFENSIVE: Validate each card
+            if (!card || !card.id) {
+              console.warn(`🎯 CARD SELECTION UI WARNING: Skipping invalid card:`, card);
+              return null;
+            }
+            
+            const isSelected = selectedCardId === card.id;
+            const isClickable = !isProcessing;
+            
+            return (
+              <div
+                key={card.id}
+                className={`selectable-card ${isSelected ? 'selected' : ''} ${!isClickable ? 'disabled' : ''}`}
+                onClick={() => isClickable && handleCardSelection(card)}
+                style={{
+                  opacity: isClickable ? 1 : 0.6,
+                  cursor: isClickable ? 'pointer' : 'not-allowed'
+                }}
+              >
+                <CardDisplay
+                  card={card}
+                  showDetails={true}
+                  className="card-selection-card"
+                />
+                <div className={`select-card-button ${isSelected ? 'selected' : ''}`}>
+                  {isSelected ? 'Selected!' : 'Select This Card'}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {availableCards.length === 0 && (
@@ -90,11 +172,12 @@ const CardSelectionUI: React.FC<CardSelectionUIProps> = ({
         )}
         
         {onCancel && (
-          <button 
-            className="cancel-selection-button" 
+          <button
+            className="cancel-selection-button"
             onClick={onCancel}
+            disabled={isProcessing}
           >
-            Cancel
+            {isProcessing ? 'Processing...' : 'Cancel'}
           </button>
         )}
       </div>

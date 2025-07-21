@@ -192,6 +192,55 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       setTimeout(() => triggerPositiveClick(), 500);
     }
   }, [isActive, isProcessingMove, triggerPositiveClick]);
+
+  // ROBUST: Timeout fallback to prevent stuck pendingCardChoice UI
+  useEffect(() => {
+    if (memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId) {
+      console.log(`🎯 CARD CHOICE TIMEOUT: Starting 15-second timeout for pendingCardChoice`);
+      
+      const timeoutId = setTimeout(() => {
+        // Check if the pendingCardChoice is still active after timeout
+        if (memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId) {
+          console.warn(`🎯 CARD CHOICE TIMEOUT: pendingCardChoice stuck for 15 seconds, showing recovery options`);
+          
+          // Show user-friendly recovery toast
+          addToast({
+            type: 'warning',
+            title: 'Selection Timeout',
+            message: 'Card selection is taking too long. The UI will refresh automatically.',
+            duration: 5000
+          });
+          
+          // Force a state refresh by triggering a harmless move
+          // This helps unstick the UI without breaking game state
+          if (moves.sendChatMessage) {
+            try {
+              // Send a system message to trigger state sync
+              moves.sendChatMessage('');
+            } catch (error) {
+              console.log('Timeout recovery attempt completed');
+            }
+          }
+        }
+      }, 15000); // 15-second timeout
+      
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [memoizedG.pendingCardChoice, playerID, addToast, moves.sendChatMessage]);
+
+  // ROBUST: Monitor pendingCardChoice state transitions for debugging
+  useEffect(() => {
+    if (memoizedG.pendingCardChoice) {
+      console.log(`🎯 CARD CHOICE STATE: pendingCardChoice active for player ${memoizedG.pendingCardChoice.playerId}`);
+      console.log(`🎯 CARD CHOICE STATE: Available cards: ${memoizedG.pendingCardChoice.availableCards?.length || 0}`);
+      console.log(`🎯 CARD CHOICE STATE: Choice type: ${memoizedG.pendingCardChoice.choiceType}`);
+      console.log(`🎯 CARD CHOICE STATE: Source card: ${memoizedG.pendingCardChoice.sourceCardId}`);
+    } else {
+      console.log(`🎯 CARD CHOICE STATE: No pendingCardChoice active`);
+    }
+  }, [memoizedG.pendingCardChoice]);
   
   // Handle player surrender
   const surrender = useCallback(() => {
@@ -333,14 +382,74 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     console.log(`🎯 FRONTEND DEBUG: moves.chooseCardFromDeck available: ${!!moves.chooseCardFromDeck}`);
     console.log(`🎯 FRONTEND DEBUG: Current pendingCardChoice: ${!!memoizedG.pendingCardChoice}`);
     
+    // DEFENSIVE: Validate inputs
+    if (!cardId || typeof cardId !== 'string') {
+      console.error(`🎯 FRONTEND ERROR: Invalid cardId: ${cardId}`);
+      addToast({
+        type: 'error',
+        title: 'Invalid Selection',
+        message: 'Please select a valid card',
+        duration: 3000
+      });
+      return;
+    }
+    
+    // DEFENSIVE: Validate game state
+    if (!memoizedG.pendingCardChoice) {
+      console.error(`🎯 FRONTEND ERROR: No pending card choice available`);
+      addToast({
+        type: 'error',
+        title: 'Selection Unavailable',
+        message: 'No card selection is currently available',
+        duration: 3000
+      });
+      return;
+    }
+    
+    // DEFENSIVE: Validate player permission
+    if (memoizedG.pendingCardChoice.playerId !== playerID) {
+      console.error(`🎯 FRONTEND ERROR: Wrong player for card choice`);
+      addToast({
+        type: 'error',
+        title: 'Access Denied',
+        message: 'You cannot make this selection',
+        duration: 3000
+      });
+      return;
+    }
+    
     if (moves.chooseCardFromDeck) {
       console.log(`🎯 FRONTEND DEBUG: Calling moves.chooseCardFromDeck with: ${cardId}`);
-      moves.chooseCardFromDeck(cardId);
-      console.log(`🎯 FRONTEND DEBUG: Move call completed`);
+      try {
+        moves.chooseCardFromDeck(cardId);
+        console.log(`🎯 FRONTEND DEBUG: Move call completed successfully`);
+        
+        // Success feedback
+        addToast({
+          type: 'success',
+          title: 'Card Selected',
+          message: 'Your card selection is being processed...',
+          duration: 2000
+        });
+      } catch (error) {
+        console.error(`🎯 FRONTEND ERROR: Failed to call chooseCardFromDeck:`, error);
+        addToast({
+          type: 'error',
+          title: 'Selection Failed',
+          message: 'Failed to process card selection. Please try again.',
+          duration: 4000
+        });
+      }
     } else {
-      console.error(`🎯 FRONTEND DEBUG: chooseCardFromDeck move not available!`);
+      console.error(`🎯 FRONTEND ERROR: chooseCardFromDeck move not available!`);
+      addToast({
+        type: 'error',
+        title: 'Move Unavailable',
+        message: 'Card selection is not available right now. Please try again.',
+        duration: 4000
+      });
     }
-  }, [moves, memoizedG.pendingCardChoice]);
+  }, [moves, memoizedG.pendingCardChoice, playerID, addToast]);
 
   // Developer cheat handler
   const handleCheatAddCard = useCallback((card: any) => {

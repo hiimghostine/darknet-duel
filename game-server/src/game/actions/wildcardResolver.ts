@@ -258,11 +258,12 @@ export class WildcardResolver {
       console.log(`🎯 D302 Threat Intelligence Network detected! Card ID: ${card.id}`);
       
       // Determine target player (opponent)
-      const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
-      const opponentPlayerId = opponentRole === 'attacker' ?
-        updatedGameState.attacker?.id : updatedGameState.defender?.id;
+      // FIXED: Use BoardGame.io player ID for consistent opponent resolution
+      const isCurrentAttacker = context.playerID === '0';
+      const opponentPlayerId = isCurrentAttacker ? '1' : '0';  // Opponent is always the other player
       
       if (opponentPlayerId) {
+        const opponentRole = isCurrentAttacker ? 'defender' : 'attacker';
         console.log(`🎯 D302: Targeting opponent: ${opponentPlayerId} (${opponentRole})`);
         
         try {
@@ -297,8 +298,9 @@ export class WildcardResolver {
         }
         
         // Add card draw effect for the defender who played this card
-        const currentPlayer = context.playerRole === 'attacker' ?
-          updatedGameState.attacker : updatedGameState.defender;
+        // FIXED: Use BoardGame.io player ID for consistent player resolution
+        const isAttacker = context.playerID === '0';
+        const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
         
         if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
           const drawnCard = currentPlayer.deck[0];
@@ -306,7 +308,8 @@ export class WildcardResolver {
           const newDeck = currentPlayer.deck.slice(1);
           
           // Update the current player's hand and deck
-          if (context.playerRole === 'attacker') {
+          // FIXED: Use BoardGame.io player ID for consistent player updates
+          if (isAttacker) {
             updatedGameState.attacker = {
               ...currentPlayer,
               hand: newHand,
@@ -375,9 +378,9 @@ export class WildcardResolver {
         const { handleHandDisruption } = require('./handDisruption');
         
         // Determine target player (opponent)
-        const targetPlayerId = context.playerRole === 'attacker' ?
-          updatedGameState.defender?.id :
-          updatedGameState.attacker?.id;
+        // FIXED: Use BoardGame.io player ID for consistent targeting
+        const isAttackerForMemory = context.playerID === '0';
+        const targetPlayerId = isAttackerForMemory ? '1' : '0';  // Target opponent
         
         if (targetPlayerId) {
           console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
@@ -504,9 +507,9 @@ export class WildcardResolver {
           const { handleHandDisruption } = require('./handDisruption');
           
           // Determine target player (opponent)
-          const targetPlayerId = context.playerRole === 'attacker' ?
-            updatedGameState.defender?.id :
-            updatedGameState.attacker?.id;
+          // FIXED: Use BoardGame.io player ID for consistent targeting
+          const isAttackerForDiscard = context.playerID === '0';
+          const targetPlayerId = isAttackerForDiscard ? '1' : '0';  // Target opponent
           
           if (targetPlayerId) {
             console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
@@ -527,11 +530,11 @@ export class WildcardResolver {
           console.log(`🎯 Intel disrupt effect detected for card: ${card.id}`);
           
           // Determine target player (opponent)
-          const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
-          const opponentPlayerId = opponentRole === 'attacker' ?
-            updatedGameState.attacker?.id : updatedGameState.defender?.id;
+          // FIXED: Use BoardGame.io player ID for consistent opponent resolution
+          const isCurrentAttackerForIntel = context.playerID === '0';
+          const opponentPlayerIdForIntel = isCurrentAttackerForIntel ? '1' : '0';
           
-          if (opponentPlayerId) {
+          if (opponentPlayerIdForIntel) {
             // Import the hand disruption handler
             const { handleHandDisruption } = require('./handDisruption');
             
@@ -539,13 +542,14 @@ export class WildcardResolver {
             updatedGameState = handleHandDisruption(
               updatedGameState,
               'view_and_discard',
-              opponentPlayerId,
+              opponentPlayerIdForIntel,
               2 // Force discard 2 cards
             );
             
             // Add card draw effect for the defender who played this card
-            const currentPlayer = context.playerRole === 'attacker' ?
-              updatedGameState.attacker : updatedGameState.defender;
+            // FIXED: Use BoardGame.io player ID for consistent player resolution
+            const isAttackerForDraw = context.playerID === '0';
+            const currentPlayer = isAttackerForDraw ? updatedGameState.attacker : updatedGameState.defender;
             
             if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
               const drawnCard = currentPlayer.deck[0];
@@ -553,7 +557,8 @@ export class WildcardResolver {
               const newDeck = currentPlayer.deck.slice(1);
               
               // Update the current player's hand and deck
-              if (context.playerRole === 'attacker') {
+              // FIXED: Use BoardGame.io player ID for consistent player updates
+              if (isAttackerForDraw) {
                 updatedGameState.attacker = {
                   ...currentPlayer,
                   hand: newHand,
@@ -724,15 +729,15 @@ export class WildcardResolver {
     if (card.id.startsWith('A306') && context.playerID) {
       console.log(`🎯 A306 AI-Powered Attack detected! Card ID: ${card.id}`);
       
-      // Look at top 3 cards of deck and choose 1 to add to hand
-      const isAttacker = context.playerRole === 'attacker';
+      // FIXED: Use BoardGame.io player ID for consistent player resolution
+      const isAttacker = context.playerID === '0';  // ← Use actual playerID, not context.playerRole
       const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
       
-      console.log(`🎯 A306: Player role: ${context.playerRole}, isAttacker: ${isAttacker}`);
+      console.log(`🎯 A306: Player ID: ${context.playerID}, isAttacker: ${isAttacker}`);
+      console.log(`🎯 A306: Player role (context): ${context.playerRole}, resolved role: ${isAttacker ? 'attacker' : 'defender'}`);
       console.log(`🎯 A306: Current player exists: ${!!currentPlayer}`);
       console.log(`🎯 A306: Deck exists: ${!!currentPlayer?.deck}`);
       console.log(`🎯 A306: Deck length: ${currentPlayer?.deck?.length || 0}`);
-      console.log(`🎯 A306: Player ID: ${context.playerID}`);
       
       if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
         // Get top 3 cards from deck (or all remaining if less than 3)
@@ -741,17 +746,25 @@ export class WildcardResolver {
         
         console.log(`🎯 A306: Cards to show: ${cardsToShow}`);
         console.log(`🎯 A306: Top cards:`, topCards.map(c => c.name));
+        console.log(`🎯 A306: DECK STATE DEBUG - Current deck IDs:`, currentPlayer.deck.map(c => c.id));
+        console.log(`🎯 A306: DECK STATE DEBUG - Top card IDs being offered:`, topCards.map(c => c.id));
         
-        // Set up pending card choice
+        // ROBUST: Create deep copies of cards to prevent reference issues
+        const availableCards = topCards.map(card => ({ ...card }));
+        
+        // Set up pending card choice with enhanced debugging
         updatedGameState.pendingCardChoice = {
           playerId: context.playerID,
-          availableCards: topCards,
+          availableCards: availableCards,
           choiceType: 'deck_selection' as const,
           sourceCardId: card.id,
           timestamp: Date.now()
         };
         
         console.log(`🎯 A306: Created pendingCardChoice for player ${context.playerID}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - Original deck size: ${currentPlayer.deck.length}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - Original top card IDs: ${topCards.map(c => c.id)}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - pendingCardChoice availableCards IDs:`, availableCards.map(c => c.id));
         updatedGameState.message = `${card.name}: Choose a card from the top ${cardsToShow} cards of your deck`;
       } else {
         console.log(`🎯 A306: Failed to create card choice - missing requirements`);

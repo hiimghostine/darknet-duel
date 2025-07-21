@@ -39,6 +39,19 @@
   font-size: 1.1rem;
   margin-bottom: 1rem;
   line-height: 1.4;
+
+.card-selection-description.error {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.processing-indicator {
+  color: #00ff88;
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
 }
 
 .source-card-info {
@@ -55,6 +68,23 @@
 }
 
 .selectable-card {
+
+.selectable-card.selected {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.selectable-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.selectable-card.disabled:hover {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+}
   position: relative;
   cursor: pointer;
   border: 2px solid transparent;
@@ -75,6 +105,12 @@
   pointer-events: none;
 }
 
+
+.select-card-button.selected {
+  background: #00ff88;
+  color: #000;
+  animation: selectedPulse 0.6s ease-in-out;
+}
 .select-card-button {
   position: absolute;
   bottom: 10px;
@@ -94,6 +130,38 @@
   opacity: 1;
 }
 
+
+.cancel-selection-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #666;
+}
+
+.cancel-selection-button:disabled:hover {
+  background: #666;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes selectedPulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
 .no-cards-message {
   text-align: center;
   color: #888;
