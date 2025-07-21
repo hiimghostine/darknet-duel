@@ -400,7 +400,50 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
             break;
         }
       }
-      // For defender special wildcards, keep the existing logic
+      // For defender special wildcards, use intelligent infrastructure-based auto-selection
+      else if (card!.wildcardType === 'special' && !isAttacker && targetInfrastructure) {
+        console.log(`Defender special wildcard ${card!.name} - using infrastructure-based auto-selection`);
+        switch (targetInfrastructure.state) {
+          case 'secure':
+            if (availableTypes.includes('shield')) {
+              autoSelectedType = 'shield';
+              console.log(`Special wildcard ${card!.name} - auto-selecting shield for secure infrastructure`);
+            }
+            break;
+          case 'shielded':
+            if (availableTypes.includes('fortify')) {
+              autoSelectedType = 'fortify';
+              console.log(`Special wildcard ${card!.name} - auto-selecting fortify for shielded infrastructure`);
+            }
+            break;
+          case 'vulnerable':
+            // For vulnerable infrastructure, prefer shield to protect it
+            if (availableTypes.includes('shield')) {
+              autoSelectedType = 'shield';
+              console.log(`Special wildcard ${card!.name} - auto-selecting shield for vulnerable infrastructure`);
+            }
+            break;
+          case 'compromised':
+            // Cannot use shield/fortify on compromised infrastructure
+            console.log(`Special wildcard ${card!.name} - cannot target compromised infrastructure`);
+            return {
+              ...G,
+              message: `${card!.name} cannot target compromised infrastructure`
+            };
+          case 'fortified':
+          case 'fortified_weaken':
+            // Cannot improve fortified infrastructure further
+            console.log(`Special wildcard ${card!.name} - cannot target ${targetInfrastructure.state} infrastructure`);
+            return {
+              ...G,
+              message: `${card!.name} cannot target ${targetInfrastructure.state} infrastructure`
+            };
+          default:
+            autoSelectedType = null;
+            break;
+        }
+      }
+      // For defender special wildcards without target infrastructure or with single type
       else if (card!.wildcardType === 'special' && !isAttacker && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
         console.log(`Defender special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
