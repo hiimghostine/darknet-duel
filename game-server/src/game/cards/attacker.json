@@ -269,10 +269,10 @@
       "cost": 1,
       "description": "Removes evidence of intrusion",
       "flavor": "Like sweeping footprints from the sand",
-      "effect": "Cancel a Fortify card being played on infrastructure.",
+      "effect": "Cancel a Shield card being played on infrastructure.",
       "img": "anti_forensics",
       "isReactive": true,
-      "target": "fortify",
+      "target": "shield",
       "counterType": "cancel"
     },
     {
@@ -297,10 +297,10 @@
       "cost": 1,
       "description": "Attacks through trusted third-party connections",
       "flavor": "Why break down the front door when you can walk in with the mail?",
-      "effect": "Cancel a Fortify card being played on infrastructure.",
+      "effect": "Cancel a Shield card being played on infrastructure.",
       "img": "supply_chain",
       "isReactive": true,
-      "target": "fortify",
+      "target": "shield",
       "counterType": "cancel"
     },
     {
@@ -325,10 +325,10 @@
       "cost": 1,
       "description": "Uses AI-generated voice to impersonate executives",
       "flavor": "Your CEO just called - except it wasn't really them",
-      "effect": "Cancel a Fortify card being played on infrastructure.",
+      "effect": "Cancel a Shield card being played on infrastructure.",
       "img": "deepfake",
       "isReactive": true,
-      "target": "fortify",
+      "target": "shield",
       "counterType": "cancel"
     },
     {
@@ -353,10 +353,10 @@
       "cost": 1,
       "description": "Uses unknown vulnerability",
       "flavor": "The flaw no one knows about yet",
-      "effect": "Cancel a Fortify card being played on infrastructure.",
+      "effect": "Cancel a Shield card being played on infrastructure.",
       "img": "zero_day",
       "isReactive": true,
-      "target": "fortify",
+      "target": "shield",
       "counterType": "cancel"
     },
     {
