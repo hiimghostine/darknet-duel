@@ -2,7 +2,7 @@
 start
 :Admin/moderator searches for user;
 :System displays matching users;
-:Admin/moderator selects user and action (ban, unban, warn, etc.);
+:Admin/moderator selects user and action (ban, unban, etc.);
 :System performs moderation action and updates user status;
 :System logs moderation action;
 stop

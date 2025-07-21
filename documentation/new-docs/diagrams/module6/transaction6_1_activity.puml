@@ -9,14 +9,6 @@ repeat
     :System awards 5 Creds;
   endif
   :Notify player of updated balance;
-  :Player spends currency;
-  :System checks if player has enough currency;
-  if (Sufficient balance?) then (yes)
-    :System deducts currency and processes transaction;
-    :Notify player of updated balance;
-  else (no)
-    :Show insufficient funds error;
-  endif
-repeat while (Player continues playing/spending)
+repeat while (Player continues playing)
 stop
 @enduml 
