@@ -1,0 +1,18 @@
+Use Case: Turn-Based Gameplay, AP Allocation, Card Play, Targeting
+
+Description: Allows players to take turns, receive action points (AP), play cards from their hand, and select targets for card effects. The system enforces turn order, validates actions, and updates the game state accordingly.
+
+Actors: Player
+
+Preconditions: Game session is active and player is authenticated and in the game.
+
+Main Flow:
+1. System determines which player's turn it is.
+2. System allocates AP to the active player.
+3. Player selects and plays a card from their hand.
+4. Player selects targets for the card (if required).
+5. System validates the action and applies card effects.
+6. System updates the game state and notifies all players.
+7. Turn passes to the next player.
+
+Postconditions: Game state is updated after each turn; all players are notified of actions and state changes. 

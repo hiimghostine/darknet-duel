@@ -1,0 +1,12 @@
+@startuml
+start
+:Navigate to lobby browser page;
+:Retrieve list of available lobbies;
+:Display lobby list;
+repeat
+  :Player applies filter criteria;
+  :Update displayed lobby list based on filters;
+repeat while (Player changes filters?)
+:Player selects a lobby or leaves page;
+stop
+@enduml 

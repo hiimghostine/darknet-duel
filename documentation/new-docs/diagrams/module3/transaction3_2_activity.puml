@@ -1,0 +1,14 @@
+@startuml
+start
+:System determines active player;
+:System allocates AP to player;
+:Player selects and plays card;
+if (Card requires target?) then (yes)
+  :Player selects target(s);
+endif
+:System validates action and applies effects;
+:System updates game state;
+:System notifies all players;
+:Turn passes to next player;
+stop
+@enduml 

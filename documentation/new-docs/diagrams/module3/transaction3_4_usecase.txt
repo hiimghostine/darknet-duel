@@ -1,0 +1,17 @@
+Use Case: Disconnection/Reconnection Handling
+
+Description: Ensures that if a player disconnects from the game (e.g., due to network issues), the system preserves their game state and allows them to reconnect and resume play without loss of progress.
+
+Actors: Player
+
+Preconditions: Game session is active and player is connected to the game server.
+
+Main Flow:
+1. Player loses connection to the game server.
+2. System detects the disconnection and marks the player as disconnected.
+3. System preserves the player's game state.
+4. Player reconnects to the game server.
+5. System restores the player's session and game state.
+6. Player resumes play from where they left off.
+
+Postconditions: Player can resume the game after reconnecting, with no loss of progress. 

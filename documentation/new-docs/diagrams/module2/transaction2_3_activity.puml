@@ -1,0 +1,11 @@
+@startuml
+start
+:Player views lobby browser or lobby detail;
+:Subscribe to real-time lobby updates;
+repeat
+  :System detects lobby state change (create, join, leave, update);
+  :Push update to all connected clients;
+  :Update UI with new lobby state;
+repeat while (Player remains on page)
+stop
+@enduml 

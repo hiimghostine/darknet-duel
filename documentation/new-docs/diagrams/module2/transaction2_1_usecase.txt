@@ -1,0 +1,16 @@
+Use Case: Lobby Browser and Filtering
+
+Description: Allows a player to view a list of available game lobbies and apply filters (such as game mode, player count, status) to find suitable lobbies to join. The system retrieves the current lobby list, applies the selected filters, and displays the results in real time.
+
+Actors: Player
+
+Preconditions: Player is authenticated and on the lobby browser page.
+
+Main Flow:
+1. Player navigates to the lobby browser.
+2. System retrieves the list of available lobbies.
+3. Player applies filters (e.g., game mode, player count, status).
+4. System updates the displayed lobby list based on filters.
+5. Player views filtered lobby results.
+
+Postconditions: Player sees an up-to-date, filtered list of available lobbies. 

@@ -1,0 +1,14 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Server" {
+  usecase "Take Turn" as UC3_2A
+  usecase "Allocate Action Points (AP)" as UC3_2B
+  usecase "Play Card" as UC3_2C
+  usecase "Target Card/Infrastructure" as UC3_2D
+}
+Player --> UC3_2A
+Player --> UC3_2B
+Player --> UC3_2C
+Player --> UC3_2D
+@enduml 

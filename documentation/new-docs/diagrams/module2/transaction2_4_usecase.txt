@@ -1,0 +1,15 @@
+Use Case: Lobby Chat
+
+Description: Allows players in a lobby to send and receive chat messages in real time. The system broadcasts messages to all participants in the lobby, enabling communication before the game starts.
+
+Actors: Player
+
+Preconditions: Player is authenticated and has joined a lobby.
+
+Main Flow:
+1. Player enters a message in the lobby chat input.
+2. System sends the message to the server.
+3. Server broadcasts the message to all players in the lobby.
+4. All players' chat UIs update with the new message in real time.
+
+Postconditions: All players in the lobby see the latest chat messages instantly. 
