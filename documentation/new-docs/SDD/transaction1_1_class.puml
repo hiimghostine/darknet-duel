@@ -1,0 +1,66 @@
+@startuml
+' User Registration - Class Diagram
+
+package "Frontend (React)" {
+  class RegisterForm <<Component>> {
+    +onSubmit()
+    +showError()
+    +showSuccess()
+  }
+  class AuthPage <<Page>> {
+    +toggleForm()
+    +redirectOnSuccess()
+  }
+  class AuthStore <<Zustand Store>> {
+    +register(data)
+    +login(credentials)
+    +clearError()
+    user
+    isAuthenticated
+    isLoading
+    error
+  }
+  class AuthServiceFrontend <<Service>> {
+    +register(data)
+    +login(credentials)
+    +getProfile()
+    +logout()
+  }
+  RegisterForm --> AuthStore : calls
+  AuthStore --> AuthServiceFrontend : uses
+  AuthPage --> RegisterForm : renders
+}
+
+package "Backend (Node.js/Express)" {
+  class AuthController <<Controller>> {
+    +register(req, res)
+    +login(req, res)
+    +getProfile(req, res)
+  }
+  class AuthService <<Service>> {
+    +createUser(userData)
+    +findByEmailOrUsername(email, username)
+    +findByEmail(email)
+  }
+  class Account <<Entity>> {
+    id
+    email
+    username
+    password
+    type
+    isActive
+    ...
+  }
+  class AuthRouter <<Router>> {
+    +/auth/register
+    +/auth/login
+    +/auth/profile
+  }
+  AuthController --> AuthService : uses
+  AuthService --> Account : persists
+  AuthRouter --> AuthController : routes
+}
+
+' Frontend to Backend API call
+AuthServiceFrontend ..> AuthRouter : HTTP POST /auth/register
+@enduml 
