@@ -71,13 +71,21 @@ export const initializePlayerWithData = (
  */
 export const drawCard = (player: Player): Player => {
   if (player.deck.length === 0) {
+    console.log(`[DRAW DEBUG] Deck is empty for player ${player.id}`);
     return player;
   }
+  
+  // DEBUG: Log deck state before drawing
+  console.log(`[DRAW DEBUG] Player ${player.id} deck size: ${player.deck.length}`);
+  console.log(`[DRAW DEBUG] Next 3 cards in deck:`,
+    player.deck.slice(0, 3).map(c => ({ id: c.id, name: c.name })));
   
   const [card, ...remainingDeck] = player.deck;
   
   // Create a deep copy of the card to ensure all properties are preserved during serialization
   const cardCopy = JSON.parse(JSON.stringify(card));
+  
+  console.log(`[DRAW DEBUG] Drew card: ${cardCopy.id} (${cardCopy.name}), deck now has ${remainingDeck.length} cards`);
   
   return {
     ...player,
