@@ -540,3 +540,67 @@
 .player-panel, .score-panel {
   animation: fadeIn 1s ease-out;
 }
+
+/* Maintenance Cost Indicator Styles */
+.maintenance-cost-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(251, 146, 60, 0.2));
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #fca5a5;
+  margin-top: 4px;
+  animation: maintenance-pulse 2s ease-in-out infinite;
+}
+
+.maintenance-icon {
+  font-size: 0.8rem;
+  filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.5));
+}
+
+.maintenance-value {
+  color: #fee2e2;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.maintenance-type {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+@keyframes maintenance-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+}
+
+.player-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-counter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.resource-icon {
+  font-size: 1rem;
+}
+
+.resource-value {
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}

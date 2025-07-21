@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
@@ -17,6 +18,7 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
+  const { triggerClick } = useAudioManager();
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -221,7 +223,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Link to="/lobbies" className="btn btn-primary font-mono flex items-center justify-center gap-2 relative overflow-hidden group">
+                    <Link to="/lobbies" onClick={triggerClick} className="btn btn-primary font-mono flex items-center justify-center gap-2 relative overflow-hidden group">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
@@ -232,7 +234,7 @@ const DashboardPage: React.FC = () => {
                       <span className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     </Link>
                     
-                    <Link to="/lobbies/create" className="btn btn-outline btn-primary font-mono flex items-center justify-center gap-2">
+                    <Link to="/lobbies/create" onClick={triggerClick} className="btn btn-outline btn-primary font-mono flex items-center justify-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -260,6 +262,7 @@ const DashboardPage: React.FC = () => {
                     <h3 className="font-mono text-primary text-lg">USER_PROFILE</h3>
                     <Link
                       to="/profile"
+                      onClick={triggerClick}
                       className="text-xs text-base-content/70 font-mono hover:text-primary transition-colors cursor-pointer"
                     >
                       [VIEW_PROFILE]
@@ -271,7 +274,7 @@ const DashboardPage: React.FC = () => {
                     <div className="flex-shrink-0">
                       <div className="w-16 h-16 border-2 border-primary/50 bg-base-300/50 rounded-full overflow-hidden relative">
                         <img
-                          src={user?.id ? accountService.getAvatarUrl(user.id) : logo}
+                          src={user?.id ? accountService.getAvatarUrl(user.id, Date.now().toString()) : logo}
                           alt={`${user?.username}'s avatar`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -314,7 +317,7 @@ const DashboardPage: React.FC = () => {
                             </div>
                           ) : (
                             <div className="text-base-content/50 italic">
-                              Click [EDIT] to add your bio
+                              Click [VIEW_PROFILE] to add your bio
                             </div>
                           )}
                         </div>
@@ -386,7 +389,10 @@ const DashboardPage: React.FC = () => {
                   </div>
                   
                   <button 
-                    onClick={() => navigate('/history')}
+                    onClick={() => {
+                      triggerClick();
+                      navigate('/history');
+                    }}
                     className="btn btn-sm btn-outline btn-primary w-full mt-4 font-mono btn-cyberpunk"
                   >
                     VIEW_FULL_HISTORY

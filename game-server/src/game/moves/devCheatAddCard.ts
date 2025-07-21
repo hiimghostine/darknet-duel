@@ -49,7 +49,28 @@ export const devCheatAddCardMove = (
 
   console.log(`🔧 DEV CHEAT: Player ${playerID} adding card ${card.name} (${card.id}) to hand`);
 
-  const isAttacker = playerID === G.attacker?.id;
+  // Use the same robust player identification logic as in playerView.ts
+  // to handle cases where playerID might be '0'/'1' instead of actual UUIDs
+  const attackerId = String(G.attacker?.id);
+  const defenderId = String(G.defender?.id);
+  const playerIdStr = String(playerID);
+  
+  // Try multiple methods to determine player role (similar to playerView.ts)
+  let isAttacker = false;
+  
+  // Method 1: Direct ID comparison
+  if (playerIdStr === attackerId) {
+    isAttacker = true;
+  } else if (playerIdStr === defenderId) {
+    isAttacker = false;
+  }
+  // Method 2: Fall back to positional logic (BoardGame.io uses '0'/'1')
+  else if (playerIdStr === '0') {
+    isAttacker = true;
+  } else if (playerIdStr === '1') {
+    isAttacker = false;
+  }
+  
   const player = isAttacker ? G.attacker : G.defender;
 
   if (!player) {

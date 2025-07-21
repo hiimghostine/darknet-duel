@@ -8,7 +8,7 @@ import { responseEffect } from './responseEffect';
 import { reactionEffect } from './reactionEffect';
 import { counterEffect } from './counterEffect';
 import { WildcardResolver, WildcardPlayContext } from '../../wildcardResolver';
-import { handleChainVulnerability } from '../../chainEffects';
+import { handleChainVulnerability, handleChainSecurity } from '../../chainEffects';
 import { TemporaryEffectsManager } from '../../temporaryEffectsManager';
 
 /**
@@ -118,6 +118,14 @@ function handleSpecialEffect(
 ): InfrastructureCard[] | null | { victory: true } | { pendingChoice: true } {
   console.log(`Handling special effect for card: ${card.name} (${card.id})`);
   
+  // Handle Emergency Response Team (D303) mass restore effect
+  if (card.id === 'D303' || card.specialEffect === 'mass_restore' || card.name === 'Emergency Response Team') {
+    console.log(`🚨 Emergency Response Team special effect - mass restore should be handled by wildcard resolver`);
+    // For mass restore cards, the effect is handled entirely by the wildcard resolver
+    // Return the infrastructure unchanged as the wildcard resolver will handle the restoration
+    return allInfrastructure;
+  }
+  
   // Handle specific special cards by name/ID
   if (card.name === 'Lateral Movement' || card.id === 'lateral-movement') {
     console.log('Lateral Movement card - triggering chain vulnerability effect');
@@ -147,6 +155,35 @@ function handleSpecialEffect(
     }
     
     return updatedInfra;
+  }
+  
+  // Handle Security Automation Suite (D304) chain security effect
+  if (card.name === 'Security Automation Suite' || card.id === 'D304' || card.id.startsWith('D304')) {
+    console.log('Security Automation Suite card - triggering chain security effect');
+    
+    if (!gameState || !playerID) {
+      console.warn('Missing gameState or playerID for Security Automation Suite effect');
+      return allInfrastructure;
+    }
+    
+    // The initial shield/fortify effect should already be applied
+    // Just trigger the chain security effect without re-applying the effect
+    const updatedGameState = handleChainSecurity(
+      { ...gameState, infrastructure: allInfrastructure },
+      card,
+      playerID
+    );
+    
+    // Update the game state with the pending chain choice
+    if (updatedGameState.pendingChainChoice) {
+      // Modify the game state reference to include the pending choice
+      if (gameState) {
+        gameState.pendingChainChoice = updatedGameState.pendingChainChoice;
+        gameState.message = `${card.name} played! Choose another infrastructure to shield.`;
+      }
+    }
+    
+    return allInfrastructure;
   }
   
   // Default behavior for other special cards

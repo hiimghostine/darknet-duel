@@ -88,6 +88,7 @@ export interface PlayerMetadata {
 export interface Player {
   id: string;
   name: string;
+  realUserId?: string; // Real user UUID for database operations
   role: PlayerRole;
   resources: number;
   actionPoints: number;
@@ -135,7 +136,7 @@ export interface PendingReaction {
  * Chain effect type - used for lateral movement across infrastructure (Phase 3)
  */
 export interface ChainEffect {
-  type: 'chain_vulnerability' | 'chain_compromise';
+  type: 'chain_vulnerability' | 'chain_compromise' | 'chain_security';
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];
@@ -149,6 +150,11 @@ export interface HandDisruptionChoice {
   targetPlayerId: string;
   revealedHand: Card[];
   count?: number; // Number of cards to discard
+  // For Honeypot Network tax - store the original card that should be played after tax
+  pendingCardPlay?: {
+    cardId: string;
+    targetInfrastructureId: string;
+  };
 }
 
 /**
@@ -247,7 +253,7 @@ export interface GameState {
   // NEW: Temporary effects for wildcard specials
   temporaryEffects?: {
     type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-          'restrict_targeting' | 'quantum_protection' | 'honeypot'; // Added Phase 2 & 3 effect types
+          'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'prevent_exploits' | 'maintenance_cost'; // Added Phase 2 & 3 effect types
     targetId?: string;
     playerId?: string;
     duration: number;

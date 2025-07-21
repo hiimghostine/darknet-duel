@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from './store/auth.store';
 import { useToastStore } from './store/toast.store';
 import ToastContainer from './components/ToastContainer';
+import AudioProvider from './components/AudioProvider';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
@@ -18,13 +19,16 @@ import UserManagementPage from './pages/UserManagementPage';
 import ReportManagementPage from './pages/ReportManagementPage';
 import SecurityOverviewPage from './pages/SecurityOverviewPage';
 import StorePage from './pages/StorePage';
+import SettingsModal from './components/SettingsModal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useThemeStore } from './store/theme.store';
+import { useSettingsStore } from './store/settings.store';
 
 function App() {
   const { loadUser } = useAuthStore();
   const { toasts, removeToast } = useToastStore();
   const { theme } = useThemeStore();
+  const { isSettingsOpen, closeSettings } = useSettingsStore();
   
   useEffect(() => {
     // Check authentication status when app loads
@@ -34,33 +38,38 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        
-        {/* Protected routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/admin/user-management" element={<UserManagementPage />} />
-          <Route path="/admin/report-management" element={<ReportManagementPage />} />
-          <Route path="/admin/security-overview" element={<SecurityOverviewPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-          <Route path="/topup" element={<TopUpPage />} />
-          <Route path="/history" element={<GameHistoryPage />} />
-          <Route path="/store" element={<StorePage />} />
-          <Route path="/lobbies/*" element={<LobbyPage />} />
-          <Route path="/game/:matchID" element={<GamePage />} />
-        </Route>
-        
-        {/* Default redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AudioProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/user-management" element={<UserManagementPage />} />
+            <Route path="/admin/report-management" element={<ReportManagementPage />} />
+            <Route path="/admin/security-overview" element={<SecurityOverviewPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+            <Route path="/topup" element={<TopUpPage />} />
+            <Route path="/history" element={<GameHistoryPage />} />
+            <Route path="/store" element={<StorePage />} />
+            <Route path="/lobbies/*" element={<LobbyPage />} />
+            <Route path="/game/:matchID" element={<GamePage />} />
+          </Route>
+          
+          {/* Default redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AudioProvider>
       
       {/* Toast notifications */}
       <ToastContainer toasts={toasts} onCloseToast={removeToast} />
+      
+      {/* Settings Modal */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
     </Router>
   );
 }

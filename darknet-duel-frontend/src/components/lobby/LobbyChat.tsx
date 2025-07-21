@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
+import { useAudioManager } from '../../hooks/useAudioManager';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
 import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamationTriangle } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
@@ -23,6 +24,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   showChannelSwitcher = false
 }) => {
   const { user } = useAuthStore();
+  const { triggerSendMsg, triggerRecvMsg } = useAudioManager();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<LobbyChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -163,6 +165,10 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
     socketInstance.on('new_message', (message: LobbyChatMessage) => {
       console.log('💬 New message:', message);
+      // Only play receive sound for messages from other users
+      if (message.senderUuid !== user?.id) {
+        triggerRecvMsg();
+      }
       setMessages(prev => {
         // Keep only last 30 messages for performance
         const newMessages = [...prev, message];
@@ -222,6 +228,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const sendMessage = () => {
     if (!socket || !newMessage.trim()) return;
 
+    triggerSendMsg();
     socket.emit('send_message', {
       chatId: channelInfo.chatId,
       message: newMessage.trim()

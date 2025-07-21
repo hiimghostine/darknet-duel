@@ -5,7 +5,7 @@ import DarknetDuel from '../game/DarknetDuel';
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
-import { sendGameResults, recordGameHistory, updatePlayerRatings, GameResultData, GameHistoryData, EloRatingUpdateData } from './serverAuth';
+import { sendGameResults, recordGameHistory, updatePlayerRatings, GameResultData, GameHistoryData, EloRatingUpdateData, serverToServerRequest } from './serverAuth';
 import bodyParser from 'koa-bodyparser';
 import { LobbyCleanupService } from '../services/lobbyCleanupService';
 import { GameState } from 'shared-types/game.types';
@@ -650,7 +650,32 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       console.log(`🏆 Updating player ratings...`);
       const ratingsUpdated = await updatePlayerRatings(ratingData);
       console.log(`Rating update response:`, ratingsUpdated);
-      
+
+      // Award creds to winner and loser (if not abandoned)
+      if (winnerRole !== 'abandoned') {
+        for (const player of playerData) {
+          const isWinner = player.role === winnerRole;
+          const creds = isWinner ? 10 : 5;
+          try {
+            const resp = await serverToServerRequest(
+              '/currency/add',
+              'POST',
+              {
+                userId: player.id,
+                type: 'creds',
+                amount: creds,
+                reason: isWinner ? 'Match victory' : 'Match participation'
+              }
+            );
+            console.log(`💰 Awarded ${creds} creds to ${player.name} (${player.id}) [${isWinner ? 'WINNER' : 'LOSER'}]:`, resp);
+          } catch (err) {
+            console.error(`❌ Failed to award creds to ${player.name} (${player.id}):`, err);
+          }
+        }
+      } else {
+        console.log('No creds awarded: game was abandoned.');
+      }
+
       console.log(`✅ Game ${gameID} processing completed:\n- Results saved: ${resultsSaved}\n- History saved: ${historySaved}\n- Ratings updated: ${ratingsUpdated}`);
     } catch (apiError) {
       console.error(`Backend API communication error:`, apiError);
@@ -867,6 +892,10 @@ lobbyCleanupService.setCleanupInterval(10000); // 10 seconds
 // This allows players to see that a game was abandoned before it disappears
 lobbyCleanupService.setAbandonedGameTTL(30000); // 30 seconds grace period
 
+// Set a 5-minute TTL for inactive games (games with no connected players)
+// This ensures lobbies don't accumulate indefinitely
+lobbyCleanupService.setInactiveGameTTL(5 * 60 * 1000); // 5 minutes
+
 // Start the server
 server.run(PORT, () => {
   console.log(`Game server running on port ${PORT}`);
@@ -968,6 +997,11 @@ const startGameOverMonitoring = () => {
             
             // Process the game end
             await handleGameEnd(matchID, fullMatchData || matchData);
+            
+            // Immediately remove the completed game (winner or abandoned)
+            // if (lobbyCleanupService) {
+            //   await lobbyCleanupService.removeCompletedGame(matchID);
+            // }
             
             // Mark the game as processed
             processedGames.add(matchID);

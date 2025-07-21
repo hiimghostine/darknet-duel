@@ -41,8 +41,20 @@ export function isReactiveCard(type: CardType): boolean {
 }
 
 // Determine if a card object can be played as a reaction
-export function isReactiveCardObject(card: { type: CardType, isReactive?: boolean }): boolean {
+export function isReactiveCardObject(
+  card: { type: CardType, isReactive?: boolean, id?: string, specialEffect?: string },
+  gameState?: { infrastructure?: Array<{ state: string }> }
+): boolean {
   // Check both isReactive flag and the proper card types
-  return (card.isReactive === true && (card.type === 'reaction' || card.type === 'counter-attack')) || 
-         (card.type === 'reaction' || card.type === 'counter-attack');
+  const isProperReactiveType = card.type === 'reaction' || card.type === 'counter-attack';
+  const isReactiveWildcard = card.type === 'wildcard' && card.isReactive === true;
+  const isD307 = card.id?.startsWith('D307') || card.specialEffect === 'emergency_restore_shield';
+  
+  // Special condition for D307: only reactive if there's compromised infrastructure
+  if (isD307 && gameState) {
+    const hasCompromisedInfra = gameState.infrastructure?.some(infra => infra.state === 'compromised') || false;
+    return hasCompromisedInfra;
+  }
+  
+  return isProperReactiveType || isReactiveWildcard || isD307;
 }

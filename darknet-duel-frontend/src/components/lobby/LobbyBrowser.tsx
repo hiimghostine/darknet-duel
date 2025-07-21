@@ -6,6 +6,7 @@ import { FaLock, FaPlay, FaCircleNotch, FaExclamationTriangle as FaExclamationCi
 import { useAuthStore } from '../../store/auth.store';
 import { FaSync, FaPlus, FaExclamationTriangle, FaServer, FaUserSecret, FaNetworkWired } from 'react-icons/fa';
 import { useThemeStore } from '../../store/theme.store';
+import { useAudioManager } from '../../hooks/useAudioManager';
 
 const LobbyBrowser: React.FC = () => {
   const [matches, setMatches] = useState<GameMatch[]>([]);
@@ -17,6 +18,7 @@ const LobbyBrowser: React.FC = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const { triggerClick } = useAudioManager();
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -290,7 +292,10 @@ const LobbyBrowser: React.FC = () => {
           
           <div className="flex gap-3">
             <button 
-              onClick={fetchMatches} 
+              onClick={() => {
+                triggerClick();
+                fetchMatches();
+              }} 
               className="flex items-center justify-center gap-2 bg-base-200/50 hover:bg-primary/20 text-primary border border-primary/30 py-2 px-4 transition-all duration-200"
               disabled={loading}
             >
@@ -300,6 +305,7 @@ const LobbyBrowser: React.FC = () => {
             
             <Link 
               to="/lobbies/create"
+              onClick={triggerClick}
               className="flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/50 py-2 px-4 transition-all duration-200"
             >
               <FaPlus />
@@ -336,7 +342,10 @@ const LobbyBrowser: React.FC = () => {
             />
           </div>
           <button
-            onClick={handleJoinPrivateLobby}
+            onClick={() => {
+              triggerClick();
+              handleJoinPrivateLobby();
+            }}
             disabled={isJoiningPrivate || !privateLobbysId.trim()}
             className={`px-6 py-3 font-mono text-sm border transition-all duration-200 ${
               isJoiningPrivate || !privateLobbysId.trim()
@@ -412,13 +421,20 @@ const LobbyBrowser: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-col flex-1 gap-4">
-                  {/* Status badge based on lobby state */}
-                  {match.setupData.state && (
-                    <div className={`px-2 py-1 text-xs font-mono rounded-md flex items-center self-end ${getLobbyStateStyles(match.setupData.state)}`}>
-                      {getLobbyStateIcon(match.setupData.state)}
-                      <span className="ml-1">{getLobbyStateLabel(match.setupData.state)}</span>
-                    </div>
-                  )}
+                  {/* Lobby Name and Status Badge Inline */}
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <h3 className="text-lg font-mono font-bold text-base-content truncate max-w-[70%]">
+                      {match.setupData?.lobbyName || 'Unnamed Lobby'}
+                    </h3>
+                    {match.setupData.state && (
+                      <div className={`px-2 py-1 text-xs font-mono rounded-md flex items-center ${getLobbyStateStyles(match.setupData.state)}`}
+                        style={{ minWidth: '80px', justifyContent: 'center' }}>
+                        {getLobbyStateIcon(match.setupData.state)}
+                        <span className="ml-1">{getLobbyStateLabel(match.setupData.state)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* End Inline Header */}
                   
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2">
@@ -451,7 +467,12 @@ const LobbyBrowser: React.FC = () => {
                     <div className="p-0.5 bg-gradient-to-r from-secondary/30 via-secondary/20 to-secondary/30 w-full">
                       <button 
                         className={`w-full py-2 px-4 font-mono text-sm ${isLobbyJoinable(match) ? 'bg-secondary/20 text-secondary hover:bg-secondary/30' : 'bg-secondary/10 text-secondary/50 cursor-not-allowed'} border border-secondary/30 rounded`}
-                        onClick={() => isLobbyJoinable(match) && handleJoinMatch(match.matchID)}
+                        onClick={() => {
+                          if (isLobbyJoinable(match)) {
+                            triggerClick();
+                            handleJoinMatch(match.matchID);
+                          }
+                        }}
                         disabled={!isLobbyJoinable(match) || isJoining === match.matchID}
                       >
                         {isJoining === match.matchID ? (

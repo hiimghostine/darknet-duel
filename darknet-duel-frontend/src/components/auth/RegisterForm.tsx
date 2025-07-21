@@ -3,6 +3,8 @@ import { useAuthStore } from '../../store/auth.store';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAudioManager } from '../../hooks/useAudioManager';
+import { showToast } from '../../store/toast.store';
 
 interface RegisterFormProps {
   onToggleForm: () => void;
@@ -31,6 +33,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
+  const { triggerClick, triggerError, triggerNotification } = useAudioManager();
   
   const {
     register,
@@ -58,6 +61,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
   
   const onSubmit = async (data: RegisterFormData) => {
     try {
+      triggerClick();
       const userData = {
         username: data.username,
         email: data.email,
@@ -65,13 +69,32 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       };
       
       await registerUser(userData);
+      triggerNotification();
       setSuccessMessage('Registration successful! Redirecting to your dashboard...');
+      
+      // Show success toast
+      showToast.success(
+        'Registration Successful',
+        'Account created successfully! You are now logged in.',
+        5000
+      );
+      
       // Redirect will be handled by the parent component
-    } catch (error) {
+    } catch (error: any) {
+      triggerError();
+      
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
-      // Note: The actual error handling is managed by the auth store
+      
+      // Show error toast notification with backend message
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      showToast.error(
+        'Registration Failed',
+        errorMessage,
+        8000
+      );
+      
       console.error('Registration error:', error);
     }
   };
@@ -215,7 +238,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       <div className="mt-3 pt-2 border-t border-base-content/10 text-center font-mono text-xs">
         <div className="text-base-content/70 mb-0.5">EXISTING USER LOGIN</div>
         <button 
-          onClick={onToggleForm}
+          onClick={() => {
+            triggerClick();
+            onToggleForm();
+          }}
           className="inline-block text-primary hover:text-primary/80 transition-colors"
         >
           [ ACCESS_NETWORK ]

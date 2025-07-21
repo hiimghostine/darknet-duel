@@ -77,7 +77,8 @@ export const actionStageMoves = {
     const newG = playCardMove({ G, ctx, playerID }, cardId);
     
     // Check if this card can be reacted to (if it's a reaction-eligible card)
-    const isAttacker = playerID === G.attacker?.id;
+    // FIXED: Use boardgame.io player IDs for validation
+    const isAttacker = playerID === '0';
     const currentPlayer = isAttacker ? G.attacker : G.defender;
     const card = currentPlayer?.hand.find(c => c.id === cardId);
     
@@ -92,7 +93,8 @@ export const actionStageMoves = {
       };
       
       // Switch active player to opponent for reaction stage
-      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      // FIXED: Use boardgame.io player IDs for opponent lookup
+      const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }
@@ -138,6 +140,15 @@ export const actionStageMoves = {
       };
     }
     
+    // Check if there's a pending hand choice (D302 Threat Intelligence) - if so, don't switch to reaction yet
+    if (newG.pendingHandChoice) {
+      console.log('DEBUG: Found pendingHandChoice, staying in action stage for hand discard selection');
+      return {
+        ...newG,
+        currentActionPlayer: playerID
+      };
+    }
+    
     // Always allow reaction to a throw card action
     // Store the action player's ID so we can return to them later
     const updatedG = {
@@ -146,7 +157,8 @@ export const actionStageMoves = {
     };
     
     // Switch active player to opponent for reaction stage
-    const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+    // FIXED: Use boardgame.io player IDs for opponent lookup
+    const opponentID = playerID === '0' ? '1' : '0';
     if (opponentID) {
       events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
     }
@@ -188,19 +200,6 @@ export const actionStageMoves = {
     // Reset free card cycles counter for next turn
     updatedPlayer.freeCardCyclesUsed = 0;
     
-    // Add next turn's action points now rather than waiting for next turn
-    // This gives immediate feedback to the player about their next turn's AP
-    const apPerTurn = isAttacker ? 
-      G.gameConfig.attackerActionPointsPerTurn : 
-      G.gameConfig.defenderActionPointsPerTurn;
-      
-    updatedPlayer.actionPoints = Math.min(
-      updatedPlayer.actionPoints + apPerTurn,
-      G.gameConfig.maxActionPoints
-    );
-    
-    console.log(`End turn: Added ${apPerTurn} AP for ${isAttacker ? 'attacker' : 'defender'}, now ${updatedPlayer.actionPoints}/${G.gameConfig.maxActionPoints}`);
-    
     // Update game state
     const updatedG = {
       ...G,
@@ -226,7 +225,8 @@ export const actionStageMoves = {
     // After chain effect is resolved, transition to reaction phase
     if (!updatedG.pendingChainChoice) {
       // Chain effect completed, now allow reaction to the original card
-      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      // FIXED: Use boardgame.io player IDs for opponent lookup
+      const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }
@@ -244,7 +244,32 @@ export const actionStageMoves = {
     if (!updatedG.pendingCardChoice) {
       console.log('DEBUG: Card selection completed, transitioning to reaction phase');
       // Card selection completed, now allow reaction to the original card
-      const opponentID = playerID === G.attacker?.id ? G.defender?.id : G.attacker?.id;
+      // FIXED: Use boardgame.io player IDs for opponent lookup
+      const opponentID = playerID === '0' ? '1' : '0';
+      if (opponentID) {
+        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+      }
+    }
+    
+    return updatedG;
+  },
+  
+  // Hand discard selection functionality (D302 Threat Intelligence Network)
+  chooseHandDiscard: ({ G, ctx, playerID, events }, args) => {
+    // Extract cardIds from the parameter object
+    const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+    console.log('DEBUG: chooseHandDiscard received args:', args);
+    console.log('DEBUG: extracted cardIds:', cardIds);
+    
+    const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
+    const updatedG = chooseHandDiscardMove(G, ctx, playerID, cardIds);
+    
+    // After hand choice is resolved, transition to reaction phase
+    if (!updatedG.pendingHandChoice) {
+      console.log('DEBUG: Hand discard selection completed, transitioning to reaction phase');
+      // Hand discard completed, now allow reaction to the original card
+      // FIXED: Use boardgame.io player IDs for opponent lookup  
+      const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }

@@ -1,36 +1,36 @@
-Accounts (ignore this):
-- Notshige1!
-- Notshige2!
+# TODO.txt
 
+## Theme Support Implementation ✅
+- [x] Refactor all text color classes in BalatroGameBoard.tsx and its subcomponents to use theme/daisyUI variables (e.g., text-base-content, text-primary, text-error, etc.) instead of hardcoded Tailwind colors (e.g., text-gray-300, text-white, text-red-100, etc.), so that all text is readable in both light and dark themes.
+- [x] Update helper functions (getInfraStateClasses, getPlayerCardClasses, etc.) to use only background and border colors for team/role, but always use text-base-content or text-base-content/70 for text color, unless a semantic color (e.g., text-error, text-success) is needed for status.
+- [x] Fix hover card views (both player hand and infrastructure) to use theme-aware text colors instead of hardcoded colors like text-amber-100, text-blue-100, etc.
+- [x] Fix special indicators and cycle buttons to use theme-aware colors.
+- [x] Fix effects overlay sections to use theme-aware colors.
+- [x] Fix monitoring and effects indicators to use theme-aware colors.
+- [ ] Audit and update all board overlay components (e.g., WinnerLobby, PostGameChat, PlayerInfo, GlobalEffectsIndicator, TemporaryEffectsDisplay, WildcardChoiceUI) to ensure text colors use theme/daisyUI classes and are readable in both themes.
 
-Issues:
-/ - No "Wrong password" message
-/ - Browsing lobbies and creating a lobby will get stuck in "Connecting to Darknet Servers"
-/ - Lobbies poll too fast
-- Can't restart game because of duplicate ids, might wanna automatically create a new lobby
-- Xendit polling even after the payment's done? Need to investigate
+## Game Features
+- [ ] Implement card cycling mechanics
+- [ ] Add more card types and effects
+- [ ] Implement advanced targeting system
+- [ ] Add sound effects and animations
+- [ ] Implement replay system
 
-Later to add:
-ASAP:
-/ - Hacker stats in front (add more cool shit)
-/ - Recent activity in dashboard, and View Full History button
+## UI/UX Improvements
+- [ ] Add loading states for all async operations
+- [ ] Improve error handling and user feedback
+- [ ] Add tooltips and help system
+- [ ] Implement responsive design for mobile devices
+- [ ] Add accessibility features
 
-Mid game:
-/ - Clickable profiles
-/ - Chat in lobbies 
-- Shop for cosmetics (PULL FROM STEAM OR DISCORD)
-- Friend system...
-- DMs?
+## Backend Integration
+- [ ] Connect to game server for real-time updates
+- [ ] Implement authentication and user management
+- [ ] Add leaderboards and statistics
+- [ ] Implement matchmaking system
 
-Late game:
-- Dynamic system updates in dashboard
-/ - Admin panel (once everything is gucci) ongoing
-- Add bonuses to first-time purchases
-- Reporting system aaaaaaaaaaaaaaaaaaaaaa
-- Moderators pud??? We need tags (OMG ANOTHER COSMETIC????)
-
-
-
-Missing:
-Dashboard:
-/     - Profile
+## Performance Optimizations
+- [ ] Optimize card rendering and animations
+- [ ] Implement virtual scrolling for large card lists
+- [ ] Add caching for frequently accessed data
+- [ ] Optimize bundle size and loading times

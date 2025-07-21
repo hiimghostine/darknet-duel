@@ -81,12 +81,15 @@ export function getAvailableCardTypes(wildcardType?: CardType[] | string): CardT
   // Handle string format
   switch (wildcardType) {
     case 'any':
-      return ['attack', 'exploit', 'counter-attack', 'counter', 
+      return ['attack', 'exploit', 'counter-attack', 'counter',
               'shield', 'response', 'fortify', 'reaction'];
     case 'shield_or_fortify':
       return ['shield', 'fortify'];
     case 'exploit-attack':
       return ['exploit', 'attack'];
+    case 'special':
+      // Special cards like Security Automation Suite can be shield or fortify
+      return ['shield', 'fortify'];
     default:
       // Try to interpret as a single card type
       return isValidCardType(wildcardType) ? [wildcardType as CardType] : [];

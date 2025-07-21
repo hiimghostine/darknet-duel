@@ -3,6 +3,7 @@ import { FaUser, FaImage, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import accountService, { type UpdateAccountData } from '../services/account.service';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const { user, loadUser } = useAuthStore();
   const { addToast } = useToastStore();
+  const { triggerPositiveClick, triggerNegativeClick } = useAudioManager();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<UpdateAccountData>({
@@ -176,6 +178,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       // Refresh user data
       await loadUser();
       
+      // Force refresh avatar by updating the preview with cache buster
+      if (avatarFile) {
+        const cacheBuster = Date.now().toString();
+        setAvatarPreview(accountService.getAvatarUrl(user?.id || '', cacheBuster));
+      }
+      
       addToast({
         title: 'Profile Updated',
         message: 'Your profile has been successfully updated.',
@@ -243,7 +251,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <div className="flex items-center gap-4">
               <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50">
                 <img
-                  src={avatarPreview || accountService.getAvatarUrl(user?.id || '')}
+                  src={avatarPreview || accountService.getAvatarUrl(user?.id || '', Date.now().toString())}
                   alt="Avatar preview"
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -287,7 +295,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </label>
               <input
                 type="email"
-                className={`input input-bordered w-full bg-base-100 font-mono ${errors.email ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.email ? 'input-error' : ''}`}
                 value={formData.email || ''}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="user@domain.com"
@@ -305,7 +313,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </label>
               <input
                 type="text"
-                className={`input input-bordered w-full bg-base-100 font-mono ${errors.username ? 'input-error' : ''}`}
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.username ? 'input-error' : ''}`}
                 value={formData.username || ''}
                 onChange={(e) => handleChange('username', e.target.value)}
                 placeholder="username"
@@ -323,7 +331,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               BIO ({formData.bio?.length || 0}/30)
             </label>
             <textarea
-              className={`textarea textarea-bordered w-full bg-base-100 font-mono ${errors.bio ? 'textarea-error' : ''}`}
+              className={`textarea textarea-bordered w-full bg-base-100 text-base-content font-mono ${errors.bio ? 'textarea-error' : ''}`}
               value={formData.bio || ''}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="Tell others about yourself..."
@@ -351,7 +359,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 </label>
                 <input
                   type="password"
-                  className={`input input-bordered w-full bg-base-100 font-mono ${errors.password ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.password ? 'input-error' : ''}`}
                   value={formData.password || ''}
                   onChange={(e) => handleChange('password', e.target.value)}
                   placeholder="Enter new password"
@@ -370,7 +378,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 </label>
                 <input
                   type="password"
-                  className={`input input-bordered w-full bg-base-100 font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
@@ -409,7 +417,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <div className="flex gap-3 pt-4 border-t border-primary/20">
             <button
               type="button"
-              onClick={handleClose}
+              onClick={() => {
+                triggerNegativeClick();
+                handleClose();
+              }}
               className="btn btn-outline flex-1 border-base-content/30 hover:bg-base-content/10 font-mono"
               disabled={loading}
             >
@@ -417,6 +428,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </button>
             <button
               type="submit"
+              onClick={() => {
+                if (!loading) {
+                  triggerPositiveClick();
+                }
+              }}
               className="btn btn-primary flex-1 font-mono"
               disabled={loading}
             >

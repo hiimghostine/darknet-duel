@@ -10,18 +10,20 @@ const adminController = new AdminController();
 // All routes require authentication
 router.use(authMiddleware);
 
-// Admin-only routes (user management)
-router.get('/users', adminAuthMiddleware, adminController.getUsers);
-router.get('/users/:id', adminAuthMiddleware, adminController.getUserById);
+// Admin and moderator routes (user viewing and management)
+router.get('/users', moderatorAuthMiddleware, adminController.getUsers);
+router.get('/users/:id', moderatorAuthMiddleware, adminController.getUserById);
+
+// Admin-only routes (user modification and deletion)
 router.put('/users/:id', adminAuthMiddleware, adminController.updateUser);
 router.delete('/users/:id', adminAuthMiddleware, adminController.deleteUser);
 
-// Admin-only ban management routes
-router.post('/users/:id/ban', adminAuthMiddleware, adminController.banUser);
-router.post('/users/:id/unban', adminAuthMiddleware, adminController.unbanUser);
+// Admin and moderator ban management routes
+router.post('/users/:id/ban', moderatorAuthMiddleware, adminController.banUser);
+router.post('/users/:id/unban', moderatorAuthMiddleware, adminController.unbanUser);
 
-// Admin-only statistics routes
-router.get('/stats', adminAuthMiddleware, adminController.getUserStats);
+// Admin and moderator statistics routes
+router.get('/stats', moderatorAuthMiddleware, adminController.getUserStats);
 
 // Moderator-accessible routes (reports, security overview, etc.)
 // These will be added when we implement report management and security overview endpoints

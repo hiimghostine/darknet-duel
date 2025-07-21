@@ -60,6 +60,7 @@ export interface GameMatch {
     started?: boolean; // Flag to indicate if the game has started
     state?: LobbyState; // Current lobby state
     isPrivate?: boolean; // Whether the lobby is private
+    lobbyName?: string; // Custom lobby name
   };
 }
 
@@ -93,6 +94,7 @@ export const lobbyService = {
           roles: Record<string, string>;
           started?: boolean;
           isPrivate?: boolean;
+          lobbyName?: string;
         };
       }
       
@@ -131,7 +133,8 @@ export const lobbyService = {
               initialResources: 5,
               maxTurns: 30,
               roles: {},
-              isPrivate: false
+              isPrivate: false,
+              lobbyName: 'Unnamed Lobby'
             }),
             state: state
           }

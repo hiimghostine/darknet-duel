@@ -4,6 +4,7 @@ import { Card, CardType, AttackVector } from 'shared-types/card.types';
 import { hasCardFeatures } from '../../utils/typeGuards';
 import { getEffectiveCardType } from '../../../utils/wildcardUtils';
 import { validateCardTargeting } from '../../utils/validators';
+import { TemporaryEffectsManager } from '../../temporaryEffectsManager';
 
 /**
  * Validation utilities for throw card move
@@ -35,9 +36,14 @@ export interface ValidationResult {
  * Validates player turn permissions and reaction mode
  */
 export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { valid: boolean; message?: string; isAttacker?: boolean } {
+  // FIXED: Use boardgame.io player IDs for turn validation
+  // playerID is the boardgame.io ID ("0" or "1"), not the real user UUID
+  const isAttacker = playerID === '0';
+  const isDefender = playerID === '1';
+  
   // Verify it's the player's turn or a valid reaction
-  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && playerID === G.attacker?.id) ||
-                             (G.currentTurn === 'defender' && playerID === G.defender?.id);
+  const isCurrentPlayerTurn = (G.currentTurn === 'attacker' && isAttacker) ||
+                             (G.currentTurn === 'defender' && isDefender);
   
   // Check if player is in reaction mode - important for counter-attack cards
   const isInReactionMode = ctx.activePlayers && 
@@ -52,7 +58,6 @@ export function validatePlayerTurn(G: GameState, ctx: Ctx, playerID: string): { 
     };
   }
   
-  const isAttacker = playerID === G.attacker?.id;
   return { valid: true, isAttacker };
 }
 
@@ -66,7 +71,8 @@ export function validatePlayerAndCard(G: GameState, playerID: string, cardId: st
   card?: Card;
   cardIndex?: number;
 } {
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use boardgame.io player IDs for validation
+  const isAttacker = playerID === '0';
   const player = isAttacker ? G.attacker : G.defender;
   
   if (!player) {
@@ -98,6 +104,13 @@ export function validateTargetInfrastructure(G: GameState, targetInfrastructureI
     return { valid: true, targetInfrastructure: null };
   }
   
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card && (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state')) {
+    console.log(`🚨 All-infrastructure targeting card detected: ${card.name} (${card.id})`);
+    // For all-infrastructure cards, we don't need specific infrastructure validation
+    return { valid: true, targetInfrastructure: null };
+  }
+  
   const targetInfrastructure = G.infrastructure?.find(infra => infra.id === targetInfrastructureId);
   if (!targetInfrastructure) {
     return {
@@ -122,6 +135,15 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
   // Special handling for Memory Corruption Attack and other hand-targeting cards
   if (card.id.startsWith('A307') || (card as any).target === 'opponent_hand') {
     console.log(`🎯 Hand-targeting card ${card.name} uses special validation`);
+    return {
+      effectiveCardType: 'special',
+      validationCardType: 'special'
+    };
+  }
+  
+  // Special handling for Emergency Response Team (D303) and other all-infrastructure cards
+  if (card.id === 'D303' || card.id.startsWith('D303') || (card as any).target === 'all_infrastructure' || (card as any).target === 'game_state') {
+    console.log(`🚨 All-infrastructure targeting card ${card.name} uses special validation`);
     return {
       effectiveCardType: 'special',
       validationCardType: 'special'
@@ -225,10 +247,25 @@ export function validateThrowCardMove(context: ValidationContext): ValidationRes
     return { valid: false, message: infraValidation.message };
   }
   
-  // Step 4: Determine effective card types
+  // Step 4: Check for D301 Advanced Threat Defense blocking reactive attacks
+  const card = playerCardValidation.card!;
+  const targetInfrastructure = infraValidation.targetInfrastructure;
+  
+  if (targetInfrastructure && (card.type === 'counter-attack' || (card.type === 'wildcard' && card.isReactive))) {
+    const hasPreventReactions = TemporaryEffectsManager.hasEffect(G, 'prevent_reactions', targetInfrastructure.id);
+    if (hasPreventReactions) {
+      console.log(`🛡️ D301 BLOCK: Reactive attack card ${card.name} blocked by prevent_reactions effect on infrastructure ${targetInfrastructure.name}`);
+      return {
+        valid: false,
+        message: `${card.name} is blocked by Advanced Threat Defense on ${targetInfrastructure.name}`
+      };
+    }
+  }
+  
+  // Step 5: Determine effective card types
   const { effectiveCardType, validationCardType } = determineEffectiveCardType(
-    playerCardValidation.card!,
-    infraValidation.targetInfrastructure!
+    card,
+    targetInfrastructure
   );
   
   return {

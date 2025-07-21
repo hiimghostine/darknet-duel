@@ -45,7 +45,7 @@ export class Account {
   @Column({ default: 0 })
   gamesLost: number;
   
-  @Column({ default: 1200 })
+  @Column({ default: 1000 })
   rating: number;
 
   @Column({ nullable: true, length: 30 })

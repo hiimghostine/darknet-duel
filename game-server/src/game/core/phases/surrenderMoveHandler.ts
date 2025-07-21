@@ -1,5 +1,4 @@
-import { PlayerRole } from 'shared-types/game.types';
-import type { GameState } from 'shared-types/game.types';
+import type { PlayerRole, GameState } from 'shared-types/game.types';
 import { addSystemMessage } from './chatMoveHandler';
 
 /**
@@ -28,8 +27,9 @@ export function handleSurrender({ G, ctx, playerID, events }: MoveParams<GameSta
   }
   
   // Determine which player surrendered and set the other as winner
-  const winner = playerID === G.attacker?.id ? 'defender' as PlayerRole : 'attacker' as PlayerRole;
-  const surrenderer = playerID === G.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
+  // FIXED: Use boardgame.io player IDs for role determination
+  const winner = playerID === '0' ? 'defender' as PlayerRole : 'attacker' as PlayerRole;
+  const surrenderer = playerID === '0' ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
   
   // Create updated game state
   const updatedG: GameState = {
@@ -67,11 +67,31 @@ export function handleSurrenderInGameOver({ G, playerID }: MoveParams<GameState>
   
   // In case someone tries to surrender in the gameOver phase, just log it
   // The game is already over so no need to change winner
-  const playerRole = playerID === G.attacker?.id ? 'Attacker' : 'Defender';
   
-  // Add system message about surrender
-  const updatedG = { ...G };
-  addSystemMessage(updatedG, `${playerRole} has surrendered!`);
+  // FIXED: Use boardgame.io player IDs for role determination
+  const playerRole = playerID === '0' ? 'Attacker' : 'Defender';
   
-  return updatedG;
+  // Create immutable update to avoid Immer violation
+  const existingChat = G.chat || {
+    messages: [],
+    lastReadTimestamp: {}
+  };
+  
+  const systemMessage = {
+    id: Date.now().toString(),
+    sender: 'system',
+    senderRole: 'attacker' as const,
+    content: `${playerRole} has surrendered!`,
+    timestamp: Date.now(),
+    isSystem: true
+  };
+  
+  // Return completely new state object instead of mutating
+  return {
+    ...G,
+    chat: {
+      ...existingChat,
+      messages: [...existingChat.messages, systemMessage]
+    }
+  };
 }

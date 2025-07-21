@@ -156,6 +156,7 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
   onBegin: ({ G }: { G: GameState }) => {
     return {
       ...G,
+      gamePhase: 'playing' as const,
       currentStage: 'action' as TurnStage,
       pendingReactions: [] as PendingReaction[],
       reactionComplete: false
@@ -176,13 +177,34 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
       const isAttacker = G.currentTurn === 'attacker';
-      
+
+      // Add AP at the start of the turn
+      if (isAttacker && updatedG.attacker) {
+        const { updateActionPoints } = require('./playerManager');
+        updatedG = {
+          ...updatedG,
+          attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
+        };
+      } else if (!isAttacker && updatedG.defender) {
+        const { updateActionPoints } = require('./playerManager');
+        updatedG = {
+          ...updatedG,
+          defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
+        };
+      }
+
+      // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
+      if (isAttacker) {
+        console.log(`🔄 NEW ROUND ${G.currentRound}: Processing maintenance costs`);
+        updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG);
+      }
+
       events.setActivePlayers({ currentPlayer: 'action' });
-      
-      if (isAttacker && G.attacker) {
-        console.log(`Attacker turn start: AP ${G.attacker.actionPoints}/${G.gameConfig.maxActionPoints}`);
-      } else if (!isAttacker && G.defender) {
-        console.log(`Defender turn start: AP ${G.defender.actionPoints}/${G.gameConfig.maxActionPoints}`);
+
+      if (isAttacker && updatedG.attacker) {
+        console.log(`Attacker turn start: AP ${updatedG.attacker.actionPoints}/${updatedG.gameConfig.maxActionPoints}`);
+      } else if (!isAttacker && updatedG.defender) {
+        console.log(`Defender turn start: AP ${updatedG.defender.actionPoints}/${updatedG.gameConfig.maxActionPoints}`);
       }
       
       return {
@@ -229,24 +251,14 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     stages: {
       action: {
         moves: {
-          ...actionStageMoves,
-          // Add hand disruption move for Memory Corruption Attack
-          chooseHandDiscard: ({ G, ctx, playerID }, { cardIds }) => {
-            const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
-            return chooseHandDiscardMove(G, ctx, playerID, cardIds);
-          }
+          ...actionStageMoves
         },
         next: 'reaction'
       },
       
       reaction: {
         moves: {
-          ...reactionStageMoves,
-          // Add hand disruption move for Memory Corruption Attack
-          chooseHandDiscard: ({ G, ctx, playerID }, { cardIds }) => {
-            const { chooseHandDiscardMove } = require('../../moves/chooseHandDiscard');
-            return chooseHandDiscardMove(G, ctx, playerID, cardIds);
-          }
+          ...reactionStageMoves
         },
         next: 'end'
       },

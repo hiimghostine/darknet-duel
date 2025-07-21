@@ -49,7 +49,13 @@ const PendingChoicesOverlay: React.FC<PendingChoicesOverlayProps> = ({
       )}
       
       {/* Hand Disruption UI - Phase 3 */}
-      {memoizedG.pendingHandChoice && playerID === memoizedG.pendingHandChoice.targetPlayerId && (
+      {memoizedG.pendingHandChoice && (
+        // For Honeypot Network tax (self-discard): show to the target player (attacker)
+        // For Threat Intelligence (opponent choice): show to the NON-target player (defender choosing attacker's cards)
+        memoizedG.pendingHandChoice.pendingCardPlay
+          ? (playerID === memoizedG.pendingHandChoice.targetPlayerId) // Honeypot tax: attacker chooses their own cards
+          : (playerID !== memoizedG.pendingHandChoice.targetPlayerId) // Threat Intelligence: opponent chooses target's cards
+      ) && (
         <HandDisruptionUI
           pendingChoice={memoizedG.pendingHandChoice}
           playerId={playerID || ''}

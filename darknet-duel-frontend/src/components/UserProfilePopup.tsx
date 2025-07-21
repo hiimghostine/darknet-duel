@@ -78,7 +78,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
             losses: gamesLost,
             totalGames: gamesPlayed,
             winRate: winRate,
-            rating: accountData.rating || 1200,
+            rating: accountData.rating || 1000,
             level: 1 // Default level since we don't have this data
           });
         } catch (err) {
@@ -221,7 +221,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
                     {userData.type && <UserTypeTag userType={userData.type} />}
                   </div>
                   <div className="text-xs text-base-content/70">
-                    RATING: {userData.rating || 1200}
+                    RATING: {userData.rating || 1000}
                   </div>
                   <div className="flex items-center gap-1 mt-1">
                     <div className={`w-1.5 h-1.5 rounded-full ${userData.isActive ? 'bg-success' : 'bg-error'}`}></div>

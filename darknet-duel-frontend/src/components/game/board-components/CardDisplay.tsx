@@ -60,6 +60,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
 
   // Special marker for reactive cards
   // Use isReactiveCardObject since we have a full card object, not just a type
+  // For display purposes, we don't need the game state check here
   const reactiveMarker = isReactiveCardObject(card) ? (
     <div className="card-reactive-marker" title="Reactive: Can be played during opponent's turn">R</div>
   ) : null;

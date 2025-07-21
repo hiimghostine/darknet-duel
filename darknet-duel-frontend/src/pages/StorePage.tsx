@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
 import { useThemeStore } from '../store/theme.store';
+import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
@@ -10,9 +11,10 @@ import storeService, { type StoreCategory, type StoreItem, type UserPurchase } f
 import currencyService from '../services/currency.service';
 
 const StorePage: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, loadUser } = useAuthStore();
   const { addToast } = useToastStore();
   const navigate = useNavigate();
+  const { triggerClick, triggerPurchaseSuccessful, triggerPositiveClick } = useAudioManager();
   
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -84,12 +86,14 @@ const StorePage: React.FC = () => {
   const handlePurchase = async (item: StoreItem) => {
     if (loadingPurchase) return;
 
+    triggerClick();
     setLoadingPurchase(item.f);
     
     try {
       const result = await storeService.purchaseItem(item.f);
       
              if (result.success) {
+         triggerPurchaseSuccessful();
          addToast({
            type: 'success',
            title: 'Purchase Successful',
@@ -124,28 +128,33 @@ const StorePage: React.FC = () => {
 
   // Handle apply decoration
   const handleApplyDecoration = async (decorationId: string) => {
+    triggerClick();
     try {
       const result = await storeService.applyDecoration(decorationId);
       
-             if (result.success) {
-         addToast({
-           type: 'success',
-           title: 'Decoration Applied',
-           message: result.message
-         });
-       } else {
-         addToast({
-           type: 'error',
-           title: 'Apply Failed',
-           message: result.message
-         });
-       }
-     } catch (error: any) {
-       addToast({
-         type: 'error',
-         title: 'Apply Error',
-         message: error.message || 'Failed to apply decoration'
-       });
+      if (result.success) {
+        triggerPositiveClick();
+        addToast({
+          type: 'success',
+          title: 'Decoration Applied',
+          message: result.message
+        });
+        
+        // Reload user data to update decoration state
+        await loadUser();
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Apply Failed',
+          message: result.message
+        });
+      }
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: 'Apply Error',
+        message: error.message || 'Failed to apply decoration'
+      });
     }
   };
 
@@ -290,12 +299,23 @@ const StorePage: React.FC = () => {
                               {/* Actions */}
                               <div className="flex flex-col gap-2">
                               {owned ? (
-                                <button
-                                  onClick={() => handleApplyDecoration(item.f)}
-                                  className="btn btn-md btn-primary w-full"
-                                >
-                                  Apply Decoration
-                                </button>
+                                <>
+                                  {user?.decoration === item.f ? (
+                                    <button
+                                      disabled
+                                      className="btn btn-md bg-blue-600 border-blue-500 text-white w-full cursor-not-allowed"
+                                    >
+                                      Currently Applied
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleApplyDecoration(item.f)}
+                                      className="btn btn-md bg-green-600 hover:bg-green-700 border-green-500 text-white w-full"
+                                    >
+                                      Apply Decoration
+                                    </button>
+                                  )}
+                                </>
                               ) : item.cost !== undefined && item.unit ? (
                                 <button
                                   onClick={() => handlePurchase(item)}

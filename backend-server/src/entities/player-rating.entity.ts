@@ -9,7 +9,7 @@ export class PlayerRating {
   @Column()
   accountId: string;
   
-  @Column({ default: 1200 })
+  @Column({ default: 1000 })
   rating: number;
   
   @Column({ default: 0 })

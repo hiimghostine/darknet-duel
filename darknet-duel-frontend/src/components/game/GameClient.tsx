@@ -20,6 +20,9 @@ import GameError from '../ui/GameError';
 
 import GameInitializationScreen from './GameInitializationScreen';
 import './GameClient.css';
+import { playBGM, stopBGM } from '../../utils/audioHandler';
+import { useThemeStore } from '../../store/theme.store';
+import AppBar from '../AppBar';
 
 // Type declarations for debugging
 declare global {
@@ -116,8 +119,9 @@ const DarknetDuelGame = {
             }
           },
           chooseHandDiscard: {
-            move: function chooseHandDiscard(_G: any, _ctx: any, params: { cardIds: string[] }) {
-              console.log('Stage move - chooseHandDiscard with cardIds:', params.cardIds);
+            move: function chooseHandDiscard(_G: any, _ctx: any, args: { cardIds: string[] } | string[]) {
+              const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+              console.log('Stage move - chooseHandDiscard with cardIds:', cardIds);
               return {}; // Return empty object instead of G
             }
           },
@@ -199,8 +203,9 @@ const DarknetDuelGame = {
       console.log('Client move registration - chooseWildcardType:', params.type);
       return {};
     },
-    chooseHandDiscard: function chooseHandDiscard(_G: any, _ctx: any, params: { cardIds: string[] }): {} {
-      console.log('Client move registration - chooseHandDiscard:', params.cardIds);
+    chooseHandDiscard: function chooseHandDiscard(_G: any, _ctx: any, args: { cardIds: string[] } | string[]): {} {
+      const cardIds = Array.isArray(args) ? args : args?.cardIds || [];
+      console.log('Client move registration - chooseHandDiscard:', cardIds);
       return {};
     },
     chooseCardFromDeck: function chooseCardFromDeck(_G: any, _ctx: any, selectedCardId: string): {} {
@@ -346,6 +351,7 @@ const GameClient: React.FC = () => {
   const { matchID } = useParams<{ matchID: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   
   // Use the extracted credentials hook
   const {
@@ -514,10 +520,33 @@ const GameClient: React.FC = () => {
       }
     };
   }, [matchID, navigate, user]);
+
+  // Play 'the-drop' BGM when entering the game
+  useEffect(() => {
+    playBGM('the-drop');
+    return () => {
+      stopBGM();
+    };
+  }, []);
   
   // Render component
   return (
-    <div className="game-client-container">
+    <div
+      className={`game-client-container min-h-screen w-full ${theme}`}
+      data-theme={theme}
+      style={{ position: 'relative' }}
+    >
+      {/* Theme Switcher Button (top-right, floating, minimal) */}
+      <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
+        <button
+          onClick={toggleTheme}
+          className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk shadow-lg"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'cyberpunk' ? '🌙' : '☀️'}
+        </button>
+      </div>
+      {/* Main game content */}
       {loading && (
         <GameInitializationScreen 
           matchID={matchID} 
@@ -526,10 +555,7 @@ const GameClient: React.FC = () => {
       )}
       {error && <GameError message={error || 'Unknown error'} />}
       {connectionError && <GameError message="Connection Error" details={connectionError} />}
-      
       {clientComponent}
-      
-
     </div>
   );
 };

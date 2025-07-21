@@ -5,7 +5,7 @@ import { GameState, InfrastructureState } from 'shared-types/game.types';
  */
 export interface TemporaryEffect {
   type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' | 'chain_vulnerability' |
-        'restrict_targeting' | 'quantum_protection' | 'honeypot';
+        'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'prevent_exploits' | 'maintenance_cost';
   targetId?: string;
   playerId?: string;
   duration: number;
@@ -80,7 +80,7 @@ export class TemporaryEffectsManager {
    */
   static hasEffect(gameState: GameState,
                    type: 'prevent_reactions' | 'prevent_restore' | 'cost_reduction' |
-                        'chain_vulnerability' | 'restrict_targeting' | 'quantum_protection' | 'honeypot',
+                        'chain_vulnerability' | 'restrict_targeting' | 'quantum_protection' | 'honeypot' | 'temporary_tax' | 'prevent_exploits' | 'maintenance_cost',
                    targetId?: string): boolean {
     return gameState.temporaryEffects?.some(effect =>
       effect.type === type && (!targetId || effect.targetId === targetId)
@@ -246,5 +246,263 @@ export class TemporaryEffectsManager {
     return gameState.persistentEffects?.some(effect =>
       effect.type === type && (!targetId || effect.targetId === targetId)
     ) || false;
+  }
+
+  /**
+   * Calculate and apply maintenance costs at turn start
+   * New balanced mechanic:
+   * - 3 shielded/vulnerable = 1 AP cost
+   * - 4 shielded/vulnerable = 2 AP cost
+   * - 5 shielded/vulnerable = 3 AP cost
+   * - If can't pay: randomly remove 1 infrastructure with that state next round
+   */
+  static processMaintenanceCosts(gameState: GameState): GameState {
+    if (!gameState.infrastructure || !gameState.attacker || !gameState.defender) {
+      return gameState;
+    }
+
+    let updatedGameState = { ...gameState };
+    const vulnerableCount = gameState.infrastructure.filter(infra => infra.state === 'vulnerable').length;
+    const shieldedCount = gameState.infrastructure.filter(infra => infra.state === 'shielded').length;
+    
+    let messages: string[] = [];
+
+    // Calculate maintenance cost based on count (3=1, 4=2, 5=3)
+    const calculateMaintenanceCost = (count: number): number => {
+      if (count < 3) return 0;
+      return count - 2; // 3->1, 4->2, 5->3
+    };
+
+    // Attacker maintenance cost for vulnerable infrastructure
+    if (vulnerableCount >= 3) {
+      const maintenanceCost = calculateMaintenanceCost(vulnerableCount);
+      const attacker = updatedGameState.attacker!;
+      
+      if (attacker.actionPoints >= maintenanceCost) {
+        const newActionPoints = attacker.actionPoints - maintenanceCost;
+        
+        updatedGameState.attacker = {
+          ...attacker,
+          actionPoints: newActionPoints
+        };
+        
+        // Check if payment leaves player with 0 AP (consider as failed payment)
+        if (newActionPoints === 0) {
+          messages.push(`💥 Attacker pays ${maintenanceCost} AP maintenance but has 0 AP left! Next turn: random vulnerable infrastructure will be lost!`);
+          
+          // Mark for random removal next turn even though they paid
+          updatedGameState = this.addEffect(updatedGameState, {
+            type: 'maintenance_cost',
+            playerId: attacker.id,
+            duration: 2, // Will trigger next turn
+            sourceCardId: 'maintenance_system',
+            metadata: {
+              costType: 'vulnerable',
+              count: vulnerableCount,
+              cost: maintenanceCost,
+              canPay: true,
+              leftWithZeroAP: true,
+              pendingRemoval: true
+            }
+          });
+        } else {
+          messages.push(`⚠️ Attacker pays ${maintenanceCost} AP maintenance for ${vulnerableCount} vulnerable infrastructure`);
+          
+          // Add a temporary effect to show maintenance cost is active
+          updatedGameState = this.addEffect(updatedGameState, {
+            type: 'maintenance_cost',
+            playerId: attacker.id,
+            duration: 1, // Just for this turn
+            sourceCardId: 'maintenance_system',
+            metadata: {
+              costType: 'vulnerable',
+              count: vulnerableCount,
+              cost: maintenanceCost,
+              canPay: true
+            }
+          });
+        }
+      } else {
+        messages.push(`💥 Attacker cannot pay ${maintenanceCost} AP maintenance! Next turn: random vulnerable infrastructure will be lost!`);
+        
+        // Mark for random removal next turn
+        updatedGameState = this.addEffect(updatedGameState, {
+          type: 'maintenance_cost',
+          playerId: attacker.id,
+          duration: 2, // Will trigger next turn
+          sourceCardId: 'maintenance_system',
+          metadata: {
+            costType: 'vulnerable',
+            count: vulnerableCount,
+            cost: maintenanceCost,
+            canPay: false,
+            pendingRemoval: true
+          }
+        });
+      }
+    }
+
+    // Defender maintenance cost for shielded infrastructure
+    if (shieldedCount >= 3) {
+      const maintenanceCost = calculateMaintenanceCost(shieldedCount);
+      const defender = updatedGameState.defender!;
+      
+      if (defender.actionPoints >= maintenanceCost) {
+        const newActionPoints = defender.actionPoints - maintenanceCost;
+        
+        updatedGameState.defender = {
+          ...defender,
+          actionPoints: newActionPoints
+        };
+        
+        // Check if payment leaves player with 0 AP (consider as failed payment)
+        if (newActionPoints === 0) {
+          messages.push(`💥 Defender pays ${maintenanceCost} AP maintenance but has 0 AP left! Next turn: random shielded infrastructure will be lost!`);
+          
+          // Mark for random removal next turn even though they paid
+          updatedGameState = this.addEffect(updatedGameState, {
+            type: 'maintenance_cost',
+            playerId: defender.id,
+            duration: 2, // Will trigger next turn
+            sourceCardId: 'maintenance_system',
+            metadata: {
+              costType: 'shielded',
+              count: shieldedCount,
+              cost: maintenanceCost,
+              canPay: true,
+              leftWithZeroAP: true,
+              pendingRemoval: true
+            }
+          });
+        } else {
+          messages.push(`🛡️ Defender pays ${maintenanceCost} AP maintenance for ${shieldedCount} shielded infrastructure`);
+          
+          // Add a temporary effect to show maintenance cost is active
+          updatedGameState = this.addEffect(updatedGameState, {
+            type: 'maintenance_cost',
+            playerId: defender.id,
+            duration: 1, // Just for this turn
+            sourceCardId: 'maintenance_system',
+            metadata: {
+              costType: 'shielded',
+              count: shieldedCount,
+              cost: maintenanceCost,
+              canPay: true
+            }
+          });
+        }
+      } else {
+        messages.push(`💥 Defender cannot pay ${maintenanceCost} AP maintenance! Next turn: random shielded infrastructure will be lost!`);
+        
+        // Mark for random removal next turn
+        updatedGameState = this.addEffect(updatedGameState, {
+          type: 'maintenance_cost',
+          playerId: defender.id,
+          duration: 2, // Will trigger next turn
+          sourceCardId: 'maintenance_system',
+          metadata: {
+            costType: 'shielded',
+            count: shieldedCount,
+            cost: maintenanceCost,
+            canPay: false,
+            pendingRemoval: true
+          }
+        });
+      }
+    }
+
+    // Process pending removals from previous turn
+    updatedGameState = this.processPendingMaintenanceRemovals(updatedGameState, messages);
+
+    // Update game message if there were maintenance costs
+    if (messages.length > 0) {
+      updatedGameState.message = messages.join(' | ');
+    }
+
+    return updatedGameState;
+  }
+
+  /**
+   * Process pending maintenance removals (random infrastructure removal)
+   */
+  static processPendingMaintenanceRemovals(gameState: GameState, messages: string[]): GameState {
+    let updatedGameState = { ...gameState };
+    
+    // Find pending removal effects
+    const pendingRemovals = gameState.temporaryEffects?.filter(effect =>
+      effect.type === 'maintenance_cost' &&
+      effect.metadata?.pendingRemoval === true &&
+      effect.duration === 1 // Ready to execute
+    ) || [];
+
+    for (const removalEffect of pendingRemovals) {
+      const costType = removalEffect.metadata?.costType;
+      
+      if (costType === 'vulnerable') {
+        // Remove random vulnerable infrastructure
+        const vulnerableInfra = updatedGameState.infrastructure?.filter(infra => infra.state === 'vulnerable') || [];
+        if (vulnerableInfra.length > 0) {
+          const randomIndex = Math.floor(Math.random() * vulnerableInfra.length);
+          const targetInfra = vulnerableInfra[randomIndex];
+          
+          // Reset infrastructure to secure state (remove vulnerabilities)
+          updatedGameState.infrastructure = updatedGameState.infrastructure?.map(infra =>
+            infra.id === targetInfra.id
+              ? { ...infra, state: 'secure' as const, vulnerabilities: [] }
+              : infra
+          ) || [];
+          
+          messages.push(`💥 Maintenance failure: ${targetInfra.name} vulnerability removed due to unpaid maintenance!`);
+        }
+      } else if (costType === 'shielded') {
+        // Remove random shielded infrastructure
+        const shieldedInfra = updatedGameState.infrastructure?.filter(infra => infra.state === 'shielded') || [];
+        if (shieldedInfra.length > 0) {
+          const randomIndex = Math.floor(Math.random() * shieldedInfra.length);
+          const targetInfra = shieldedInfra[randomIndex];
+          
+          // Reset infrastructure to secure state (remove shields)
+          updatedGameState.infrastructure = updatedGameState.infrastructure?.map(infra =>
+            infra.id === targetInfra.id
+              ? { ...infra, state: 'secure' as const, shields: [] }
+              : infra
+          ) || [];
+          
+          messages.push(`💥 Maintenance failure: ${targetInfra.name} shield removed due to unpaid maintenance!`);
+        }
+      }
+    }
+
+    return updatedGameState;
+  }
+
+  /**
+   * Check if maintenance costs are currently active for a player
+   */
+  static hasMaintenanceCosts(gameState: GameState, playerId?: string): {
+    vulnerable: number;
+    shielded: number;
+    attackerCost: number;
+    defenderCost: number;
+  } {
+    if (!gameState.infrastructure) {
+      return { vulnerable: 0, shielded: 0, attackerCost: 0, defenderCost: 0 };
+    }
+
+    const vulnerableCount = gameState.infrastructure.filter(infra => infra.state === 'vulnerable').length;
+    const shieldedCount = gameState.infrastructure.filter(infra => infra.state === 'shielded').length;
+    
+    // Calculate maintenance cost based on new formula (3=1, 4=2, 5=3)
+    const calculateMaintenanceCost = (count: number): number => {
+      if (count < 3) return 0;
+      return count - 2; // 3->1, 4->2, 5->3
+    };
+    
+    return {
+      vulnerable: vulnerableCount,
+      shielded: shieldedCount,
+      attackerCost: calculateMaintenanceCost(vulnerableCount),
+      defenderCost: calculateMaintenanceCost(shieldedCount)
+    };
   }
 }

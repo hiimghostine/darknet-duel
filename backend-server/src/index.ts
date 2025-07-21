@@ -60,7 +60,7 @@ app.use(cors({
       console.log(`CORS blocked origin: ${origin}`);
       return callback(null, false);
     }
-    console.log(`CORS allowed origin: ${origin}`);
+    // console.log(`CORS allowed origin: ${origin}`);
     return callback(null, true);
   },
   credentials: true,
@@ -121,7 +121,7 @@ app.get('/api/games/:id', (req, res) => {
 
 app.get('/api/players/:id/rating', (req, res) => {
   // TODO: Implement player rating retrieval (placeholder)
-  res.status(200).json({ playerId: req.params.id, rating: 1200 });
+  res.status(200).json({ playerId: req.params.id, rating: 1000 });
 });
 
 /**

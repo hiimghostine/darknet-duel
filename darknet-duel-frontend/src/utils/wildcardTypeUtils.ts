@@ -87,8 +87,8 @@ export function getAvailableCardTypes(wildcardType?: CardType[] | string): CardT
     case 'exploit-attack':
       return ['exploit', 'attack'];
     case 'special':
-      // Special effects cards - usually need targeting for chain effects
-      return ['special'];
+      // Special cards like Security Automation Suite can be shield or fortify
+      return ['shield', 'fortify'];
     case 'exploit':
       return ['exploit'];
     case 'attack':

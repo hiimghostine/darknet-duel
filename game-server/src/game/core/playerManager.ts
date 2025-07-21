@@ -20,8 +20,8 @@ export const initializePlayer = (playerId: string, role: PlayerRole, gameConfig:
     name: `Player ${playerId}`, // Adding name property with a default value
     role: role, // Explicitly set the player role
     resources: gameConfig.initialResources,
-    // Initialize action points according to game configuration
-    actionPoints: gameConfig.initialActionPoints,
+    // Initialize action points to 0 at game start
+    actionPoints: 0,
     freeCardCyclesUsed: 0, // Reset card cycles used counter
     deck: deck,
     hand: [],
@@ -47,14 +47,15 @@ export const initializePlayerWithData = (
   // Load appropriate deck based on player role
   const deck = role === 'attacker' ? createAttackerDeck() : createDefenderDeck();
   
-  console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (ID: ${userData.id})`);
+  console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (UUID: ${userData.id}, BGio ID: ${playerId})`);
 
   return {
-    id: userData.id,              // ✅ Use real user UUID
-    name: userData.name,          // ✅ Use real user name
+    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1")
+    name: userData.name,         // ✅ Use real user name
+    realUserId: userData.id,     // ✅ Store real user UUID separately
     role: role,
     resources: gameConfig.initialResources,
-    actionPoints: gameConfig.initialActionPoints,
+    actionPoints: 0,
     freeCardCyclesUsed: 0,
     deck: deck,
     hand: [],
