@@ -41,6 +41,9 @@ import LobbyChat from '../lobby/LobbyChat';
 import { useAudioManager } from '../../hooks/useAudioManager';
 import { useThemeStore } from '../../store/theme.store';
 
+// Import auto-reaction timer
+import { useAutoReactionTimer } from '../../hooks/useAutoReactionTimer';
+
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
   surrender?: () => void;
@@ -130,6 +133,21 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     handleEndTurn,
     handleSkipReaction
   } = useTurnActions(optimizedProps);
+
+  // Check if player is in reaction mode
+  const isInReactionMode = !targetMode && ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction';
+  
+  // Auto-reaction timer hook
+  const {
+    isTimerActive,
+    timeRemaining,
+    isPaused
+  } = useAutoReactionTimer({
+    isInReactionMode: Boolean(isInReactionMode),
+    isActive,
+    targetMode,
+    onAutoSkip: handleSkipReaction
+  });
   
   // Track processing state
   const isProcessingMove = cardProcessing || turnProcessing;
@@ -1218,7 +1236,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       )}
 
       {/* Reaction mode notification - top-center */}
-      {!targetMode && ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' && (
+      {isInReactionMode && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-in-down">
           <div className="alert alert-info shadow-lg border-accent/60 backdrop-blur-sm">
             <div className="flex items-center gap-3">
@@ -1227,10 +1245,23 @@ const BalatroGameBoard = (props: GameBoardProps) => {
                 <div className="font-bold font-mono">REACTION_MODE</div>
                 <div className="text-sm">Play a defensive card to counter</div>
                 <div className="text-xs opacity-70">Only reactive cards can be played</div>
+                {isTimerActive && (
+                  <div className="text-xs text-warning font-bold mt-1">
+                    {isPaused ? '⏸️ PAUSED' : `⏰ Auto-skip in ${timeRemaining}s`}
+                  </div>
+                )}
               </div>
             </div>
-            {/* Auto-dismiss timer visualization */}
-            <div className="absolute bottom-0 left-0 h-1 bg-accent/30 animate-[shrink_8s_linear_forwards]" style={{width: '100%'}}></div>
+            {/* Auto-skip timer visualization */}
+            {isTimerActive && !isPaused && (
+              <div
+                className="absolute bottom-0 left-0 h-1 bg-warning transition-all duration-1000 ease-linear"
+                style={{
+                  width: `${(timeRemaining / 20) * 100}%`,
+                  backgroundColor: timeRemaining <= 5 ? '#ef4444' : timeRemaining <= 10 ? '#f59e0b' : '#10b981'
+                }}
+              />
+            )}
           </div>
         </div>
       )}
@@ -1281,11 +1312,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             `}
             onClick={() => {
               triggerClick(); // Play click sound on button press
-              ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? handleSkipReaction() : handleEndTurn();
+              isInReactionMode ? handleSkipReaction() : handleEndTurn();
             }}
             disabled={!isActive || isProcessingMove}
           >
-            {ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'reaction' ? 'PASS' : 'END_TURN'}
+            {isInReactionMode ? (
+              isTimerActive ? `PASS (${timeRemaining}s)` : 'PASS'
+            ) : 'END_TURN'}
           </button>
           
           {/* Cycle Card Button - only show in action mode when player has cards */}
