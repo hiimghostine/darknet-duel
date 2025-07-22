@@ -418,11 +418,11 @@ export function useCardActionsBridge(props: BoardProps & {
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For reaction cards, target vulnerable/compromised infrastructure + vector compatibility
+      // For reaction cards, target ONLY vulnerable infrastructure (not compromised)
       else if (effectiveCardType === 'reaction') {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
-            const stateMatch = infra.state === 'vulnerable' || infra.state === 'compromised';
+            const stateMatch = infra.state === 'vulnerable';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
@@ -453,7 +453,7 @@ export function useCardActionsBridge(props: BoardProps & {
           case 'shield': return infra.state === 'secure';
           case 'fortify': return infra.state === 'shielded';
           case 'response': return infra.state === 'compromised';
-          case 'reaction': return infra.state === 'vulnerable' || infra.state === 'compromised';
+          case 'reaction': return infra.state === 'vulnerable';
           case 'counter-attack':
           case 'counter': return infra.state === 'shielded';
           default: return true;
