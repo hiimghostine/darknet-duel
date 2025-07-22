@@ -15,17 +15,34 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get UUID from player.id (should be UUID, not boardgame.io ID)
+  // ✅ FIXED: Get UUID from player.uuid (real UUID, not boardgame.io ID)
   useEffect(() => {
     let isMounted = true;
     const fetchAccount = async () => {
-      if (!player?.id) return;
+      // ✅ FIXED: Use player.uuid for API calls, fallback to player.id for development
+      const userId = (player as any)?.uuid || (player as any)?.realUserId || player?.id;
+      if (!userId) return;
+      
+      // Skip API calls for BoardGame.io IDs (development mode)
+      if (userId === '0' || userId === '1') {
+        console.log(`PlayerInfo: Skipping API call for BoardGame.io ID: ${userId}`);
+        if (isMounted) {
+          setAccount({
+            username: userId === '0' ? 'Player 0' : 'Player 1',
+            bio: 'Development mode player'
+          });
+        }
+        return;
+      }
+      
       setLoading(true);
       setError(null);
       try {
-        const data = await accountService.getAccountByUuid(player.id);
+        console.log(`PlayerInfo: Fetching account for UUID: ${userId}`);
+        const data = await accountService.getAccountByUuid(userId);
         if (isMounted) setAccount(data);
       } catch (e: any) {
+        console.warn(`PlayerInfo: Failed to fetch account for ${userId}:`, e);
         if (isMounted) setError('Profile unavailable');
       } finally {
         if (isMounted) setLoading(false);
@@ -33,15 +50,18 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
     };
     fetchAccount();
     return () => { isMounted = false; };
-  }, [player?.id]);
+  }, [player?.id, (player as any)?.uuid, (player as any)?.realUserId]);
 
   // Calculate maintenance costs for display using new formula
   const calculateMaintenanceCosts = () => {
     if (!G?.infrastructure) return null;
     const vulnerableCount = G.infrastructure.filter(infra => infra.state === 'vulnerable').length;
     const shieldedCount = G.infrastructure.filter(infra => infra.state === 'shielded').length;
-    const isAttacker = player?.id === G?.attacker?.id;
-    const isDefender = player?.id === G?.defender?.id;
+    
+    // ✅ FIXED: Use BoardGame.io ID for game logic comparisons
+    const isAttacker = player?.id === '0' || player?.id === G?.attacker?.id;
+    const isDefender = player?.id === '1' || player?.id === G?.defender?.id;
+    
     const calculateMaintenanceCost = (count: number): number => {
       if (count < 3) return 0;
       return count - 2;
@@ -79,14 +99,52 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
     );
   };
 
+  // ✅ FIXED: Get avatar URL using correct ID
+  const getAvatarUrl = () => {
+    const userId = (player as any)?.uuid || (player as any)?.realUserId;
+    // For real users, use their UUID for avatar
+    if (userId && userId !== '0' && userId !== '1') {
+      return accountService.getAvatarUrl(userId);
+    }
+    // For development/BoardGame.io IDs, use default logo
+    return logo;
+  };
+
+  // ✅ FIXED: Determine role using BoardGame.io ID
+  const getPlayerRole = () => {
+    const isAttacker = player?.id === '0' || player?.id === G?.attacker?.id;
+    return isAttacker ? 'attacker' : 'defender';
+  };
+
+  // ✅ FIXED: Get display name with better fallbacks
+  const getDisplayName = () => {
+    if (account?.username) {
+      return account.username;
+    }
+    
+    // Use real name from game state if available
+    if (player?.name && player.name !== `Player ${player.id}`) {
+      return player.name;
+    }
+    
+    // Fallback based on opponent status
+    if (isOpponent) {
+      return 'Opponent';
+    } else {
+      return 'You';
+    }
+  };
+
+  const playerRole = getPlayerRole();
+
   // Compact cyberpunk profile card (dashboard style, but smaller)
   return (
     <div className={`player-info profile-card-cyber ${isOpponent ? 'opponent-info' : ''} bg-base-200 border border-primary/20 rounded-lg p-2 flex items-center gap-3 relative min-w-0`}>
       {/* Avatar + Decoration */}
       <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-primary/50 bg-base-300/50 flex-shrink-0">
         <img
-          src={player?.id ? accountService.getAvatarUrl(player.id) : logo}
-          alt={account?.username ? `${account.username}'s avatar` : 'avatar'}
+          src={getAvatarUrl()}
+          alt={`${getDisplayName()}'s avatar`}
           className="w-full h-full object-cover"
           onError={e => { (e.target as HTMLImageElement).src = logo; }}
         />
@@ -103,11 +161,21 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 font-mono">
-          <span className="text-primary font-bold truncate max-w-[8rem]">{account?.username || (isOpponent ? 'Opponent' : 'You')}</span>
-          <span className={`role-badge text-xs px-2 py-0.5 rounded ${player?.id === G?.attacker?.id ? 'bg-red-900/40 text-red-300' : 'bg-blue-900/40 text-blue-300'}`}>{player?.id === G?.attacker?.id ? '🎯 Attacker' : '🛡️ Defender'}</span>
+          <span className="text-primary font-bold truncate max-w-[8rem]">
+            {getDisplayName()}
+          </span>
+          {/* ✅ REMOVED: Attacker/Defender role badge as requested */}
         </div>
         <div className="text-xs text-base-content/70 font-mono truncate max-w-[12rem]">
-          {loading ? 'Loading profile...' : error ? <span className="text-error">{error}</span> : (account?.bio ? <span className="italic">"{account.bio.length > 48 ? account.bio.slice(0, 48) + '…' : account.bio}"</span> : <span className="opacity-50">No bio</span>)}
+          {loading ? (
+            'Loading profile...'
+          ) : error ? (
+            <span className="text-error">{error}</span>
+          ) : account?.bio ? (
+            <span className="italic">"{account.bio.length > 48 ? account.bio.slice(0, 48) + '…' : account.bio}"</span>
+          ) : (
+            <span className="opacity-50">No bio</span>
+          )}
         </div>
         <div className="mt-1">{renderResources()}</div>
       </div>

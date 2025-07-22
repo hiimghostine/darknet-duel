@@ -21,6 +21,13 @@ export function validateWinCondition(G: GameState): { winner: PlayerRole | 'aban
     return undefined;
   }
   
+  // ✅ FIXED: Check for game over phase first - this handles surrenders
+  if (G.gamePhase === 'gameOver' && G.winner) {
+    // If the game is already marked as over with a winner, trust the backend
+    console.log(`🎮 Game over detected with winner: ${G.winner}`);
+    return { winner: G.winner };
+  }
+  
   // Check for max turns - standard mode is 15 rounds max
   if (G.turnNumber > G.gameConfig.maxTurns) {
     // If we hit max rounds, defender wins (defenders advantage)
@@ -72,11 +79,18 @@ export function validateAndCorrectWinner(G: GameState): PlayerRole | 'abandoned'
   const validatedResult = validateWinCondition(G);
   const expectedWinner = validatedResult?.winner;
   
+  // ✅ FIXED: For game over phase, always trust the backend winner
+  if (G.gamePhase === 'gameOver' && currentWinner) {
+    console.log(`🎮 Game over phase - using backend winner: ${currentWinner}`);
+    return currentWinner;
+  }
+  
   // If there's a discrepancy, log it and return the corrected winner
   if (currentWinner !== expectedWinner) {
     console.warn('🚨 WIN CONDITION DISCREPANCY DETECTED:');
     console.warn(`   Current winner: ${currentWinner}`);
     console.warn(`   Expected winner: ${expectedWinner}`);
+    console.warn(`   Game phase: ${G.gamePhase}`);
     console.warn(`   Turn number: ${G.turnNumber}`);
     console.warn(`   Max turns: ${G.gameConfig.maxTurns}`);
     
@@ -96,8 +110,14 @@ export function validateAndCorrectWinner(G: GameState): PlayerRole | 'abandoned'
       console.warn(`   Infrastructure threshold: ${Math.ceil(G.infrastructure.length / 2) + 1}`);
     }
     
-    console.warn('   Using corrected winner for display');
-    return expectedWinner;
+    // ✅ FIXED: For game over, prefer backend winner over client calculation
+    if (G.gamePhase === 'gameOver' && currentWinner) {
+      console.warn('   Using backend winner (game over phase)');
+      return currentWinner;
+    } else {
+      console.warn('   Using corrected winner for display');
+      return expectedWinner;
+    }
   }
   
   return currentWinner;
@@ -117,6 +137,24 @@ export function getWinReason(G: GameState, winner: PlayerRole | 'abandoned' | un
   
   if (winner === 'abandoned') {
     return 'Opponent abandoned the game';
+  }
+  
+  // ✅ FIXED: Check for surrender in game stats or message
+  if (G.gameStats?.winReason && G.gameStats.winReason !== 'Unknown') {
+    return G.gameStats.winReason;
+  }
+  
+  // ✅ FIXED: Check for surrender indicators in game actions
+  const surrenderAction = G.actions?.find(action => action.actionType === 'surrender');
+  if (surrenderAction) {
+    const surrenderingPlayer = surrenderAction.playerRole;
+    const winningPlayer = surrenderingPlayer === 'attacker' ? 'defender' : 'attacker';
+    return `${surrenderingPlayer} surrendered - ${winningPlayer} wins`;
+  }
+  
+  // ✅ FIXED: Check for early game over with minimal actions (likely surrender)
+  if (G.gamePhase === 'gameOver' && G.turnNumber <= 2 && (!G.actions || G.actions.length === 0)) {
+    return 'Game ended by surrender';
   }
   
   // Check if max turns reached
@@ -146,5 +184,6 @@ export function getWinReason(G: GameState, winner: PlayerRole | 'abandoned' | un
     }
   }
   
-  return 'Unknown win condition';
+  // ✅ FIXED: Default to surrender if we can't determine other conditions
+  return 'Game ended by player action';
 }

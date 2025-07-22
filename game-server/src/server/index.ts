@@ -97,25 +97,27 @@ server.router.use(async (ctx, next) => {
             // Create a new game state with updated player data
             const newGameState = { ...gameState };
             
-            // Update attacker if we have real data for player 0
+            // ✅ FIXED: Update attacker with both BoardGame.io ID and UUID
             if (realUserMap['0'] && gameState.attacker) {
               newGameState.attacker = {
                 ...gameState.attacker,
-                id: realUserMap['0'].id,
+                id: '0', // ← Keep BoardGame.io ID for game logic
+                uuid: realUserMap['0'].id, // ← Add real UUID for server operations
                 name: realUserMap['0'].name
               };
-              console.log(`✅ Updated attacker: ${newGameState.attacker.name} (${newGameState.attacker.id})`);
+              console.log(`✅ Updated attacker: ${newGameState.attacker.name} (ID: ${newGameState.attacker.id}, UUID: ${newGameState.attacker.uuid})`);
               stateUpdated = true;
             }
             
-            // Update defender if we have real data for player 1
+            // ✅ FIXED: Update defender with both BoardGame.io ID and UUID  
             if (realUserMap['1'] && gameState.defender) {
               newGameState.defender = {
                 ...gameState.defender,
-                id: realUserMap['1'].id,
+                id: '1', // ← Keep BoardGame.io ID for game logic
+                uuid: realUserMap['1'].id, // ← Add real UUID for server operations
                 name: realUserMap['1'].name
               };
-              console.log(`✅ Updated defender: ${newGameState.defender.name} (${newGameState.defender.id})`);
+              console.log(`✅ Updated defender: ${newGameState.defender.name} (ID: ${newGameState.defender.id}, UUID: ${newGameState.defender.uuid})`);
               stateUpdated = true;
             }
             
@@ -436,20 +438,22 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       // Look for players in the state object
       if (state.G && state.G.attacker && state.G.defender) {
         // Game-specific structure where players are in G as attacker/defender
-        // ✅ Use real player data if available, otherwise fall back to game state
+        // ✅ FIXED: Prefer UUID from game state, fallback to real player data, last resort to BoardGame.io ID
         players = {
           '0': realPlayerData['0'] || {
-            id: state.G.attacker.id || '0',
+            id: state.G.attacker.uuid || state.G.attacker.id || '0', // ← Try UUID first!
             name: state.G.attacker.name || 'Attacker',
             role: 'attacker'
           },
           '1': realPlayerData['1'] || {
-            id: state.G.defender.id || '1',
+            id: state.G.defender.uuid || state.G.defender.id || '1', // ← Try UUID first!
             name: state.G.defender.name || 'Defender',
             role: 'defender'
           }
         };
-        console.log(`Using game-specific player structure with real data overlay`);
+        console.log(`Using game-specific player structure with UUID priority`);
+        console.log(`Player 0 ID: ${players['0'].id} (from ${state.G.attacker.uuid ? 'game state UUID' : state.G.attacker.id === '0' ? 'BoardGame.io ID' : 'game state ID'})`);
+        console.log(`Player 1 ID: ${players['1'].id} (from ${state.G.defender.uuid ? 'game state UUID' : state.G.defender.id === '1' ? 'BoardGame.io ID' : 'game state ID'})`);
       } else if (state.players) {
         // Players are directly in state - overlay real data
         players = { ...state.players };
@@ -561,10 +565,14 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       const player = players[key];
       let playerId = player.id || key;
       
-      // Check if this is likely a development/test player ID (numeric)
+      // ✅ FIXED: Check if we have a UUID vs BoardGame.io ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId);
       const isDevPlayerId = /^\d+$/.test(playerId);
-      if (isDevPlayerId) {
-        console.log(`WARNING: Using unmapped player ID: ${playerId} - this may cause foreign key errors in backend`);
+      
+      if (isUuid) {
+        console.log(`✅ Using UUID for player ${key}: ${playerId}`);
+      } else if (isDevPlayerId) {
+        console.log(`⚠️ Using development/test player ID: ${playerId} - this may cause foreign key errors in backend`);
       }
       
       return {

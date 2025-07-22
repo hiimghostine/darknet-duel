@@ -50,9 +50,10 @@ export const initializePlayerWithData = (
   console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (UUID: ${userData.id}, BGio ID: ${playerId})`);
 
   return {
-    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1")
+    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1") for game logic
+    uuid: userData.id,           // ✅ Store real user UUID for server operations  
     name: userData.name,         // ✅ Use real user name
-    realUserId: userData.id,     // ✅ Store real user UUID separately
+    realUserId: userData.id,     // ✅ Keep for backward compatibility
     role: role,
     resources: gameConfig.initialResources,
     actionPoints: gameConfig.initialActionPoints,

@@ -86,13 +86,14 @@ export interface PlayerMetadata {
  * Player - represents a player in the game
  */
 export interface Player {
-  id: string;
+  id: string;                    // BoardGame.io player ID ("0" for attacker, "1" for defender)
+  uuid?: string;                 // Real user UUID for database operations (separate from id)
   name: string;
-  realUserId?: string; // Real user UUID for database operations
+  realUserId?: string;           // Legacy field - keeping for backward compatibility
   role: PlayerRole;
   resources: number;
   actionPoints: number;
-  freeCardCyclesUsed: number; // Track how many free card cycles used this turn
+  freeCardCyclesUsed: number;    // Track how many free card cycles used this turn
   deck: Card[];
   hand: Card[];
   field: Card[];
