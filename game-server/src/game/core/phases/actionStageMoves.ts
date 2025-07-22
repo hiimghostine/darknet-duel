@@ -147,23 +147,8 @@ export const actionStageMoves = {
     // Deep copy the player to avoid reference issues
     let updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
     
-    // Always draw exactly 2 cards at end of turn, but respect maximum hand size
-    const maxHandSize = G.gameConfig.maxHandSize; // Max hand size from config
-    const cardsToDrawPerTurn = G.gameConfig.cardsDrawnPerTurn; // Cards to draw from config
-    
-    // Calculate how many cards we can draw without exceeding max hand size
-    const currentHandSize = updatedPlayer.hand?.length || 0;
-    const cardsToDrawCount = Math.min(cardsToDrawPerTurn, maxHandSize - currentHandSize);
-    
-    console.log(`End of turn: Drawing ${cardsToDrawCount} cards for ${isAttacker ? 'attacker' : 'defender'} (hand: ${currentHandSize}/${maxHandSize})`);
-    
-    // Draw cards up to the calculated amount
-    if (cardsToDrawCount > 0) {
-      for (let i = 0; i < cardsToDrawCount; i++) {
-        const drawCardFn = require('../playerManager').drawCard;
-        updatedPlayer = drawCardFn(updatedPlayer);
-      }
-    }
+    // Card drawing is handled at turn start, not turn end
+    // This prevents duplicate card drawing (was drawing at both start and end)
     
     // Reset free card cycles counter for next turn
     updatedPlayer.freeCardCyclesUsed = 0;
