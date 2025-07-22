@@ -15,7 +15,8 @@ export function counterEffect(
   
   console.log(`Processing counter-attack card ${card.name} targeting ${currentInfra.name}`);
   
-  // Counter-attack cards cancel out shield effects on shielded infrastructure
+  // Counter-attack cards can ONLY cancel out shield effects on shielded infrastructure
+  // They CANNOT break down fortified infrastructure (that requires special attack cards)
   if (currentInfra.state === 'shielded') {
     console.log(`Cancelling shield on infrastructure ${currentInfra.name}`);
     newInfrastructure[infraIndex] = {
@@ -24,6 +25,8 @@ export function counterEffect(
       shields: [] // Clear shields
     };
     console.log(`Infrastructure ${currentInfra.name} returned to secure state`);
+  } else if (currentInfra.state === 'fortified') {
+    console.log(`Target infrastructure ${currentInfra.name} is fortified - counter-attack cards cannot break down fortified infrastructure`);
   } else {
     console.log(`Target infrastructure ${currentInfra.name} is not shielded, counter-attack had no effect`);
   }

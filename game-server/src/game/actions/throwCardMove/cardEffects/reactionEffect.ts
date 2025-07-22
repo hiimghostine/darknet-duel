@@ -16,7 +16,8 @@ export function reactionEffect(
   
   console.log(`Processing reaction card ${card.name} targeting ${currentInfra.name}`);
   
-  // Reaction cards cancel out exploit effects on vulnerable infrastructure
+  // Reaction cards can ONLY cancel out exploit effects on vulnerable infrastructure
+  // They CANNOT restore compromised infrastructure (that requires special cards like D307)
   if (currentInfra.state === 'vulnerable') {
     console.log(`Cancelling vulnerability on infrastructure ${currentInfra.name}`);
     
@@ -26,6 +27,8 @@ export function reactionEffect(
       vulnerabilities: [] // Clear vulnerabilities
     };
     console.log(`Infrastructure ${currentInfra.name} returned to secure state`);
+  } else if (currentInfra.state === 'compromised') {
+    console.log(`Target infrastructure ${currentInfra.name} is compromised - reaction cards cannot restore compromised infrastructure`);
   } else {
     console.log(`Target infrastructure ${currentInfra.name} is not vulnerable, reaction had no effect`);
   }

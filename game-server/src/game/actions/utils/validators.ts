@@ -238,13 +238,12 @@ export function validateCardTargeting(
       return { valid: true };
 
     case 'reaction':
-      // Reaction cards can target vulnerable or compromised infrastructure
+      // Reaction cards can ONLY target vulnerable infrastructure (not compromised)
       if (infrastructure.state !== 'vulnerable' &&
-          infrastructure.state !== 'compromised' &&
           (!infrastructure.vulnerabilities || infrastructure.vulnerabilities.length === 0)) {
         return {
           valid: false,
-          message: "Reaction cards can only target vulnerable or compromised infrastructure"
+          message: "Reaction cards can only target vulnerable infrastructure"
         };
       }
       
