@@ -40,7 +40,7 @@ export const loadDefenderCards = (): Card[] => {
         type: cardType,
         cost: defenderCard.cost,
         power: defenderCard.cost, // Use cost as a base power value
-        description: `${defenderCard.description}\n${defenderCard.effect}`,
+        description: defenderCard.description,
         // Map fields needed by our new card system
         isReactive: defenderCard.isReactive || false,
         wildcardType: wildcardType,

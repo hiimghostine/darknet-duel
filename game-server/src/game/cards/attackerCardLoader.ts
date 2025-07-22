@@ -44,7 +44,7 @@ export const loadAttackerCards = (): Card[] => {
         type: cardType,
         cost: attackerCard.cost,
         power: attackerCard.cost, // Use cost as a base power value
-        description: `${attackerCard.description}\n${attackerCard.effect}`,
+        description: attackerCard.description,
         // Map fields needed by our new card system
         isReactive: attackerCard.isReactive || false,
         wildcardType: wildcardType,

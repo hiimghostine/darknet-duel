@@ -309,11 +309,6 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                     {cardType}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1 justify-center">
-                    {(card as any).attackVector && (
-                      <span className="inline-block bg-orange-600 text-base-content rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
-                        {(card as any).attackVector}
-                      </span>
-                    )}
                     {card.metadata?.category && (
                       <span className={`
                         inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-base-content
