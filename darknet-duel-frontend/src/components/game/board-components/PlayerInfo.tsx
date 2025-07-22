@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PlayerInfoProps } from './types';
 import accountService, { type AccountData } from '../../../services/account.service';
@@ -200,6 +201,19 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
 // Separate component for the maintenance cost indicator with cyberpunk tooltip
 const MaintenanceCostIndicator: React.FC<{ maintenanceCosts: { cost: number; type: string; count: number } }> = ({ maintenanceCosts }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+  // Update button position when tooltip is shown
+  const updateButtonPosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setButtonPosition({
+        top: rect.top,
+        left: rect.left + rect.width / 2
+      });
+    }
+  };
   return (
     <div className="relative">
       <motion.div
@@ -212,54 +226,60 @@ const MaintenanceCostIndicator: React.FC<{ maintenanceCosts: { cost: number; typ
         <span className="text-error font-mono font-bold text-xs">-{maintenanceCosts.cost} AP</span>
         <span className="text-xs opacity-90">{maintenanceCosts.type === 'vulnerable' ? '🎯' : '🛡️'}</span>
         <motion.button
+          ref={buttonRef}
           className="btn btn-xs btn-circle btn-ghost text-info hover:bg-info/20 border border-info/40"
-          onMouseEnter={() => setShowTooltip(true)}
+          onMouseEnter={() => {
+            updateButtonPosition();
+            setShowTooltip(true);
+          }}
           onMouseLeave={() => setShowTooltip(false)}
-          onClick={() => setShowTooltip(!showTooltip)}
+          onClick={() => {
+            updateButtonPosition();
+            setShowTooltip(!showTooltip);
+          }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
           <span className="text-xs font-bold">?</span>
         </motion.button>
       </motion.div>
-      <AnimatePresence>
-        {showTooltip && (
+      {/* Portal tooltip to escape container bounds */}
+      {showTooltip && createPortal(
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="absolute bottom-full left-0 mb-2 z-50"
+            className="fixed z-[9999] pointer-events-auto"
+            style={{
+              top: buttonPosition.top - 120,
+              left: buttonPosition.left,
+              transform: 'translate(-50%, -100%)'
+            }}
           >
-            <div className="card bg-base-100 border-2 border-info/60 shadow-2xl shadow-info/30 w-72">
-              <div className="card-body p-3">
+            <div className="card bg-base-100 border-2 border-info/60 shadow-2xl shadow-info/30 w-96 max-w-screen-sm min-h-fit">
+              <div className="card-body p-4 space-y-3">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-info text-base">⚡</span>
                   <h3 className="card-title text-xs text-info uppercase tracking-wider">MAINTENANCE COST PROTOCOL</h3>
                 </div>
-                <div className="space-y-2 text-xs">
+                <div className="space-y-3 text-xs">
                   <div className="flex items-start gap-2">
-                    <span className="text-warning text-base">🎯</span>
+                    <span className="text-warning text-base">⚖️</span>
                     <div>
-                      <p className="font-bold text-warning">ATTACKER PENALTY:</p>
-                      <p className="text-base-content/80">
-                        <span className="text-error font-bold">3 vulnerable = 1 AP</span>, <span className="text-error font-bold">4 vulnerable = 2 AP</span>, <span className="text-error font-bold">5 vulnerable = 3 AP</span>
-                      </p>
-                      <p className="text-warning/80 text-xs mt-1">💥 Can't pay OR left with 0 AP? Random vulnerable infrastructure is lost next round!</p>
+                      <p className="font-bold text-warning">MAINTENANCE PENALTY:</p>
+                      <div className="text-base-content/80 space-y-1">
+                        <div><span className="text-error font-bold">3+ infrastructure = 1 AP cost</span></div>
+                        <div><span className="text-error font-bold">4+ infrastructure = 2 AP cost</span></div>
+                        <div><span className="text-error font-bold">5+ infrastructure = 3 AP cost</span></div>
+                      </div>
+                      <p className="text-warning/80 text-xs mt-1">💥 Can't pay? Random infrastructure is lost next round!</p>
+                      <p className="text-base-content/60 text-xs mt-1">🎯 Attackers: vulnerable infra | 🛡️ Defenders: shielded infra</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-info text-base">🛡️</span>
-                    <div>
-                      <p className="font-bold text-info">DEFENDER PENALTY:</p>
-                      <p className="text-base-content/80">
-                        <span className="text-info font-bold">3 shielded = 1 AP</span>, <span className="text-info font-bold">4 shielded = 2 AP</span>, <span className="text-info font-bold">5 shielded = 3 AP</span>
-                      </p>
-                      <p className="text-info/80 text-xs mt-1">💥 Can't pay OR left with 0 AP? Random shielded infrastructure is lost next round!</p>
-                    </div>
-                  </div>
-                  <div className="divider my-2"></div>
-                  <div className="flex items-center gap-2 p-2 bg-error/10 rounded border border-error/30">
+                  <div className="divider my-3"></div>
+                  <div className="flex items-start gap-3 p-3 bg-error/10 rounded border border-error/30">
                     <span className="text-error text-base">⚠️</span>
                     <div>
                       <p className="font-bold text-error">CURRENT STATUS:</p>
@@ -278,8 +298,9 @@ const MaintenanceCostIndicator: React.FC<{ maintenanceCosts: { cost: number; typ
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
