@@ -141,7 +141,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     const sortedHand = sortAndGroupCards(hand);
     
     return (
-      <div className="flex flex-wrap gap-2 justify-center max-w-4xl lg:gap-2 gap-1">
+      <div className="flex flex-wrap gap-3 justify-center max-w-5xl lg:gap-3 gap-2">
         {sortedHand.map((card: any, index: number) => {
           const isSelected = selectedCard === card.id;
           const cardType = card.type || card.cardType;
@@ -196,15 +196,15 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             <div
               key={card.id}
               className={`
-                group relative lg:w-28 lg:h-40 w-24 h-32 border-2 rounded-xl lg:p-3 p-2
+                group relative lg:w-32 lg:h-48 w-28 h-40 border-2 rounded-xl lg:p-3 p-2
                 flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
                 font-mono lg:text-sm text-xs overflow-visible
                 ${getPlayerCardClasses(cardType, isAttacker)}
                 ${borderColorClass} border-l-4
                 ${reactionModeClass}
                 ${isSelected ? 'border-warning shadow-lg shadow-warning/50 -translate-y-2 scale-105 z-30' : ''}
-                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu' : ''}
-                ${!isPlayable && !targetMode ? 'opacity-60 cursor-not-allowed' : ''}
+                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu' : 'hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu'}
+                ${!isPlayable && !targetMode ? 'cursor-not-allowed' : ''}
               `}
               onClick={(event) => {
                 if (!isPlayable) {
@@ -234,7 +234,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
               }}
             >
               {/* Compact Card View */}
-              <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
+              <div className={`group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1 ${!isPlayable && !targetMode ? 'opacity-60' : ''}`}>
                 {/* Top section - Cost and Type Icon */}
                 <div className="flex items-center justify-between w-full">
                   <div className="lg:w-6 lg:h-6 w-5 h-5 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center lg:text-xs text-[9px] font-bold">
@@ -253,19 +253,19 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                 
                 {/* Middle section - Card name */}
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="font-bold lg:text-[11px] text-[9px] leading-tight px-1">
-                    {card.name.length > 10 ? card.name.substring(0, 10) + '...' : card.name}
+                  <div className="font-bold lg:text-[11px] text-[9px] leading-tight px-1 text-center break-words hyphens-auto">
+                    {card.name}
                   </div>
                 </div>
                 
                 {/* Bottom section - Type and Category */}
                 <div className="space-y-1">
-                  <div className="lg:text-[9px] text-[8px] font-semibold uppercase text-base-content/70">
+                  <div className="lg:text-xs text-[10px] font-semibold uppercase text-base-content/70">
                     {cardType}
                   </div>
                   {card.metadata?.category && (
                     <div className={`
-                      inline-block lg:text-[7px] text-[6px] rounded-full px-1.5 py-0.5 font-bold uppercase tracking-wide
+                      inline-block lg:text-[10px] text-[9px] rounded-full px-2 py-1 font-bold uppercase tracking-wide
                       ${card.metadata.category === 'network' ? 'bg-blue-500 text-blue-100' :
                         card.metadata.category === 'web' ? 'bg-green-500 text-green-100' :
                         card.metadata.category === 'social' ? 'bg-purple-500 text-purple-100' :
@@ -279,8 +279,8 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                 </div>
               </div>
 
-              {/* Expanded Card View (on hover) - Card-like proportions */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
+              {/* Expanded Card View (on hover) - Card-like proportions - Always fully visible regardless of playable state */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:!opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
                 {/* Card Header */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -409,7 +409,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
 
   return (
     <div className={`
-      flex justify-center items-start gap-4 p-4 rounded-lg relative h-44
+      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56
       ${isAttacker ? 'attacker-area' : 'defender-area'}
       ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
     `}>
@@ -480,22 +480,22 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
   return (
     <AnimatePresence>
       <motion.button
-        className="absolute -top-2 -left-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold shadow-lg border-2 border-amber-300/50"
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shadow-lg border-2 border-amber-300/50 pointer-events-auto"
         onClick={handleCycle}
         title="Cycle this card"
         whileHover={{
-          scale: 1.15,
-          rotate: 15,
-          boxShadow: "0 0 20px rgba(251, 191, 36, 0.6)"
+          scale: 1.2,
+          y: -2,
+          boxShadow: "0 4px 20px rgba(251, 191, 36, 0.6)"
         }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: 0.9 }}
         animate={isAnimating ? {
           rotate: [0, 360],
           scale: [1, 1.2, 1],
           boxShadow: [
-            "0 0 10px rgba(251, 191, 36, 0.4)",
-            "0 0 25px rgba(251, 191, 36, 0.8)",
-            "0 0 10px rgba(251, 191, 36, 0.4)"
+            "0 2px 10px rgba(251, 191, 36, 0.4)",
+            "0 4px 25px rgba(251, 191, 36, 0.8)",
+            "0 2px 10px rgba(251, 191, 36, 0.4)"
           ]
         } : {
           rotate: 0,
@@ -508,7 +508,7 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
         disabled={isAnimating}
         style={{
           cursor: isAnimating ? 'wait' : 'pointer',
-          zIndex: 9999 // Ensure it's always on top
+          zIndex: 50 // Lower than magnified cards but visible
         }}
       >
         <motion.span

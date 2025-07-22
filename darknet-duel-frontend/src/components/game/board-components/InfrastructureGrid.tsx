@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { GameState, InfrastructureCard } from '../../../types/game.types';
 import TemporaryEffectsDisplay from './TemporaryEffectsDisplay';
 
@@ -21,6 +21,9 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   isAttacker,
   onInfrastructureTarget
 }) => {
+  // Track which card is being hovered for magnification
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  
   // Get optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({
     cards: G?.infrastructure || [],
@@ -63,8 +66,8 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   }
   
   return (
-    <div className="flex flex-wrap gap-3 justify-center items-center max-w-full">
-      {infrastructure.map((infra) => {
+    <div className="relative flex flex-wrap gap-3 justify-center items-center max-w-full">
+      {infrastructure.map((infra, index) => {
         const isTargetable = targetMode && validTargets.includes(infra.id);
         const isSelected = targetMode && targetedInfraId === infra.id;
         
@@ -86,7 +89,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
           <div
             key={infra.id}
             className={`
-              group relative lg:w-44 lg:h-56 w-40 h-48 border-2 rounded-xl lg:p-4 p-3
+              group relative lg:w-52 lg:h-64 w-48 h-56 border-2 rounded-xl lg:p-4 p-3
               flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
               font-mono lg:text-base text-sm overflow-visible
               ${getInfraStateClasses(infra.state)}
@@ -101,107 +104,9 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                 onInfrastructureTarget(infra.id);
               }
             }}
+            onMouseEnter={() => setHoveredCardId(infra.id)}
+            onMouseLeave={() => setHoveredCardId(null)}
           >
-            {/* Monitoring & Effects Indicators - Top overlay */}
-            {(hasMonitoringEffects || hasActiveEffects) && (
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-[999999] group/effects flex gap-1">
-                {/* Monitoring Indicator */}
-                {hasMonitoringEffects && (
-                  <div className="lg:text-[9px] text-[8px] bg-warning text-base-content rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-warning/50 cursor-help">
-                    🎯 MONITORED
-                  </div>
-                )}
-                
-                {/* Active Effects Indicator */}
-                {hasActiveEffects && (
-                  <div className="lg:text-[9px] text-[8px] bg-info text-base-content rounded-full px-2 py-1 font-bold uppercase animate-pulse shadow-lg border border-info/50 cursor-help">
-                    ⚡ AFFECTED
-                  </div>
-                )}
-                
-                {/* Effects Magnification on Hover */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[999999] transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-none">
-                  <div className="text-center mb-2">
-                    <div className="font-bold text-sm text-base-content mb-1">Effects & Monitoring</div>
-                    <div className="text-xs text-base-content/70">on {infra.name}</div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {/* Persistent Effects Section */}
-                    {infraPersistentEffects.length > 0 && (
-                      <div>
-                        <div className="text-xs font-bold text-warning mb-2 uppercase flex items-center gap-1">
-                          <span>🎯</span> Monitoring Effects
-                        </div>
-                        {infraPersistentEffects.map((effect, idx) => (
-                          <div key={`persistent-${idx}`} className="bg-warning/10 rounded-lg p-2 border border-warning/30 mb-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="text-xs font-bold text-base-content capitalize">
-                                Multi-Stage Malware
-                              </div>
-                              <div className="text-xs text-warning">
-                                {effect.triggered ? 'TRIGGERED' : 'ACTIVE'}
-                              </div>
-                            </div>
-                            <div className="text-[10px] text-base-content/70 mb-1">
-                              Condition: {effect.condition.fromState || 'any'} → {effect.condition.toState}
-                            </div>
-                            <div className="text-[10px] text-base-content/70 mb-1">
-                              Reward: +{effect.reward.amount} AP when compromised
-                            </div>
-                            <div className="text-[10px] text-base-content/70 mb-1">
-                              Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
-                            </div>
-                            <div className="text-[10px] text-warning/70 italic">
-                              Watching for infrastructure compromise...
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Temporary Effects Section */}
-                    {infraEffects.length > 0 && (
-                      <div>
-                        <div className="text-xs font-bold text-info mb-2 uppercase flex items-center gap-1">
-                          <span>⚡</span> Active Effects
-                        </div>
-                        {infraEffects.map((effect, idx) => (
-                          <div key={`temporary-${idx}`} className="bg-info/10 rounded-lg p-2 border border-info/30 mb-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="text-xs font-bold text-base-content capitalize">
-                                {effect.type.replace('_', ' ')}
-                              </div>
-                              <div className="text-xs text-info">
-                                {effect.duration} turn{effect.duration !== 1 ? 's' : ''}
-                              </div>
-                            </div>
-                            <div className="text-[10px] text-base-content/70">
-                              Source: {effect.sourceCardId}
-                            </div>
-                            {effect.type === 'prevent_reactions' && (
-                              <div className="text-[10px] text-info/70 mt-1 italic">
-                                Blocks reaction cards from targeting this infrastructure
-                              </div>
-                            )}
-                            {effect.type === 'prevent_restore' && (
-                              <div className="text-[10px] text-info/70 mt-1 italic">
-                                Prevents restoration effects on this infrastructure
-                              </div>
-                            )}
-                            {effect.type === 'cost_reduction' && (
-                              <div className="text-[10px] text-info/70 mt-1 italic">
-                                Reduces action point costs when targeting this
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Compact Infrastructure Card View */}
             <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
@@ -384,40 +289,144 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                   Category: {infra.type.charAt(0).toUpperCase() + infra.type.slice(1)}
                 </div>
                 
-                {/* Effects Display for detailed view */}
-                {(infraEffects.length > 0 || infraPersistentEffects.length > 0) && (
-                  <div className="mt-2 pt-2 border-t border-current/20">
-                    {/* Persistent Effects */}
-                    {infraPersistentEffects.length > 0 && (
-                      <div className="mb-2">
-                        <div className="text-xs font-bold text-warning mb-1 uppercase flex items-center gap-1">
-                          <span>🎯</span> Monitoring:
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      
+      {/* Effects Overlay Layer - Completely separate from card hover zones */}
+      {infrastructure.map((infra, index) => {
+        // Filter effects that apply to this specific infrastructure card
+        const infraEffects = temporaryEffects.filter((effect: any) => effect.targetId === infra.id);
+        
+        // Filter persistent effects that apply to this infrastructure
+        const infraPersistentEffects = persistentEffects.filter((effect: any) =>
+          effect.targetId === infra.id
+        );
+        
+        // Check if this infrastructure has any monitoring effects
+        const hasMonitoringEffects = infraPersistentEffects.length > 0;
+        const hasActiveEffects = infraEffects.length > 0;
+        
+        if (!hasMonitoringEffects && !hasActiveEffects) {
+          return null;
+        }
+        
+        // Calculate position based on card index and grid layout
+        const cardsPerRow = Math.floor((window.innerWidth || 1200) / 240); // Approximate cards per row
+        const row = Math.floor(index / cardsPerRow);
+        const col = index % cardsPerRow;
+        const cardWidth = 208; // lg:w-52 = 208px
+        const cardHeight = 256; // lg:h-64 = 256px
+        const gap = 12; // gap-3 = 12px
+        
+        const left = col * (cardWidth + gap) + cardWidth / 2;
+        const top = row * (cardHeight + gap) - 48; // -48px for -top-12
+        
+        return (
+          <div
+            key={`effects-${infra.id}`}
+            className={`absolute z-[9999] group/effects flex gap-1 pointer-events-none transition-opacity duration-300 ${
+              hoveredCardId === infra.id ? 'opacity-0' : 'opacity-100'
+            }`}
+            style={{
+              left: `${left}px`,
+              top: `${top}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            {/* Monitoring Indicator */}
+            {hasMonitoringEffects && (
+              <div className="lg:text-xs text-[10px] bg-warning text-base-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-warning/50 cursor-help pointer-events-auto">
+                🎯 MONITORED
+              </div>
+            )}
+            
+            {/* Active Effects Indicator */}
+            {hasActiveEffects && (
+              <div className="lg:text-xs text-[10px] bg-info text-base-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-info/50 cursor-help pointer-events-auto">
+                ⚡ AFFECTED
+              </div>
+            )}
+            
+            {/* Effects Magnification on Hover */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[99999] transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-auto">
+              <div className="text-center mb-2">
+                <div className="font-bold text-sm text-base-content mb-1">Effects & Monitoring</div>
+                <div className="text-xs text-base-content/70">on {infra.name}</div>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Persistent Effects Section */}
+                {infraPersistentEffects.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-warning mb-2 uppercase flex items-center gap-1">
+                      <span>🎯</span> Monitoring Effects
+                    </div>
+                    {infraPersistentEffects.map((effect, idx) => (
+                      <div key={`persistent-${idx}`} className="bg-warning/10 rounded-lg p-2 border border-warning/30 mb-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs font-bold text-base-content capitalize">
+                            Multi-Stage Malware
+                          </div>
+                          <div className="text-xs text-warning">
+                            {effect.triggered ? 'TRIGGERED' : 'ACTIVE'}
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          {infraPersistentEffects.map((effect, idx) => (
-                            <div key={`persist-${idx}`} className="text-[9px] text-warning bg-warning/10 rounded px-1.5 py-0.5">
-                              <span className="font-semibold">Multi-Stage Malware:</span> +{effect.reward.amount} AP on compromise
-                              <div className="text-[8px] text-warning/70 mt-0.5">
-                                Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
-                              </div>
-                            </div>
-                          ))}
+                        <div className="text-[10px] text-base-content/70 mb-1">
+                          Condition: {effect.condition.fromState || 'any'} → {effect.condition.toState}
+                        </div>
+                        <div className="text-[10px] text-base-content/70 mb-1">
+                          Reward: +{effect.reward.amount} AP when compromised
+                        </div>
+                        <div className="text-[10px] text-base-content/70 mb-1">
+                          Owner: Player {effect.playerId} {effect.playerId === playerID ? '(You)' : '(Opponent)'}
+                        </div>
+                        <div className="text-[10px] text-warning/70 italic">
+                          Watching for infrastructure compromise...
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Temporary Effects */}
-                    {infraEffects.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold text-info mb-1 uppercase flex items-center gap-1">
-                          <span>⚡</span> Active Effects:
+                    ))}
+                  </div>
+                )}
+                
+                {/* Temporary Effects Section */}
+                {infraEffects.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-info mb-2 uppercase flex items-center gap-1">
+                      <span>⚡</span> Active Effects
+                    </div>
+                    {infraEffects.map((effect, idx) => (
+                      <div key={`temporary-${idx}`} className="bg-info/10 rounded-lg p-2 border border-info/30 mb-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs font-bold text-base-content capitalize">
+                            {effect.type.replace('_', ' ')}
+                          </div>
+                          <div className="text-xs text-info">
+                            {effect.duration} turn{effect.duration !== 1 ? 's' : ''}
+                          </div>
                         </div>
-                        <TemporaryEffectsDisplay
-                          effects={infraEffects}
-                          targetInfrastructure={infra}
-                        />
+                        <div className="text-[10px] text-base-content/70">
+                          Source: {effect.sourceCardId}
+                        </div>
+                        {effect.type === 'prevent_reactions' && (
+                          <div className="text-[10px] text-info/70 mt-1 italic">
+                            Blocks reaction cards from targeting this infrastructure
+                          </div>
+                        )}
+                        {effect.type === 'prevent_restore' && (
+                          <div className="text-[10px] text-info/70 mt-1 italic">
+                            Prevents restoration effects on this infrastructure
+                          </div>
+                        )}
+                        {effect.type === 'cost_reduction' && (
+                          <div className="text-[10px] text-info/70 mt-1 italic">
+                            Reduces action point costs when targeting this
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
