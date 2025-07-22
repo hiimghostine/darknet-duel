@@ -193,42 +193,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     }
   }, [isActive, isProcessingMove, triggerPositiveClick]);
 
-  // ROBUST: Timeout fallback to prevent stuck pendingCardChoice UI
-  useEffect(() => {
-    if (memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId) {
-      console.log(`🎯 CARD CHOICE TIMEOUT: Starting 15-second timeout for pendingCardChoice`);
-      
-      const timeoutId = setTimeout(() => {
-        // Check if the pendingCardChoice is still active after timeout
-        if (memoizedG.pendingCardChoice && playerID === memoizedG.pendingCardChoice.playerId) {
-          console.warn(`🎯 CARD CHOICE TIMEOUT: pendingCardChoice stuck for 15 seconds, showing recovery options`);
-          
-          // Show user-friendly recovery toast
-          addToast({
-            type: 'warning',
-            title: 'Selection Timeout',
-            message: 'Card selection is taking too long. The UI will refresh automatically.',
-            duration: 5000
-          });
-          
-          // Force a state refresh by triggering a harmless move
-          // This helps unstick the UI without breaking game state
-          if (moves.sendChatMessage) {
-            try {
-              // Send a system message to trigger state sync
-              moves.sendChatMessage('');
-            } catch (error) {
-              console.log('Timeout recovery attempt completed');
-            }
-          }
-        }
-      }, 15000); // 15-second timeout
-      
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }
-  }, [memoizedG.pendingCardChoice, playerID, addToast, moves.sendChatMessage]);
+  // NOTE: Timeout logic removed per user request - no automatic timeout for card selection
 
   // ROBUST: Monitor pendingCardChoice state transitions for debugging
   useEffect(() => {
