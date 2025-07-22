@@ -1,5 +1,21 @@
 import { InfrastructureCard, InfrastructureState } from 'shared-types/game.types';
 import { Card } from 'shared-types/card.types';
+import { createInfrastructureCards } from '../../../cards/infrastructureCardLoader';
+
+/**
+ * Get original vulnerabilities for an infrastructure card from its definition
+ */
+function getOriginalInfrastructureVulnerabilities(infrastructureId: string): string[] {
+  const originalCards = createInfrastructureCards();
+  const originalCard = originalCards.find(card => card.id === infrastructureId);
+  
+  if (originalCard && Array.isArray(originalCard.vulnerabilities)) {
+    // Filter to only string vulnerabilities (original definition format)
+    return originalCard.vulnerabilities.filter(v => typeof v === 'string') as string[];
+  }
+  
+  return []; // Fallback to empty array if not found
+}
 
 /**
  * Apply response card effect to target infrastructure
@@ -24,10 +40,13 @@ export function responseEffect(
   if (currentInfra.state === 'compromised') {
     console.log(`Response card ${card.name} restoring ${currentInfra.name} from compromised to secure`);
     
+    // Get original vulnerabilities from infrastructure definition
+    const originalVulnerabilities = getOriginalInfrastructureVulnerabilities(currentInfra.id);
+    
     newInfrastructure[infraIndex] = {
       ...currentInfra,
       state: 'secure' as InfrastructureState,
-      vulnerabilities: [], // Clear vulnerabilities
+      vulnerabilities: originalVulnerabilities, // Restore original vulnerabilities
       vulnerableVectors: currentInfra.vulnerableVectors // Explicitly preserve vulnerableVectors
     };
   }
