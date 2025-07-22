@@ -287,11 +287,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                     <div className="w-6 h-6 bg-amber-600 text-base-content rounded-full flex items-center justify-center text-xs font-bold">
                       {card.cost}
                     </div>
-                    {card.power && (
-                      <div className="w-6 h-6 bg-blue-600 text-base-content rounded-full flex items-center justify-center text-xs font-bold">
-                        {card.power}
-                      </div>
-                    )}
+
                   </div>
                   <div className="text-xl">
                     {cardType === 'attack' ? '⚔️' : 
