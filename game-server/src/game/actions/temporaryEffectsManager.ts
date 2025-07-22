@@ -337,14 +337,14 @@ export class TemporaryEffectsManager {
   }
 
   /**
-   * Calculate and apply maintenance costs at turn start
-   * New balanced mechanic:
-   * - 3 shielded/vulnerable = 1 AP cost
-   * - 4 shielded/vulnerable = 2 AP cost
-   * - 5 shielded/vulnerable = 3 AP cost
-   * - If can't pay: randomly remove 1 infrastructure with that state next round
+   * Calculate and apply maintenance costs at turn start (per-turn basis)
+   * Graduated timing: Each player pays maintenance at the start of their own turn
+   * - 3 shielded/vulnerable = 1 AP cost per turn
+   * - 4 shielded/vulnerable = 2 AP cost per turn
+   * - 5 shielded/vulnerable = 3 AP cost per turn
+   * - If can't pay: randomly remove 1 infrastructure with that state next turn
    */
-  static processMaintenanceCosts(gameState: GameState): GameState {
+  static processMaintenanceCosts(gameState: GameState, currentPlayerId?: string): GameState {
     if (!gameState.infrastructure || !gameState.attacker || !gameState.defender) {
       return gameState;
     }
@@ -361,8 +361,11 @@ export class TemporaryEffectsManager {
       return count - 2; // 3->1, 4->2, 5->3
     };
 
-    // Attacker maintenance cost for vulnerable infrastructure
-    if (vulnerableCount >= 3) {
+    const isAttackerTurn = currentPlayerId === '0';
+    const isDefenderTurn = currentPlayerId === '1';
+
+    // Attacker maintenance cost for vulnerable infrastructure (only on attacker's turn)
+    if (isAttackerTurn && vulnerableCount >= 3) {
       const maintenanceCost = calculateMaintenanceCost(vulnerableCount);
       const attacker = updatedGameState.attacker!;
       
@@ -430,8 +433,8 @@ export class TemporaryEffectsManager {
       }
     }
 
-    // Defender maintenance cost for shielded infrastructure
-    if (shieldedCount >= 3) {
+    // Defender maintenance cost for shielded infrastructure (only on defender's turn)
+    if (isDefenderTurn && shieldedCount >= 3) {
       const maintenanceCost = calculateMaintenanceCost(shieldedCount);
       const defender = updatedGameState.defender!;
       

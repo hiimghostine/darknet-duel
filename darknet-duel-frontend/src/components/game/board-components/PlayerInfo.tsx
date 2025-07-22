@@ -274,7 +274,7 @@ const MaintenanceCostIndicator: React.FC<{ maintenanceCosts: { cost: number; typ
                         <div><span className="text-error font-bold">4+ infrastructure = 2 AP cost</span></div>
                         <div><span className="text-error font-bold">5+ infrastructure = 3 AP cost</span></div>
                       </div>
-                      <p className="text-warning/80 text-xs mt-1">💥 Can't pay? Random infrastructure is lost next round!</p>
+                      <p className="text-warning/80 text-xs mt-1">💥 Can't pay? Random infrastructure is lost next turn!</p>
                       <p className="text-base-content/60 text-xs mt-1">🎯 Attackers: vulnerable infra | 🛡️ Defenders: shielded infra</p>
                     </div>
                   </div>
@@ -284,9 +284,9 @@ const MaintenanceCostIndicator: React.FC<{ maintenanceCosts: { cost: number; typ
                     <div>
                       <p className="font-bold text-error">CURRENT STATUS:</p>
                       <p className="text-base-content">
-                        Paying <span className="font-bold text-error">{maintenanceCosts.cost} AP per round</span> for <span className="font-bold">{maintenanceCosts.count} {maintenanceCosts.type}</span> infrastructure
+                        Paying <span className="font-bold text-error">{maintenanceCosts.cost} AP per turn</span> for <span className="font-bold">{maintenanceCosts.count} {maintenanceCosts.type}</span> infrastructure
                       </p>
-                      <p className="text-xs text-base-content/60 mt-1">Formula: {maintenanceCosts.count} infrastructure - 2 = {maintenanceCosts.cost} AP cost per round</p>
+                      <p className="text-xs text-base-content/60 mt-1">Formula: {maintenanceCosts.count} infrastructure - 2 = {maintenanceCosts.cost} AP cost per turn</p>
                     </div>
                   </div>
                 </div>

@@ -234,11 +234,9 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
         }
       }
 
-      // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
-      if (isAttacker) {
-        console.log(`🔄 NEW ROUND ${G.currentRound}: Processing maintenance costs`);
-        updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG);
-      }
+      // Process maintenance costs at the start of each player's turn (graduated timing)
+      console.log(`🔄 TURN START: Processing maintenance costs for ${isAttacker ? 'attacker' : 'defender'}`);
+      updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG, isAttacker ? '0' : '1');
 
       events.setActivePlayers({ currentPlayer: 'action' });
 
