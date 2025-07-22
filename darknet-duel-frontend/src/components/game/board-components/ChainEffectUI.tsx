@@ -92,8 +92,8 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-1/3 h-1 bg-gradient-to-r from-primary to-transparent"></div>
           <div className="absolute top-0 right-1/3 w-1/4 h-1 bg-gradient-to-l from-secondary to-transparent"></div>
-          <div className="absolute top-20 left-10 opacity-5 text-8xl font-mono text-primary animate-pulse">101</div>
-          <div className="absolute bottom-20 right-10 opacity-5 text-8xl font-mono text-secondary animate-pulse">010</div>
+          <div className="absolute top-20 left-10 opacity-5 text-8xl font-mono text-primary">101</div>
+          <div className="absolute bottom-20 right-10 opacity-5 text-8xl font-mono text-secondary">010</div>
         </div>
 
         <motion.div 
@@ -160,16 +160,15 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
                     key={target.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                    transition={{ delay: index * 0.1, type: "spring", stiffness: 100, damping: 15 }}
+                    className={`relative p-4 rounded-lg border-2 ${
                       isTargetable(target) 
-                        ? 'border-success/50 bg-success/5 hover:bg-success/10 cursor-pointer' 
+                        ? 'border-success/50 bg-success/5 cursor-pointer' 
                         : 'border-base-300/30 bg-base-200/20 cursor-not-allowed opacity-60'
                     }`}
                     onClick={() => isTargetable(target) && onChooseTarget(target.id)}
-                    whileHover={isTargetable(target) ? { scale: 1.02, y: -2 } : {}}
-                    whileTap={isTargetable(target) ? { scale: 0.98 } : {}}
-                    layout
+                    whileHover={isTargetable(target) ? { scale: 1.02, y: -2, backgroundColor: "rgba(34, 197, 94, 0.1)" } : undefined}
+                    whileTap={isTargetable(target) ? { scale: 0.98 } : undefined}
                   >
                     {/* Cyberpunk corner brackets for each card */}
                     <div className="absolute -top-1 -left-1 w-8 h-8 border-t border-l border-primary/40"></div>
@@ -290,7 +289,7 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
           {/* Footer */}
           <div className="p-6 border-t border-primary/20 flex justify-end gap-3 relative">
             {/* Decorative scanning line */}
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
             
             {onCancel && (
               <motion.button 

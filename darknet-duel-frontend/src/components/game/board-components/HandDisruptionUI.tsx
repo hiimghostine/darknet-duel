@@ -40,10 +40,10 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
       >
         {/* Cyberpunk decorative background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-10 left-10 text-primary/10 font-mono text-xs animate-pulse">
+          <div className="absolute top-10 left-10 text-primary/10 font-mono text-xs">
             101010110101
           </div>
-          <div className="absolute bottom-20 right-20 text-secondary/10 font-mono text-xs animate-pulse">
+          <div className="absolute bottom-20 right-20 text-secondary/10 font-mono text-xs">
             010101001010
           </div>
           <div className="absolute top-1/2 left-4 w-px h-32 bg-gradient-to-b from-transparent via-primary/20 to-transparent"></div>
@@ -111,15 +111,18 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
                   <motion.div
                     key={card.id}
                     initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    animate={{
+                      scale: selectedCards.includes(card.id) ? 1.02 : 1,
+                      opacity: 1,
+                      y: 0
+                    }}
+                    transition={{ delay: index * 0.1, type: "spring", stiffness: 100, damping: 15 }}
                     className={`relative bg-base-200/50 border-2 rounded-lg cursor-pointer
-                    transition-all duration-200 hover:scale-102 hover:shadow-xl
-                    ${selectedCards.includes(card.id) ? 'border-error scale-102 shadow-xl shadow-error/25' : 'border-primary/30 hover:border-primary/50'}
+                    ${selectedCards.includes(card.id) ? 'border-error shadow-xl shadow-error/25' : 'border-primary/30'}
                     backdrop-blur-sm min-h-[280px]
                   `}
                     onClick={() => handleCardToggle(card.id)}
-                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileHover={{ scale: 1.02, y: -2, borderColor: "rgba(59, 130, 246, 0.5)", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {/* Cyberpunk corner brackets for each card */}
@@ -152,7 +155,7 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
                           isDefenderCard(card.type) ? 'border-success/50 bg-success/10 text-success' :
                           'border-info/50 bg-info/10 text-info'
                         }`}>
-                          <span className="animate-pulse">
+                          <span>
                             {isAttackerCard(card.type) ? '⚡' : isDefenderCard(card.type) ? '✓' : '⚙'}
                           </span>
                           <span>
@@ -170,7 +173,7 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
                       {card.metadata?.category && (
                         <div className="mb-4">
                           <div className="px-3 py-2 bg-warning/10 border border-warning/30 text-warning text-sm font-mono flex items-center gap-2">
-                            <span className="animate-pulse">📂</span>
+                            <span>📂</span>
                             <span>CATEGORY: {card.metadata.category.toUpperCase().replace(/ /g, '_')}</span>
                           </div>
                         </div>
@@ -251,7 +254,7 @@ const HandDisruptionUI: React.FC<HandDisruptionUIProps> = ({
           {/* Footer */}
           <div className="p-6 border-t border-primary/20 flex justify-end gap-3 relative">
             {/* Decorative scanning line */}
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-secondary to-transparent animate-pulse"></div>
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-secondary to-transparent"></div>
             
             <motion.button
               className={`px-6 py-3 font-mono text-sm border transition-all duration-200 ${
