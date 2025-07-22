@@ -15,12 +15,13 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ FIXED: Get UUID from player.uuid (real UUID, not boardgame.io ID)
+  // ✅ FIXED: Get UUID from G.playerUuidMap (real UUID, not boardgame.io ID)
   useEffect(() => {
     let isMounted = true;
     const fetchAccount = async () => {
-      // ✅ FIXED: Use player.uuid for API calls, fallback to player.id for development
-      const userId = (player as any)?.uuid || (player as any)?.realUserId || player?.id;
+      // ✅ FIXED: Use G.playerUuidMap to get real UUID, fallback to player.id for development
+      const realUuid = player?.id && G?.playerUuidMap?.[player.id];
+      const userId = realUuid || (player as any)?.uuid || (player as any)?.realUserId || player?.id;
       if (!userId) return;
       
       // Skip API calls for BoardGame.io IDs (development mode)
@@ -50,7 +51,7 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
     };
     fetchAccount();
     return () => { isMounted = false; };
-  }, [player?.id, (player as any)?.uuid, (player as any)?.realUserId]);
+  }, [player?.id, G?.playerUuidMap, (player as any)?.uuid, (player as any)?.realUserId]);
 
   // Calculate maintenance costs for display using new formula
   const calculateMaintenanceCosts = () => {
@@ -99,9 +100,10 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
     );
   };
 
-  // ✅ FIXED: Get avatar URL using correct ID
+  // ✅ FIXED: Get avatar URL using correct ID from playerUuidMap
   const getAvatarUrl = () => {
-    const userId = (player as any)?.uuid || (player as any)?.realUserId;
+    const realUuid = player?.id && G?.playerUuidMap?.[player.id];
+    const userId = realUuid || (player as any)?.uuid || (player as any)?.realUserId;
     // For real users, use their UUID for avatar
     if (userId && userId !== '0' && userId !== '1') {
       return accountService.getAvatarUrl(userId);
