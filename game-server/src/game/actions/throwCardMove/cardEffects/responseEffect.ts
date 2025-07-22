@@ -27,7 +27,8 @@ export function responseEffect(
     newInfrastructure[infraIndex] = {
       ...currentInfra,
       state: 'secure' as InfrastructureState,
-      vulnerabilities: [] // Clear vulnerabilities
+      vulnerabilities: [], // Clear vulnerabilities
+      vulnerableVectors: currentInfra.vulnerableVectors // Explicitly preserve vulnerableVectors
     };
   }
   
