@@ -126,7 +126,7 @@ export function validateCardTargeting(
 
   switch (cardType) {
     case 'exploit':
-      // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
+      // Exploit cards can target secure, fortified, or fortified_weaken infrastructure (NOT shielded - only counter-attacks can target shielded)
       if (infrastructure.state !== 'secure' &&
           infrastructure.state !== 'fortified' &&
           infrastructure.state !== 'fortified_weaken') {

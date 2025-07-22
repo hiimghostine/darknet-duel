@@ -125,9 +125,10 @@ export class WildcardResolver {
     // Check if the target infrastructure is valid for the card type
     switch (asType) {
       case 'exploit':
-        // Can only exploit secure or shield-protected infrastructure
+        // Can exploit secure, fortified, or fortified_weaken infrastructure (NOT shielded - only counter-attacks can target shielded)
         return targetInfrastructure.state === 'secure' ||
-               targetInfrastructure.state === 'shielded';
+               targetInfrastructure.state === 'fortified' ||
+               targetInfrastructure.state === 'fortified_weaken';
       
       case 'attack':
         // Can only attack vulnerable infrastructure

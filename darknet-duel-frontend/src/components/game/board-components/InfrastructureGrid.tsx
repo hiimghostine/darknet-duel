@@ -351,7 +351,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
             )}
             
             {/* Effects Magnification on Hover */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[99999] transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-auto">
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/effects:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[99999] transform scale-110 origin-top shadow-2xl w-72 p-3 pointer-events-none">
               <div className="text-center mb-2">
                 <div className="font-bold text-sm text-base-content mb-1">Effects & Monitoring</div>
                 <div className="text-xs text-base-content/70">on {infra.name}</div>
