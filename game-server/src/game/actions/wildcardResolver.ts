@@ -298,33 +298,22 @@ export class WildcardResolver {
           updatedGameState.message = `${card.name} failed: Hand disruption error`;
         }
         
-        // Add card draw effect for the defender who played this card
-        // FIXED: Use BoardGame.io player ID for consistent player resolution
-        const isAttacker = context.playerID === '0';
-        const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
+        // Add card draw effect - D302 is a defender card, so it ALWAYS draws from defender's deck
+        const defenderPlayer = updatedGameState.defender;
         
-        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
-          const drawnCard = currentPlayer.deck[0];
-          const newHand = [...currentPlayer.hand, drawnCard];
-          const newDeck = currentPlayer.deck.slice(1);
+        if (defenderPlayer && defenderPlayer.deck && defenderPlayer.deck.length > 0) {
+          const drawnCard = defenderPlayer.deck[0];
+          const newHand = [...defenderPlayer.hand, drawnCard];
+          const newDeck = defenderPlayer.deck.slice(1);
           
-          // Update the current player's hand and deck
-          // FIXED: Use BoardGame.io player ID for consistent player updates
-          if (isAttacker) {
-            updatedGameState.attacker = {
-              ...currentPlayer,
-              hand: newHand,
-              deck: newDeck
-            };
-          } else {
-            updatedGameState.defender = {
-              ...currentPlayer,
-              hand: newHand,
-              deck: newDeck
-            };
-          }
+          // Update the defender's hand and deck
+          updatedGameState.defender = {
+            ...defenderPlayer,
+            hand: newHand,
+            deck: newDeck
+          };
           
-          console.log(`🎯 D302: Drew 1 card for ${context.playerRole}`);
+          console.log(`🎯 D302: Drew 1 card for defender (from defender's deck)`);
         }
         
         updatedGameState.message = `${card.name}: Viewing opponent's hand and forcing discard of 2 cards. Drew 1 card.`;
@@ -547,31 +536,20 @@ export class WildcardResolver {
               2 // Force discard 2 cards
             );
             
-            // Add card draw effect for the defender who played this card
-            // FIXED: Use BoardGame.io player ID for consistent player resolution
-            const isAttackerForDraw = context.playerID === '0';
-            const currentPlayer = isAttackerForDraw ? updatedGameState.attacker : updatedGameState.defender;
+            // Add card draw effect - intel_disrupt is a defender effect, so it ALWAYS draws from defender's deck
+            const defenderPlayer = updatedGameState.defender;
             
-            if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
-              const drawnCard = currentPlayer.deck[0];
-              const newHand = [...currentPlayer.hand, drawnCard];
-              const newDeck = currentPlayer.deck.slice(1);
+            if (defenderPlayer && defenderPlayer.deck && defenderPlayer.deck.length > 0) {
+              const drawnCard = defenderPlayer.deck[0];
+              const newHand = [...defenderPlayer.hand, drawnCard];
+              const newDeck = defenderPlayer.deck.slice(1);
               
-              // Update the current player's hand and deck
-              // FIXED: Use BoardGame.io player ID for consistent player updates
-              if (isAttackerForDraw) {
-                updatedGameState.attacker = {
-                  ...currentPlayer,
-                  hand: newHand,
-                  deck: newDeck
-                };
-              } else {
-                updatedGameState.defender = {
-                  ...currentPlayer,
-                  hand: newHand,
-                  deck: newDeck
-                };
-              }
+              // Update the defender's hand and deck
+              updatedGameState.defender = {
+                ...defenderPlayer,
+                hand: newHand,
+                deck: newDeck
+              };
             }
             
             updatedGameState.message = `Intelligence network activated: Opponent must discard 2 cards. Drew 1 card.`;

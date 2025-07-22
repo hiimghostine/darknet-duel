@@ -194,19 +194,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     }
   }
   
-  // Phase 6: Handle hand management (remove card from hand) - MOVED AFTER validation
-  const newHand = [...player!.hand];
-  const cardIndex = newHand.findIndex(c => c.id === cardId);
-  newHand.splice(cardIndex, 1);
-  
-  // Create updated player state with card removed from hand
-  const updatedPlayerWithCardRemoved = {
-    ...player,
-    hand: newHand,
-    actionPoints: player!.actionPoints - effectiveCost
-  };
-
-  // Phase 7: Check for temporary_tax effects that apply to this card type
+  // Phase 6: Check for temporary_tax effects that apply to this card type BEFORE removing card from hand
   // This creates a pending hand choice for the player to select which cards to discard
   // Skip tax check if this is a continuation after tax has already been paid
   if (effectiveCardType === 'exploit' && isAttacker && !skipTaxCheck) {
@@ -218,42 +206,56 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         const taxAmount = taxEffect.metadata.taxAmount || 1;
         console.log(`🍯 Honeypot Network tax triggered! Attacker must choose ${taxAmount} card(s) to discard`);
         
-        // Check if player has enough cards to discard (after the exploit card was removed)
-        if (updatedPlayerWithCardRemoved.hand.length >= taxAmount) {
-          // Create pending hand choice for the tax - use the updated hand without the exploit card
-          const gameStateWithCardRemoved = {
-            ...G,
-            attacker: isAttacker ? updatedPlayerWithCardRemoved : G.attacker,
-            defender: !isAttacker ? updatedPlayerWithCardRemoved : G.defender,
-          };
-          
+        // Check if player has enough cards to discard (excluding the exploit card being played)
+        if (player!.hand.length - 1 >= taxAmount) {
+          // Create pending hand choice for the tax - show original hand (exploit card not removed yet)
           const updatedGameState = {
-            ...gameStateWithCardRemoved,
+            ...G,
             pendingHandChoice: {
               type: 'discard_from_hand' as const,
               targetPlayerId: playerID,
-              revealedHand: [...updatedPlayerWithCardRemoved.hand], // Show hand WITHOUT the exploit card
+              revealedHand: [...player!.hand], // Show original hand (exploit card still present)
               count: taxAmount,
               pendingCardPlay: {
                 cardId: cardId,
-                targetInfrastructureId: targetInfrastructureId
+                targetInfrastructureId: targetInfrastructureId,
+                originalCtx: {
+                  phase: ctx.phase,
+                  currentPlayer: ctx.currentPlayer,
+                  activePlayers: ctx.activePlayers ? { ...ctx.activePlayers } : undefined,
+                  playOrder: ctx.playOrder ? [...ctx.playOrder] : undefined,
+                  turn: ctx.turn,
+                  numPlayers: ctx.numPlayers
+                } // Store a serializable copy of the essential context properties
               }
             },
             message: `Honeypot Network activated! Choose ${taxAmount} card${taxAmount > 1 ? 's' : ''} to discard, then your exploit will be played.`
           };
           
-          console.log(`✅ Tax pending: Player must choose ${taxAmount} cards to discard from remaining ${updatedPlayerWithCardRemoved.hand.length} cards`);
+          console.log(`✅ Tax pending: Player must choose ${taxAmount} cards to discard from ${player!.hand.length} cards (excluding the exploit being played)`);
           return updatedGameState;
         } else {
-          console.log(`⚠️ Player only has ${updatedPlayerWithCardRemoved.hand.length} cards remaining, cannot pay tax of ${taxAmount} cards`);
+          console.log(`⚠️ Player only has ${player!.hand.length - 1} cards remaining after exploit, cannot pay tax of ${taxAmount} cards`);
           return {
             ...G,
-            message: `Cannot play exploit: Honeypot Network requires ${taxAmount} additional card${taxAmount > 1 ? 's' : ''} to discard, but you only have ${updatedPlayerWithCardRemoved.hand.length} card${updatedPlayerWithCardRemoved.hand.length !== 1 ? 's' : ''} remaining.`
+            message: `Cannot play exploit: Honeypot Network requires ${taxAmount} additional card${taxAmount > 1 ? 's' : ''} to discard, but you only have ${player!.hand.length - 1} card${player!.hand.length - 1 !== 1 ? 's' : ''} remaining.`
           };
         }
       }
     }
   }
+
+  // Phase 7: Handle hand management (remove card from hand) - MOVED AFTER tax check
+  const newHand = [...player!.hand];
+  const cardIndex = newHand.findIndex(c => c.id === cardId);
+  newHand.splice(cardIndex, 1);
+  
+  // Create updated player state with card removed from hand
+  const updatedPlayerWithCardRemoved = {
+    ...player,
+    hand: newHand,
+    actionPoints: player!.actionPoints - effectiveCost
+  };
 
   // Phase 8: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
   if (card!.type === 'wildcard' && card!.wildcardType) {

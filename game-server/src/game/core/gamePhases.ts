@@ -177,6 +177,35 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
       const isAttacker = G.currentTurn === 'attacker';
+      const currentPlayer = isAttacker ? updatedG.attacker : updatedG.defender;
+
+      // CARD REPLENISHMENT: Draw cards at the start of every turn
+      let updatedPlayer = null;
+      if (currentPlayer) {
+        updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
+        
+        const maxHandSize = updatedG.gameConfig.maxHandSize;
+        const cardsToDrawPerTurn = updatedG.gameConfig.cardsDrawnPerTurn;
+        const currentHandSize = updatedPlayer.hand?.length || 0;
+        const cardsToDrawCount = Math.min(cardsToDrawPerTurn, maxHandSize - currentHandSize);
+        
+        console.log(`🃏 Turn start card replenishment: ${G.currentTurn} drawing ${cardsToDrawCount} cards (hand: ${currentHandSize}/${maxHandSize})`);
+        
+        if (cardsToDrawCount > 0) {
+          for (let i = 0; i < cardsToDrawCount; i++) {
+            updatedPlayer = drawCard(updatedPlayer);
+          }
+        }
+        
+        // Reset free card cycles for this turn
+        updatedPlayer.freeCardCyclesUsed = 0;
+        
+        // Update the game state with the player who drew cards
+        updatedG = {
+          ...updatedG,
+          [isAttacker ? 'attacker' : 'defender']: updatedPlayer
+        };
+      }
 
       // Add AP at the start of the turn ONLY starting from round 2
       if (updatedG.currentRound >= 2) {
@@ -243,7 +272,10 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
         currentTurn: nextTurn,
         turnNumber: nextTurn === 'attacker' ? G.turnNumber + 1 : G.turnNumber,
         currentStage: null as TurnStage,
-        message: `${roundMsg} - ${turnMsg}`
+        message: `${roundMsg} - ${turnMsg}`,
+        pendingReactions: [],
+        reactionComplete: false,
+        currentActionPlayer: undefined
       };
     },
     
