@@ -3,6 +3,7 @@ import { Card } from 'shared-types/card.types';
 
 /**
  * Apply response card effect to target infrastructure
+ * Note: Persistent effect cleanup is handled at the throwCardMove level to avoid Immer violations
  */
 export function responseEffect(
   currentInfra: InfrastructureCard,
@@ -21,6 +22,8 @@ export function responseEffect(
   
   // Response cards recover compromised infrastructure
   if (currentInfra.state === 'compromised') {
+    console.log(`Response card ${card.name} restoring ${currentInfra.name} from compromised to secure`);
+    
     newInfrastructure[infraIndex] = {
       ...currentInfra,
       state: 'secure' as InfrastructureState,

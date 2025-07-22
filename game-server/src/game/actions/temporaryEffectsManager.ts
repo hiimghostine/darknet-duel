@@ -279,6 +279,64 @@ export class TemporaryEffectsManager {
   }
 
   /**
+   * Clean up persistent effects when infrastructure state changes away from the watched state
+   * This prevents Multi-Stage Malware effects from persisting when infrastructure is restored
+   */
+  static cleanupPersistentEffectsOnStateChange(
+    gameState: GameState,
+    infrastructureId: string,
+    oldState: string,
+    newState: string
+  ): GameState {
+    if (!gameState.persistentEffects || gameState.persistentEffects.length === 0) {
+      return gameState;
+    }
+
+    console.log(`🔄 PERSISTENT EFFECT CLEANUP: Infrastructure ${infrastructureId} state changed: ${oldState} → ${newState}`);
+
+    const beforeCount = gameState.persistentEffects.length;
+    let filteredEffects = [...gameState.persistentEffects];
+
+    // Clean up effects when infrastructure changes away from the state they're watching
+    // For example: Multi-Stage Malware watches vulnerable→compromised, so if it goes vulnerable→secure, clean up
+    for (const effect of gameState.persistentEffects) {
+      if (effect.targetId === infrastructureId) {
+        // Check if the state change invalidates this persistent effect
+        let shouldRemove = false;
+
+        if (effect.type === 'on_compromise') {
+          // If infrastructure was vulnerable and goes to secure (reaction card), remove the effect
+          if (oldState === 'vulnerable' && newState === 'secure') {
+            shouldRemove = true;
+            console.log(`🗑️ Removing Multi-Stage Malware effect: infrastructure restored from vulnerable to secure`);
+          }
+          // If infrastructure was compromised and goes to secure (response card), remove the effect
+          else if (oldState === 'compromised' && newState === 'secure') {
+            shouldRemove = true;
+            console.log(`🗑️ Removing Multi-Stage Malware effect: infrastructure restored from compromised to secure`);
+          }
+        }
+
+        if (shouldRemove) {
+          filteredEffects = filteredEffects.filter(e => e !== effect);
+          console.log(`🧹 Removed persistent effect ${effect.type} from ${effect.sourceCardId} targeting ${infrastructureId}`);
+        }
+      }
+    }
+
+    const afterCount = filteredEffects.length;
+    if (beforeCount !== afterCount) {
+      console.log(`🔄 CLEANUP RESULT: Removed ${beforeCount - afterCount} persistent effects due to state change`);
+      return {
+        ...gameState,
+        persistentEffects: filteredEffects
+      };
+    }
+
+    return gameState;
+  }
+
+  /**
    * Calculate and apply maintenance costs at turn start
    * New balanced mechanic:
    * - 3 shielded/vulnerable = 1 AP cost

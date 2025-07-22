@@ -699,15 +699,15 @@ export class WildcardResolver {
       console.log(`🔍 DEBUG A305: context.playerID="${context.playerID}", context.playerRole="${context.playerRole}"`);
       console.log(`🔍 DEBUG A305: gameState.attacker.id="${context.gameState.attacker?.id}", gameState.defender.id="${context.gameState.defender?.id}"`);
       
-      // FIXED: Use a more robust condition for state transitions
-      // Allow transition from any state to compromised, not just vulnerable to compromised
+      // CORRECTED: Multi-Stage Malware should only trigger on vulnerable → compromised
+      // This is because A305 is an exploit wildcard, so it first makes infrastructure vulnerable
       const persistentEffect: PersistentEffect = {
         type: 'on_compromise',
         targetId: context.targetInfrastructure.id,
         playerId: context.playerID,
         sourceCardId: card.id,
         condition: {
-          fromState: 'any',  // FIXED: Accept any source state, since wildcards can be used in various scenarios
+          fromState: 'vulnerable',  // CORRECTED: Only trigger when going from vulnerable to compromised
           toState: 'compromised'
         },
         reward: {

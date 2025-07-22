@@ -3,6 +3,7 @@ import { Card } from 'shared-types/card.types';
 
 /**
  * Apply reaction card effect to target infrastructure
+ * Note: Persistent effect cleanup is handled at the throwCardMove level to avoid Immer violations
  */
 export function reactionEffect(
   currentInfra: InfrastructureCard,
@@ -18,6 +19,7 @@ export function reactionEffect(
   // Reaction cards cancel out exploit effects on vulnerable infrastructure
   if (currentInfra.state === 'vulnerable') {
     console.log(`Cancelling vulnerability on infrastructure ${currentInfra.name}`);
+    
     newInfrastructure[infraIndex] = {
       ...currentInfra,
       state: 'secure' as InfrastructureState,

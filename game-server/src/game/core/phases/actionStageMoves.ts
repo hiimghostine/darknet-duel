@@ -35,39 +35,6 @@ function checkEndConditions(G: GameState, ctx: any, events: any): GameState {
  * All moves available during the action stage of a turn
  */
 export const actionStageMoves = {
-  // Chat message functionality
-  sendChatMessage: ({ G, playerID }: MoveParams<GameState>, content: string) => {
-    console.log('SERVER: Received chat message in action stage:', content, 'from player:', playerID);
-    
-    // Option 1: Mutation style (preferred for simpler code)
-    if (!G.chat) {
-      G.chat = {
-        messages: [],
-        lastReadTimestamp: {}
-      };
-    }
-    
-    // Determine player role
-    // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
-    const senderRole = playerID === '0' ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
-    
-    // Add message to chat
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: playerID || 'unknown',
-      senderRole,
-      content,
-      timestamp: Date.now(),
-      isSystem: false
-    };
-    
-    // Just push the new message to the existing array (mutation)
-    G.chat.messages.push(newMessage);
-    
-    // Do not return anything when using mutation style
-    // This fixes the Immer error
-  },
-
   // Surrender functionality - use centralized handler
   surrender: handleSurrender,
   

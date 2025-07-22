@@ -9,11 +9,6 @@ import { switchToStage, switchCurrentPlayerToStage, MoveParams } from './phaseUt
  */
 
 export const reactionStageMoves = {
-  // Chat functionality
-  sendChatMessage: ({ G, playerID }: MoveParams<GameState>, content: string) => {
-    handleChatMessage({ G, playerID }, content);
-  },
-
   // Surrender functionality
   surrender: handleSurrender,
   

@@ -691,7 +691,17 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
             const newInfra = cleanInfrastructure[i];
             if (oldInfra.state !== newInfra.state) {
               console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+              
+              // First process persistent effects (rewards)
               gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+                gameStateWithPersistentEffects,
+                newInfra.id,
+                oldInfra.state,
+                newInfra.state
+              );
+              
+              // Then clean up persistent effects for state changes that invalidate them
+              gameStateWithPersistentEffects = TemporaryEffectsManager.cleanupPersistentEffectsOnStateChange(
                 gameStateWithPersistentEffects,
                 newInfra.id,
                 oldInfra.state,
@@ -852,7 +862,17 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       const newInfra = newInfrastructure[i];
       if (oldInfra.state !== newInfra.state) {
         console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+        
+        // First process persistent effects (rewards)
         gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+          gameStateWithPersistentEffects,
+          newInfra.id,
+          oldInfra.state,
+          newInfra.state
+        );
+        
+        // Then clean up persistent effects for state changes that invalidate them
+        gameStateWithPersistentEffects = TemporaryEffectsManager.cleanupPersistentEffectsOnStateChange(
           gameStateWithPersistentEffects,
           newInfra.id,
           oldInfra.state,
