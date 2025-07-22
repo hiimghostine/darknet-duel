@@ -388,11 +388,11 @@ export function useCardActionsBridge(props: BoardProps & {
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For shield cards, target ONLY secure infrastructure + vector compatibility
+      // For shield cards, target secure or fortified_weaken infrastructure + vector compatibility
       else if (effectiveCardType === 'shield') {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
-            const stateMatch = infra.state === 'secure';
+            const stateMatch = infra.state === 'secure' || infra.state === 'fortified_weaken';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })

@@ -135,9 +135,9 @@ export class WildcardResolver {
         return targetInfrastructure.state === 'vulnerable';
       
       case 'shield':
-        // Can shield secure or vulnerable infrastructure (not compromised)
+        // Can shield secure or fortified_weaken infrastructure
         return targetInfrastructure.state === 'secure' ||
-               targetInfrastructure.state === 'vulnerable';
+               targetInfrastructure.state === 'fortified_weaken';
       
       case 'fortify':
         // Can only fortify shielded infrastructure

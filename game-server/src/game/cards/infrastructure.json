@@ -8,7 +8,7 @@
       "type": "network",
       "description": "Primary perimeter defense system",
       "flavor": "The first line of defense against external threats",
-      "vulnerabilities": ["network"],
+      "vulnerabilities": ["network", "malware"],
       "img": "firewall"
     },
     {
@@ -17,7 +17,7 @@
       "type": "web",
       "description": "Public-facing web presence",
       "flavor": "Your company's digital storefront",
-      "vulnerabilities": ["web"],
+      "vulnerabilities": ["web", "social"],
       "img": "website"
     },
     {

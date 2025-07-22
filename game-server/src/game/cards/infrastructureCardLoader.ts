@@ -78,8 +78,8 @@ export const createInfrastructureCards = (): InfrastructureCard[] => {
       name: 'Enterprise Firewall',
       description: 'Primary perimeter defense system',
       flavor: 'The first line of defense against external threats',
-      vulnerableVectors: asAttackVectorArray(['network']),
-      vulnerabilities: ['network'],
+      vulnerableVectors: asAttackVectorArray(['network', 'malware']),
+      vulnerabilities: ['network', 'malware'],
       img: 'assets/cards/infra/firewall.png',
       state: asInfraState('secure'), // Initial state is secure, not neutral
     }, 'network'),
@@ -89,8 +89,8 @@ export const createInfrastructureCards = (): InfrastructureCard[] => {
       name: 'Corporate Website',
       description: 'Public-facing web presence',
       flavor: 'Your company\'s digital storefront',
-      vulnerableVectors: asAttackVectorArray(['web']),
-      vulnerabilities: ['web'],
+      vulnerableVectors: asAttackVectorArray(['web', 'social']),
+      vulnerabilities: ['web', 'social'],
       img: 'assets/cards/infra/website.png',
       state: asInfraState('secure'), // Initial state is secure, not neutral
     }, 'web'),

@@ -382,12 +382,12 @@ export function useCardActions(props: BoardProps & {
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
-      // For shield cards, target ONLY secure infrastructure + vector compatibility
-      // Shield cards should not be able to target vulnerable infrastructure
+      // For shield cards, target secure or fortified_weaken infrastructure + vector compatibility
+      // fortified_weaken infrastructure can be re-shielded to maintain protection
       else if (effectiveCardType === 'shield') {
         targets = G.infrastructure
           .filter((infra: InfrastructureCard) => {
-            const stateMatch = infra.state === 'secure';
+            const stateMatch = infra.state === 'secure' || infra.state === 'fortified_weaken';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
             return stateMatch && vectorMatch;
           })
