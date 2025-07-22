@@ -175,15 +175,8 @@ export const actionStageMoves = {
     const { chooseChainTargetMove } = require('../../moves/chooseChainTarget');
     const updatedG = chooseChainTargetMove(G, ctx, playerID, targetId);
     
-    // After chain effect is resolved, transition to reaction phase
-    if (!updatedG.pendingChainChoice) {
-      // Chain effect completed, now allow reaction to the original card
-      // FIXED: Use boardgame.io player IDs for opponent lookup
-      const opponentID = playerID === '0' ? '1' : '0';
-      if (opponentID) {
-        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
-      }
-    }
+    // Chain effect completed - let the normal game flow continue
+    // Don't force phase transitions here as it can corrupt the game state
     
     return updatedG;
   },
