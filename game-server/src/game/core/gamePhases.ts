@@ -179,9 +179,9 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
       const isAttacker = G.currentTurn === 'attacker';
       const currentPlayer = isAttacker ? updatedG.attacker : updatedG.defender;
 
-      // CARD REPLENISHMENT: Draw cards at the start of every turn
+      // CARD REPLENISHMENT: Draw cards at the start of the turn ONLY starting from round 2 (same as AP)
       let updatedPlayer = null;
-      if (currentPlayer) {
+      if (currentPlayer && updatedG.currentRound >= 2) {
         updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
         
         const maxHandSize = updatedG.gameConfig.maxHandSize;
@@ -189,7 +189,7 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
         const currentHandSize = updatedPlayer.hand?.length || 0;
         const cardsToDrawCount = Math.min(cardsToDrawPerTurn, maxHandSize - currentHandSize);
         
-        console.log(`🃏 Turn start card replenishment: ${G.currentTurn} drawing ${cardsToDrawCount} cards (hand: ${currentHandSize}/${maxHandSize})`);
+        console.log(`🃏 Turn start card replenishment (Round ${updatedG.currentRound}): ${G.currentTurn} drawing ${cardsToDrawCount} cards (hand: ${currentHandSize}/${maxHandSize})`);
         
         if (cardsToDrawCount > 0) {
           for (let i = 0; i < cardsToDrawCount; i++) {
@@ -197,14 +197,24 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
           }
         }
         
-        // Reset free card cycles for this turn
-        updatedPlayer.freeCardCyclesUsed = 0;
-        
         // Update the game state with the player who drew cards
         updatedG = {
           ...updatedG,
           [isAttacker ? 'attacker' : 'defender']: updatedPlayer
         };
+      } else if (currentPlayer) {
+        // For round 1, just reset free card cycles without drawing cards
+        updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
+        updatedPlayer.freeCardCyclesUsed = 0;
+        
+        updatedG = {
+          ...updatedG,
+          [isAttacker ? 'attacker' : 'defender']: updatedPlayer
+        };
+        
+        if (updatedG.currentRound < 2) {
+          console.log(`🃏 Round ${updatedG.currentRound}: No card replenishment (starts from Round 2)`);
+        }
       }
 
       // Add AP at the start of the turn ONLY starting from round 2
