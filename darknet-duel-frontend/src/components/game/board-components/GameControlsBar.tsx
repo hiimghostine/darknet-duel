@@ -28,7 +28,7 @@ export interface GameControlsBarProps {
   // Action handlers
   handleEndTurn: () => void;
   handleSkipReaction: () => void;
-  cycleCard: (cardId: string) => void;
+  cycleCard: (cardId: string) => void;  // Keep for compatibility but won't use
   surrender: () => void;
   
   // Timer state from useAutoReactionTimer
@@ -48,7 +48,7 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
   isProcessingMove,
   handleEndTurn,
   handleSkipReaction,
-  cycleCard,
+  cycleCard,  // Keep parameter for compatibility
   surrender,
   isInReactionMode,
   isTimerActive,
@@ -97,28 +97,7 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
           ) : 'END_TURN'}
         </button>
         
-        {/* Cycle Card Button - only show in action mode when player has cards */}
-        {isActive && !isProcessingMove && currentPlayerObj?.hand?.length > 0 && 
-         ctx.activePlayers && playerID && ctx.activePlayers[playerID] === 'action' && (
-          <button 
-            className={`
-              btn btn-sm font-mono font-bold uppercase transition-all duration-200
-              ${isAttacker 
-                ? 'bg-orange-800/80 border-orange-600/50 text-orange-100 hover:bg-orange-700/90 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/30' 
-                : 'bg-cyan-800/80 border-cyan-600/50 text-cyan-100 hover:bg-cyan-700/90 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/30'
-              }
-            `}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              triggerClick(); // Play click sound on button press
-              cycleCard(currentPlayerObj.hand[0].id);
-            }}
-            title="Cycle out your current hand for a new card"
-          >
-            CYCLE_CARD
-          </button>
-        )}
+        {/* ✅ REMOVED: Cycle Card Button as requested */}
         
         <button
           className={`

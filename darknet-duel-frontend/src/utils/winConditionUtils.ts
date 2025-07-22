@@ -28,12 +28,6 @@ export function validateWinCondition(G: GameState): { winner: PlayerRole | 'aban
     return { winner: G.winner };
   }
   
-  // Check for max turns - standard mode is 15 rounds max
-  if (G.turnNumber > G.gameConfig.maxTurns) {
-    // If we hit max rounds, defender wins (defenders advantage)
-    return { winner: 'defender' };
-  }
-  
   // Check for infrastructure control win condition
   if (G.infrastructure && G.infrastructure.length > 0) {
     // Count controlled infrastructure for each side
@@ -48,14 +42,29 @@ export function validateWinCondition(G: GameState): { winner: PlayerRole | 'aban
       }
     });
     
-    // For standard mode: if a player controls 3 or more infrastructure cards, they win
-    const infrastructureThreshold = Math.ceil(G.infrastructure.length / 2) + 1; // 3+ out of 5
+    // ✅ UPDATED: Two different win conditions
+    const totalInfrastructure = G.infrastructure.length;
+    const isMaxTurnsReached = G.turnNumber > G.gameConfig.maxTurns;
     
-    if (attackerControlled >= infrastructureThreshold) {
-      return { winner: 'attacker' };
-    }
-    if (defenderControlled >= infrastructureThreshold) {
-      return { winner: 'defender' };
+    if (isMaxTurnsReached) {
+      // ✅ TURN LIMIT WIN: Use majority rule (3+ out of 5)
+      const majorityThreshold = Math.ceil(totalInfrastructure / 2) + 1; // 3+ out of 5
+      
+      if (attackerControlled >= majorityThreshold) {
+        return { winner: 'attacker' }; // Attacker wins with majority
+      } else {
+        return { winner: 'defender' }; // Defender wins by default (including ties)
+      }
+    } else {
+      // ✅ IMMEDIATE WIN: Requires ALL infrastructure cards (5/5)
+      const immediateWinThreshold = totalInfrastructure; // Must control ALL infrastructure cards
+      
+      if (attackerControlled >= immediateWinThreshold) {
+        return { winner: 'attacker' };
+      }
+      if (defenderControlled >= immediateWinThreshold) {
+        return { winner: 'defender' };
+      }
     }
   }
   
@@ -106,8 +115,9 @@ export function validateAndCorrectWinner(G: GameState): PlayerRole | 'abandoned'
         }
       });
       
+      const isMaxTurnsReached = G.turnNumber > G.gameConfig.maxTurns;
       console.warn(`   Infrastructure control: Attacker ${attackerControlled}, Defender ${defenderControlled}`);
-      console.warn(`   Infrastructure threshold: ${Math.ceil(G.infrastructure.length / 2) + 1}`);
+      console.warn(`   Win condition: ${isMaxTurnsReached ? 'Turn limit (3+ majority)' : 'Immediate (5/5 all cards)'}`);
     }
     
     // ✅ FIXED: For game over, prefer backend winner over client calculation
@@ -157,12 +167,7 @@ export function getWinReason(G: GameState, winner: PlayerRole | 'abandoned' | un
     return 'Game ended by surrender';
   }
   
-  // Check if max turns reached
-  if (G.turnNumber > G.gameConfig.maxTurns) {
-    return 'Maximum turns reached - defender wins by default';
-  }
-  
-  // Check infrastructure control
+  // Check infrastructure control with proper win condition logic
   if (G.infrastructure && G.infrastructure.length > 0) {
     let attackerControlled = 0;
     let defenderControlled = 0;
@@ -175,12 +180,24 @@ export function getWinReason(G: GameState, winner: PlayerRole | 'abandoned' | un
       }
     });
     
-    const infrastructureThreshold = Math.ceil(G.infrastructure.length / 2) + 1;
+    const totalInfrastructure = G.infrastructure.length;
+    const isMaxTurnsReached = G.turnNumber > G.gameConfig.maxTurns;
     
-    if (attackerControlled >= infrastructureThreshold) {
-      return `Attacker controlled ${attackerControlled} infrastructure cards`;
-    } else if (defenderControlled >= infrastructureThreshold) {
-      return `Defender fortified ${defenderControlled} infrastructure cards`;
+    if (isMaxTurnsReached) {
+      // Turn limit reached - check majority
+      const majorityThreshold = Math.ceil(totalInfrastructure / 2) + 1;
+      if (attackerControlled >= majorityThreshold) {
+        return `Maximum turns reached - Attacker wins with ${attackerControlled}/${totalInfrastructure} infrastructure majority`;
+      } else {
+        return `Maximum turns reached - Defender wins by default (Attacker: ${attackerControlled}/${totalInfrastructure})`;
+      }
+    } else {
+      // Immediate win check
+      if (attackerControlled >= totalInfrastructure) {
+        return `Attacker compromised all ${attackerControlled} infrastructure cards`;
+      } else if (defenderControlled >= totalInfrastructure) {
+        return `Defender fortified all ${defenderControlled} infrastructure cards`;
+      }
     }
   }
   

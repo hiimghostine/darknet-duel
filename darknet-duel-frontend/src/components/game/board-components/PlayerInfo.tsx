@@ -164,8 +164,20 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
           <span className="text-primary font-bold truncate max-w-[8rem]">
             {getDisplayName()}
           </span>
-          {/* ✅ REMOVED: Attacker/Defender role badge as requested */}
         </div>
+        
+        {/* ✅ UPDATED: Role below username, only for yourself (not opponent) */}
+        {!isOpponent && (
+          <div className="text-xs text-base-content/80 font-mono mb-1">
+            <span className="text-base-content/60">Role: </span>
+            <span className={`font-bold ${
+              playerRole === 'attacker' ? 'text-red-300' : 'text-blue-300'
+            }`}>
+              {playerRole === 'attacker' ? '🎯 Attacker' : '🛡️ Defender'}
+            </span>
+          </div>
+        )}
+        
         <div className="text-xs text-base-content/70 font-mono truncate max-w-[12rem]">
           {loading ? (
             'Loading profile...'
