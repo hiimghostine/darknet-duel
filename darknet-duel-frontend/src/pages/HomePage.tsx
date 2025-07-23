@@ -85,7 +85,7 @@ const HomePage: React.FC = () => {
               </span>
             </h1>
             <p className="text-base-content/80 text-lg mb-8 font-light max-w-md leading-relaxed">
-              Connect to the network, customize your digital fighter, and compete in the ultimate cyberpunk hacking tournament where only the elite survive.
+             Enter the digital battlefield, assemble your cybersecurity arsenal, and engage in the ultimate hacking duel where only the most strategic minds prevail.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
