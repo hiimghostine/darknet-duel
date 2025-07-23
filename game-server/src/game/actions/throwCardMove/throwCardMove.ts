@@ -318,12 +318,20 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       console.log(`Applying Emergency Response Team wildcard effects`);
       const gameStateWithWildcardEffects = WildcardResolver.applyWildcardEffects(extendedCard, wildcardContext);
       
+      // CRITICAL: Recalculate scores after D303 mass restore (this was missing!)
+      console.log(`🔍 D303 SPECIAL HANDLING - Recalculating scores after mass restore...`);
+      const { attackerScore, defenderScore } = calculateScores(gameStateWithWildcardEffects.infrastructure);
+      console.log(`🔍 D303 SPECIAL HANDLING - New scores: Attacker=${attackerScore}, Defender=${defenderScore}`);
+      
       return {
         ...gameStateWithWildcardEffects,
         attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker,
         defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender,
         actions: [...gameStateWithWildcardEffects.actions, newAction],
-        message: gameStateWithWildcardEffects.message || `${card!.name} emergency response activated!`
+        message: gameStateWithWildcardEffects.message || `${card!.name} emergency response activated!`,
+        // Update scores in the returned game state
+        attackerScore,
+        defenderScore
       };
     }
     

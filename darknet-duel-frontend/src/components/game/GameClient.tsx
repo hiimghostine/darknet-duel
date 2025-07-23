@@ -418,7 +418,7 @@ const GameClient: React.FC = () => {
           forceNew: true
         }
       }),
-      debug: isDebugEnabled(),
+      debug: false,
       numPlayers: 2,
       enhancer: (state: any) => {
         // Use the extracted debug utilities for logging

@@ -10,6 +10,7 @@ import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
 import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
 import { createInfrastructureCards } from '../cards/infrastructureCardLoader';
+import { calculateScores } from './utils/scoring';
 
 /**
  * Get original vulnerabilities for an infrastructure card from its definition
@@ -578,6 +579,10 @@ export class WildcardResolver {
           // Handle Emergency Response Team (D303) effect
           console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
           
+          // DEBUG: Log current scores before mass restore
+          console.log(`🔍 BEFORE mass_restore - Current scores: Attacker=${updatedGameState.attackerScore}, Defender=${updatedGameState.defenderScore}`);
+          console.log(`🔍 BEFORE mass_restore - Infrastructure states:`, updatedGameState.infrastructure?.map(i => `${i.name}:${i.state}`));
+          
           // Restore ALL compromised infrastructure to secure state
           if (updatedGameState.infrastructure) {
             let restoredCount = 0;
@@ -596,9 +601,23 @@ export class WildcardResolver {
               return infra;
             });
             
+            // DEBUG: Log infrastructure states after restoration
+            console.log(`🔍 AFTER restoration - Infrastructure states:`, updatedGameState.infrastructure.map(i => `${i.name}:${i.state}`));
+            
             if (restoredCount > 0) {
               updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
               console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+              
+              // Recalculate scores after mass restore
+              console.log(`🔍 CALCULATING new scores...`);
+              const { attackerScore, defenderScore } = calculateScores(updatedGameState.infrastructure);
+              console.log(`🔍 CALCULATED scores - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
+              
+              updatedGameState.attackerScore = attackerScore;
+              updatedGameState.defenderScore = defenderScore;
+              
+              console.log(`📊 Scores updated after mass restore - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
+              console.log(`🔍 FINAL game state scores - Attacker: ${updatedGameState.attackerScore}, Defender: ${updatedGameState.defenderScore}`);
             } else {
               updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
               console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
@@ -784,6 +803,9 @@ export class WildcardResolver {
         // Would need access to player state
       }
     }
+    
+    // DEBUG: Log final game state before returning
+    console.log(`🔍 WILDCARDRESOLVER RETURN - Final scores: Attacker=${updatedGameState.attackerScore}, Defender=${updatedGameState.defenderScore}`);
     
     return updatedGameState;
   }
