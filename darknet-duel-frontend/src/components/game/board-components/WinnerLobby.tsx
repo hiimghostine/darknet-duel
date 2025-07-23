@@ -363,13 +363,6 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
                     <div className="text-xs text-primary font-mono">INFRA_CHANGES</div>
                   </div>
                 </div>
-                {!G.gameStats && (
-                  <div className="mt-4 text-center">
-                    <p className="text-xs text-base-content/70 font-mono">
-                      ⚠️ STATS_CALCULATED_CLIENT_SIDE
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
 
