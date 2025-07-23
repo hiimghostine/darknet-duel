@@ -13,14 +13,14 @@ module.exports = {
 				n: "Spirit Blossom Zed",
 				d: "Give your avatar a new look.",
 				f: "spirit_blossom_zed",
-				unit: "crypts",
+				unit: "creds",
 				cost: 250
 			},
 			{
 				n: "Spirit Blossom Springs Sett",
 				d: "Give your avatar a new look.",
 				f: "spirit_blossom_springs_sett",
-				unit: "crypts",
+				unit: "creds",
 				cost: 250
 			},
 			{
