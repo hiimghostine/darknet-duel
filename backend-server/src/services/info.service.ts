@@ -7,6 +7,7 @@ export interface RecentActivityItem {
   type: 'WIN' | 'LOSS';
   opponent: string;
   time: string;
+  timestamp: Date; // Add actual timestamp for proper timezone handling
   pointsChange: string;
   gameId: string;
   gameMode: string;
@@ -70,6 +71,7 @@ export class InfoService {
           type,
           opponent: opponentUsername,
           time: timeDiff,
+          timestamp: playerRecord.createdAt, // Include actual timestamp for timezone handling
           pointsChange: `${pointsChange} PTS`,
           gameId: playerRecord.gameId,
           gameMode: playerRecord.game.gameMode || 'standard'

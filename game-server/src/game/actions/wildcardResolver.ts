@@ -9,6 +9,22 @@ import { GameState, InfrastructureState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
 import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
+import { createInfrastructureCards } from '../cards/infrastructureCardLoader';
+
+/**
+ * Get original vulnerabilities for an infrastructure card from its definition
+ */
+function getOriginalInfrastructureVulnerabilities(infrastructureId: string): string[] {
+  const originalCards = createInfrastructureCards();
+  const originalCard = originalCards.find(card => card.id === infrastructureId);
+  
+  if (originalCard && Array.isArray(originalCard.vulnerabilities)) {
+    // Filter to only string vulnerabilities (original definition format)
+    return originalCard.vulnerabilities.filter(v => typeof v === 'string') as string[];
+  }
+  
+  return []; // Fallback to empty array if not found
+}
 
 export interface WildcardPlayContext {
   gameState: GameState;
@@ -335,10 +351,12 @@ export class WildcardResolver {
           if (infra.state === 'compromised') {
             restoredCount++;
             console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+            // Get original vulnerabilities from infrastructure definition
+            const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
             return {
               ...infra,
               state: 'secure' as InfrastructureState,
-              vulnerabilities: [] // Clear vulnerabilities like regular response cards
+              vulnerabilities: originalVulns // Restore original vulnerabilities
             };
           }
           return infra;
@@ -567,10 +585,12 @@ export class WildcardResolver {
               if (infra.state === 'compromised') {
                 restoredCount++;
                 console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+                // Get original vulnerabilities from infrastructure definition
+                const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
                 return {
                   ...infra,
                   state: 'secure' as InfrastructureState,
-                  vulnerabilities: [] // Clear vulnerabilities like regular response cards
+                  vulnerabilities: originalVulns // Restore original vulnerabilities
                 };
               }
               return infra;
@@ -623,10 +643,12 @@ export class WildcardResolver {
                 if (infra.state === 'compromised') {
                   restoredCount++;
                   console.log(`🔧 Emergency containment: ${infra.name} from compromised to shielded`);
+                  // Get original vulnerabilities from infrastructure definition
+                  const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
                   return {
                     ...infra,
                     state: 'shielded' as InfrastructureState, // Restore and immediately shield
-                    vulnerabilities: [], // Clear vulnerabilities like regular response cards
+                    vulnerabilities: originalVulns, // Restore original vulnerabilities
                     shields: [
                       ...(infra.shields || []),
                       {

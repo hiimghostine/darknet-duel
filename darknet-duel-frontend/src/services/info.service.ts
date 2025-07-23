@@ -4,6 +4,7 @@ export interface RecentActivityItem {
   type: 'WIN' | 'LOSS';
   opponent: string;
   time: string;
+  timestamp: string; // ISO timestamp string from backend
   pointsChange: string;
   gameId: string;
   gameMode: string;

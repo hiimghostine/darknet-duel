@@ -1,5 +1,21 @@
 import { InfrastructureCard, InfrastructureState } from 'shared-types/game.types';
 import { Card } from 'shared-types/card.types';
+import { createInfrastructureCards } from '../../../cards/infrastructureCardLoader';
+
+/**
+ * Get original vulnerabilities for an infrastructure card from its definition
+ */
+function getOriginalInfrastructureVulnerabilities(infrastructureId: string): string[] {
+  const originalCards = createInfrastructureCards();
+  const originalCard = originalCards.find(card => card.id === infrastructureId);
+  
+  if (originalCard && Array.isArray(originalCard.vulnerabilities)) {
+    // Filter to only string vulnerabilities (original definition format)
+    return originalCard.vulnerabilities.filter(v => typeof v === 'string') as string[];
+  }
+  
+  return []; // Fallback to empty array if not found
+}
 
 /**
  * Apply reaction card effect to target infrastructure
@@ -21,10 +37,13 @@ export function reactionEffect(
   if (currentInfra.state === 'vulnerable') {
     console.log(`Cancelling vulnerability on infrastructure ${currentInfra.name}`);
     
+    // Get original vulnerabilities from infrastructure definition
+    const originalVulnerabilities = getOriginalInfrastructureVulnerabilities(currentInfra.id);
+    
     newInfrastructure[infraIndex] = {
       ...currentInfra,
       state: 'secure' as InfrastructureState,
-      vulnerabilities: [] // Clear vulnerabilities
+      vulnerabilities: originalVulnerabilities // Restore original vulnerabilities
     };
     console.log(`Infrastructure ${currentInfra.name} returned to secure state`);
   } else if (currentInfra.state === 'compromised') {

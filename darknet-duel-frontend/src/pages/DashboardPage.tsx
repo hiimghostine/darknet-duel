@@ -364,22 +364,64 @@ const DashboardPage: React.FC = () => {
                   
                   <div className="space-y-3">
                     {activitiesData.length > 0 ? (
-                      activitiesData.map((activity, index) => (
-                        <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
-                          <div className="flex items-center">
-                            <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
-                            <div className="font-mono">
-                              <div className="text-sm font-bold">
-                                {activity.type} vs {activity.opponent}
+                      activitiesData.map((activity, index) => {
+                        // Use the actual timestamp and add 8 hours for Asia/Manila timezone
+                        const formatTimeWithTimezone = (timestamp: string): string => {
+                          try {
+                            console.log('Original timestamp:', timestamp); // Diagnostic logging
+                            
+                            // Parse the ISO timestamp from backend
+                            const date = new Date(timestamp);
+                            if (isNaN(date.getTime())) {
+                              console.error('Invalid timestamp:', timestamp);
+                              return activity.time; // Fallback to relative time
+                            }
+                            
+                            // Add 8 hours for Asia/Manila timezone (UTC+8)
+                            const adjustedDate = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+                            
+                            // Calculate relative time from adjusted date
+                            const now = new Date();
+                            const diffMs = now.getTime() - adjustedDate.getTime();
+                            
+                            const minutes = Math.floor(diffMs / (1000 * 60));
+                            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            
+                            let result: string;
+                            if (minutes < 60) {
+                              result = minutes <= 1 ? 'just now' : `${minutes}m ago`;
+                            } else if (hours < 24) {
+                              result = `${hours}h ago`;
+                            } else {
+                              result = `${days}d ago`;
+                            }
+                            
+                            console.log('Adjusted time:', result);
+                            return result;
+                          } catch (error) {
+                            console.error('Error adjusting timezone:', error);
+                            return activity.time; // Fallback to relative time
+                          }
+                        };
+
+                        return (
+                          <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
+                            <div className="flex items-center">
+                              <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
+                              <div className="font-mono">
+                                <div className="text-sm font-bold">
+                                  {activity.type} vs {activity.opponent}
+                                </div>
+                                <div className="text-xs text-base-content/70">{formatTimeWithTimezone(activity.timestamp)}</div>
                               </div>
-                              <div className="text-xs text-base-content/70">{activity.time}</div>
+                            </div>
+                            <div className="text-xs font-mono text-primary">
+                              {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                             </div>
                           </div>
-                          <div className="text-xs font-mono text-primary">
-                            {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="border border-primary/30 bg-base-300/50 p-3 text-center">
                         <div className="font-mono text-sm text-base-content/70">No recent games</div>
