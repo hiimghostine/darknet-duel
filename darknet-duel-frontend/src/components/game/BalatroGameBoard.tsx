@@ -8,6 +8,8 @@ import type { GameState } from '../../types/game.types';
 
 // Import custom hooks for memoization
 import { useMemoizedValue, useMemoizedKeys } from '../../hooks/useMemoizedValue';
+import { useOptimizedGameState, useMemoizedGameSection, comparisonFns } from '../../hooks/useOptimizedGameState';
+import { usePerformanceMonitor, useBoardGameIOMonitor } from '../../hooks/usePerformanceMonitor';
 
 // Import custom hooks
 import { useCardActions } from '../../hooks/useCardActions';
@@ -75,17 +77,33 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Toast notifications
   const { addToast } = useToastStore();
   
-  // Use optimized memoization strategies
-  const memoizedG = useMemoizedValue(G);
-  const memoizedCtx = useMemoizedKeys(ctx, ['phase', 'currentPlayer', 'gameover', 'activePlayers']);
+  // Performance monitoring
+  const performanceMetrics = usePerformanceMonitor('BalatroGameBoard', 16);
+  useBoardGameIOMonitor(G, ctx, playerID);
   
-  // Memoize critical game state properties
-  useMemoizedKeys(G, [
-    'gamePhase', 'message', 'attackerScore', 'defenderScore',
-    'infrastructure', 'attacker', 'defender', 'chat', 'rematchRequested',
-    'pendingChainChoice', 'pendingWildcardChoice', 'pendingHandChoice', 'pendingCardChoice',
-    'temporaryEffects', 'persistentEffects'
-  ]);
+  // Use optimized game state management
+  const optimizedState = useOptimizedGameState(G, ctx, playerID);
+  const memoizedG = optimizedState.G;
+  const memoizedCtx = optimizedState.ctx;
+  
+  // Use optimized memoization for specific game sections
+  const memoizedInfrastructure = useMemoizedGameSection(
+    memoizedG.infrastructure,
+    'infrastructure',
+    (prev, next) => (prev?.length || 0) === (next?.length || 0)
+  );
+  
+  const memoizedAttacker = useMemoizedGameSection(
+    memoizedG.attacker,
+    'attacker',
+    (prev, next) => prev?.hand?.length === next?.hand?.length && prev?.id === next?.id
+  );
+  
+  const memoizedDefender = useMemoizedGameSection(
+    memoizedG.defender,
+    'defender',
+    (prev, next) => prev?.hand?.length === next?.hand?.length && prev?.id === next?.id
+  );
 
   // Use custom hooks for game state and actions
   const {
@@ -449,20 +467,25 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // Optimized common props with performance utilities
   const optimizedInfrastructureData = useMemo(() => ({
-    cards: memoizedG?.infrastructure || [],
-    length: memoizedG?.infrastructure?.length || 0,
-    states: memoizedG?.infrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
-  }), [memoizedG?.infrastructure]);
+    cards: memoizedInfrastructure || [],
+    length: memoizedInfrastructure?.length || 0,
+    states: memoizedInfrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
+  }), [memoizedInfrastructure]);
 
   // Common props to pass to child components
   const commonProps = useMemo(() => ({
-    G: memoizedG,
+    G: {
+      ...memoizedG,
+      attacker: memoizedAttacker,
+      defender: memoizedDefender,
+      infrastructure: memoizedInfrastructure
+    },
     ctx: memoizedCtx,
     playerID,
     isActive,
     moves,
     isAttacker
-  }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
+  }), [memoizedG, memoizedAttacker, memoizedDefender, memoizedInfrastructure, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
   // Theme support - still needed for main component styling
   const { theme } = useThemeStore();
