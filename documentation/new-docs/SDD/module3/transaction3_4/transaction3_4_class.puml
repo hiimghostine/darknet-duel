@@ -1,0 +1,43 @@
+@startuml
+' Class Diagram for Disconnection/Reconnection Handling (Transaction 3.4)
+
+package "Frontend" {
+  class useGameConnection {
+    +connectionStatus
+    +attemptReconnect()
+    +leaveMatch()
+    +getOpponentConnectionStatus()
+  }
+  class GameClient {
+    +connectToServer()
+    +handleStateUpdate()
+    +handleReconnection()
+    +renderGameBoard()
+    +showConnectionError()
+  }
+  class LobbyDetail {
+    +showLobbyStatus()
+    +handleLeaveMatch()
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +manageGameState()
+    +syncStateToClients()
+    +handlePlayerConnection()
+    +handleDisconnection()
+    +handleReconnection()
+  }
+  class LobbyCleanupService {
+    +start()
+    +removeAbandonedGame()
+  }
+}
+
+GameClient --> useGameConnection : uses
+GameClient --> boardgameioServer : Socket.IO/WebSocket
+LobbyDetail --> useGameConnection : uses
+boardgameioServer --> LobbyCleanupService : uses
+
+@enduml 

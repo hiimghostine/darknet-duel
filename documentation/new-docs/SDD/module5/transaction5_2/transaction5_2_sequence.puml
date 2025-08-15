@@ -1,0 +1,40 @@
+@startuml
+' Sequence Diagram for Player Performance Statistics (ELO, Win/Loss, Charts) (Transaction 5.2)
+
+actor Player
+participant ProfilePage as Profile
+participant StatsChart as Chart
+participant MatchHistory as History
+participant api_ts as API
+participant boardgameioServer as GameServer
+participant serverAuth as Auth
+participant BackendServer as Backend
+participant Database as DB
+
+Player -> Profile: view profile
+Profile -> API: fetchStats(userId)
+API -> Backend: GET /api/stats/:userId (REST)
+Backend -> DB: query stats
+DB --> Backend: stats data
+Backend --> API: stats data
+API --> Profile: stats data
+Profile -> Chart: renderELOChart(), renderWinLossChart()
+Profile -> History: showRecentMatches()
+Profile -> API: fetchHistory(userId)
+API -> Backend: GET /api/history/:userId (REST)
+Backend -> DB: query history
+DB --> Backend: history data
+Backend --> API: history data
+API --> History: history data
+
+alt After match ends
+  GameServer -> Auth: sendGameResults(), recordGameHistory(), updatePlayerRatings() (REST)
+  Auth -> Backend: POST /api/game-results, /api/players/ratings (REST)
+  Backend -> DB: update stats, ratings, history
+  Backend --> Auth: update confirmation
+  Auth --> GameServer: update confirmation
+  GameServer -> API: notifyStatsUpdate() (WebSocket)
+  API -> Profile: update stats
+  Profile -> Chart: update charts
+end
+@enduml 

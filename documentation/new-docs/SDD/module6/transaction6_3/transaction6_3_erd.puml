@@ -1,0 +1,15 @@
+@startuml
+' ERD for Payment Integration (for Top-Up) (Transaction 6.3)
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+table(accounts) {
+  primary_key(id) VARCHAR(36)
+  email VARCHAR(100) unique
+  username VARCHAR(50) unique
+  crypts INT not_null
+}
+@enduml 

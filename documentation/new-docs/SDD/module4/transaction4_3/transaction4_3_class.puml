@@ -1,0 +1,98 @@
+@startuml
+' Class Diagram for Game Rules Enforcement (AP, Hand Size, Win Conditions) (Transaction 4.3)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +displayAP()
+    +displayHandSize()
+    +displayRoundPhase()
+    +showWinLoss()
+    +disableActions()
+  }
+  class PlayerHand {
+    +renderHand()
+    +disableCardPlay()
+  }
+  class PlayerInfo {
+    +showAP()
+    +showHandSize()
+    +showMaintenanceCosts()
+  }
+  class GameControls {
+    +endTurn()
+    +cycleCard()
+    +surrender()
+    +disableButtons()
+  }
+  class GameStatus {
+    +displayPhase()
+    +displayGameOver()
+  }
+  class useTurnActions {
+    +handleEndTurn()
+    +handleCycleCard()
+    +handleSurrender()
+  }
+  class game_types_ts {
+    +AP
+    +handSize
+    +winCondition
+  }
+}
+
+package "Backend (Game Server)" {
+  class gameState_ts {
+    +initialAP
+    +handSize
+    +maxTurns
+    +checkGameEnd()
+  }
+  class playerManager {
+    +initializePlayer()
+    +updateActionPoints()
+    +drawCard()
+    +enforceHandSize()
+  }
+  class gamePhases {
+    +allocateAP()
+    +enforceHandSize()
+    +progressTurn()
+    +checkWinConditions()
+  }
+  class actionStageMoves {
+    +playCard()
+    +cycleCard()
+    +endTurn()
+    +surrender()
+    +checkRuleViolations()
+  }
+  class phaseUtils {
+    +checkEndConditions()
+    +checkWinConditions()
+    +enforceRules()
+  }
+  class cardUtils {
+    +isCardPlayable()
+    +validateHandSize()
+    +validateTurn()
+  }
+}
+
+BalatroGameBoard --> PlayerHand : uses
+BalatroGameBoard --> PlayerInfo : uses
+BalatroGameBoard --> GameControls : uses
+BalatroGameBoard --> GameStatus : uses
+BalatroGameBoard --> useTurnActions : uses
+PlayerHand --> game_types_ts : uses
+PlayerInfo --> game_types_ts : uses
+GameControls --> useTurnActions : uses
+gameState_ts --> playerManager : uses
+gameState_ts --> gamePhases : uses
+gamePhases --> actionStageMoves : uses
+gamePhases --> phaseUtils : uses
+actionStageMoves --> cardUtils : uses
+actionStageMoves --> phaseUtils : uses
+playerManager --> game_types_ts : uses
+phaseUtils --> game_types_ts : uses
+
+@enduml 

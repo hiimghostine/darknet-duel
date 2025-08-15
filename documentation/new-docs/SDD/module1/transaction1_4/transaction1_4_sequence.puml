@@ -1,0 +1,33 @@
+@startuml
+' Sequence Diagram for Role-Based Access (Transaction 1.4)
+
+actor User
+participant AuthStore as FS
+participant ProtectedRoute as PR
+participant AdminPage as AP
+participant "API /admin/users" as API
+participant AuthMiddleware as AM
+participant AdminAuthMiddleware as AAM
+participant AdminController as AC
+participant Account as DB
+
+User -> FS: login()
+FS -> PR: isAuthenticated, role
+User -> PR: Navigate to /admin/users
+PR -> FS: checkRole()
+alt Role is admin
+  PR -> AP: render()
+  AP -> FS: getUser()
+  FS -> API: GET /api/admin/users
+  API -> AM: authMiddleware
+  AM -> AAM: adminAuthMiddleware
+  AAM -> AC: allow if admin
+  AC -> DB: Query users
+  DB --> AC: User list
+  AC --> API: User list
+  API --> FS: User list
+  FS --> AP: User list
+else Role is not admin
+  PR -> User: Redirect or show error
+end
+@enduml 

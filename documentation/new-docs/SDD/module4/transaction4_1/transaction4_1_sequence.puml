@@ -1,0 +1,42 @@
+@startuml
+' Sequence Diagram for Card Play, Targeting, and Effect Resolution (Transaction 4.1)
+
+actor Player
+participant BalatroGameBoard as Board
+participant PlayerHand as Hand
+participant useCardActions as Actions
+participant PendingChoicesOverlay as Overlay
+participant boardgameioServer as Server
+participant playCardMove as PlayMove
+participant throwCardMove as ThrowMove
+participant cardEffectsRouter as Effects
+participant wildcardResolver as Wildcards
+
+Player -> Hand: Click card
+Hand -> Actions: playCard(card)
+alt Card requires targeting
+  Actions -> Board: enterTargetingMode()
+  Player -> Board: Select infrastructure
+  Board -> Actions: targetInfrastructure(infraId)
+  Actions -> Server: throwCard(cardId, infraId)
+  Server -> ThrowMove: throwCard()
+  ThrowMove -> Effects: applyCardEffect()
+  Effects -> Wildcards: applyWildcardEffects() (if needed)
+  Effects -> ThrowMove: return effect result
+  ThrowMove -> Server: update game state
+else Card does not require targeting
+  Actions -> Server: playCard(cardId)
+  Server -> PlayMove: playCard()
+  PlayMove -> Effects: applyCardEffect()
+  Effects -> Wildcards: applyWildcardEffects() (if needed)
+  Effects -> PlayMove: return effect result
+  PlayMove -> Server: update game state
+end
+Server -> Board: send updated game state
+Board -> Overlay: showPendingChoice() (if needed)
+Overlay -> Player: prompt for input (wildcard type, chain, hand disruption)
+Player -> Overlay: make choice
+Overlay -> Actions: handlePendingChoice(choice)
+Actions -> Server: send choice
+Server -> Board: update game state
+@enduml 

@@ -1,0 +1,25 @@
+@startuml
+' Sequence Diagram for Lobby Chat (Transaction 2.4)
+
+actor User
+participant LobbyChat as LC
+participant LobbyService as FS
+participant AuthStore as AS
+participant "API /games/darknet-duel/:matchID/move" as API
+participant BoardgameIOServer as BGS
+participant DarknetDuelGameLogic as GL
+participant LobbyDatabase as DB
+
+User -> LC: Type and send message
+LC -> FS: sendChatMessage(matchID, message)
+FS -> API: POST /games/darknet-duel/:matchID/move (sendChatMessage)
+API -> BGS: sendChatMessage()
+BGS -> GL: sendChatMessage()
+GL -> DB: storeChatMessage()
+DB --> GL: Updated game state
+GL --> BGS: Updated game state
+BGS -> API: Broadcast new message
+API --> FS: New message
+FS --> LC: New message
+LC -> User: Display new message
+@enduml 

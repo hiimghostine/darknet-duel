@@ -1,0 +1,34 @@
+@startuml
+' Sequence Diagram for Game Creation and Initialization (Transaction 3.1)
+
+actor User
+participant LobbyBrowser as LB
+participant LobbyService as FS
+participant "API /games/darknet-duel" as API
+participant DarknetDuel as GS
+participant gameState as GSState
+
+User -> LB: Open lobby browser
+LB -> FS: getMatches()
+FS -> API: GET /games/darknet-duel
+API -> GS: listMatches()
+GS --> API: Match list
+API --> FS: Match list
+FS --> LB: Match list
+User -> LB: Click create lobby
+LB -> FS: createMatch()
+FS -> API: POST /games/darknet-duel
+API -> GS: createMatch()
+GS --> API: Match created
+API --> FS: Match ID
+FS --> LB: Show lobby
+User -> LB: Wait for players, ready up
+LB -> FS: startMatch()
+FS -> API: POST /games/darknet-duel/:matchID/start
+API -> GS: startMatch()
+GS -> GSState: createInitialState()
+GSState --> GS: Initial game state
+GS --> API: Game state
+API --> FS: Game state
+FS --> LB: Transition to game board
+@enduml 

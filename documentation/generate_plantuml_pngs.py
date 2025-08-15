@@ -7,12 +7,15 @@ DIAGRAMS_DIR = os.path.join(os.path.dirname(__file__), 'new-docs', 'SDD')
 # Path to plantuml.jar (relative to this script)
 PLANTUML_JAR = os.path.join(os.path.dirname(__file__), 'plantuml.jar')
 
-# Gather all .puml files
+# Gather all .puml files that do NOT have a corresponding .png file
 puml_files = []
 for root, dirs, files in os.walk(DIAGRAMS_DIR):
     for file in files:
         if file.endswith('.puml'):
-            puml_files.append(os.path.join(root, file))
+            puml_path = os.path.join(root, file)
+            png_path = os.path.splitext(puml_path)[0] + '.png'
+            if not os.path.exists(png_path):
+                puml_files.append(puml_path)
 
 def process_puml(puml_path):
     print(f"Processing: {puml_path}")

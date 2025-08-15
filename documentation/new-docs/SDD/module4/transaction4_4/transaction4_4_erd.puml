@@ -1,0 +1,57 @@
+@startuml
+' Entity-Relationship Diagram for Game State Visualization (Transaction 4.4)
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * role : enum (attacker, defender)
+  * hand : Card[]
+  * field : Card[]
+  * discard : Card[]
+}
+
+entity "cards" as Card {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * cost : int
+  * description : string
+}
+
+entity "infrastructure" as Infrastructure {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * state : enum (secure, vulnerable, compromised, shielded, fortified, etc.)
+}
+
+entity "game_state" as GameState {
+  * id : string <<PK>>
+  * attacker : Player
+  * defender : Player
+  * infrastructure : Infrastructure[]
+  * currentTurn : string
+  * turnNumber : int
+  * currentRound : int
+  * gamePhase : string
+  * winner : string
+  * actions : GameAction[]
+  * pendingWildcardChoice : object
+  * pendingChainChoice : object
+  * pendingHandChoice : object
+  * temporaryEffects : object[]
+  * persistentEffects : object[]
+}
+
+entity "overlays" as Overlay {
+  * id : string <<PK>>
+  * type : string
+  * data : object
+  * playerId : string <<FK>>
+}
+
+GameState ||--o{ Player : has
+GameState ||--o{ Infrastructure : manages
+GameState ||--o{ Overlay : displays
+Player ||--o{ Card : has
+@enduml 

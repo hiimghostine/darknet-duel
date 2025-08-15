@@ -1,0 +1,76 @@
+@startuml
+' Class Diagram for Turn-Based Gameplay, AP Allocation, Card Play, and Targeting (Transaction 3.2)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +render()
+    +handleTurn()
+    +handleCardPlay()
+    +handleTargeting()
+    +displayAP()
+  }
+  class PlayerHand {
+    +render()
+    +highlightPlayableCards()
+    +onCardSelect()
+  }
+  class GameControls {
+    +onEndTurn()
+    +onCycleCard()
+    +onSurrender()
+    +displayTurnInfo()
+  }
+  class useCardActions {
+    +playCard()
+    +throwCard()
+    +selectCardToThrow()
+    +handleTargeting()
+    +cancelTargeting()
+  }
+  class useTurnActions {
+    +handleEndTurn()
+    +handleSkipReaction()
+  }
+}
+
+package "Backend (Game Server)" {
+  class gamePhases {
+    +playingPhase
+    +actionStageMoves
+    +reactionStageMoves
+  }
+  class turnManager {
+    +handleTurnStart()
+    +handleTurnEnd()
+  }
+  class playerManager {
+    +updateActionPoints()
+    +drawCard()
+  }
+  class playCardMove {
+    +playCardMove()
+  }
+  class throwCardMove {
+    +throwCardMove()
+  }
+  class cycleCardMove {
+    +cycleCardMove()
+  }
+}
+
+BalatroGameBoard --> PlayerHand : uses
+BalatroGameBoard --> GameControls : uses
+BalatroGameBoard --> useCardActions : uses
+BalatroGameBoard --> useTurnActions : uses
+PlayerHand --> useCardActions : uses
+GameControls --> useTurnActions : uses
+useCardActions --> "Backend (Game Server)" : API/WebSocket
+useTurnActions --> "Backend (Game Server)" : API/WebSocket
+"Backend (Game Server)" --> gamePhases : runs
+"Backend (Game Server)" --> turnManager : uses
+"Backend (Game Server)" --> playerManager : uses
+"Backend (Game Server)" --> playCardMove : uses
+"Backend (Game Server)" --> throwCardMove : uses
+"Backend (Game Server)" --> cycleCardMove : uses
+
+@enduml 

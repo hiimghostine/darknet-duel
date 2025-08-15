@@ -1,0 +1,32 @@
+@startuml
+' Sequence Diagram for Match History Storage and Browsing (Transaction 5.3)
+
+actor Player
+participant GameHistoryPage as Frontend
+participant gameService as FrontendService
+participant recordGameHistory as GameServer
+participant GamesController as BackendController
+participant GameService as BackendService
+participant GameHistoryEntity as Entity
+participant game_results as DB
+
+== Store Match History (after game ends) ==
+recordGameHistory -> GamesController : POST /server/games/history (game data)
+GamesController -> GameService : saveGameHistory(gameData)
+GameService -> GameHistoryEntity : create record
+GameHistoryEntity -> game_results : insert
+GameService --> GamesController : ack
+GamesController --> recordGameHistory : ack
+
+== Browse Match History ==
+Player -> Frontend : open Game History page
+Frontend -> gameService : getGameHistory(limit, offset)
+gameService -> GamesController : GET /games/history
+GamesController -> GameService : getPlayerGames(userId, limit, offset)
+GameService -> GameHistoryEntity : query
+GameHistoryEntity -> game_results : select
+GameService --> GamesController : games list
+GamesController --> gameService : games list
+gameService --> Frontend : games list
+Frontend --> Player : display history
+@enduml 

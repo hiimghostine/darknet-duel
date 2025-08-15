@@ -1,0 +1,43 @@
+@startuml
+' ERD for Match History Storage and Browsing (Transaction 5.3)
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+table(game_results) {
+  primary_key(gameId) VARCHAR(36)
+  gameMode VARCHAR(50)
+  startTime DATETIME
+  endTime DATETIME
+  createdAt DATETIME
+}
+
+table(game_players) {
+  primary_key(id) VARCHAR(36)
+  foreign_key(gameId) VARCHAR(36)
+  foreign_key(accountId) VARCHAR(36)
+  playerRole VARCHAR(50)
+  isWinner BOOLEAN
+  ratingBefore INT
+  ratingAfter INT
+  ratingChange INT
+  createdAt DATETIME
+}
+
+table(rating_history) {
+  primary_key(id) VARCHAR(36)
+  foreign_key(accountId) VARCHAR(36)
+  foreign_key(gameId) VARCHAR(36)
+  gameMode VARCHAR(50)
+  ratingBefore INT
+  ratingAfter INT
+  ratingChange INT
+  timestamp DATETIME
+}
+
+game_results ||--o{ game_players : "gameId"
+game_players ||--o{ rating_history : "accountId"
+game_results ||--o{ rating_history : "gameId"
+@enduml 

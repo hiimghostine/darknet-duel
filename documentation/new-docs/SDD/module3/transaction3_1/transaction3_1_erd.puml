@@ -1,0 +1,21 @@
+@startuml
+' Entity-Relationship Diagram for Game Creation and Initialization (Transaction 3.1)
+
+entity "matches" as Match {
+  * matchID : string <<PK>>
+  * gameName : string
+  * players : Player[]
+  * setupData : object
+  * metadata : object
+  * state : object
+}
+
+entity "players" as Player {
+  * id : int
+  * name : string
+  * isConnected : boolean
+  * data : object
+}
+
+Match ||--o{ Player : has
+@enduml 

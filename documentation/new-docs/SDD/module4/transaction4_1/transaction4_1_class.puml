@@ -1,0 +1,90 @@
+@startuml
+' Class Diagram for Card Play, Targeting, and Effect Resolution (Transaction 4.1)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +renderPlayerHand()
+    +renderInfrastructure()
+    +handleCardPlay()
+  }
+  class PlayerHand {
+    +displayHand()
+    +handleCardClick()
+  }
+  class useCardActions {
+    +playCard()
+    +throwCard()
+    +targetInfrastructure()
+    +handlePendingChoice()
+  }
+  class PendingChoicesOverlay {
+    +renderWildcardChoice()
+    +renderChainEffect()
+    +renderHandDisruption()
+  }
+  class InfrastructureCardDisplay {
+    +displayInfrastructure()
+    +handleTargetClick()
+  }
+  class CardDisplay {
+    +renderCard()
+    +showPlayability()
+    +showSelection()
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +WebSocketEndpoint
+    +processMove()
+    +sendGameState()
+  }
+  class playCardMove {
+    +playCard()
+  }
+  class throwCardMove {
+    +throwCard()
+  }
+  class cardEffectsRouter {
+    +applyCardEffect()
+  }
+  class wildcardResolver {
+    +applyWildcardEffects()
+  }
+  class temporaryEffectsManager {
+    +addEffect()
+    +removeEffect()
+  }
+  class cardUtils {
+    +isCardPlayable()
+    +validateTargeting()
+  }
+  class actionStageMoves {
+    +playCard()
+    +throwCard()
+  }
+}
+
+BalatroGameBoard --> PlayerHand : uses
+BalatroGameBoard --> useCardActions : uses
+BalatroGameBoard --> PendingChoicesOverlay : uses
+BalatroGameBoard --> InfrastructureCardDisplay : uses
+PlayerHand --> CardDisplay : uses
+useCardActions --> BalatroGameBoard : updates
+useCardActions --> throwCardMove : triggers
+useCardActions --> playCardMove : triggers
+PendingChoicesOverlay --> useCardActions : uses
+InfrastructureCardDisplay --> useCardActions : triggers
+throwCardMove --> cardEffectsRouter : uses
+playCardMove --> cardEffectsRouter : uses
+cardEffectsRouter --> wildcardResolver : uses
+cardEffectsRouter --> temporaryEffectsManager : uses
+throwCardMove --> cardUtils : uses
+playCardMove --> cardUtils : uses
+actionStageMoves --> playCardMove : exposes
+actionStageMoves --> throwCardMove : exposes
+
+' Explicitly show the WebSocket connection bridging frontend and backend
+BalatroGameBoard <--> boardgameioServer : WebSocket (boardgame.io protocol)
+
+@enduml 
