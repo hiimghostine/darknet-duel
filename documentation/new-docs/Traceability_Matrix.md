@@ -22,7 +22,7 @@
 
 ## 1. Introduction
 
-This Traceability Matrix provides a comprehensive mapping between the requirements defined in the Requirements Refactoring Framework and the design elements, code modules, and test cases. It ensures that every requirement is properly linked to its implementation and can be validated through testing.
+This Traceability Matrix provides a comprehensive mapping between the requirements defined in the Requirements Refactoring Framework and the SRS elements, SDD design elements, implementation modules, and test cases. It ensures that every requirement is properly linked to its specification, design, implementation, and can be validated through testing.
 
 ### 1.1 Purpose
 - Establish clear traceability between requirements and implementation
@@ -32,9 +32,10 @@ This Traceability Matrix provides a comprehensive mapping between the requiremen
 
 ### 1.2 Scope
 The matrix covers all 20 requirements from the Requirements Refactoring Framework, mapping them to:
-- SDD design references (UML diagrams, ERDs, sequence diagrams)
-- Code modules and components
-- Test case identifiers (TBA until TCD is created)
+- SRS references (use cases, activity diagrams, wireframes) - many marked as TBA until SRS is expanded
+- SDD design references (UML diagrams, ERDs, sequence diagrams, user interfaces, databases) - many marked as TBA until SDD is expanded
+- Implementation modules and components - many marked as TBA until implementation begins
+- Test case identifiers (TBA until STD is created)
 - Implementation status
 
 ---
@@ -43,30 +44,30 @@ The matrix covers all 20 requirements from the Requirements Refactoring Framewor
 
 ### Requirements Traceability Matrix
 
-| Requirement ID | SMART Goal ID | Design Reference | Code Module(s) | Test Case ID(s) | Status |
-|----------------|----------------|------------------|-----------------|-----------------|---------|
-| **REQ-101** | G1 | Module 1: User Management Design<br/>- transaction1_1_class.puml<br/>- transaction1_2_class.puml<br/>- transaction1_3_class.puml<br/>- transaction1_4_class.puml | backend-server/src/services/<br/>- account.service.ts<br/>- auth.service.ts<br/>- admin.service.ts | TBA | Pending |
-| **REQ-102** | G1 | Module 1-7: API Endpoint Design<br/>- All transaction sequence diagrams<br/>- REST API specifications | backend-server/src/routes/<br/>- account.routes.ts<br/>- auth.routes.ts<br/>- admin.routes.ts<br/>game-server/src/server/<br/>- cardDataRoutes.ts | TBA | Pending |
-| **REQ-103** | G1 | Module 1-7: User Workflow Design<br/>- Complete user journey diagrams<br/>- Integration flow diagrams | darknet-duel-frontend/src/<br/>- components/<br/>- pages/<br/>- hooks/<br/>- services/ | TBA | Pending |
-| **REQ-104** | G1 | Module 4: Card System Design<br/>- Card interaction diagrams<br/>- Game state diagrams | game-server/src/game/<br/>- cards/<br/>- core/<br/>- moves/<br/>- utils/ | TBA | Pending |
-| **REQ-105** | G1 | Security Architecture Design<br/>- CI/CD pipeline design<br/>- Security scanning integration | .github/workflows/<br/>- security-scan.yml<br/>.zap/rules.tsv | TBA | Pending |
-| **REQ-201** | G2 | Module 1-7: Error Handling Design<br/>- Error flow diagrams<br/>- User feedback patterns | darknet-duel-frontend/src/<br/>- components/ui/<br/>- hooks/useErrorHandler.ts<br/>- utils/errorBoundary.ts | TBA | Pending |
-| **REQ-202** | G2 | React Error Boundary Design<br/>- Error boundary component design<br/>- Fallback UI patterns | darknet-duel-frontend/src/<br/>- components/ErrorBoundary.tsx<br/>- components/ui/ErrorFallback.tsx | TBA | Pending |
-| **REQ-203** | G2 | Offline Handling Design<br/>- Network state management<br/>- Queue system design | darknet-duel-frontend/src/<br/>- hooks/useOfflineManager.ts<br/>- store/offline.store.ts<br/>- utils/queueManager.ts | TBA | Pending |
-| **REQ-204** | G2 | Notification System Design<br/>- Toast component design<br/>- Notification patterns | darknet-duel-frontend/src/<br/>- components/ui/Toast.tsx<br/>- components/ui/Notification.tsx<br/>- hooks/useNotifications.ts | TBA | Pending |
-| **REQ-205** | G2 | Tutorial System Design<br/>- Lore video integration<br/>- First-time user flow | darknet-duel-frontend/src/<br/>- components/tutorial/<br/>- LoreVideo.tsx<br/>- components/auth/FirstTimeUser.tsx | TBA | Pending |
-| **REQ-206** | G2 | Interactive Tutorial Design<br/>- Step-by-step guide design<br/>- Game mechanics explanation | darknet-duel-frontend/src/<br/>- components/tutorial/<br/>- TutorialGameBoard.tsx<br/>- TutorialSteps.tsx<br/>- TutorialProgress.tsx | TBA | Pending |
-| **REQ-207** | G2 | Progress Tracking Design<br/>- Tutorial completion tracking<br/>- User progress persistence | backend-server/src/entities/<br/>- tutorial-progress.entity.ts<br/>darknet-duel-frontend/src/<br/>- store/tutorial.store.ts | TBA | Pending |
-| **REQ-301** | G3 | API Documentation Design<br/>- OpenAPI 3.0 specifications<br/>- Swagger annotations | backend-server/src/<br/>- config/swagger.ts<br/>- All route files with annotations | TBA | Pending |
-| **REQ-302** | G3 | Input Validation Design<br/>- Validation middleware design<br/>- Input sanitization patterns | backend-server/src/<br/>- middleware/validation.middleware.ts<br/>- utils/validation.ts | TBA | Pending |
-| **REQ-303** | G3 | Rate Limiting Design<br/>- Rate limiting middleware<br/>- Abuse prevention patterns | backend-server/src/<br/>- middleware/rate-limit.middleware.ts<br/>- config/rate-limit.config.ts | TBA | Pending |
-| **REQ-304** | G3 | WebSocket Documentation Design<br/>- Connection protocol design<br/>- Real-time communication specs | game-server/src/server/<br/>- WebSocket protocol documentation<br/>- Connection handling specs | TBA | Pending |
-| **REQ-401** | G4 | Security Hardening Design<br/>- Input sanitization patterns<br/>- Security middleware design | backend-server/src/<br/>- middleware/security.middleware.ts<br/>- utils/sanitization.ts | TBA | Pending |
-| **REQ-402** | G4 | Audit Logging Design<br/>- Audit trail design<br/>- Logging patterns | backend-server/src/<br/>- entities/audit-log.entity.ts<br/>- services/audit.service.ts<br/>- middleware/audit.middleware.ts | TBA | Pending |
-| **REQ-403** | G4 | GDPR Compliance Design<br/>- Data export/deletion design<br/>- Privacy compliance patterns | backend-server/src/<br/>- services/privacy.service.ts<br/>- entities/user-data.entity.ts<br/>- routes/privacy.routes.ts | TBA | Pending |
-| **REQ-404** | G4 | Security Headers Design<br/>- CORS policy design<br/>- Security header patterns | backend-server/src/<br/>- middleware/cors.middleware.ts<br/>- config/security.config.ts | TBA | Pending |
-| **REQ-405** | G4 | Session Management Design<br/>- Session timeout design<br/>- Auto-logout patterns | backend-server/src/<br/>- middleware/session.middleware.ts<br/>- services/session.service.ts | TBA | Pending |
-| **REQ-406** | G4 | CI/CD Security Design<br/>- Pipeline security integration<br/>- Vulnerability blocking design | .github/workflows/<br/>- security-scan.yml<br/>- deploy.yml<br/>- ci.yml | TBA | Pending |
+| Requirement ID | SRS Reference (Use Cases, Activity Diagrams, Wireframes) | SDD Reference (Class Diagrams, Sequence Diagrams, User Interfaces, Databases) | Implementation Module(s)/Component(s) | STD Reference (Test Case IDs) | Status |
+|----------------|----------------------------------------------------------|------------------------------------------------------------------------------|----------------------------------------|--------------------------------|---------|
+| **REQ-101** | Module 1: User Management Use Cases<br/>- User Registration Activity Diagram<br/>- User Login Activity Diagram<br/>- Profile Management Wireframes | Module 1: User Management Design<br/>- transaction1_1_class.puml<br/>- transaction1_2_class.puml<br/>- transaction1_3_class.puml<br/>- transaction1_4_class.puml | backend-server/src/services/<br/>- account.service.ts<br/>- auth.service.ts<br/>- admin.service.ts | TBA | Pending |
+| **REQ-102** | Module 1-7: API Integration Use Cases<br/>- REST API Activity Diagrams<br/>- WebSocket Connection Diagrams | Module 1-7: API Endpoint Design<br/>- All transaction sequence diagrams<br/>- REST API specifications | backend-server/src/routes/<br/>- account.routes.ts<br/>- auth.routes.ts<br/>- admin.routes.ts<br/>game-server/src/server/<br/>- cardDataRoutes.ts | TBA | Pending |
+| **REQ-103** | Module 1-7: User Journey Use Cases<br/>- Complete User Workflow Diagrams<br/>- Integration Flow Wireframes | Module 1-7: User Workflow Design<br/>- Complete user journey diagrams<br/>- Integration flow diagrams | darknet-duel-frontend/src/<br/>- components/<br/>- pages/<br/>- hooks/<br/>- services/ | TBA | Pending |
+| **REQ-104** | Module 4: Game Logic Use Cases<br/>- Card Interaction Activity Diagrams<br/>- Game State Transition Diagrams | Module 4: Card System Design<br/>- Card interaction diagrams<br/>- Game state diagrams | game-server/src/game/<br/>- cards/<br/>- core/<br/>- moves/<br/>- utils/ | TBA | Pending |
+| **REQ-105** | TBA | TBA | .github/workflows/<br/>- security-scan.yml<br/>.zap/rules.tsv | TBA | Pending |
+| **REQ-201** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-202** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-203** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-204** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-205** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-206** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-207** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-301** | TBA | TBA | backend-server/src/<br/>- config/swagger.ts<br/>- All route files with annotations | TBA | Pending |
+| **REQ-302** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-303** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-304** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-401** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-402** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-403** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-404** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-405** | TBA | TBA | TBA | TBA | Pending |
+| **REQ-406** | TBA | TBA | .github/workflows/<br/>- security-scan.yml<br/>- deploy.yml<br/>- ci.yml | TBA | Pending |
 
 ---
 
@@ -147,10 +148,12 @@ The matrix covers all 20 requirements from the Requirements Refactoring Framewor
 ## 5. Next Steps
 
 ### 5.1 Immediate Actions
-1. **Create Test Case Document (TCD)** to replace TBA entries
-2. **Begin implementation** of Must-priority requirements
-3. **Set up development environment** for new components
-4. **Establish testing framework** for automated validation
+1. **Expand SRS** to include use cases, activity diagrams, and wireframes for new requirements
+2. **Expand SDD** to include design diagrams and specifications for new requirements
+3. **Create Software Test Document (STD)** to replace TBA entries
+4. **Begin implementation** of Must-priority requirements
+5. **Set up development environment** for new components
+6. **Establish testing framework** for automated validation
 
 ### 5.2 Implementation Order
 1. **Week 1-2**: G1 requirements (testing infrastructure)
@@ -169,5 +172,5 @@ The matrix covers all 20 requirements from the Requirements Refactoring Framewor
 **Document Version:** 1.0  
 **Last Updated:** January 2025  
 **Next Review:** Weekly during implementation phase  
-**Next Update:** After TCD creation and test case assignment
+**Next Update:** After STD creation and test case assignment
 
