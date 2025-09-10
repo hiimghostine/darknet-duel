@@ -46,7 +46,13 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     playerRole: isAttacker! ? 'attacker' : 'defender',
     actionType: 'throwCard',
     timestamp: Date.now(),
-    payload: { cardId, targetInfrastructureId, cardType: card!.type }
+    payload: { 
+      cardId, 
+      cardName: card!.name,
+      cardType: card!.type,
+      targetInfrastructureId,
+      targetInfrastructureName: targetInfrastructure?.name || null
+    }
   };
 
   // Phase 2: Attack vector resolution (ENHANCED FOR ALL CARD TYPES)
