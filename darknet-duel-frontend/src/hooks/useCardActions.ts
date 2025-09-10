@@ -568,7 +568,7 @@ export function useCardActions(props: BoardProps & {
   /**
    * Target an infrastructure card
    */
-  const targetInfrastructure = (infraId: string, event?: React.MouseEvent) => {
+  const targetInfrastructure = (infraId: string, event?: React.MouseEvent, startAnimation?: (cardId: string, targetId: string, cardElement: HTMLElement, targetElement: HTMLElement) => Promise<void>) => {
     if (!selectedCard || !targetMode) return;
     if (event) event.stopPropagation();
     
@@ -582,16 +582,48 @@ export function useCardActions(props: BoardProps & {
     setTargetedInfraId(infraId);
     console.log("Targeting infra:", infraId, "with card:", selectedCard.name);
     
-    // Use a short timeout to allow animation to play
-    setAnimatingThrow(true);
-    setTimeout(() => {
-      // Use throwCard for targeted card plays instead of playCard
-      // throwCard properly handles both the card and infrastructure target
-      console.log(`DEBUG: Calling moves.throwCard with cardId: ${selectedCard.id}, infraId: ${infraId}`);
-      if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
-      moves.throwCard(selectedCard.id, infraId);
-      resetTargeting();
-    }, 300);
+    // If animation function is provided, use it
+    if (startAnimation) {
+      // Find the card and target elements
+      const cardElement = document.querySelector(`[data-card-id="${selectedCard.id}"]`) as HTMLElement;
+      const targetElement = document.querySelector(`[data-infra-id="${infraId}"]`) as HTMLElement;
+      
+      if (cardElement && targetElement) {
+        setAnimatingThrow(true);
+        
+        // Start animation and wait for completion
+        startAnimation(selectedCard.id, infraId, cardElement, targetElement)
+          .then(() => {
+            // Execute the actual move after animation completes
+            console.log(`DEBUG: Calling moves.throwCard with cardId: ${selectedCard.id}, infraId: ${infraId}`);
+            if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
+            moves.throwCard(selectedCard.id, infraId);
+            resetTargeting();
+          })
+          .catch((error) => {
+            console.error('Animation failed:', error);
+            // Fallback to immediate execution
+            if (triggerPositiveClick) triggerPositiveClick();
+            moves.throwCard(selectedCard.id, infraId);
+            resetTargeting();
+          });
+      } else {
+        // Fallback if elements not found
+        console.warn('Card or target element not found, executing move immediately');
+        if (triggerPositiveClick) triggerPositiveClick();
+        moves.throwCard(selectedCard.id, infraId);
+        resetTargeting();
+      }
+    } else {
+      // Original behavior without animation
+      setAnimatingThrow(true);
+      setTimeout(() => {
+        console.log(`DEBUG: Calling moves.throwCard with cardId: ${selectedCard.id}, infraId: ${infraId}`);
+        if (triggerPositiveClick) triggerPositiveClick(); // Play positive SFX on move
+        moves.throwCard(selectedCard.id, infraId);
+        resetTargeting();
+      }, 300);
+    }
   };
 
   /**

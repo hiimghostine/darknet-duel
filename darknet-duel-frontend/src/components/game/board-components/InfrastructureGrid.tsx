@@ -88,6 +88,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
         return (
           <div
             key={infra.id}
+            data-infra-id={infra.id}
             className={`
               group relative lg:w-52 lg:h-64 w-48 h-56 border-2 rounded-xl lg:p-4 p-3
               flex flex-col justify-center items-center transition-all duration-500 cursor-pointer

@@ -14,6 +14,7 @@ import { useCardActions } from '../../hooks/useCardActions';
 import { useTurnActions } from '../../hooks/useTurnActions';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameStateBuffer } from '../../hooks/useGameStateBuffer';
+import { useCardAttackAnimation } from '../../hooks/useCardAttackAnimation';
 
 // Import toast notifications
 import { useToastStore } from '../../store/toast.store';
@@ -36,6 +37,7 @@ import PlayerHandArea from './board-components/PlayerHandArea';
 import InfrastructureGrid from './board-components/InfrastructureGrid';
 import GameInfoPanels from './board-components/GameInfoPanels';
 import GameBackgroundElements from './board-components/GameBackgroundElements';
+import CardAttackAnimation from './animations/CardAttackAnimation';
 
 // Import audio SFX triggers
 import { useAudioManager } from '../../hooks/useAudioManager';
@@ -129,9 +131,23 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     playCard,
     cycleCard,
     selectCardToThrow,
-    handleInfrastructureTarget,
+    handleInfrastructureTarget: originalHandleInfrastructureTarget,
     cancelTargeting
   } = useCardActions(optimizedProps);
+
+  // Attack animation hook
+  const {
+    animationState,
+    startAttackAnimation,
+    onAnimationComplete,
+    onStateChangeReady,
+    resetAnimation
+  } = useCardAttackAnimation();
+
+  // Enhanced infrastructure target handler with animation support
+  const handleInfrastructureTarget = useCallback((infraId: string, event?: React.MouseEvent) => {
+    originalHandleInfrastructureTarget(infraId, event, startAttackAnimation);
+  }, [originalHandleInfrastructureTarget, startAttackAnimation]);
   
   // Turn actions hook
   const {
@@ -154,8 +170,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     targetMode,
     onAutoSkip: handleSkipReaction
   });
-  
-  // Track processing state - include transition state for smoother UX
+
+  // Track processing state - exclude animation state to prevent overlay during animations
   const isProcessingMove = cardProcessing || turnProcessing || isProcessingAction;
 
   // Handle ESC key to cancel targeting
@@ -194,13 +210,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // Play turn start sound effect when it becomes the player's turn
   useEffect(() => {
-    if (isActive && !isProcessingMove) {
+    if (isActive && !isProcessingMove && !animationState.isActive) {
       // Play positive-click three times with 250ms delay each
       triggerPositiveClick();
       setTimeout(() => triggerPositiveClick(), 250);
       setTimeout(() => triggerPositiveClick(), 500);
     }
-  }, [isActive, isProcessingMove, triggerPositiveClick]);
+  }, [isActive, isProcessingMove, animationState.isActive, triggerPositiveClick]);
 
   // NOTE: Timeout logic removed per user request - no automatic timeout for card selection
 
@@ -765,6 +781,17 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
       {/* Global Effects Indicator */}
       <GlobalEffectsIndicator gameState={memoizedG} />
+
+      {/* Card Attack Animation */}
+      <CardAttackAnimation
+        isActive={animationState.isActive}
+        attackingCardId={animationState.attackingCardId}
+        targetInfraId={animationState.targetInfraId}
+        attackingCardElement={animationState.attackingCardElement}
+        targetInfraElement={animationState.targetInfraElement}
+        onAnimationComplete={onAnimationComplete}
+        onStateChangeReady={onStateChangeReady}
+      />
 
       {/* Developer Cheat Panel - Only in development */}
       {process.env.NODE_ENV === 'development' && (
