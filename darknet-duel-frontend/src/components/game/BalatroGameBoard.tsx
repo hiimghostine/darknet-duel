@@ -15,6 +15,7 @@ import { useTurnActions } from '../../hooks/useTurnActions';
 import { useGameState } from '../../hooks/useGameState';
 import { useGameStateBuffer } from '../../hooks/useGameStateBuffer';
 import { useCardAttackAnimation } from '../../hooks/useCardAttackAnimation';
+import { useRecentCardTracker } from '../../hooks/useRecentCardTracker';
 
 // Import toast notifications
 import { useToastStore } from '../../store/toast.store';
@@ -38,6 +39,8 @@ import InfrastructureGrid from './board-components/InfrastructureGrid';
 import GameInfoPanels from './board-components/GameInfoPanels';
 import GameBackgroundElements from './board-components/GameBackgroundElements';
 import CardAttackAnimation from './animations/CardAttackAnimation';
+import RecentCardDisplay from './board-components/RecentCardDisplay';
+import SharedEffectsDisplay from './board-components/SharedEffectsDisplay';
 
 // Import audio SFX triggers
 import { useAudioManager } from '../../hooks/useAudioManager';
@@ -140,9 +143,11 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     animationState,
     startAttackAnimation,
     onAnimationComplete,
-    onStateChangeReady,
-    resetAnimation
+    onStateChangeReady
   } = useCardAttackAnimation();
+
+  // Recent card tracker hook
+  const { recentCardPlay, dismissRecentCard } = useRecentCardTracker(memoizedG, playerID);
 
   // Enhanced infrastructure target handler with animation support
   const handleInfrastructureTarget = useCallback((infraId: string, event?: React.MouseEvent) => {
@@ -791,6 +796,22 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         targetInfraElement={animationState.targetInfraElement}
         onAnimationComplete={onAnimationComplete}
         onStateChangeReady={onStateChangeReady}
+      />
+
+      {/* Recent Card Display */}
+      {recentCardPlay && (
+        <RecentCardDisplay
+          recentCard={recentCardPlay.card}
+          playerName={recentCardPlay.playerName}
+          isOpponent={recentCardPlay.playerId !== playerID}
+          onDismiss={dismissRecentCard}
+        />
+      )}
+
+      {/* Shared Effects Display */}
+      <SharedEffectsDisplay
+        gameState={memoizedG}
+        playerID={playerID}
       />
 
       {/* Developer Cheat Panel - Only in development */}
