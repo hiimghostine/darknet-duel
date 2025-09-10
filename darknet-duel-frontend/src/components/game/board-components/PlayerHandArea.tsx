@@ -17,6 +17,9 @@ export interface PlayerHandAreaProps extends GameComponentProps {
   selectedCard: any;
   targetMode: boolean;
   
+  // Transition state for smooth rendering
+  isTransitioning?: boolean;
+  
   // Action handlers
   playCard: (card: any, event: React.MouseEvent) => void;
   cycleCard: (cardId: string) => void;
@@ -33,6 +36,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
   currentPlayerObj,
   selectedCard,
   targetMode,
+  isTransitioning = false,
   playCard,
   cycleCard,
   selectCardToThrow,
@@ -142,7 +146,8 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     
     return (
       <div className="flex flex-wrap gap-3 justify-center max-w-5xl lg:gap-3 gap-2">
-        {sortedHand.map((card: any, index: number) => {
+        <AnimatePresence mode="popLayout">
+          {sortedHand.map((card: any) => {
           const isSelected = selectedCard === card.id;
           const cardType = card.type || card.cardType;
           const currentStage = ctx.activePlayers && playerID ? ctx.activePlayers[playerID] : null;
@@ -193,8 +198,13 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             'ring-2 ring-accent animate-pulse bg-accent/10' : '';
           
           return (
-            <div
+            <motion.div
               key={card.id}
+              layout
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
               className={`
                 group relative lg:w-32 lg:h-48 w-28 h-40 border-2 rounded-xl lg:p-3 p-2
                 flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
@@ -391,9 +401,10 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                   onCycle={cycleCard}
                 />
               )}
-            </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
       </div>
     );
   };
@@ -403,6 +414,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       flex justify-center items-start gap-4 p-4 rounded-lg relative h-56
       ${isAttacker ? 'attacker-area' : 'defender-area'}
       ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
+      ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
     `}>
       {/* Corner brackets */}
       <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-current"></div>

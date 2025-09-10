@@ -13,6 +13,7 @@ import { useMemoizedValue, useMemoizedKeys } from '../../hooks/useMemoizedValue'
 import { useCardActions } from '../../hooks/useCardActions';
 import { useTurnActions } from '../../hooks/useTurnActions';
 import { useGameState } from '../../hooks/useGameState';
+import { useGameStateBuffer } from '../../hooks/useGameStateBuffer';
 
 // Import toast notifications
 import { useToastStore } from '../../store/toast.store';
@@ -75,12 +76,20 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Toast notifications
   const { addToast } = useToastStore();
   
-  // Use optimized memoization strategies
-  const memoizedG = useMemoizedValue(G);
-  const memoizedCtx = useMemoizedKeys(ctx, ['phase', 'currentPlayer', 'gameover', 'activePlayers']);
+  // Use state buffer to prevent re-render flash during actions
+  const { 
+    gameState: bufferedG, 
+    context: bufferedCtx, 
+    isTransitioning,
+    isProcessingAction 
+  } = useGameStateBuffer(G, ctx, playerID);
   
-  // Memoize critical game state properties
-  useMemoizedKeys(G, [
+  // Use optimized memoization strategies with buffered state
+  const memoizedG = useMemoizedValue(bufferedG);
+  const memoizedCtx = useMemoizedKeys(bufferedCtx, ['phase', 'currentPlayer', 'gameover', 'activePlayers']);
+  
+  // Memoize critical game state properties using buffered state
+  useMemoizedKeys(bufferedG, [
     'gamePhase', 'message', 'attackerScore', 'defenderScore',
     'infrastructure', 'attacker', 'defender', 'chat', 'rematchRequested',
     'pendingChainChoice', 'pendingWildcardChoice', 'pendingHandChoice', 'pendingCardChoice',
@@ -146,8 +155,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     onAutoSkip: handleSkipReaction
   });
   
-  // Track processing state
-  const isProcessingMove = cardProcessing || turnProcessing;
+  // Track processing state - include transition state for smoother UX
+  const isProcessingMove = cardProcessing || turnProcessing || isProcessingAction;
 
   // Handle ESC key to cancel targeting
   useEffect(() => {
@@ -695,6 +704,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           currentPlayerObj={currentPlayerObj}
           selectedCard={selectedCard}
           targetMode={targetMode}
+          isTransitioning={isTransitioning}
           playCard={playCard}
           cycleCard={cycleCard}
           selectCardToThrow={selectCardToThrow}
