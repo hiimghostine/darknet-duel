@@ -10,6 +10,7 @@ import bodyParser from 'koa-bodyparser';
 import { LobbyCleanupService } from '../services/lobbyCleanupService';
 import { GameState } from 'shared-types/game.types';
 import cardDataRouter from './cardDataRoutes';
+import { HeartbeatManager } from './heartbeat';
 
 // Environment variables
 const PORT = parseInt(process.env.GAME_SERVER_PORT || '8001');
@@ -41,6 +42,9 @@ const server = Server({
     PUBLIC_URL ? new URL(PUBLIC_URL).origin : '',
   ].filter(Boolean),
 });
+
+// Initialize heartbeat manager
+const heartbeatManager = new HeartbeatManager(server);
 
 // Configure server to use lobby
 if (server.db) {
@@ -289,6 +293,57 @@ router.get('/health', (ctx: any) => {
     status: 'ok',
     timestamp: new Date().toISOString()
   };
+});
+
+// Heartbeat endpoint with body parser middleware
+const parseJsonBody = bodyParser();
+router.post('/heartbeat', parseJsonBody, async (ctx: any) => {
+  try {
+    const { matchID, playerID, timestamp } = ctx.request.body;
+    
+    if (!matchID || !playerID || !timestamp) {
+      ctx.status = 400;
+      ctx.body = { error: 'Missing required fields: matchID, playerID, timestamp' };
+      return;
+    }
+
+    // Update heartbeat for the player
+    const playerHeartbeat = heartbeatManager.updateHeartbeat(matchID, playerID, timestamp);
+    
+    // Get opponent heartbeat status
+    const opponentHeartbeat = heartbeatManager.getOpponentHeartbeat(matchID, playerID);
+    
+    // Check for disconnection detection (immediate check)
+    await heartbeatManager.checkDisconnectionForfeit(matchID);
+    
+    // Check for inactivity-based forfeit
+    await heartbeatManager.checkInactivityForfeit(matchID);
+    
+    ctx.body = {
+      success: true,
+      playerStatus: {
+        isConnected: playerHeartbeat.isConnected,
+        latency: playerHeartbeat.latency,
+        lastHeartbeat: playerHeartbeat.lastHeartbeat,
+        reconnectAttempts: 0
+      },
+      opponentStatus: opponentHeartbeat ? {
+        isConnected: heartbeatManager.isPlayerConnected(matchID, opponentHeartbeat.playerID),
+        latency: opponentHeartbeat.latency,
+        lastHeartbeat: opponentHeartbeat.lastHeartbeat,
+        reconnectAttempts: 0
+      } : {
+        isConnected: false,
+        latency: 0,
+        lastHeartbeat: 0,
+        reconnectAttempts: 0
+      }
+    };
+  } catch (error) {
+    console.error('Error handling heartbeat:', error);
+    ctx.status = 500;
+    ctx.body = { error: 'Internal server error' };
+  }
 });
 
 // Validate auth token with main backend server

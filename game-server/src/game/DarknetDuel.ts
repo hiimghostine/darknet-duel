@@ -53,6 +53,21 @@ const DarknetDuel: Game<GameState> = {
   
   // Game moves (actions players can take)
   moves: {
+    // Forfeit move for disconnection/inactivity handling
+    forfeitGame: ({ G, ctx, playerID }, reason: 'disconnection' | 'inactivity') => {
+      console.log(`Player ${playerID} forfeited due to ${reason}`);
+      
+      // Determine winner (opponent of forfeiting player)
+      const opponentID = playerID === '0' ? '1' : '0';
+      const winnerRole = G.attacker?.id === opponentID ? 'attacker' : 'defender';
+      
+      // Update game state to end with forfeit
+      G.gamePhase = 'gameOver';
+      G.gameEnded = true;
+      G.winner = winnerRole;
+      G.message = `Player ${playerID} forfeited due to ${reason}`;
+    },
+    
     // Send chat message
     sendChatMessage: ({ G, playerID }, message) => {
       // Determine player role based on game state

@@ -16,6 +16,8 @@ import { useGameState } from '../../hooks/useGameState';
 import { useGameStateBuffer } from '../../hooks/useGameStateBuffer';
 import { useCardAttackAnimation } from '../../hooks/useCardAttackAnimation';
 import { useRecentCardTracker } from '../../hooks/useRecentCardTracker';
+import { useHeartbeat } from '../../hooks/useHeartbeat';
+import { useDisconnectionHandler } from '../../hooks/useDisconnectionHandler';
 
 // Import toast notifications
 import { useToastStore } from '../../store/toast.store';
@@ -26,6 +28,9 @@ import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 import HandDisruptionUI from './board-components/HandDisruptionUI';
 import CardSelectionUI from './board-components/CardSelectionUI';
 import WinnerLobby from './board-components/WinnerLobby';
+import ConnectionStatusIndicator from './ConnectionStatusIndicator';
+import DisconnectionAlert from './DisconnectionAlert';
+import InactivityWarning from './InactivityWarning';
 
 // Import remaining components
 import DevCheatPanel from './board-components/DevCheatPanel';
@@ -109,6 +114,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     isAttacker
   } = useGameState(memoizedG, memoizedCtx, playerID);
   
+  // Connection monitoring hooks
+  const heartbeatStatus = useHeartbeat(matchID || '', playerID || '');
+  const disconnectionHandler = useDisconnectionHandler(
+    heartbeatStatus.connectionStatus,
+    heartbeatStatus.opponentStatus,
+    isActive || false,
+    Date.now(), // lastActivityTime - using current time as placeholder
+    {} // config - using defaults
+  );
   
   // Inject audio SFX triggers
   const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
@@ -127,7 +141,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     selectedCard,
     targetMode,
     targetedInfraId,
-    animatingThrow,
+    // animatingThrow, // Unused variable
     processing: cardProcessing,
     validTargets,
     playCard,
@@ -235,6 +249,21 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       console.log(`🎯 CARD CHOICE STATE: No pendingCardChoice active`);
     }
   }, [memoizedG.pendingCardChoice]);
+
+  // Game over state detection and debugging
+  const isGameOver = memoizedCtx.gameover || memoizedCtx.phase === 'gameOver' || memoizedG.gamePhase === 'gameOver';
+  
+  useEffect(() => {
+    if (isGameOver) {
+      console.log('🎮 Game Over Detected:', {
+        ctxGameover: memoizedCtx.gameover,
+        ctxPhase: memoizedCtx.phase,
+        gamePhase: memoizedG.gamePhase,
+        winner: memoizedG.winner,
+        message: memoizedG.message
+      });
+    }
+  }, [isGameOver, memoizedCtx.gameover, memoizedCtx.phase, memoizedG.gamePhase, memoizedG.winner, memoizedG.message]);
   
   // Handle player surrender
   const surrender = useCallback(() => {
@@ -483,21 +512,21 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     states: memoizedG?.infrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
   }), [memoizedG?.infrastructure]);
 
-  // Common props to pass to child components
-  const commonProps = useMemo(() => ({
-    G: memoizedG,
-    ctx: memoizedCtx,
-    playerID,
-    isActive,
-    moves,
-    isAttacker
-  }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
+  // Common props to pass to child components - commented out as unused
+  // const commonProps = useMemo(() => ({
+  //   G: memoizedG,
+  //   ctx: memoizedCtx,
+  //   playerID,
+  //   isActive,
+  //   moves,
+  //   isAttacker
+  // }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
   // Theme support - still needed for main component styling
   const { theme } = useThemeStore();
 
   // Loading state
-  if (!G || !ctx) {
+  if (!memoizedG || !memoizedCtx) {
     return (
       <div className="min-h-screen bg-base-100 text-base-content flex items-center justify-center font-mono">
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -510,19 +539,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     );
   }
 
-  // Game over state
-  if (ctx.gameover || ctx.phase === 'gameOver' || G.gamePhase === 'gameOver') {
+  
+  if (isGameOver) {
     const winnerLobbyMoves = {
-      sendChatMessage,
-      requestRematch,
-      surrender
+      sendChatMessage: () => {},
+      requestRematch: () => {},
+      surrender: () => {}
     };
     
     return (
       <>
         <WinnerLobby
           // @ts-expect-error - Missing gameConfig properties in local type
-          G={G}
+          G={memoizedG}
           playerID={playerID || undefined}
           moves={winnerLobbyMoves}
           isAttacker={isAttacker}
@@ -584,6 +613,15 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         timeRemaining={timeRemaining}
       />
 
+      {/* Connection Status Indicator */}
+      <ConnectionStatusIndicator
+        connectionStatus={heartbeatStatus.connectionStatus}
+        opponentStatus={heartbeatStatus.opponentStatus}
+        isAttacker={isAttacker}
+        playerName={currentPlayerObj?.name}
+        opponentName={opponent?.name}
+      />
+
       {/* Enhanced status bar with turn indicator */}
       <div className={`
         px-4 py-3 border-b transition-all duration-500
@@ -597,23 +635,6 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         }
       `}>
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          {/* Connection status */}
-          <span className={`
-            text-xs font-mono flex items-center gap-2 
-            ${isAttacker 
-                ? 'text-red-300' 
-                : 'text-blue-300'
-            }
-          `}>
-            <div className={`
-              w-2 h-2 rounded-full animate-pulse
-              ${isAttacker 
-                  ? 'bg-red-400' 
-                  : 'bg-blue-400'
-              }
-            `}></div>
-            CONNECTION_ACTIVE
-          </span>
           
           {/* Turn status in header */}
           {isActive && (
@@ -817,6 +838,23 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           onAddCard={handleCheatAddCard}
         />
       )}
+
+      {/* Disconnection Alert */}
+      <DisconnectionAlert
+        disconnectionState={disconnectionHandler.disconnectionState}
+        onForfeit={() => {
+          console.log('Player forfeited due to disconnection');
+          disconnectionHandler.stopCountdown();
+          // TODO: Implement actual forfeit logic
+        }}
+      />
+
+      {/* Inactivity Warning */}
+      <InactivityWarning
+        timeUntilForfeit={disconnectionHandler.timeUntilInactivityForfeit}
+        isActive={isActive || false}
+        isVisible={disconnectionHandler.timeUntilInactivityForfeit > 0 && disconnectionHandler.timeUntilInactivityForfeit <= 180000} // Show warning in last 3 minutes
+      />
     </div>
   );
 };
