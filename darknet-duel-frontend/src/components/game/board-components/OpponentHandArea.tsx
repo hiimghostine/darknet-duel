@@ -7,12 +7,10 @@ import type { GameComponentProps } from './types';
 export interface OpponentHandAreaProps extends GameComponentProps {
   // Opponent player object
   opponent: any;
-  opponentDisconnected?: boolean;
 }
 
 const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
   opponent,
-  opponentDisconnected = false,
   isAttacker
 }) => {
   // Render opponent hand (card backs)
@@ -55,7 +53,6 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
           <span>{isAttacker ? '🛡️' : '🎯'}</span>
           <span>{opponent?.username || 'OPPONENT'} - {isAttacker ? 'DEFENDER' : 'ATTACKER'}</span>
         </div>
-        {opponentDisconnected && <div className="text-xs text-error/80">(⚠️ DISCONNECTED)</div>}
         {/* Opponent AP */}
         <div className="flex items-center gap-1 text-xs mt-1">
           <span className="text-accent">⚡</span>

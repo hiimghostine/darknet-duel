@@ -105,7 +105,6 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   const {
     currentPlayerObj,
     opponent,
-    opponentDisconnected,
     currentPhase,
     isAttacker
   } = useGameState(memoizedG, memoizedCtx, playerID);
@@ -601,23 +600,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           {/* Connection status */}
           <span className={`
             text-xs font-mono flex items-center gap-2 
-            ${opponentDisconnected 
-              ? 'text-red-400' 
-              : isAttacker 
+            ${isAttacker 
                 ? 'text-red-300' 
                 : 'text-blue-300'
             }
           `}>
             <div className={`
               w-2 h-2 rounded-full animate-pulse
-              ${opponentDisconnected 
-                ? 'bg-red-500' 
-                : isAttacker 
+              ${isAttacker 
                   ? 'bg-red-400' 
                   : 'bg-blue-400'
               }
             `}></div>
-            {opponentDisconnected ? 'OPPONENT_DISCONNECTED' : 'CONNECTION_ACTIVE'}
+            CONNECTION_ACTIVE
           </span>
           
           {/* Turn status in header */}
@@ -664,7 +659,6 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         <div className={`${!isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}`}>
           <OpponentHandArea
             opponent={opponent}
-            opponentDisconnected={opponentDisconnected}
             isAttacker={isAttacker}
             G={memoizedG}
             ctx={memoizedCtx}

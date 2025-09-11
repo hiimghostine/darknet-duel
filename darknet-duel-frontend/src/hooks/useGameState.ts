@@ -9,8 +9,6 @@ export function useGameState(
   ctx: any,
   playerID: string | null
 ) {
-  // Track opponent connection status
-  const [opponentDisconnected, setOpponentDisconnected] = useState<boolean>(false);
   
   // Player and game phase state
   const [currentPlayerObj, setCurrentPlayerObj] = useState<any>(null);
@@ -51,15 +49,6 @@ export function useGameState(
     // Set the current phase
     setCurrentPhase(ctx.phase || '');
     
-    // Check opponent connection (if playerID exists in ctx.playerInfo)
-    if (ctx.playerInfo) {
-      const opponentID = isAttacker ? G.defender?.id : G.attacker?.id;
-      const opponentInfo = ctx.playerInfo[opponentID];
-      
-      if (opponentInfo && opponentInfo.hasOwnProperty('isConnected')) {
-        setOpponentDisconnected(!opponentInfo.isConnected);
-      }
-    }
   }, [
     // Use specific dependencies instead of entire G/ctx objects
     memoizedDependencies.attackerId,
@@ -87,7 +76,6 @@ export function useGameState(
   return {
     currentPlayerObj,
     opponent,
-    opponentDisconnected,
     currentPhase,
     
     // Use memoized role flags

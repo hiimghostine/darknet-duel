@@ -7,7 +7,7 @@ const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL || 'http://localhos
  * Hook for managing game server connection status and operations
  */
 export function useGameConnection(matchID: string | undefined, playerID: string | null, credentials: string | null) {
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected'>('connecting');
   const [lastConnectionAttempt, setLastConnectionAttempt] = useState<number>(0);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
@@ -108,7 +108,7 @@ export function useGameConnection(matchID: string | undefined, playerID: string 
       setConnectionStatus('connected');
       setConnectionError(null);
     } else {
-      setConnectionStatus('disconnected');
+      setConnectionStatus('connecting');
     }
   }, [checkMatchExists, lastConnectionAttempt]);
 
@@ -123,10 +123,10 @@ export function useGameConnection(matchID: string | undefined, playerID: string 
           setConnectionStatus('connected');
           setConnectionError(null);
         } else {
-          setConnectionStatus('disconnected');
+          setConnectionStatus('connecting');
         }
       } catch (err) {
-        setConnectionStatus('disconnected');
+        setConnectionStatus('connecting');
         setConnectionError(`Connection error: ${(err as Error)?.message || 'Unknown error'}`);
       }
     };

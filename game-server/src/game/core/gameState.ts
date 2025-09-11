@@ -84,10 +84,6 @@ export const checkGameEnd = (G: GameState) => {
     }
   }
   
-  // Check for game abandonment due to disconnection
-  if (G.gamePhase === 'gameOver' && G.winner === 'abandoned') {
-    return { winner: 'abandoned' };
-  }
   
   return undefined; // Game continues
 };
