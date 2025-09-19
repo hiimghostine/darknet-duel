@@ -1,0 +1,14 @@
+@startuml
+start
+:Player views currency balances;
+repeat
+  :Player plays a match;
+  if (Player wins?) then (yes)
+    :System awards 10 Creds;
+  else (no)
+    :System awards 5 Creds;
+  endif
+  :Notify player of updated balance;
+repeat while (Player continues playing)
+stop
+@enduml 

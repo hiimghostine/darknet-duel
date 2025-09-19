@@ -1,0 +1,39 @@
+@startuml
+' ERD for Report Management (Submit, Review, Resolve) (Transaction 7.2)
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+table(accounts) {
+  primary_key(id) VARCHAR(36)
+  email VARCHAR(100) unique
+  username VARCHAR(50) unique
+}
+
+table(reports) {
+  primary_key(id) VARCHAR(36)
+  foreign_key(reporterId) VARCHAR(36)
+  foreign_key(reporteeId) VARCHAR(36)
+  reason VARCHAR(500) not_null
+  content TEXT
+  reportType ENUM('profile','chat') not_null
+  status ENUM('pending','reviewed','resolved','dismissed') not_null
+  createdAt DATETIME not_null
+  updatedAt DATETIME not_null
+}
+
+table(logs) {
+  primary_key(id) VARCHAR(36)
+  actionType ENUM('report','status_change','delete')
+  adminId VARCHAR(36)
+  targetReportId VARCHAR(36)
+  reason VARCHAR(255)
+  timestamp DATETIME
+}
+
+accounts ||--o{ reports : "id=reporterId"
+accounts ||--o{ reports : "id=reporteeId"
+reports ||--o{ logs : "id=targetReportId"
+@enduml 

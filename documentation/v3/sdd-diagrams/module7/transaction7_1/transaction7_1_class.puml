@@ -1,0 +1,76 @@
+@startuml
+' Class Diagram for User Search, Ban, and Moderation (Transaction 7.1)
+
+package "Frontend" {
+  class UserManagement {
+    +searchUsers()
+    +banUser()
+    +unbanUser()
+    +editUser()
+  }
+  class BanUserModal {
+    +show()
+    +confirmBan()
+  }
+  class UserEditModal {
+    +show()
+    +editUserDetails()
+  }
+  class adminService {
+    +getUsers()
+    +banUser()
+    +unbanUser()
+    +updateUser()
+  }
+  class useAuthStore {
+    +user
+    +type
+  }
+}
+
+package "Backend Server" {
+  class AdminController {
+    +GET /api/admin/users
+    +GET /api/admin/users/{id}
+    +PUT /api/admin/users/{id}
+    +POST /api/admin/users/{id}/ban
+    +POST /api/admin/users/{id}/unban
+  }
+  class AdminService {
+    +getUsers()
+    +getUserById()
+    +updateUser()
+    +banUser()
+    +unbanUser()
+  }
+  class AccountEntity {
+    +id
+    +username
+    +email
+    +type
+    +isActive
+    +inactiveReason
+    +creds
+    +crypts
+    +createdAt
+    +updatedAt
+  }
+  class LogService {
+    +logUserBan()
+    +logUserUnban()
+    +logUserUpdate()
+  }
+}
+
+' Relationships
+UserManagement --> adminService : uses
+UserManagement --> BanUserModal : uses
+UserManagement --> UserEditModal : uses
+UserManagement --> useAuthStore : uses
+
+adminService --> AdminController : REST API (users, ban, unban, update)
+AdminController --> AdminService : delegates
+AdminService --> AccountEntity : manages
+AdminService --> LogService : logs actions
+
+@enduml 

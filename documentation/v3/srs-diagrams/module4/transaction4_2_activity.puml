@@ -1,0 +1,10 @@
+@startuml
+start
+:System initializes infrastructure card states;
+repeat
+  :Player action or card effect triggers state change;
+  :System updates infrastructure card state;
+  :System notifies all players of state change;
+repeat while (Game in progress)
+stop
+@enduml 

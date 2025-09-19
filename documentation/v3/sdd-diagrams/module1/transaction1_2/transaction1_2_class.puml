@@ -1,0 +1,50 @@
+@startuml
+' Class Diagram for User Login (Transaction 1.2)
+
+package "Frontend" {
+  class LoginForm {
+    +onSubmit()
+    +render()
+  }
+  class AuthStore {
+    +login(credentials)
+    +register(data)
+    +clearError()
+  }
+  class AuthService {
+    +login(credentials)
+    +register(data)
+    +getProfile()
+  }
+}
+
+package "Backend" {
+  class AuthController {
+    +login(req, res)
+    +register(req, res)
+    +getProfile(req, res)
+  }
+  class AuthServiceBackend {
+    +findByEmail(email)
+    +updateLastLogin(id)
+    +logUserLogin(userId, username)
+    +logFailedLogin(email, reason)
+  }
+  class Account {
+    +id: string
+    +email: string
+    +username: string
+    +password: string
+    +type: AccountType
+    +isActive: boolean
+    +... (other fields)
+  }
+}
+
+LoginForm --> AuthStore : uses
+AuthStore --> AuthService : uses
+AuthService --> AuthController : calls API
+AuthController --> AuthServiceBackend : uses
+AuthServiceBackend --> Account : persists/queries
+
+@enduml 

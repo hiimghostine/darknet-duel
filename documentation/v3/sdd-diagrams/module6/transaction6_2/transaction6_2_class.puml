@@ -1,0 +1,64 @@
+@startuml
+' Class Diagram for Store Browsing, Item Purchase, and Application of Decoration (Transaction 6.2)
+
+package "Frontend" {
+  class StorePage {
+    +displayStore()
+    +handlePurchase()
+    +handleApplyDecoration()
+  }
+  class storeService {
+    +getStoreData()
+    +getUserPurchases()
+    +purchaseItem()
+    +applyDecoration()
+  }
+  class currencyService {
+    +getBalance()
+  }
+  class useAuthStore {
+    +user
+    +decoration
+  }
+}
+
+package "Backend Server" {
+  class StoreController {
+    +GET /api/store
+    +GET /api/store/purchases
+    +POST /api/purchase/{itemId}
+    +POST /api/account/apply/decoration/{decorationId}
+  }
+  class StoreService {
+    +getStoreData()
+    +userOwnsItem()
+    +purchaseItem()
+    +applyDecoration()
+  }
+  class PurchaseEntity {
+    +accountId
+    +itemId
+    +purchasePrice
+    +currency
+    +purchasedAt
+    +isActive
+  }
+  class AccountEntity {
+    +id
+    +decoration
+    +creds
+    +crypts
+  }
+}
+
+' Relationships
+StorePage --> storeService : uses
+StorePage --> currencyService : uses
+StorePage --> useAuthStore : uses
+
+storeService --> StoreController : REST API (store, purchase, apply)
+StoreController --> StoreService : delegates
+StoreService --> PurchaseEntity : manages
+StoreService --> AccountEntity : updates (decoration)
+
+@enduml 

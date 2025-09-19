@@ -1,0 +1,9 @@
+@startuml
+start
+:Admin/moderator accesses logs/audit trails interface;
+:System displays logs and audit records;
+:Admin/moderator applies filters/searches;
+:System updates displayed logs;
+:Admin/moderator reviews log details;
+stop
+@enduml 

@@ -1,0 +1,18 @@
+Use Case: Store Browsing, Item Purchase, and Application of Decoration
+
+Description: Allows players to browse the in-game store, purchase items using in-game currency, and apply purchased decorations to their profile or game elements. The system validates purchases, updates inventory, and applies decorations.
+
+Actors: Player
+
+Preconditions: Player is authenticated and has sufficient currency for purchases.
+
+Main Flow:
+1. Player browses the store and views available items.
+2. Player selects an item to purchase.
+3. System checks if the player has sufficient currency.
+4. If sufficient, system processes the purchase and updates the player's inventory and currency balance.
+5. Player selects a purchased decoration to apply.
+6. System applies the decoration to the player's profile or game elements.
+7. System notifies the player of successful application.
+
+Postconditions: Player's inventory and profile/game elements reflect the purchased and applied decorations. 

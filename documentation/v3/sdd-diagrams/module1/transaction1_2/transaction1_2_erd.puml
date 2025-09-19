@@ -1,0 +1,27 @@
+@startuml
+' Entity-Relationship Diagram for User Login (Transaction 1.2)
+
+entity "accounts" as Account {
+  * id : uuid <<PK>>
+  * email : string <<UQ>>
+  * username : string <<UQ>>
+  * password : string
+  * type : enum (user, mod, admin)
+  * isActive : boolean
+  * inactiveReason : text
+  * lastLogin : datetime
+  * gamesPlayed : int
+  * gamesWon : int
+  * gamesLost : int
+  * rating : int
+  * bio : string
+  * avatar : blob
+  * avatarMimeType : string
+  * creds : int
+  * crypts : int
+  * decoration : string
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+@enduml 

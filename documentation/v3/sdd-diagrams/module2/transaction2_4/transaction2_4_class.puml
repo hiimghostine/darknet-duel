@@ -1,0 +1,46 @@
+@startuml
+' Class Diagram for Lobby Chat (Transaction 2.4)
+
+package "Frontend" {
+  class LobbyChat {
+    +render()
+    +sendMessage()
+    +receiveMessage()
+  }
+  class LobbyService {
+    +joinMatch()
+    +leaveMatch()
+    +sendChatMessage()
+  }
+  class AuthStore {
+    +user: User
+    +isAuthenticated: boolean
+  }
+}
+
+package "Backend" {
+  class BoardgameIOServer {
+    +sendChatMessage()
+    +updateGameState()
+    +broadcastMessage()
+    +customEndpoints()
+  }
+  class DarknetDuelGameLogic {
+    +sendChatMessage()
+    +addSystemMessage()
+    +storeChatMessage()
+  }
+  class LobbyDatabase {
+    +storeGameState()
+    +fetchGameState()
+  }
+}
+
+LobbyChat --> LobbyService : uses
+LobbyService --> BoardgameIOServer : calls API/move
+LobbyService --> AuthStore : uses user info
+BoardgameIOServer --> DarknetDuelGameLogic : invokes move
+DarknetDuelGameLogic --> LobbyDatabase : persists/queries
+BoardgameIOServer --> LobbyDatabase : persists/queries
+
+@enduml 

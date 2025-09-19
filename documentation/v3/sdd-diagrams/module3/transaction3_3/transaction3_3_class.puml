@@ -1,0 +1,48 @@
+@startuml
+' Class Diagram for Real-Time State Synchronization (Transaction 3.3)
+
+package "Frontend" {
+  class GameClient {
+    +connectToServer()
+    +handleStateUpdate()
+    +renderGameBoard()
+  }
+  class BalatroGameBoard {
+    +render()
+    +updateUI()
+  }
+  class useGameState {
+    +currentPlayerObj
+    +opponent
+    +currentPhase
+    +isAttacker
+    +isDefender
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +manageGameState()
+    +syncStateToClients()
+    +handlePlayerConnection()
+    +handleDisconnection()
+  }
+  class DarknetDuel {
+    +playerView()
+    +phases
+    +moves
+  }
+  class LobbyCleanupService {
+    +start()
+    +removeAbandonedGame()
+  }
+}
+
+GameClient --> BalatroGameBoard : uses
+GameClient --> useGameState : uses
+GameClient --> boardgameioServer : Socket.IO/WebSocket
+BalatroGameBoard --> useGameState : uses
+boardgameioServer --> DarknetDuel : runs
+boardgameioServer --> LobbyCleanupService : uses
+
+@enduml 

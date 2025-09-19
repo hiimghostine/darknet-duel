@@ -1,0 +1,18 @@
+Use Case: In-Game Currency Management (Creds, Crypts)
+
+Description: Allows players to view their in-game currency balances (Creds, Crypts), earn Creds by playing matches (10 for a win, 5 for a loss), and spend currency on purchases or other in-game actions. The system updates balances and enforces currency rules.
+
+Actors: Player
+
+Preconditions: Player is authenticated and has an account.
+
+Main Flow:
+1. Player views their current currency balances.
+2. Player plays a match.
+3. If the player wins, system awards 10 Creds; if the player loses, system awards 5 Creds.
+4. System updates the player's currency balance.
+5. Player spends currency on purchases or in-game actions.
+6. System checks if the player has sufficient balance and processes the transaction.
+7. System updates the player's currency balance and notifies the player.
+
+Postconditions: Player's currency balances are accurate and reflect all earnings and expenditures. 

@@ -1,0 +1,20 @@
+Use Case: Turn-Based Gameplay, AP Allocation, Card Play, Targeting, and Reaction Phase
+
+Description: Allows players to take turns, receive action points (AP), play cards from their hand, select targets for card effects, and handle a reaction phase where the opponent may respond to a card play. The system enforces turn order, validates actions, manages the reaction phase, and updates the game state accordingly.
+
+Actors: Player
+
+Preconditions: Game session is active and player is authenticated and in the game.
+
+Main Flow:
+1. System determines which player's turn it is.
+2. System allocates AP to the active player.
+3. Player selects and plays a card from their hand.
+4. Player selects targets for the card (if required).
+5. System enters the reaction phase, temporarily handing control to the opponent.
+6. Opponent may play a reaction/counter card or pass.
+7. System validates the reaction (if any) and resolves card effects in the correct order.
+8. System updates the game state and notifies all players.
+9. Turn passes to the next player.
+
+Postconditions: Game state is updated after each turn, including any reactions; all players are notified of actions and state changes. 

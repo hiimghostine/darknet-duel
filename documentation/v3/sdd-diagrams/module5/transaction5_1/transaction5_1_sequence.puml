@@ -1,0 +1,29 @@
+@startuml
+' Sequence Diagram for Match Result Display (Victory/Defeat, Win Condition) (Transaction 5.1)
+
+actor Player
+participant BalatroGameBoard as Board
+participant GameStatus as Status
+participant WinnerLobby as Lobby
+participant PostGameChat as Chat
+participant boardgameioServer as Server
+participant gamePhases as Phases
+participant gameState_ts as GameState
+participant phaseUtils as Utils
+participant serverAuth as Auth
+
+Player -> Board: play moves
+Board -> Server: sendMove()
+Server -> Phases: checkGameOver()
+Phases -> GameState: update winner, win reason, stats
+Phases -> Utils: calculateWinConditions()
+Phases -> GameState: set win reason
+Server -> Auth: sendGameResults(), recordGameHistory(), updatePlayerRatings()
+Server -> Board: notifyGameOver() (WebSocket)
+Board -> Status: displayResult()
+Board -> Lobby: showResultScreen()
+Lobby -> Chat: enablePostGameChat()
+Player -> Lobby: requestRematch() / returnToLobby()
+Lobby -> Server: sendRematchRequest() (WebSocket)
+Server -> Board: update rematch state (WebSocket)
+@enduml 
