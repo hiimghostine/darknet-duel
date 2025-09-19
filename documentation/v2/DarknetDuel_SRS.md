@@ -217,12 +217,12 @@ The system consists of the following major modules:
 - Database queries < 500ms
 
 ### 2.4 Assumptions and Dependencies
-
-- Users have modern browsers (Chrome, Firefox, Safari, Edge)
-- Stable internet connection
-- Web hosting and database availability
-- Node.js and MySQL server environments
-- Cross-browser compatibility
+It is assumed that users have access to modern web browsers and stable internet connections. The system
+relies on the availability of web hosting services, a MySQL database server, and the Node.js runtime
+environment. The backend and game server must be able to communicate securely and reliably, and the
+system must be compatible with a range of devices and screen sizes. It is also assumed that users possess a
+basic understanding of card game mechanics and, ideally, some familiarity with cybersecurity concepts,
+although the game is designed to be accessible to newcomers.
 
 ---
 
@@ -324,5 +324,3 @@ The system consists of the following major modules:
 - For UI/UX, see frontend’s per-page markdown docs
 
 ---
-
-**This SRS now accurately reflects the current architecture, technology, and features of the Darknet Duel project.** 
