@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor User
+rectangle "Interactive Tutorial" {
+  usecase "Follow Tutorial Step" as UC_Step
+  usecase "View Hint" as UC_Hint
+  usecase "Finish Tutorial" as UC_Finish
+}
+User -- UC_Step
+User -- UC_Hint
+UC_Step --> UC_Finish : <<extends>>
+@enduml

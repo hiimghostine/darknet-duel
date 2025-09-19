@@ -1,0 +1,32 @@
+@startuml
+skinparam shadowing true
+skinparam classFontSize 14
+
+class InteractiveTutorial {
+  +start(): void
+  +next(): void
+  +prev(): void
+  +finish(): void
+}
+
+class TutorialSteps {
+  +steps: Step[]
+  +getCurrent(): Step
+}
+
+class FirstTimeFlow {
+  +launchTutorial(): void
+  +onTutorialFinish(): void
+}
+
+class ProfileService {
+  +setFirstTimeComplete(userId): Promise<void>
+}
+
+InteractiveTutorial --> TutorialSteps : reads definitions
+FirstTimeFlow --> InteractiveTutorial : controls lifecycle
+FirstTimeFlow --> ProfileService : mark complete on finish
+
+@enduml
+
+

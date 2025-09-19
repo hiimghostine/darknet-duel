@@ -1,0 +1,40 @@
+@startuml
+skinparam shadowing true
+skinparam classFontSize 14
+
+class LoreVideo {
+  +play(): void
+  +pause(): void
+  +skip(): void
+  +onComplete(): void
+}
+
+class FirstTimeFlow {
+  +startIfNeeded(user): void
+  +onVideoComplete(): void
+  +launchTutorial(): void
+  -markComplete(): Promise<void>
+}
+
+class AuthStore {
+  +user: User
+  +setFirstTimeComplete(flag: boolean): void
+}
+
+class ProfileService {
+  +getPreferences(userId): Promise<Preferences>
+  +setFirstTimeComplete(userId): Promise<void>
+}
+
+class Preferences {
+  +firstTimeComplete: boolean
+  +tutorialVersion: string
+}
+
+LoreVideo --> FirstTimeFlow : notifies completion/skip
+FirstTimeFlow --> ProfileService : update completion
+FirstTimeFlow --> AuthStore : update local state
+
+@enduml
+
+

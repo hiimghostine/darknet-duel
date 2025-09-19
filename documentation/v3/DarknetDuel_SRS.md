@@ -72,6 +72,8 @@ The following documents and resources are referenced in this SRS:
 | MySQL Documentation                           | N/A          | 2024        | Oracle Corporation             | https://dev.mysql.com/doc/                           |
 | Socket.IO Documentation                       | N/A          | 2024        | Socket.IO Project              | https://socket.io/docs/                              |
 | Swagger/OpenAPI 3.0 Specification             | N/A          | 2024        | OpenAPI Initiative             | https://swagger.io/specification/                    |
+| OWASP ZAP (Zed Attack Proxy)                  | N/A          | 2024        | OWASP Foundation               | https://www.zaproxy.org/                             |
+| OWASP ASVS                                    | N/A          | 2024        | OWASP Foundation               | https://owasp.org/www-project-application-security-verification-standard/ |
 
 ---
 
@@ -88,6 +90,13 @@ The system is composed of three main parts:
    - Store, purchases, and decoration management
    - Admin/moderator tools
    - REST API and WebSocket endpoints
+   - API documentation with Swagger/OpenAPI for 100% of REST endpoints
+   - Rate limiting policies to prevent abuse
+   - Audit logging for administrative actions
+   - Security headers (Helmet) and configured CORS policies
+   - Input validation/sanitization for all inbound data
+   - GDPR features (data export and deletion)
+   - Session timeout and automatic logout
 
 2. **Game Server (Node.js/boardgame.io)**
    - Implements all game logic, state, and turn management
@@ -100,6 +109,10 @@ The system is composed of three main parts:
    - Real-time updates via WebSockets
    - Responsive, cyberpunk-themed design
    - Role-based access (player, admin, moderator)
+   - Global error boundaries and user-friendly error messaging
+   - Toast notifications for user actions and errors
+   - Offline detection and in-game handling (20s grace period)
+   - First-time user lore video and interactive tutorial flow
 
 The system consists of the following major modules:
 
@@ -143,6 +156,10 @@ The system consists of the following major modules:
   - Transaction 7.2: Report management (submit, review, resolve)
   - Transaction 7.3: System logs and audit trails
   - Transaction 7.4: User modification (Modify username, email, password)
+
+- **Module 8: First-Time Experience (Frontend)**
+  - Transaction 8.1: Lore video playback for first-time users
+  - Transaction 8.2: Interactive tutorial flow following lore video completion
 
 ### 2.2 User Characteristics
 
@@ -290,7 +307,12 @@ although the game is designed to be accessible to newcomers.
   - Transaction 7.3: System logs and audit trails
   - Transaction 7.4: User modification (Modify username, email, password)
 
+- **Module 8: First-Time Experience (Frontend)**
+  - Transaction 8.1: Lore video playback for first-time users on initial login (detect first login)
+  - Transaction 8.2: Interactive tutorial guiding new players through core mechanics; grants access to main game after completion
+
 ---
+
 
 ### 3.3 Non-Functional Requirements
 
@@ -307,6 +329,11 @@ although the game is designed to be accessible to newcomers.
 - Server-side validation of all game actions
 - Rate limiting and abuse prevention
 - Secure WebSocket connections
+ - Audit logging for administrative actions
+ - Security headers (Helmet) and strict CORS policies
+ - GDPR features (export/deletion)
+ - Session timeout and enforced automatic logout
+ - CI/CD security gate: fail builds on detected vulnerabilities (e.g., ZAP)
 
 **Reliability**
 - 99.9% uptime
@@ -314,6 +341,7 @@ although the game is designed to be accessible to newcomers.
 - Game state persistence on refresh
 - Regular database backups
 - Graceful error handling
+ - In-game offline handling with 20s grace period before stopping session
 
 ---
 
@@ -322,5 +350,7 @@ although the game is designed to be accessible to newcomers.
 - For detailed API endpoints, see backend-server’s Swagger docs and API_DOCUMENTATION.md
 - For game logic, see game-server’s file-by-file documentation
 - For UI/UX, see frontend’s per-page markdown docs
+ - For WebSocket protocols, see game-server’s connection protocol documentation
+ - Swagger/OpenAPI setup is located at backend-server/src/config/swagger.ts (with route/controller annotations)
 
 ---

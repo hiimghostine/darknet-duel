@@ -31,11 +31,12 @@ rectangle "Frontend\n(React, TypeScript)" as FE {
 
 ' Backend Server
 rectangle "Backend Server\n(Node.js, Express, TypeORM, MySQL)" as BE {
-  rectangle "REST API\n(Express, JWT, Multer)" as REST
+  rectangle "REST API\n(Express, JWT, Multer, Helmet, CORS, Rate Limiter)" as REST
   rectangle "WebSocket Chat\n(Socket.IO)" as Chat
   rectangle "Database ORM\n(TypeORM)" as ORM
   rectangle "Database\n(MySQL)" as DB
   rectangle "Swagger UI\n(OpenAPI 3.0)" as Swagger
+  rectangle "Audit Logging\n(LogService, AuditLog)" as Audit
   rectangle "Admin/Mod Logic" as AdminLogic
   rectangle "Store & Currency\n(Creds, Crypts)" as Store
   rectangle "File Uploads\n(Multer)" as Uploads
@@ -62,6 +63,7 @@ FE --> AdminTools : Admin/Mod UI
 REST --> ORM : DB Access
 ORM --> DB : SQL
 REST --> Swagger : API Docs
+REST --> Audit : Admin Actions Logs
 REST --> AdminLogic : Admin/Mod Endpoints
 REST --> Store : Store/Shop API
 REST --> Uploads : File Uploads

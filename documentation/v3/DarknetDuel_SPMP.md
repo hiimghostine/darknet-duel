@@ -47,6 +47,7 @@ The successful completion of the Darknet Duel project will yield the following d
   - Software Design Document (SDD).
   - This Software Project Management Plan (SPMP).
   - Automatically generated API Documentation via Swagger/OpenAPI.
+  - CI/CD pipeline configuration and security scan reports (e.g., ZAP baseline).
   - Final Project Presentation/Demo materials.
 - Delivery: All deliverables will be provided electronically via access to the project's Git repository and potentially submitted through the university's course platform.
 
@@ -225,8 +226,6 @@ The project work is broken down according to the major phases defined in the aca
 |                      | 4.1    | Module 3 & 4 Implementation               | Code, Unit Tests, Integration Tests, Peer Review                  |
 | Increment 4          | 5.0    | Store, Currency, Admin/Moderation, Polish | In-game Currency, Store, Admin Tools, Moderation, Final Polish    |
 |                      | 5.1    | Module 5, 6, 7 Implementation             | Code, Unit Tests, Integration Tests, Peer Review                  |
-|                      | 5.2    | Comprehensive E2E Testing                 | Expand test coverage, Run full suite                              |
-|                      | 5.3    | Final Documentation & Packaging           | Update README, Final checks, Build artifact                       |
 | Demo & Delivery      | 6.0    | Project Demonstration                     | Prepare presentation, Conduct demo, Final Submission              |
 
 Detailed task breakdowns within each module implementation are managed by the team, using a task board or list in ClickUp, GitHub Projects, or a similar tool, ensuring coverage of all required modules including real-time communication aspects.
@@ -249,7 +248,7 @@ This section outlines the metrics, reporting methods, and control procedures use
 
 #### 5.3.1 Requirements Control Plan
 
-Control over product requirements is maintained through adherence to the defined Software Requirements Specification (SRS) and Software Design Document (SDD). Any proposed changes or clarifications identified during development are discussed within the team during meetings. The Project Lead holds the final authority on accepting requirement modifications. Approved changes that impact scope or design must be reflected in updates to the SRS and/or SDD. The potential impact of any change on schedule and effort is assessed during these discussions. All changes to requirements documentation and related code are tracked via Git commits, providing traceability. The primary mechanism for control is the Project Lead's oversight and the explicit goal of implementing the features as documented, avoiding scope creep unless formally approved and documented.
+Control over product requirements is maintained through adherence to the defined Software Requirements Specification (SRS) and Software Design Document (SDD). Any proposed changes or clarifications identified during development are discussed within the team during meetings. The Project Lead holds the final authority on accepting requirement modifications. Approved changes that impact scope or design must be reflected in updates to the SRS and/or SDD. The potential impact of any change on schedule and effort is assessed during these discussions. All changes to requirements documentation and related code are tracked via Git commits, providing traceability. The primary mechanism for control is the Project Lead's oversight and the explicit goal of implementing the features as documented, avoiding scope creep unless formally approved and documented. Refactoring requirements (REQ-201–REQ-406) must maintain traceability in SRS/SDD and the Requirements Inventory matrix.
 
 #### 5.3.2 Schedule Control Plan
 
@@ -339,7 +338,7 @@ Tools
 | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------- |
 | Operating System             | Developer's Preferred OS (Windows, macOS, Linux)                                                                       |
 | Languages                    | JavaScript (ES2022+), TypeScript, SQL (via TypeORM), Python 3 (for testing scripts)                                    |
-| Frameworks/Libraries         | Node.js, Express, TypeORM, MySQL, React.js, Zustand, boardgame.io, Jest, React Testing Library, Supertest, Socket.IO   |
+| Frameworks/Libraries         | Node.js, Express, TypeORM, MySQL, React.js, Zustand, boardgame.io, Jest, React Testing Library, Supertest, Socket.IO, Helmet, express-rate-limit |
 | Frontend Build Tools         | Vite (build/bundler), Tailwind CSS (utility-first styling), ESLint (linting), PostCSS (CSS processing), tsconfig        |
 | Database                     | MySQL                                                                                                                  |
 | Build Tool                   | npm (or yarn/pnpm)                                                                                                      |
@@ -348,6 +347,7 @@ Tools
 | Documentation Tools          | Markdown Editors, Swagger UI (for API visualization)                                                                    |
 | Development Environment      | VS Code / WebStorm (or other IDEs), Postman (API testing)                                                              |
 | Project Planning/Tracking    | GitHub Projects/Issues, ClickUp, Team Communication Tools within Workspace                                             |
+| CI/CD                        | GitHub Actions, OWASP ZAP baseline scan, coverage reporters                                                             |
 
 The frontend application is built using Vite for fast development and optimized production builds, with Tailwind CSS for utility-first styling. ESLint is used for code linting, and PostCSS is used for CSS processing. TypeScript configuration is managed via tsconfig.json files. This setup ensures rapid feedback during development, consistent code quality, and modern, maintainable styling practices.
 
@@ -355,13 +355,13 @@ Technical standards governing development are derived from the established team 
 
 ### 6.3 Infrastructure Plan
 
-The project infrastructure primarily relies on the team members' local development environments and the capabilities provided by the shared workspace environment. The local setup consists of a Windows, macOS, or Linux operating system equipped with the necessary software: Node.js 20+, a suitable Integrated Development Environment (IDE) chosen by the team, Git client, and a running MySQL database server instance. The server-side application requires an environment capable of running the Node.js backend, boardgame.io game server, and supporting persistent WebSocket connections (typically handled by Socket.IO).
+The project infrastructure primarily relies on the team members' local development environments and the capabilities provided by the shared workspace environment. The local setup consists of a Windows, macOS, or Linux operating system equipped with the necessary software: Node.js 20+, a suitable Integrated Development Environment (IDE) chosen by the team, Git client, and a running MySQL database server instance. The server-side application requires an environment capable of running the Node.js backend, boardgame.io game server, and supporting persistent WebSocket connections (typically handled by Socket.IO). CI runners (GitHub-hosted) execute build, tests, Swagger generation, and ZAP scans; secrets are stored via repository/environment secrets.
 
 Establishment and maintenance of the local hardware and software environment, including operating system updates, IDE configuration, and database administration, are the responsibility of each team member. No dedicated physical servers, specialized hardware, or office facilities are provisioned specifically for this project beyond the team's standard setup. Network connectivity is assumed to be available for accessing dependencies via npm, utilizing the shared workspace environment, and maintaining stable WebSocket connections during testing and gameplay.
 
 ### 6.4 Product Acceptance Plan
 
-Acceptance of the Darknet Duel application is determined through team validation upon the completion of each development module and following the final integration phase. The primary method for acceptance involves the successful execution of the comprehensive test suite associated with each module and the overall system, demonstrating functional correctness and adherence to requirements. Objective criteria include: 100% pass rate for all defined automated tests (unit, integration, end-to-end), team confirmation that the implemented features behave as specified in the Software Requirements Specification (SRS) and Software Design Document (SDD) through manual testing or review, and adherence to the agreed-upon coding standards and architectural patterns.
+Acceptance of the Darknet Duel application is determined through team validation upon the completion of each development module and following the final integration phase. The primary method for acceptance involves the successful execution of the comprehensive test suite associated with each module and the overall system, demonstrating functional correctness and adherence to requirements. Objective criteria include: 100% pass rate for all defined automated tests (unit, integration, end-to-end), team confirmation that the implemented features behave as specified in the Software Requirements Specification (SRS) and Software Design Document (SDD) through manual testing or review, and adherence to the agreed-upon coding standards and architectural patterns. Additional acceptance criteria from refactoring include: 100% REST endpoint coverage in Swagger (REQ-301), verified rate limiting policies (REQ-302), documented WebSocket protocol (REQ-303), audit logs recorded for admin actions (REQ-402), GDPR export/deletion flows (REQ-403), security headers/CORS present (REQ-404), session timeout enforced (REQ-405), CI security gate fails on High/Medium vulnerabilities (REQ-406), and frontend UX foundations validated (error boundary, toasts, offline grace, first-time video + tutorial) (REQ-201–REQ-206).
 
 Formal acceptance is achieved implicitly when the team approves the state of a completed module or the final integrated product, indicating readiness to proceed or conclude the project. No separate formal acceptance documentation or sign-off ceremony is planned, relying instead on the iterative validation and ongoing communication within the shared workspace environment. Testing tools (Jest, React Testing Library, Supertest, Swagger, Git, and the team's chosen IDEs) and code inspection by the team are the core techniques used for acceptance verification.
 
@@ -391,6 +391,9 @@ Key V&V activities include:
   - System Testing: Evaluating the integrated system against SRS requirements (may involve manual testing or broader automated E2E tests).
   - End-to-End (E2E) Testing: Using Jest/Supertest or Python scripts (requests library, potentially WebSocket clients) to test full user scenarios through the API.
   - Acceptance Testing: Implicitly performed by the team upon successful completion of module tests, feature validation against requirements, and the final project demonstration.
+  - Security Testing: Automated OWASP ZAP baseline scan in CI must report 0 High/Medium findings; pipeline fails otherwise.
+  - Documentation Testing: Swagger generation step must include all REST endpoints; missing annotations fail the pipeline.
+  - Coverage Gates: Jest coverage thresholds enforced in CI for lines/branches/functions.
 
 #### 7.2.1 V&V Plan by Phase
 

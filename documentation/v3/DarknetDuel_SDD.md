@@ -38,6 +38,7 @@ This Software Design Description (SDD) document outlines the detailed design for
    - [Module 5: Game Statistics and Result Tracking](#module-5-game-statistics-and-result-tracking)
    - [Module 6: Store and Currency](#module-6-store-and-currency)
    - [Module 7: Admin and Moderation Tools](#module-7-admin-and-moderation-tools)
+   - [Module 8: First-Time Experience](#module-8-first-time-experience)
 
 ## 1. Introduction
 
@@ -171,6 +172,11 @@ The system follows a layered architecture pattern:
 - **Authentication**: JWT-based authentication
 - **RESTful API**: Express.js with TypeScript
 - **Database ORM**: TypeORM
+ - **Security & Policies**: Helmet (security headers), CORS configuration, express-rate-limit (rate limiting), request validation/sanitization middleware
+ - **API Documentation**: Swagger/OpenAPI with annotations and generated UI
+ - **Audit Logging**: Central LogService writing to Log/AuditLog entity
+ - **GDPR Features**: Endpoints and services for data export/deletion
+ - **Session Management**: Token expiry and idle timeout strategy
 
 #### Game Server
 - **Framework**: boardgame.io
@@ -184,6 +190,7 @@ The system follows a layered architecture pattern:
 #### External Services
 - **Payment Processing**: Xendit integration
 - **CDN/Proxy**: Cloudflare
+ - **CI/CD**: GitHub Actions with build/test/coverage and ZAP security scanning gate
 
 ## 3. Detailed Design
 
@@ -225,6 +232,8 @@ The system follows a layered architecture pattern:
     - createUser(userData) — Persists new user to the database
     - findByEmailOrUsername(email, username) — Checks for existing users
   - **Account Entity (TypeORM Entity)**
+  - **Security/Policy Additions**
+    - Swagger annotations on auth endpoints; rate limiting for login attempts; audit logging for successful/failed admin logins; session timeout configuration.
     - Represents the accounts table in the database, including fields for id, email, username, password, etc.
   - **Validation Utils**
     - validateEmail(email) — Checks email format
@@ -1107,6 +1116,7 @@ The system follows a layered architecture pattern:
     - Triggers statistics update after match ends.
   - Backend Server (Express)
     - Exposes REST API endpoints for statistics, history, and ELO updates.
+    - Swagger annotations present; rate limiting on history endpoints.
   - Database
     - Stores player statistics, match history, and ELO ratings.
 
@@ -1360,6 +1370,8 @@ The system follows a layered architecture pattern:
   - LogService (Service Class)
     - Logs moderation actions for audit trail
     - File: src/services/log.service.ts
+  - **Security/Policy Additions**
+    - All admin endpoints produce audit logs; Swagger annotations; strict role middleware; rate limiting per admin action type.
 
 - **Object-Oriented Components**
   - Class Diagram
@@ -1367,6 +1379,60 @@ The system follows a layered architecture pattern:
 
 - **Data Design**
   - ERD or schema
+
+### Module 8: First-Time Experience
+
+#### 8.1 Lore Video Playback
+
+- **User Interface Design**
+  - On initial login, the app detects first-time status and displays a full-screen lore video with playback controls (play/pause, skip with confirmation).
+  - Skipping or completion proceeds to the interactive tutorial.
+  - Handles loading states, errors (fallback image/summary), and accessibility (captions, keyboard controls).
+
+- **Front-end component(s)**
+  - **LoreVideo.tsx (React Component)**
+    - Renders the lore video with controls and completion/skip callbacks.
+  - **FirstTimeFlow.ts (Controller/Flow)**
+    - Orchestrates first-time detection, video playback, tutorial launch, and finalization.
+  - **auth.store.ts (Zustand Store)**
+    - Exposes user/profile with `isFirstLogin` (or preferences flag) and mutation to set completion.
+  - **profile.service.ts (Service Class)**
+    - Reads/updates profile preference indicating first-time flow completion.
+
+- **Back-end component(s)**
+  - **Account/Preferences (Entity/Field)**
+    - Boolean or JSON preferences flag `firstTimeComplete` (default false).
+  - **Profile/Account Controller**
+    - Endpoint to mark first-time flow completion.
+
+- **Object-Oriented Components**
+  - Class Diagram: LoreVideo ↔ FirstTimeFlow ↔ auth.store/profile.service.
+  - Sequence Diagram: Initial login → check flag → play/skip → mark complete → launch tutorial.
+
+#### 8.2 Interactive Tutorial
+
+- **User Interface Design**
+  - Guides new players through core mechanics (AP, hand, targeting, infrastructure) using step-by-step overlays and gated interactions.
+  - Provides clear progress, ability to replay steps, and finish to unlock the main app.
+  - Error/edge handling: resume from last step on refresh; accessible controls.
+
+- **Front-end component(s)**
+  - **InteractiveTutorial.tsx (React Component)**
+    - Renders tutorial steps, overlays, and captures user interactions to advance steps.
+  - **tutorial.steps.ts (Config/Data)**
+    - Declarative step definitions and UI copy.
+  - **FirstTimeFlow.ts (Controller/Flow)**
+    - Transitions from video to tutorial; persists progress locally if needed.
+
+- **Back-end component(s)**
+  - Optional: persist tutorial completion server-side via profile preferences.
+
+- **Object-Oriented Components**
+  - Class Diagram: FirstTimeFlow coordinates LoreVideo and InteractiveTutorial; ProfileService updates completion flag.
+  - Sequence Diagram: Tutorial step progression and completion → main app unlock.
+
+- **Data Design**
+  - Preferences extension on Account entity (JSON): `{ firstTimeComplete: boolean, tutorialVersion: string, lastStep?: number }`.
 
 #### 7.2 Report Management
 
