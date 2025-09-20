@@ -55,22 +55,22 @@ The successful completion of the Darknet Duel project will yield the following d
 
 The project follows a strict academic schedule defined by the university course requirements. The key milestones and deliverables are aligned with the following timeline:
 
-| Week | Dates           | Deliverable / Activity                                 | Checking Period   |
+| Week | Dates           | Deliverable / Activity                                 | Status            |
 | :--- | :-------------- | :----------------------------------------------------- | :---------------- |
-| 1    | Jan 20 - 25     | Team Formation                                         | Jan 20 - 25       |
-| 2-3  | Jan 27 - Feb 8  | Review of Related Literature                           | Jan 27 - Feb 8    |
-| 3    | Feb 3 - 8       | Patent Search                                          | Feb 3 - 8         |
-| 4    | Feb 10 - 15     | Software Project Proposal                              | Feb 10 - 15       |
-| 5    | Feb 17 - 22     | Software Requirements Specification                    | Feb 17 - 22       |
-| 6    | Feb 24 - 29     | Software Project Management Plan                       | Feb 24 - 29       |
-| 7    | Mar 3 - 8       | Software Design Description                            | Mar 3 - 8         |
-| 8-9  | Mar 24 - Apr 5  | Increment 1: User Management & Auth, Initial Lobby     | Mar 24 - Apr 5    |
-| 10-11| Apr 7 - Apr 19  | Increment 2: Lobby, Matchmaking, Game Server Setup     | Apr 7 - Apr 19    |
-| 12-13| Apr 22 - May 3  | Increment 3: Core Game Logic, Card System, Real-Time Play | Apr 22 - May 3 |
-| 14-15| May 5 - May 17  | Increment 4: Store, Currency, Admin/Moderation, Polish | May 5 - May 17    |
-| 16-18| May 20 - May 31 | Software Project Demo/Presentation                      | May 20 - May 31   |
+| 1    | Aug 7 - 15      | Requirements Refactoring - Streamlined functional and non-functional requirements | Completed         |
+| 2    | Aug 18 - 22     | Revised SRS, SDD, SPMP - Updated docs                 | Completed         |
+| 3    | Aug 25 - 29     | Software Test Document (STD) - Accomplished STD document | Completed         |
+| 4-7  | Sep 1 - 26      | Development, Integration, Deployment & Testing - Deployed and running software | **Current Phase** |
+| 8-9  | Sep 29 - Oct 10 | Software Demo - Presentation and demo of software project | Pending           |
+| 10   | Oct 13 - 17     | Performance testing - Performance test result         | Pending           |
+| 11   | Oct 20 - 24     | Software Validation - Tool to be used in usability testing | Pending           |
+| 12-13| Oct 27 - Nov 7  | Usability testing - Field testing data                | Pending           |
+| 14   | Nov 10 - 14     | User-Driven Improvements - Utilize user feedback for refinement and optimization | Pending           |
+| 15-16| Nov 17 - 28     | Final Presentation - Final demo                       | Pending           |
+| 17   | Dec 1 - 5       | Research report - Completed research report           | Pending           |
+| 18   | Dec 1 - 5       | Docs & Source Code Submission - Finalized documentation | Pending           |
 
-As of the original publication of this SPMP (May 3, 2025), the project is within Increment 3 implementation. Increment 4 is allocated for the completion of remaining development modules and final integration/testing.
+As of the current date (September 20, 2025), the project is in the Development, Integration, Deployment & Testing phase (Weeks 4-7). This phase focuses on completing the remaining development modules, integration testing, deployment setup, and comprehensive testing of the deployed software system.
 
 Budgetary considerations are minimal for this academic project. Costs are primarily related to the time investment of the team members and potential minor expenses for software licenses or cloud services if required for deployment beyond local testing, which are expected to be negligible or covered by student/university resources.
 

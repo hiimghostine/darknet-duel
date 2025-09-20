@@ -1400,10 +1400,20 @@ The system follows a layered architecture pattern:
     - Reads/updates profile preference indicating first-time flow completion.
 
 - **Back-end component(s)**
-  - **Account/Preferences (Entity/Field)**
-    - Boolean or JSON preferences flag `firstTimeComplete` (default false).
-  - **Profile/Account Controller**
-    - Endpoint to mark first-time flow completion.
+  - **profile.routes.ts (Express Router)**
+    - Defines the first-time completion endpoint: POST /api/profile/first-time-complete
+  - **ProfileController (Controller Class)**
+    - Method: setFirstTimeComplete(req, res)
+    - Validates user authentication and updates first-time completion flag
+    - Returns success confirmation or error messages
+  - **ProfileService (Service Class)**
+    - Methods:
+    - getPreferences(userId) — Retrieves user preferences including first-time completion status
+    - setFirstTimeComplete(userId) — Updates first-time completion flag in user preferences
+  - **Account Entity (TypeORM Entity)**
+    - Represents the accounts table with firstTimeComplete field (boolean, default false)
+  - **Validation Utils**
+    - validateUserId(userId) — Validates user ID format and existence
 
 - **Object-Oriented Components**
   - Class Diagram: LoreVideo ↔ FirstTimeFlow ↔ auth.store/profile.service.
@@ -1425,7 +1435,23 @@ The system follows a layered architecture pattern:
     - Transitions from video to tutorial; persists progress locally if needed.
 
 - **Back-end component(s)**
-  - Optional: persist tutorial completion server-side via profile preferences.
+  - **profile.routes.ts (Express Router)**
+    - Defines the tutorial completion endpoint: POST /api/profile/tutorial-complete
+  - **ProfileController (Controller Class)**
+    - Method: setTutorialComplete(req, res)
+    - Validates user authentication and updates tutorial completion status
+    - Returns success confirmation or error messages
+  - **ProfileService (Service Class)**
+    - Methods:
+    - getTutorialProgress(userId) — Retrieves tutorial progress and completion status
+    - setTutorialComplete(userId, stepData) — Updates tutorial completion and step progress
+    - getTutorialSteps() — Retrieves available tutorial steps configuration
+  - **TutorialStep Entity (TypeORM Entity)**
+    - Represents tutorial step definitions with step number, title, description, etc.
+  - **TutorialProgress Entity (TypeORM Entity)**
+    - Tracks user progress through tutorial steps with completion timestamps
+  - **Validation Utils**
+    - validateTutorialStep(stepData) — Validates tutorial step completion data
 
 - **Object-Oriented Components**
   - Class Diagram: FirstTimeFlow coordinates LoreVideo and InteractiveTutorial; ProfileService updates completion flag.

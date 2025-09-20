@@ -1,0 +1,84 @@
+@startuml
+' Entity-Relationship Diagram for Interactive Tutorial (Transaction 8.2)
+
+entity "accounts" as Account {
+  * id : uuid <<PK>>
+  * email : string <<UQ>>
+  * username : string <<UQ>>
+  * password : string
+  * type : enum (user, mod, admin)
+  * isActive : boolean
+  * inactiveReason : text
+  * lastLogin : datetime
+  * gamesPlayed : int
+  * gamesWon : int
+  * gamesLost : int
+  * rating : int
+  * bio : string
+  * avatar : blob
+  * avatarMimeType : string
+  * creds : int
+  * crypts : int
+  * decoration : string
+  * firstTimeComplete : boolean
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "user_preferences" as UserPreferences {
+  * id : uuid <<PK>>
+  * userId : uuid <<FK>>
+  * firstTimeComplete : boolean
+  * tutorialVersion : string
+  * videoWatched : boolean
+  * tutorialCompleted : boolean
+  * lastTutorialStep : int
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "tutorial_steps" as TutorialStep {
+  * id : uuid <<PK>>
+  * stepNumber : int
+  * title : string
+  * description : text
+  * instructions : text
+  * targetElement : string
+  * isInteractive : boolean
+  * isRequired : boolean
+  * tutorialVersion : string
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "tutorial_progress" as TutorialProgress {
+  * id : uuid <<PK>>
+  * userId : uuid <<FK>>
+  * stepId : uuid <<FK>>
+  * completedAt : datetime
+  * timeSpent : int
+  * hintsUsed : int
+  * skipped : boolean
+  * createdAt : datetime
+}
+
+entity "tutorial_sessions" as TutorialSession {
+  * id : uuid <<PK>>
+  * userId : uuid <<FK>>
+  * startedAt : datetime
+  * completedAt : datetime
+  * currentStep : int
+  * totalSteps : int
+  * isCompleted : boolean
+  * sessionData : json
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+Account ||--o{ UserPreferences : has
+Account ||--o{ TutorialProgress : progresses_through
+Account ||--o{ TutorialSession : participates_in
+TutorialStep ||--o{ TutorialProgress : tracked_in
+TutorialStep ||--o{ TutorialSession : includes
+
+@enduml
