@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { useSettingsStore } from '../store/settings.store';
 import { useAudioManager } from '../hooks/useAudioManager';
+import TutorialButton from './tutorial/TutorialButton';
 import logo from '../assets/logo.png';
 
 interface AppBarProps {
@@ -85,6 +86,12 @@ const AppBar: React.FC<AppBarProps> = ({
             <span className="mr-1">🛍️</span> 
             <span className="hidden sm:inline">STORE</span>
           </button>
+          
+          <TutorialButton 
+            variant="minimal" 
+            size="sm" 
+            showProgress={false}
+          />
           
           <button 
             onClick={() => {

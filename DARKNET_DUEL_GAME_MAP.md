@@ -45,7 +45,7 @@
 - **Frontend**: React + TypeScript + Vite
 - **Game Engine**: BoardGame.io
 - **Backend**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL
+- **Database**: MySQL
 - **Real-time**: Socket.io
 - **Shared Types**: TypeScript interfaces across all components
 

@@ -8,6 +8,7 @@ import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import UserTypeTag from '../components/UserTypeTag';
+import TutorialButton from '../components/tutorial/TutorialButton';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 import accountService from '../services/account.service';
 import storeService from '../services/store.service';
@@ -242,6 +243,15 @@ const DashboardPage: React.FC = () => {
                       </svg>
                       CREATE_NEW_GAME
                     </Link>
+                  </div>
+                  
+                  {/* Tutorial Button */}
+                  <div className="mt-4">
+                    <TutorialButton 
+                      variant="secondary" 
+                      size="sm" 
+                      showProgress={true}
+                    />
                   </div>
                 </div>
               </div>
