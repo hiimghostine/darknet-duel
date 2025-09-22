@@ -38,7 +38,8 @@ services:
       - DB_NAME=darknet_duel
       - ALLOWED_ORIGINS=http://192.168.1.180,http://192.168.1.180:80,http://192.168.1.180:3000,http://192.168.1.180:5173
       - PUBLIC_URL=http://192.168.1.180:8000
-      - SERVER_API_KEY=dev-server-key
+      - SERVER_API_KEY=bmlnZ2VybmlnZ2VybmlnZ2VybmlnZ2Vy
+      - XENDIT_API_KEY=xnd_development_aTQpov9kK2zMVEzHp3hoXAVIERM7JJN7dAEn36a3c7D3e95fN4OR1rhzusVGx # PALDOOOOOOOOOOO
     ports:
       - "8000:8000"
     networks:
@@ -57,6 +58,7 @@ services:
       - GAME_SERVER_PORT=8001
       - PUBLIC_SERVER_URL=http://192.168.1.180:8001
       - BACKEND_URL=http://backend:8000/api
+      - SERVER_API_KEY=bmlnZ2VybmlnZ2VybmlnZ2VybmlnZ2Vy
     ports:
       - "8001:8001"
     networks:
