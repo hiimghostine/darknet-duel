@@ -29,6 +29,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV GAME_SERVER_HOST=0.0.0.0
 ENV GAME_SERVER_PORT=8001
+ENV TS_NODE_TRANSPILE_ONLY=1
+ENV TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}'
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
