@@ -3,7 +3,7 @@ name: CI/CD - Darknet Duel
 on:
   push:
     branches:
-      - ci-cd-testing-scam-branch
+      - dev
 
 jobs:
   build-and-deploy:
