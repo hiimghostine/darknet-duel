@@ -1,0 +1,11 @@
+@startuml
+start
+:Player joins a lobby;
+repeat
+  :Player enters chat message;
+  :Send message to server;
+  :Server broadcasts message to all lobby participants;
+  :Update chat UI for all players;
+repeat while (Player remains in lobby)
+stop
+@enduml 

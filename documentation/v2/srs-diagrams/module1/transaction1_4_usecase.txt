@@ -1,0 +1,15 @@
+Use Case: Role-Based Access
+
+Description: Grants users access to features and actions based on their assigned role (player, moderator, admin).
+
+Actors: User
+
+Preconditions: User is authenticated and has an assigned role.
+
+Main Flow:
+1. User logs in.
+2. System checks user role.
+3. System grants access to features and actions permitted for that role.
+4. User performs actions allowed by their role.
+
+Postconditions: User can only access features appropriate to their role. 

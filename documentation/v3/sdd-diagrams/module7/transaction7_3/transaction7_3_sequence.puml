@@ -1,0 +1,47 @@
+@startuml
+' Sequence Diagram for System Logs and Audit Trails (Transaction 7.3)
+
+actor AdminMod
+participant SecurityOverviewPage as Frontend
+participant logService as FrontendService
+participant LogController as BackendController
+participant LogService as BackendService
+participant LogEntity as LogDB
+participant AccountEntity as AccountDB
+
+== View Logs ==
+AdminMod -> Frontend : open SecurityOverviewPage
+Frontend -> logService : getLogs(filters)
+logService -> LogController : GET /api/logs
+LogController -> LogService : getLogs(filters)
+LogService -> LogEntity : query
+LogEntity --> LogService : logs
+LogService --> LogController : logs
+LogController --> logService : logs
+logService --> Frontend : logs
+Frontend --> AdminMod : display logs
+
+== Filter/Search Logs ==
+AdminMod -> Frontend : apply filters/search
+Frontend -> logService : getLogs(updatedFilters)
+logService -> LogController : GET /api/logs
+LogController -> LogService : getLogs(updatedFilters)
+LogService -> LogEntity : query
+LogEntity --> LogService : logs
+LogService --> LogController : logs
+LogController --> logService : logs
+logService --> Frontend : logs
+Frontend --> AdminMod : display filtered logs
+
+== View Log Details ==
+AdminMod -> Frontend : select log entry
+Frontend -> logService : getLogById(id)
+logService -> LogController : GET /api/logs/{id}
+LogController -> LogService : getLogById(id)
+LogService -> LogEntity : find by id
+LogEntity --> LogService : log
+LogService --> LogController : log
+LogController --> logService : log
+logService --> Frontend : log
+Frontend --> AdminMod : show log details
+@enduml 

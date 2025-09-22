@@ -1,0 +1,31 @@
+@startuml
+' Sequence Diagram for User Login (Transaction 1.2)
+
+actor User
+participant LoginForm as LF
+participant AuthStore as AS
+participant AuthService as FS
+participant "API /auth/login" as API
+participant AuthController as AC
+participant AuthServiceBackend as BS
+participant Account as DB
+
+User -> LF: Fill login form
+User -> LF: Click submit
+LF -> AS: login(credentials)
+AS -> FS: login(credentials)
+FS -> API: POST /auth/login {email, password}
+API -> AC: login(req, res)
+AC -> BS: findByEmail(email)
+BS -> DB: Query for user by email
+DB --> BS: Result (user or null)
+BS --> AC: Return user
+AC -> BS: logFailedLogin(email, reason) [if not found/inactive/invalid]
+AC -> BS: updateLastLogin(id) [if success]
+AC -> BS: logUserLogin(userId, username) [if success]
+AC --> API: Return user (no password) + token or error
+API --> FS: Response (success or error)
+FS --> AS: Response
+AS --> LF: Response
+LF --> User: Show result (success/error)
+@enduml 

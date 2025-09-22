@@ -1,0 +1,15 @@
+@startuml
+start
+:User logs in;
+:Check user role;
+switch (Role)
+case (Player)
+  :Grant player access;
+case (Moderator)
+  :Grant moderator access;
+case (Admin)
+  :Grant admin access;
+endswitch
+:User performs allowed actions;
+stop
+@enduml 

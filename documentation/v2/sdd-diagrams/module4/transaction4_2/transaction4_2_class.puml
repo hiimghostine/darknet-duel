@@ -1,0 +1,91 @@
+@startuml
+' Class Diagram for Infrastructure State Tracking (Transaction 4.2)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +renderInfrastructure()
+    +applyStateClasses()
+    +displayStateIndicators()
+  }
+  class InfrastructureArea {
+    +displayInfrastructureCards()
+  }
+  class InfrastructureCardDisplay {
+    +renderCard()
+    +showState()
+    +showVulnerabilities()
+    +showShields()
+    +showEffects()
+  }
+  class game_types_ts {
+    +InfrastructureCard
+    +InfrastructureState
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +WebSocketEndpoint
+    +processMove()
+    +sendGameState()
+  }
+  class InfrastructureCard {
+    +id
+    +name
+    +type
+    +state
+    +vulnerabilities
+    +shields
+  }
+  class infrastructureCardLoader {
+    +createInfrastructureCards()
+  }
+  class exploitEffect {
+    +applyExploit()
+  }
+  class attackEffect {
+    +applyAttack()
+  }
+  class fortifyEffect {
+    +applyFortify()
+  }
+  class reactionEffect {
+    +applyReaction()
+  }
+  class cardEffectsRouter {
+    +processInfrastructureStateChange()
+  }
+  class temporaryEffectsManager {
+    +processPersistentEffects()
+    +processMaintenanceCosts()
+  }
+  class gameState_ts {
+    +checkGameEnd()
+  }
+  class phaseUtils {
+    +checkWinConditions()
+  }
+}
+
+BalatroGameBoard --> InfrastructureArea : uses
+BalatroGameBoard --> InfrastructureCardDisplay : uses
+InfrastructureArea --> InfrastructureCardDisplay : uses
+InfrastructureCardDisplay --> game_types_ts : uses
+infrastructureCardLoader --> InfrastructureCard : creates
+exploitEffect --> InfrastructureCard : updates
+attackEffect --> InfrastructureCard : updates
+fortifyEffect --> InfrastructureCard : updates
+reactionEffect --> InfrastructureCard : updates
+cardEffectsRouter --> exploitEffect : uses
+cardEffectsRouter --> attackEffect : uses
+cardEffectsRouter --> fortifyEffect : uses
+cardEffectsRouter --> reactionEffect : uses
+cardEffectsRouter --> temporaryEffectsManager : uses
+temporaryEffectsManager --> InfrastructureCard : updates
+gameState_ts --> InfrastructureCard : checks
+phaseUtils --> InfrastructureCard : checks
+
+' Explicitly show the WebSocket connection bridging frontend and backend
+BalatroGameBoard <--> boardgameioServer : WebSocket (boardgame.io protocol)
+
+@enduml 

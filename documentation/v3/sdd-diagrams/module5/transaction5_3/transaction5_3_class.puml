@@ -1,0 +1,62 @@
+@startuml
+' Class Diagram for Match History Storage and Browsing (Transaction 5.3)
+
+package "Frontend" {
+  class GameHistoryPage {
+    +displayHistory()
+    +expandMatch()
+    +loadMore()
+  }
+  class gameService {
+    +getGameHistory()
+    +getGameDetails()
+  }
+  class useAuthStore {
+    +user
+    +isAuthenticated
+  }
+}
+
+package "Game Server" {
+  class recordGameHistory {
+    +sendHistoryToBackend()
+  }
+}
+
+package "Backend Server" {
+  class GamesController {
+    +GET /games/history
+    +POST /server/games/history
+  }
+  class GameService {
+    +getPlayerGames()
+    +getPlayerGameCount()
+    +saveGameHistory()
+  }
+  class GameHistoryEntity {
+    +gameId
+    +players
+    +turns
+    +gameMode
+    +startTime
+    +endTime
+    +createdAt
+  }
+  class game_results
+  class game_players
+  class rating_history
+}
+
+' Relationships
+GameHistoryPage --> gameService : uses
+GameHistoryPage --> useAuthStore : uses
+
+gameService --> GamesController : REST API (GET /games/history)
+recordGameHistory --> GamesController : REST API (POST /server/games/history)
+GamesController --> GameService : delegates
+GameService --> GameHistoryEntity : manages
+GameHistoryEntity --> game_results : stores
+GameHistoryEntity --> game_players : stores
+GameHistoryEntity --> rating_history : updates
+
+@enduml 

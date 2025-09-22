@@ -1,0 +1,53 @@
+@startuml
+' Sequence Diagram for User Search, Ban, and Moderation (Transaction 7.1)
+
+actor AdminMod
+participant UserManagement as Frontend
+participant adminService as FrontendService
+participant AdminController as BackendController
+participant AdminService as BackendService
+participant AccountEntity as AccountDB
+participant LogService as LogDB
+
+== Search Users ==
+AdminMod -> Frontend : enter search/filter criteria
+Frontend -> adminService : getUsers(filters)
+adminService -> AdminController : GET /api/admin/users
+AdminController -> AdminService : getUsers(filters)
+AdminService -> AccountEntity : query users
+AccountEntity --> AdminService : user list
+AdminService --> AdminController : user list
+AdminController --> adminService : user list
+adminService --> Frontend : user list
+Frontend --> AdminMod : display users
+
+== Ban User ==
+AdminMod -> Frontend : select user, click ban
+Frontend -> BanUserModal : show()
+BanUserModal -> Frontend : confirmBan(reason)
+Frontend -> adminService : banUser(userId, reason)
+adminService -> AdminController : POST /api/admin/users/{id}/ban
+AdminController -> AdminService : banUser(userId, reason, adminId)
+AdminService -> AccountEntity : update isActive=false, set inactiveReason
+AccountEntity --> AdminService : updated user
+AdminService -> LogService : logUserBan(adminId, username)
+LogService --> AdminService : ack
+AdminService --> AdminController : result
+AdminController --> adminService : result
+adminService --> Frontend : result
+Frontend --> AdminMod : show ban result
+
+== Unban User ==
+AdminMod -> Frontend : select user, click unban
+Frontend -> adminService : unbanUser(userId)
+adminService -> AdminController : POST /api/admin/users/{id}/unban
+AdminController -> AdminService : unbanUser(userId, adminId)
+AdminService -> AccountEntity : update isActive=true, clear inactiveReason
+AccountEntity --> AdminService : updated user
+AdminService -> LogService : logUserUnban(adminId, username)
+LogService --> AdminService : ack
+AdminService --> AdminController : result
+AdminController --> adminService : result
+adminService --> Frontend : result
+Frontend --> AdminMod : show unban result
+@enduml 

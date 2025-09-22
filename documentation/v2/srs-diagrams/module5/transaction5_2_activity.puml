@@ -1,0 +1,8 @@
+@startuml
+start
+:Player navigates to statistics/profile page;
+:System retrieves ELO, win/loss, and performance data from backend;
+:System displays statistics and charts;
+:Player reviews performance;
+stop
+@enduml 

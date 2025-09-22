@@ -1,0 +1,180 @@
+@startuml
+
+title Game Rules Enforcement - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "useActionValidator" as useActionValidator <<Custom Hook>> {
+        + useState: gameState, setGameState, playerState, setPlayerState, ruleSet, setRuleSet, activeCards, setActiveCards
+        + useContext: GameStateContext
+        + useCallback: initialize, validateAction, checkPlayCardValidity, checkMoveValidity, updateValidActions, getValidTargetsForCard
+        + return: { validateAction, checkPlayCardValidity, checkMoveValidity, updateValidActions, getValidTargetsForCard, validActionsMap }
+    }
+    
+    class "RuleViolationAlert" as RuleViolationAlert <<Function Component>> {
+        + props: message, severity, timeout, onClose
+        + useState: visible, setVisible
+        + useEffect()
+        + render(): JSX
+    }
+    
+    class "PlayableCardIndicator" as PlayableCardIndicator <<Function Component>> {
+        + props: cardId, isPlayable, validTargets
+        + useContext: RulesContext
+        + useEffect()
+        + render(): JSX
+    }
+    
+    class "ClientRule (Object Type)" as ClientRule {
+        + id: string
+        + type: RuleType
+        + description: string
+        + validationFunction: Function
+        + errorMessage: string
+        + validate(action, gameState): ValidationResult
+    }
+    
+    class "ValidationResult (Object Type)" as ValidationResult {
+        + valid: boolean
+        + message: string
+        + severity: AlertSeverity
+        + additionalInfo: Object
+        + isValid(): boolean
+        + getMessage(): string
+        + getSeverity(): AlertSeverity
+    }
+    
+    class "RulesProvider" as RulesProvider <<Function Component>> {
+        + props: children
+        + useActionValidator(): actionValidator
+        + useState: violationAlert, setViolationAlert
+        + handleRuleViolation(result)
+        + value: { validateAction, validActionsMap, getValidTargetsForCard, handleRuleViolation }
+        + render(): JSX
+    }
+    
+    class "RulesContext" as RulesContext <<React Context>> {
+        + defaultValue: { validateAction, validActionsMap, getValidTargetsForCard, handleRuleViolation }
+    }
+    
+    class "GameStateContext" as GameStateContext <<React Context>> {
+        + defaultValue: { gameState, playerState }
+    }
+    
+    enum AlertSeverity {
+        INFO
+        WARNING
+        ERROR
+    }
+    
+    enum RuleType {
+        CARD_PLAY
+        MOVE
+        RESOURCE
+        PHASE
+        TARGET
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class RuleEngine {
+        - ruleRepository: RuleRepository
+        - gameRepository: GameRepository
+        - actionValidator: ActionValidator
+        - eventPublisher: ApplicationEventPublisher
+        + validateAction(gameId: long, action: PlayerAction): ValidationResult
+        + getApplicableRules(gameId: long, actionType: ActionType): List<GameRule>
+        + handleRuleViolation(violation: RuleViolation): void
+        + isActionAllowed(gameId: long, playerId: long, actionType: ActionType): boolean
+    }
+    
+    class ActionValidator {
+        - cardService: CardService
+        - gameStateService: GameStateService
+        - turnManager: TurnManager
+        + validateCardPlay(gameId: long, playerId: long, cardId: long, targetId: long): ValidationResult
+        + validateMove(gameId: long, playerId: long, sourceId: long, destinationId: long): ValidationResult
+        + validatePhaseAction(gameId: long, phase: TurnPhase, action: ActionType): ValidationResult
+        + getValidActionsForPlayer(gameId: long, playerId: long): List<ValidAction>
+    }
+    
+    class RuleRepository {
+        - rules: Map<String, GameRule>
+        - gameConfigRepository: GameConfigRepository
+        + findByRuleType(type: RuleType): List<GameRule>
+        + findByGameId(gameId: long): List<GameRule>
+        + saveRule(rule: GameRule): GameRule
+        + getActiveRulesForGame(gameId: long): List<GameRule>
+    }
+    
+    class GameRule {
+        - id: long
+        - ruleType: RuleType
+        - description: string
+        - validationLogic: string
+        - errorMessage: string
+        - severity: RuleSeverity
+        - enabled: boolean
+        + validate(action: PlayerAction, gameState: GameState): ValidationResult
+        + isApplicableTo(actionType: ActionType): boolean
+    }
+    
+    class RuleViolation {
+        - gameId: long
+        - playerId: long
+        - rule: GameRule
+        - action: PlayerAction
+        - timestamp: Date
+        - message: string
+        + logViolation(): void
+    }
+    
+    enum RuleType {
+        CARD_PLAY_RULE
+        MOVE_RULE
+        RESOURCE_RULE
+        PHASE_RULE
+        TARGET_RULE
+        GAME_STATE_RULE
+    }
+    
+    enum RuleSeverity {
+        INFO
+        WARNING
+        ERROR
+        CRITICAL
+    }
+    
+    enum ActionType {
+        PLAY_CARD
+        MOVE
+        DRAW
+        END_TURN
+        USE_ABILITY
+    }
+}
+
+' Frontend relationships
+RulesProvider --> RulesContext : provides
+RulesProvider --> useActionValidator : uses
+RulesProvider --> RuleViolationAlert : renders when needed
+PlayableCardIndicator --> RulesContext : consumes
+useActionValidator --> GameStateContext : consumes
+useActionValidator --> ClientRule : uses
+useActionValidator --> ValidationResult : uses
+RuleViolationAlert --> AlertSeverity : uses
+ClientRule --> RuleType : has type
+ClientRule --> ValidationResult : returns
+
+' Backend relationships
+RuleEngine --> RuleRepository : uses
+RuleEngine --> ActionValidator : uses
+RuleEngine --> RuleViolation : creates
+ActionValidator --> GameRule : applies
+RuleRepository --> GameRule : manages
+GameRule --> RuleType : has type
+GameRule --> RuleSeverity : has severity
+GameRule --> ValidationResult : produces
+RuleViolation --> GameRule : references
+RuleViolation --> ActionType : references
+
+@enduml

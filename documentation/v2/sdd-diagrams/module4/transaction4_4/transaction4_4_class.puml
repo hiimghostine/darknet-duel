@@ -1,0 +1,94 @@
+@startuml
+' Class Diagram for Game State Visualization (Transaction 4.4)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +renderBoard()
+    +renderInfrastructure()
+    +renderPlayerHand()
+    +renderOverlays()
+    +updateUI()
+  }
+  class GameBoardLayout {
+    +organizeAreas()
+  }
+  class InfrastructureArea {
+    +displayInfrastructureCards()
+  }
+  class PlayerHand {
+    +renderHand()
+    +showPlayability()
+    +showTargeting()
+  }
+  class PendingChoicesOverlay {
+    +showWildcardChoice()
+    +showChainEffect()
+    +showHandDisruption()
+  }
+  class PowerBar {
+    +displayScores()
+  }
+  class PlayerInfo {
+    +displayAP()
+    +displayHandSize()
+  }
+  class GameStatus {
+    +displayPhase()
+    +displayWinLoss()
+  }
+  class useGameBoardData {
+    +processGameState()
+    +memoizeData()
+  }
+  class useGameState {
+    +extractPlayerState()
+    +extractPhase()
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +WebSocketEndpoint
+    +processMove()
+    +sendGameState()
+  }
+  class playerView {
+    +createPlayerView()
+    +filterGameStateForSpectators()
+  }
+  class gameState_ts {
+    +GameState
+    +visualizedProperties
+  }
+  class DarknetDuel {
+    +setup()
+    +playerView()
+    +phases
+  }
+  class stateUpdates {
+    +updatePlayerStateAfterCardPlay()
+  }
+}
+
+BalatroGameBoard --> GameBoardLayout : uses
+BalatroGameBoard --> InfrastructureArea : uses
+BalatroGameBoard --> PlayerHand : uses
+BalatroGameBoard --> PendingChoicesOverlay : uses
+BalatroGameBoard --> PowerBar : uses
+BalatroGameBoard --> PlayerInfo : uses
+BalatroGameBoard --> GameStatus : uses
+BalatroGameBoard --> useGameBoardData : uses
+BalatroGameBoard --> useGameState : uses
+GameBoardLayout --> InfrastructureArea : uses
+GameBoardLayout --> PlayerInfo : uses
+GameBoardLayout --> PlayerHand : uses
+PendingChoicesOverlay --> BalatroGameBoard : overlays
+playerView --> gameState_ts : filters
+DarknetDuel --> playerView : uses
+DarknetDuel --> gameState_ts : uses
+stateUpdates --> gameState_ts : updates
+
+' Explicitly show the WebSocket connection bridging frontend and backend
+BalatroGameBoard <--> boardgameioServer : WebSocket (boardgame.io protocol)
+
+@enduml 

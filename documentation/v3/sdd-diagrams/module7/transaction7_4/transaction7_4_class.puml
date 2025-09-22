@@ -1,0 +1,59 @@
+@startuml
+' Class Diagram for User Modification (Modify Username, Email, Password) (Transaction 7.4)
+
+package "Frontend" {
+  class UserManagement {
+    +editUser()
+  }
+  class UserEditModal {
+    +show()
+    +editUserDetails()
+  }
+  class adminService {
+    +updateUser()
+  }
+  class useAuthStore {
+    +user
+    +type
+  }
+}
+
+package "Backend Server" {
+  class AdminController {
+    +PUT /api/admin/users/{id}
+  }
+  class AdminService {
+    +updateUser()
+  }
+  class AccountEntity {
+    +id
+    +username
+    +email
+    +password
+    +type
+    +isActive
+    +bio
+    +creds
+    +crypts
+    +createdAt
+    +updatedAt
+  }
+  class LogService {
+    +logUserUpdate()
+    +logPasswordChange()
+  }
+}
+
+' Relationships
+UserManagement --> UserEditModal : uses
+UserManagement --> adminService : uses
+UserManagement --> useAuthStore : uses
+UserEditModal --> adminService : uses
+UserEditModal --> useAuthStore : uses
+
+adminService --> AdminController : REST API (update user)
+AdminController --> AdminService : delegates
+AdminService --> AccountEntity : manages
+AdminService --> LogService : logs modifications
+
+@enduml 

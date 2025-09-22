@@ -1,0 +1,30 @@
+@startuml
+' ERD for Store Browsing, Item Purchase, and Application of Decoration (Transaction 6.2)
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+table(accounts) {
+  primary_key(id) VARCHAR(36)
+  email VARCHAR(100) unique
+  username VARCHAR(50) unique
+  creds INT not_null
+  crypts INT not_null
+  decoration VARCHAR(100)
+}
+
+table(purchases) {
+  primary_key(id) VARCHAR(36)
+  foreign_key(accountId) VARCHAR(36)
+  itemType ENUM('decoration')
+  itemId VARCHAR(100)
+  purchasePrice INT
+  currency ENUM('creds','crypts')
+  purchasedAt TIMESTAMP
+  isActive BOOLEAN
+}
+
+accounts ||--o{ purchases : "id=accountId"
+@enduml 

@@ -1,0 +1,15 @@
+@startuml
+start
+:System allocates AP to player at turn start;
+repeat
+  :Player takes action;
+  :System checks hand size and enforces limit;
+  :System validates action against rules;
+  :System checks win/loss conditions;
+  if (Win/loss condition met?) then (yes)
+    :System ends game and declares winner;
+    stop
+  endif
+repeat while (Game not ended)
+stop
+@enduml 

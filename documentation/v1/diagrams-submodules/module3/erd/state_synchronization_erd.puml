@@ -1,0 +1,86 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title State Synchronization - Entity Relationship Diagram
+
+table(games) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    current_turn INT not_null
+    foreign_key(current_player_id) BIGINT not_null
+    action_points_remaining INT not_null
+    game_phase ENUM('SETUP', 'PLAYING', 'PAUSED', 'GAME_OVER') not_null
+    start_time TIMESTAMP not_null
+    last_update_time TIMESTAMP not_null
+    serialized_state JSON not_null
+    version BIGINT not_null
+}
+
+table(game_players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    player_order INT not_null
+    connection_status ENUM('CONNECTED', 'DISCONNECTED', 'RECONNECTING') not_null
+    is_active BOOLEAN not_null
+}
+
+table(game_state_snapshots) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    turn_number INT not_null
+    timestamp TIMESTAMP not_null
+    serialized_state JSON not_null
+    snapshot_reason ENUM('TURN_START', 'TURN_END', 'PLAYER_ACTION', 'FULL_SYNC') not_null
+}
+
+table(synchronization_events) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    event_type ENUM('FULL_SYNC', 'PARTIAL_SYNC', 'CLIENT_REQUEST', 'SERVER_PUSH', 'ERROR') not_null
+    timestamp TIMESTAMP not_null
+    sync_successful BOOLEAN not_null
+    data_size_bytes INT
+    client_version BIGINT
+    server_version BIGINT
+    error_message VARCHAR(255)
+}
+
+table(player_actions) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    action_type VARCHAR(50) not_null
+    serialized_data JSON not_null
+    timestamp TIMESTAMP not_null
+    turn_number INT not_null
+    processed BOOLEAN not_null
+    success BOOLEAN not_null
+    error_message VARCHAR(255)
+}
+
+table(lobbies) {
+    primary_key(id) BIGINT
+    name VARCHAR(100) not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+}
+
+' Relationships
+games ||--o{ game_players : "has"
+games ||--o{ game_state_snapshots : "has"
+games ||--o{ synchronization_events : "logs"
+games ||--o{ player_actions : "records"
+games }o--|| lobbies : "belongs to"
+game_players }o--|| users : "is"
+player_actions }o--|| game_players : "performed by"
+
+@enduml

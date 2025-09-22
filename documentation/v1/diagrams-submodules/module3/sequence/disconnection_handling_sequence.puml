@@ -1,0 +1,133 @@
+@startuml
+
+title Disconnection Handling - Sequence Diagram
+
+actor "Player 1" as Player1
+actor "Player 2" as Player2
+participant "WebSocket (Player 1)" as WS1
+participant "WebSocket (Player 2)" as WS2
+participant "ConnectionMonitor" as Monitor1
+participant "ReconnectionDialog" as Dialog1
+participant "GameSocketHandler" as SocketHandler
+participant "DisconnectionHandler" as DisconnHandler
+participant "GamePauseService" as PauseService
+participant "PlayerSessionRepository" as SessionRepo
+database "Database" as DB
+
+' Player 1 gets disconnected
+Player1 -> WS1: Active connection
+Player2 -> WS2: Active connection
+
+note over WS1: Connection lost
+WS1 -> SocketHandler: Connection closed
+activate SocketHandler
+
+SocketHandler -> DisconnHandler: handleDisconnection(sessionId)
+activate DisconnHandler
+
+' Look up session information
+DisconnHandler -> SessionRepo: findBySessionId(sessionId)
+SessionRepo -> DB: SELECT * FROM player_sessions WHERE session_id = ?
+DB --> SessionRepo: Session data
+SessionRepo --> DisconnHandler: PlayerSession object
+
+' Record disconnection event
+DisconnHandler -> SessionRepo: updateSessionStatus(sessionId, DISCONNECTED)
+SessionRepo -> DB: UPDATE player_sessions SET status = 'DISCONNECTED', disconnect_time = NOW()
+DB --> SessionRepo: Update confirmation
+
+' Pause the game
+DisconnHandler -> PauseService: pauseGame(gameId, playerId, PLAYER_DISCONNECTED)
+activate PauseService
+PauseService -> PauseService: setGamePaused(gameId, true)
+PauseService -> DB: UPDATE games SET status = 'PAUSED', pause_reason = 'PLAYER_DISCONNECTED'
+DB --> PauseService: Update confirmation
+PauseService --> DisconnHandler: Game paused
+deactivate PauseService
+
+' Notify other players
+DisconnHandler -> SocketHandler: broadcastDisconnection(gameId, playerId)
+deactivate DisconnHandler
+SocketHandler -> WS2: PLAYER_DISCONNECTED message
+SocketHandler -> WS2: GAME_PAUSED message
+deactivate SocketHandler
+
+' Player 2 UI updates
+WS2 -> Monitor1: onPlayerDisconnected(playerId)
+
+' On client side, detect disconnection
+WS1 -> Monitor1: onConnectionClosed()
+activate Monitor1
+Monitor1 -> Monitor1: setStatus(DISCONNECTED)
+Monitor1 -> Dialog1: show("Connection lost. Attempting to reconnect...")
+activate Dialog1
+Dialog1 -> Dialog1: render()
+Dialog1 --> Player1: Display reconnection dialog
+
+' Attempt reconnection
+Monitor1 -> Monitor1: startReconnectionAttempts()
+
+' First reconnection attempt is successful
+alt Successful reconnection
+    Monitor1 -> WS1: attemptReconnect()
+    WS1 -> SocketHandler: Reconnection request
+    activate SocketHandler
+    SocketHandler -> DisconnHandler: handleReconnection(sessionId, userId)
+    activate DisconnHandler
+    DisconnHandler -> SessionRepo: findBySessionId(sessionId)
+    SessionRepo -> DB: SELECT * FROM player_sessions
+    DB --> SessionRepo: Session data
+    SessionRepo --> DisconnHandler: PlayerSession
+    
+    DisconnHandler -> SessionRepo: updateSessionStatus(sessionId, CONNECTED)
+    SessionRepo -> DB: UPDATE player_sessions SET status = 'CONNECTED', reconnect_time = NOW()
+    DB --> SessionRepo: Update confirmation
+    
+    DisconnHandler -> PauseService: resumeGame(gameId)
+    PauseService -> DB: UPDATE games SET status = 'IN_PROGRESS'
+    DB --> PauseService: Update confirmation
+    
+    DisconnHandler -> SocketHandler: broadcastReconnection(gameId, playerId)
+    SocketHandler -> WS2: PLAYER_RECONNECTED message
+    SocketHandler -> WS2: GAME_RESUMED message
+    
+    DisconnHandler -> SocketHandler: return game state
+    deactivate DisconnHandler
+    SocketHandler --> WS1: GAME_STATE (full state)
+    deactivate SocketHandler
+    
+    WS1 --> Monitor1: onReconnect()
+    Monitor1 -> Monitor1: setStatus(CONNECTED)
+    Monitor1 -> Dialog1: hide()
+    deactivate Dialog1
+else Failed reconnection (max attempts reached)
+    loop Reconnection attempts
+        Monitor1 -> WS1: attemptReconnect()
+        WS1 -> SocketHandler: Connection failed
+        WS1 --> Monitor1: onError()
+        Monitor1 -> Monitor1: incrementAttemptCount()
+        Monitor1 -> Dialog1: updateStatus("Reconnection failed, retrying...", attemptCount)
+    end
+    
+    Monitor1 -> Dialog1: updateStatus("Could not reconnect to the game", maxAttempts)
+    Monitor1 -> Dialog1: showReturnToLobbyButton()
+    
+    Player1 -> Dialog1: Click "Return to Lobby"
+    Dialog1 -> Dialog1: handleReturnToLobby()
+    Dialog1 -> Dialog1: navigateToLobby()
+    
+    ' Game auto-forfeits after timeout
+    note over DB: If player doesn't reconnect within timeout period
+    SocketHandler -> DisconnHandler: checkDisconnectionTimeout()
+    activate DisconnHandler
+    DisconnHandler -> DisconnHandler: getDisconnectedPlayers(timeoutThreshold)
+    DisconnHandler -> DisconnHandler: forAutomaticForfeit(gameId, playerId)
+    DisconnHandler -> DB: UPDATE games SET status = 'COMPLETED', result = 'FORFEIT'
+    DisconnHandler -> SocketHandler: broadcastGameEnd(gameId, FORFEIT)
+    deactivate DisconnHandler
+    SocketHandler -> WS2: GAME_END message (win by forfeit)
+end
+
+deactivate Monitor1
+
+@enduml

@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Lobby & Matchmaking System" {
+  usecase "Create Lobby" as UC2_2A
+  usecase "Join Lobby" as UC2_2B
+  usecase "Leave Lobby" as UC2_2C
+}
+Player --> UC2_2A
+Player --> UC2_2B
+Player --> UC2_2C
+@enduml 

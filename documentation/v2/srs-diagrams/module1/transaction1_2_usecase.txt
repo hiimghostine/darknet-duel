@@ -1,0 +1,16 @@
+Use Case: Login to Account
+
+Description: Authenticates an existing user by verifying credentials and issuing a JWT for session management.
+
+Actors: User
+
+Preconditions: User has a registered account.
+
+Main Flow:
+1. User enters login credentials (email/username and password).
+2. System validates credentials.
+3. System verifies account status (active, not banned).
+4. System issues a JWT and starts a session.
+5. System redirects user to the main dashboard.
+
+Postconditions: User is authenticated and has an active session. 

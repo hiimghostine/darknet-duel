@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Admin/Moderator" as AdminMod
+rectangle "Admin & Moderation System" {
+  usecase "View System Logs" as UC7_3A
+  usecase "Filter/Search Logs" as UC7_3B
+  usecase "View Audit Trails" as UC7_3C
+}
+AdminMod --> UC7_3A
+AdminMod --> UC7_3B
+AdminMod --> UC7_3C
+@enduml 

@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Store & Currency System" {
+  usecase "Initiate Crypts Top-Up" as UC6_3A
+  usecase "Process Payment" as UC6_3B
+  usecase "Credit Crypts" as UC6_3C
+}
+Player --> UC6_3A
+Player --> UC6_3B
+Player --> UC6_3C
+@enduml 

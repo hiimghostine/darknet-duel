@@ -1,0 +1,14 @@
+@startuml
+left to right direction
+actor User
+rectangle "User Management System" {
+  usecase "Login" as Login
+  usecase "Access as Player" as UC4a
+  usecase "Access as Moderator" as UC4b
+  usecase "Access as Admin" as UC4c
+}
+User --> Login
+Login --> UC4a
+Login --> UC4b
+Login --> UC4c
+@enduml 

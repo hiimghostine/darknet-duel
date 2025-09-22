@@ -1,0 +1,18 @@
+Use Case: Game Creation and Initialization
+
+Description: Allows a player to create a new game session. The system initializes the game state, assigns player roles, shuffles decks, and prepares the game board for play. All players are notified when the game is ready to start.
+
+Actors: Player
+
+Preconditions: Player is authenticated and has joined or created a lobby with enough players.
+
+Main Flow:
+1. Player initiates game creation (e.g., as lobby host).
+2. System verifies lobby readiness (enough players, valid settings).
+3. System creates a new game session.
+4. System assigns player roles (attacker/defender).
+5. System shuffles decks and deals initial hands.
+6. System initializes the game board and state.
+7. System notifies all players that the game is ready to start.
+
+Postconditions: A new game session is created and all players are ready to begin gameplay. 

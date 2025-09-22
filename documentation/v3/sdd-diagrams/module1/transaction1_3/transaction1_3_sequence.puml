@@ -1,0 +1,56 @@
+@startuml
+' Sequence Diagram for Profile Management (Transaction 1.3)
+
+actor User
+participant ProfilePage as PP
+participant EditProfileModal as EPM
+participant AccountService as FS
+participant InfoService as IS
+participant "API /account/me" as API_ACC
+participant "API /files/avatar/:uuid" as API_AVATAR
+participant AccountController as AC
+participant FilesController as FC
+participant AccountServiceBackend as BS
+participant Account as DB
+
+User -> PP: Navigate to profile page
+PP -> FS: getMyAccount()
+FS -> API_ACC: GET /api/account/me
+API_ACC -> AC: getMyAccount(req, res)
+AC -> BS: Query account by user id
+BS -> DB: Query
+DB --> BS: Account data
+BS --> AC: Account data
+AC --> API_ACC: Account data
+API_ACC --> FS: Account data
+FS --> PP: Account data
+PP -> IS: getProfileStats(), getRecentActivity()
+IS -> "API /info/stats": GET /api/info/stats
+IS -> "API /info/activity": GET /api/info/activity
+... (stats/activity flow omitted for brevity) ...
+User -> PP: Click edit profile
+PP -> EPM: open()
+EPM -> FS: updateMyAccount(data)
+FS -> API_ACC: POST /api/account/me (multipart/form-data if avatar)
+API_ACC -> AC: updateMyAccount(req, res)
+AC -> BS: updateAccount(id, updateData)
+BS -> DB: Update
+DB --> BS: Updated account
+BS --> AC: Updated account
+AC --> API_ACC: Updated account
+API_ACC --> FS: Updated account
+FS --> EPM: Success/Error
+EPM --> PP: onSave()
+PP -> FS: getMyAccount() (refresh)
+... (Avatar fetch) ...
+PP -> FS: getAvatarUrl(uuid)
+FS -> API_AVATAR: GET /api/files/avatar/:uuid
+API_AVATAR -> FC: getAvatar(req, res)
+FC -> BS: getAvatarById(id)
+BS -> DB: Query avatar
+DB --> BS: Avatar data
+BS --> FC: Avatar data
+FC --> API_AVATAR: Avatar image
+API_AVATAR --> FS: Avatar image
+FS --> PP: Avatar image
+@enduml 

@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Lobby & Matchmaking System" {
+  usecase "Send Chat Message" as UC2_4A
+  usecase "Receive Chat Message" as UC2_4B
+}
+Player --> UC2_4A
+Player --> UC2_4B
+@enduml 

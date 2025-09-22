@@ -1,0 +1,155 @@
+@startuml
+
+title User Registration - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "RegistrationPage " as RegistrationPage <<Function Component>> {
+        + useState: isLoading, setIsLoading
+            isSuccess, setIsSuccess
+            errorMessage, setErrorMessage
+        
+        + useNavigate(): navigate
+        + handleRegistrationSuccess()
+        + handleRegistrationError()
+        + render(): JSX
+    }
+    
+    class "RegistrationForm " as RegistrationForm <<Function Component>> {
+        + props: onSubmit
+            isLoading
+            error
+        
+        + useState: formData, setFormData
+            errors, setErrors
+            isValid, setIsValid
+        
+        + useEffect()
+        + handleInputChange()
+        + validateForm()
+        +handleSubmit(e)
+        + render(): JSX
+    }
+    
+    class "FormInput " as FormInput <<Function Component>> {
+        + props: name
+            label
+            value
+            type
+            error
+            onChange
+            required
+        
+        + render(): JSX
+    }
+    
+    class "useFormValidation " as useFormValidation <<Custom Hook>> {
+        +validateUsername(username)
+        +validateEmail(email)
+        +validatePassword(password)
+        +validatePasswordConfirmation(password, confirmation)
+        +validateForm(formData)
+        + return: { validateForm, errors  }
+    }
+    
+    class "RegistrationApiService " as RegistrationApiService <<Utility>> {
+        +register(userData)
+        +checkUsernameAvailability(username)
+        +checkEmailAvailability(email)
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class UserController {
+        - userService: UserService
+        +register(RegistrationRequest): ResponseEntity<UserDTO>
+        +getUser(Long): ResponseEntity<UserDTO>
+        +updateUser(UserDTO): ResponseEntity<UserDTO>
+        +deleteUser(Long): ResponseEntity<Void>
+        +checkUsername(String): ResponseEntity<AvailabilityResponse>
+        +checkEmail(String): ResponseEntity<AvailabilityResponse>
+    }
+    
+    class UserService {
+        - userRepository: UserRepository
+        - passwordEncoder: PasswordEncoder
+        - emailService: EmailService
+        +registerUser(RegistrationRequest): UserDTO
+        +getUserById(Long): UserDTO
+        +updateUser(UserDTO): UserDTO
+        +deleteUser(Long): void
+        +isUsernameAvailable(String): boolean
+        +isEmailAvailable(String): boolean
+        -validateRegistrationData(RegistrationRequest): void
+        -sendVerificationEmail(User): void
+    }
+    
+    class EmailService {
+        - templateEngine: TemplateEngine
+        - mailSender: JavaMailSender
+        +sendVerificationEmail(String, String, String): void
+        +sendWelcomeEmail(String, String): void
+        -prepareEmailTemplate(String, Map<String, Object>): String
+    }
+    
+    class UserRepository {
+        +findById(Long): Optional<User>
+        +findByUsername(String): Optional<User>
+        +findByEmail(String): Optional<User>
+        +save(User): User
+        +delete(User): void
+        +existsByUsername(String): boolean
+        +existsByEmail(String): boolean
+    }
+    
+    class User {
+        - id: Long
+        - username: String
+        - email: String
+        - passwordHash: String
+        - registrationDate: Timestamp
+        - lastLoginDate: Timestamp
+        - isActive: boolean
+        - isVerified: boolean
+        - status: UserStatus
+    }
+    
+    class RegistrationRequest {
+        + username: String
+        + email: String
+        + password: String
+        + passwordConfirmation: String
+    }
+    
+    class UserDTO {
+        + id: Long
+        + username: String
+        + email: String
+        + registrationDate: String
+        + isActive: boolean
+        + isVerified: boolean
+    }
+    
+    class AvailabilityResponse {
+        + available: boolean
+        + message: String
+    }
+}
+
+' Frontend relationships
+RegistrationPage --> RegistrationForm : includes
+RegistrationForm --> FormInput : includes
+RegistrationForm --> useFormValidation : uses
+RegistrationPage --> RegistrationApiService : uses
+RegistrationForm ..> RegistrationApiService : uses for validation
+
+' Backend relationships
+UserController --> UserService : uses
+UserService --> UserRepository : uses
+UserService --> EmailService : uses
+UserService ..> User : manipulates
+UserService ..> UserDTO : returns
+UserController ..> RegistrationRequest : receives
+UserController ..> UserDTO : returns
+UserController ..> AvailabilityResponse : returns
+
+@enduml

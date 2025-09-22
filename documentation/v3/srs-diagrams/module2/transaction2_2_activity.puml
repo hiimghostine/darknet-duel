@@ -1,0 +1,19 @@
+@startuml
+start
+:On lobby browser or lobby detail page;
+:Choose to create, join, or leave a lobby;
+if (Create lobby?) then (yes)
+  :Enter lobby settings;
+  :Submit create lobby request;
+  :System creates lobby and adds player as host;
+elseif (Join lobby?) then (yes)
+  :Select lobby to join;
+  :Submit join request;
+  :System adds player to lobby;
+elseif (Leave lobby?) then (yes)
+  :Submit leave request;
+  :System removes player from lobby;
+endif
+:Update lobby state for all participants;
+stop
+@enduml 

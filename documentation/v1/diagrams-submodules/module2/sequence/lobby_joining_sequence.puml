@@ -1,0 +1,151 @@
+@startuml
+title Lobby Joining - Sequence Diagram
+
+actor "User" as User
+participant "LobbyBrowser" as Browser
+participant "LobbyCard" as Card
+participant "PrivateLobbyJoin" as PrivateJoin
+participant "LobbyController" as Controller
+participant "LobbyService" as Service
+participant "LobbyRepository" as LobbyRepo
+participant "LobbyMembershipRepository" as MemberRepo
+database "Database" as DB
+
+' Browse lobbies scenario
+User -> Browser: Open lobby browser
+activate Browser
+Browser -> Controller: GET /api/lobbies
+activate Controller
+Controller -> Service: getAllPublicLobbies()
+activate Service
+Service -> LobbyRepo: findByIsPrivateFalse()
+activate LobbyRepo
+LobbyRepo -> DB: SELECT * FROM lobbies WHERE is_private = false
+DB --> LobbyRepo: Lobby data
+LobbyRepo --> Service: List<Lobby>
+deactivate LobbyRepo
+Service -> Service: Transform to LobbyDTO list
+Service --> Controller: List<LobbyDTO>
+deactivate Service
+Controller --> Browser: 200 OK with lobby list
+deactivate Controller
+Browser -> Browser: Render lobby cards
+Browser --> User: Display available lobbies
+deactivate Browser
+
+' Join public lobby scenario
+User -> Card: Click "Join Lobby"
+activate Card
+Card -> Card: checkJoinability()
+Card -> Controller: POST /api/lobbies/{id}/join
+activate Controller
+Controller -> Service: joinLobby(lobbyId, currentUser)
+activate Service
+Service -> LobbyRepo: findById(lobbyId)
+activate LobbyRepo
+LobbyRepo -> DB: SELECT * FROM lobbies WHERE id = ?
+DB --> LobbyRepo: Lobby data
+LobbyRepo --> Service: Optional<Lobby>
+deactivate LobbyRepo
+
+alt Lobby not found
+    Service --> Controller: throw LobbyNotFoundException
+    Controller --> Card: 404 Not Found
+    Card --> User: Show "Lobby not found" error
+else Lobby found
+    Service -> Service: validateJoinability(lobby, user)
+    
+    alt Validation Failed (Full/In Progress/etc)
+        Service --> Controller: throw LobbyJoinException
+        Controller --> Card: 400 Bad Request with error
+        Card --> User: Show error message
+    else Validation Passed
+        Service -> MemberRepo: findByLobbyIdAndUserId(lobbyId, userId)
+        activate MemberRepo
+        MemberRepo -> DB: SELECT * FROM lobby_memberships
+        DB --> MemberRepo: Membership data
+        MemberRepo --> Service: Optional<LobbyMembership>
+        deactivate MemberRepo
+        
+        alt Already a member
+            Service -> Service: Update existing membership
+        else New member
+            Service -> Service: assignTeam(lobby)
+            Service -> Service: Create new LobbyMembership
+        end
+        
+        Service -> MemberRepo: save(membership)
+        activate MemberRepo
+        MemberRepo -> DB: INSERT/UPDATE lobby_memberships
+        DB --> MemberRepo: Success
+        MemberRepo --> Service: Saved LobbyMembership
+        deactivate MemberRepo
+        
+        Service --> Controller: LobbyMembershipDTO
+        deactivate Service
+        Controller --> Card: 200 OK with membership data
+        deactivate Controller
+        Card --> User: Redirect to lobby waiting room
+    end
+end
+deactivate Card
+
+' Join private lobby scenario
+User -> PrivateJoin: Enter lobby code
+activate PrivateJoin
+User -> PrivateJoin: Click "Join"
+PrivateJoin -> PrivateJoin: validateCode()
+PrivateJoin -> Controller: POST /api/lobbies/join/{code}
+activate Controller
+Controller -> Service: joinLobbyByCode(code, currentUser)
+activate Service
+Service -> LobbyRepo: findByLobbyCode(code)
+activate LobbyRepo
+LobbyRepo -> DB: SELECT * FROM lobbies WHERE lobby_code = ?
+DB --> LobbyRepo: Lobby data
+LobbyRepo --> Service: Optional<Lobby>
+deactivate LobbyRepo
+
+alt Code Invalid
+    Service --> Controller: throw InvalidLobbyCodeException
+    Controller --> PrivateJoin: 404 Not Found
+    PrivateJoin --> User: Show "Invalid code" error
+else Code Valid
+    Service -> Service: validateJoinability(lobby, user)
+    
+    alt Validation Failed
+        Service --> Controller: throw LobbyJoinException
+        Controller --> PrivateJoin: 400 Bad Request with error
+        PrivateJoin --> User: Show error message
+    else Validation Passed
+        Service -> MemberRepo: findByLobbyIdAndUserId(lobbyId, userId)
+        activate MemberRepo
+        MemberRepo -> DB: SELECT * FROM lobby_memberships
+        DB --> MemberRepo: Membership data
+        MemberRepo --> Service: Optional<LobbyMembership>
+        deactivate MemberRepo
+        
+        alt Already a member
+            Service -> Service: Update existing membership
+        else New member
+            Service -> Service: assignTeam(lobby)
+            Service -> Service: Create new LobbyMembership
+        end
+        
+        Service -> MemberRepo: save(membership)
+        activate MemberRepo
+        MemberRepo -> DB: INSERT/UPDATE lobby_memberships
+        DB --> MemberRepo: Success
+        MemberRepo --> Service: Saved LobbyMembership
+        deactivate MemberRepo
+        
+        Service --> Controller: LobbyMembershipDTO
+        deactivate Service
+        Controller --> PrivateJoin: 200 OK with membership data
+        deactivate Controller
+        PrivateJoin --> User: Redirect to lobby waiting room
+    end
+end
+deactivate PrivateJoin
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+start
+:Request to view profile;
+:Display profile data;
+
+split
+  if (Edit profile?) then (yes)
+    :Modify profile info;
+    :Validate changes;
+    :Update profile data;
+  else (no)
+  endif
+split again
+  if (Upload avatar?) then (yes)
+    :Select avatar image;
+    :Validate image;
+    :Store avatar;
+  else (no)
+  endif
+split again
+  if (View stats?) then (yes)
+    :Retrieve stats;
+    :Display stats;
+  else (no)
+  endif
+end split
+
+stop
+@enduml 

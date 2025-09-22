@@ -1,0 +1,69 @@
+@startuml
+' Class Diagram for In-Game Currency Management (Transaction 6.1)
+
+package "Frontend" {
+  class DashboardPage {
+    +displayBalances()
+  }
+  class TopUpPage {
+    +showBalance()
+    +topUpCrypts()
+  }
+  class currencyService {
+    +getBalance()
+    +transferCurrency()
+    +formatCurrency()
+  }
+  class useAuthStore {
+    +user
+    +creds
+    +crypts
+  }
+}
+
+package "Game Server" {
+  class handleGameEnd {
+    +awardCreds()
+  }
+}
+
+package "Backend Server" {
+  class CurrencyController {
+    +GET /api/currency/balance
+    +POST /api/currency/add
+    +POST /api/currency/subtract
+    +POST /api/currency/transfer
+  }
+  class CurrencyService {
+    +getBalance()
+    +addCurrency()
+    +subtractCurrency()
+    +transferCurrency()
+    +setCurrency()
+  }
+  class AccountEntity {
+    +creds
+    +crypts
+  }
+  class StoreService {
+    +purchaseItem()
+  }
+  class PaymentService {
+    +processSuccessfulPayment()
+  }
+}
+
+' Relationships
+DashboardPage --> currencyService : uses
+TopUpPage --> currencyService : uses
+DashboardPage --> useAuthStore : uses
+TopUpPage --> useAuthStore : uses
+
+currencyService --> CurrencyController : REST API (balance, transfer)
+handleGameEnd --> CurrencyController : REST API (add creds)
+CurrencyController --> CurrencyService : delegates
+CurrencyService --> AccountEntity : manages
+StoreService --> CurrencyService : uses
+PaymentService --> CurrencyService : uses
+
+@enduml 

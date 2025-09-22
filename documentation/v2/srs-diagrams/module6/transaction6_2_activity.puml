@@ -1,0 +1,16 @@
+@startuml
+start
+:Player browses store items;
+:Player selects item to purchase;
+:System checks currency balance;
+if (Sufficient currency?) then (yes)
+  :System processes purchase;
+  :System updates inventory and currency balance;
+  :Player selects decoration to apply;
+  :System applies decoration;
+  :Notify player of success;
+else (no)
+  :Show insufficient funds error;
+endif
+stop
+@enduml 

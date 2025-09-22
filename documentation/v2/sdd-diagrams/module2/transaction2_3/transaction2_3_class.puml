@@ -1,0 +1,55 @@
+@startuml
+' Class Diagram for Real-Time Lobby Updates (Transaction 2.3)
+
+package "Frontend" {
+  class LobbyBrowser {
+    +render()
+    +fetchMatches()
+    +pollUpdates()
+  }
+  class LobbyChat {
+    +render()
+    +sendMessage()
+    +receiveMessage()
+  }
+  class LobbyService {
+    +getMatches()
+    +getMatch()
+    +pollUpdates()
+  }
+  class AuthStore {
+    +user: User
+    +isAuthenticated: boolean
+  }
+}
+
+package "Backend" {
+  class BoardgameIOServer {
+    +listMatches()
+    +fetchMatch()
+    +updateMetadata()
+    +handleJoinLeave()
+    +customEndpoints()
+  }
+  class LobbyCleanupService {
+    +start()
+    +setCleanupInterval()
+    +setAbandonedGameTTL()
+    +setInactiveGameTTL()
+    +cleanupAbandonedGames()
+  }
+  class LobbyDatabase {
+    +listMatches()
+    +fetchMatch()
+    +storeMetadata()
+  }
+}
+
+LobbyBrowser --> LobbyService : uses
+LobbyChat --> LobbyService : uses
+LobbyService --> BoardgameIOServer : calls API
+LobbyService --> AuthStore : uses user info
+BoardgameIOServer --> LobbyDatabase : persists/queries
+BoardgameIOServer --> LobbyCleanupService : manages cleanup
+
+@enduml 

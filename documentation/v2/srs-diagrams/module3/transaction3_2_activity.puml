@@ -1,0 +1,16 @@
+@startuml
+start
+:System determines active player;
+:System allocates AP to player;
+:Player selects and plays card;
+if (Card requires target?) then (yes)
+  :Player selects target(s);
+endif
+:System enters reaction phase;
+:Opponent may play reaction/counter card or pass;
+:System validates reaction (if any) and applies effects in correct order;
+:System updates game state;
+:System notifies all players;
+:Turn passes to next player;
+stop
+@enduml 

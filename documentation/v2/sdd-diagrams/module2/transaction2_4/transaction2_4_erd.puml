@@ -1,0 +1,39 @@
+@startuml
+' Entity-Relationship Diagram for Lobby Chat (Transaction 2.4)
+
+entity "matches" as Match {
+  * matchID : string <<PK>>
+  * gameName : string
+  * players : Player[]
+  * setupData : object
+  * metadata : object
+  * state : object
+  * chat : Chat
+}
+
+entity "players" as Player {
+  * id : int
+  * name : string
+  * isConnected : boolean
+  * left : boolean
+  * data : object
+}
+
+entity "chat" as Chat {
+  * messages : ChatMessage[]
+  * lastReadTimestamp : object
+}
+
+entity "chat_messages" as ChatMessage {
+  * id : string <<PK>>
+  * sender : string
+  * senderRole : string
+  * content : string
+  * timestamp : datetime
+  * isSystem : boolean
+}
+
+Match ||--o{ Player : has
+Match ||--|| Chat : has
+Chat ||--o{ ChatMessage : contains
+@enduml 

@@ -1,0 +1,53 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Lobby Creation - Entity Relationship Diagram
+
+table(lobbies) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    foreign_key(host_id) BIGINT not_null
+    is_private BOOLEAN not_null
+    unique(lobby_code) VARCHAR(20)
+    player_limit INT not_null
+    status ENUM('WAITING', 'IN_PROGRESS', 'COMPLETED') not_null
+    game_mode VARCHAR(50) not_null
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP
+}
+
+table(lobby_settings) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    turn_time_limit_seconds INT
+    deck_configuration VARCHAR(50)
+    allow_spectators BOOLEAN not_null
+    custom_rules JSON
+    created_at TIMESTAMP not_null
+}
+
+table(lobby_memberships) {
+    primary_key(id) BIGINT
+    foreign_key(lobby_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    join_time TIMESTAMP not_null
+    role ENUM('HOST', 'PLAYER') not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM')
+    status ENUM('WAITING', 'READY', 'PLAYING') not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+}
+
+lobbies ||--o| lobby_settings : "has"
+lobbies ||--o{ lobby_memberships : "has"
+users ||--o{ lobby_memberships : "joins"
+users ||--o{ lobbies : "hosts"
+
+@enduml

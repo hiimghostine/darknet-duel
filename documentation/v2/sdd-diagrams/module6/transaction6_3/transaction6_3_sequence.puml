@@ -1,0 +1,44 @@
+@startuml
+' Sequence Diagram for Payment Integration (for Top-Up) (Transaction 6.3)
+
+actor Player
+participant TopUpPage as Frontend
+participant PaymentModal as Modal
+participant paymentService as FrontendService
+participant PaymentController as BackendController
+participant PaymentService as BackendService
+participant CurrencyService as Currency
+participant AccountEntity as AccountDB
+
+== Initiate Payment ==
+Player -> Frontend : select package, click purchase
+Frontend -> paymentService : createPayment(packageId)
+paymentService -> PaymentController : POST /api/payment/create
+PaymentController -> PaymentService : createPayment(userId, packageId)
+PaymentService --> PaymentController : invoiceId, invoiceUrl
+PaymentController --> paymentService : invoiceId, invoiceUrl
+paymentService --> Modal : open payment window
+Modal --> Player : show payment UI
+
+== Poll Payment Status ==
+Modal -> paymentService : pollStatus(invoiceId)
+paymentService -> PaymentController : GET /api/payment/status/{invoiceId}
+PaymentController -> PaymentService : checkPaymentStatus(invoiceId)
+PaymentService --> PaymentController : status
+PaymentController --> paymentService : status
+paymentService --> Modal : status
+Modal --> Player : show status
+
+== Process Payment and Credit Crypts ==
+Modal -> paymentService : processPayment(invoiceId, packageId)
+paymentService -> PaymentController : POST /api/payment/process
+PaymentController -> PaymentService : processSuccessfulPayment(userId, packageId, invoiceId)
+PaymentService -> CurrencyService : addCurrency(userId, crypts)
+CurrencyService -> AccountEntity : update crypts
+AccountEntity --> CurrencyService : new balance
+CurrencyService --> PaymentService : new balance
+PaymentService --> PaymentController : result
+PaymentController --> paymentService : result
+paymentService --> Modal : result
+Modal --> Player : show success/failure
+@enduml 

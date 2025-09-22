@@ -1,0 +1,15 @@
+Use Case: Game State Persistence and Recovery
+
+Description: Ensures that the current game state is regularly saved and can be recovered in case of disconnection, refresh, or server failure. The system persists game data and allows players to resume from the last saved state.
+
+Actors: Player
+
+Preconditions: Game session is active and players are connected to the game server.
+
+Main Flow:
+1. System periodically saves the current game state.
+2. If a player disconnects or refreshes, the system retains the last saved state.
+3. Upon reconnection or recovery, the system restores the game state for all players.
+4. Players resume gameplay from the last saved state.
+
+Postconditions: Game can be resumed from the last saved state after interruption or failure. 

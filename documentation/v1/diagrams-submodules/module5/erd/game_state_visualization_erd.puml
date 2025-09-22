@@ -1,0 +1,126 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Game State Visualization - Entity Relationship Diagram
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    current_player_id BIGINT not_null
+    current_phase ENUM('SETUP', 'DRAW', 'ACTION', 'END') not_null
+    current_turn INT not_null
+    red_team_player_id BIGINT not_null
+    blue_team_player_id BIGINT not_null
+    red_team_points INT not_null
+    blue_team_points INT not_null
+    created_at TIMESTAMP not_null
+    started_at TIMESTAMP
+    ended_at TIMESTAMP
+    last_updated_at TIMESTAMP not_null
+}
+
+table(game_view_models) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    view_model_json JSON not_null
+    client_version VARCHAR(20) not_null
+    cache_timestamp TIMESTAMP not_null
+    is_valid BOOLEAN not_null
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    action_points INT not_null
+    status ENUM('CONNECTED', 'DISCONNECTED') not_null
+    display_name VARCHAR(50) not_null
+    joined_at TIMESTAMP not_null
+    last_action_at TIMESTAMP
+}
+
+table(player_cards) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    location ENUM('HAND', 'DECK', 'DISCARD', 'PLAY_AREA') not_null
+    position INT
+    is_playable BOOLEAN not_null
+    is_visible_to_opponent BOOLEAN not_null
+    drawn_at TIMESTAMP
+}
+
+table(infrastructure) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    state ENUM('SECURE', 'VULNERABLE', 'COMPROMISED', 'FORTIFIED') not_null
+    foreign_key(controlling_player_id) BIGINT not_null
+    security_points INT not_null
+    position INT not_null
+    applied_effects JSON
+}
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+    category ENUM('NETWORK', 'SOCIAL', 'MALWARE', 'WEB') not_null
+    action_point_cost INT not_null
+    description TEXT not_null
+    image_url VARCHAR(255)
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    email VARCHAR(100) not_null
+    display_name VARCHAR(100)
+    avatar_url VARCHAR(255)
+    created_at TIMESTAMP not_null
+}
+
+table(game_state_updates) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    update_type ENUM('FULL', 'PARTIAL', 'STATUS_ONLY') not_null
+    updated_elements JSON
+    update_timestamp TIMESTAMP not_null
+    foreign_key(triggered_by_player_id) BIGINT
+    foreign_key(triggered_by_card_id) BIGINT
+    update_sequence_number INT not_null
+}
+
+table(ui_preferences) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    animation_speed ENUM('SLOW', 'NORMAL', 'FAST', 'OFF') not_null
+    card_size ENUM('SMALL', 'MEDIUM', 'LARGE') not_null
+    layout_preference JSON
+    color_scheme VARCHAR(50)
+    sound_enabled BOOLEAN not_null
+    last_updated TIMESTAMP not_null
+}
+
+' Relationships
+games ||--o{ players : "has"
+games ||--o{ infrastructure : "contains"
+games ||--o{ player_cards : "manages"
+games ||--o{ game_state_updates : "generates"
+games ||--o| game_view_models : "cached as"
+players }o--|| users : "represents"
+players ||--o{ player_cards : "holds"
+player_cards }o--|| cards : "instance of"
+infrastructure }o--|| cards : "based on"
+infrastructure }o--|| players : "controlled by"
+users ||--o| ui_preferences : "has"
+game_state_updates }o--o| players : "triggered by"
+game_state_updates }o--o| cards : "triggered by"
+
+@enduml

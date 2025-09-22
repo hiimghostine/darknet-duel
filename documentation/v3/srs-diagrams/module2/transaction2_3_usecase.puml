@@ -1,0 +1,8 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Lobby & Matchmaking System" {
+  usecase "Receive Real-Time Lobby Updates" as UC2_3A
+}
+Player --> UC2_3A
+@enduml 

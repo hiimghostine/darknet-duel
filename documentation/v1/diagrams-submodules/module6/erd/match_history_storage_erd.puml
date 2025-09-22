@@ -1,0 +1,191 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Match History Storage - Entity Relationship Diagram
+
+table(match_history) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(opponent_id) BIGINT not_null
+    result ENUM('WIN', 'LOSS') not_null
+    role ENUM('ATTACKER', 'DEFENDER') not_null
+    timestamp TIMESTAMP not_null
+    duration INT not_null
+    win_condition VARCHAR(100) not_null
+    final_player_score INT not_null
+    final_opponent_score INT not_null
+}
+
+table(game_logs) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    start_time TIMESTAMP not_null
+    end_time TIMESTAMP
+    foreign_key(red_team_player_id) BIGINT not_null
+    foreign_key(blue_team_player_id) BIGINT not_null
+    foreign_key(winner_player_id) BIGINT
+    total_turns INT
+}
+
+table(game_log_entries) {
+    primary_key(id) BIGINT
+    foreign_key(game_log_id) BIGINT not_null
+    timestamp TIMESTAMP not_null
+    turn_number INT not_null
+    foreign_key(player_id) BIGINT
+    action_type VARCHAR(50)
+    foreign_key(target_id) BIGINT
+    target_type VARCHAR(50)
+    data TEXT
+}
+
+table(turn_data) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    turn_number INT not_null
+    active_player_id BIGINT not_null
+    turn_start_time TIMESTAMP not_null
+    turn_end_time TIMESTAMP
+    actions_taken INT
+    points_gained INT
+    state_snapshot JSON
+}
+
+table(player_actions) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    action_type VARCHAR(50) not_null
+    foreign_key(card_id) BIGINT
+    foreign_key(target_id) BIGINT
+    turn_number INT not_null
+    timestamp TIMESTAMP not_null
+    action_data TEXT
+    result VARCHAR(50)
+}
+
+table(state_changes) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    entity_id BIGINT not_null
+    entity_type VARCHAR(50) not_null
+    change_type VARCHAR(50) not_null
+    old_state TEXT
+    new_state TEXT
+    foreign_key(player_id) BIGINT
+    turn_number INT not_null
+    timestamp TIMESTAMP not_null
+}
+
+table(game_states) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    turn_number INT not_null
+    timestamp TIMESTAMP not_null
+    red_team_score INT not_null
+    blue_team_score INT not_null
+    active_player_id BIGINT not_null
+    state_data JSON not_null
+}
+
+table(infrastructure_control_changes) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(infrastructure_id) BIGINT not_null
+    old_controller_id BIGINT
+    new_controller_id BIGINT not_null
+    turn_number INT not_null
+    timestamp TIMESTAMP not_null
+    change_reason VARCHAR(100)
+}
+
+table(chat_messages) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(sender_id) BIGINT not_null
+    message TEXT not_null
+    timestamp TIMESTAMP not_null
+    is_system_message BOOLEAN not_null
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    created_at TIMESTAMP not_null
+    ended_at TIMESTAMP
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    display_name VARCHAR(100)
+}
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+}
+
+table(history_filter_presets) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    name VARCHAR(50) not_null
+    filter_settings JSON not_null
+    created_at TIMESTAMP not_null
+}
+
+table(replay_bookmarks) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(game_id) BIGINT not_null
+    bookmark_name VARCHAR(100) not_null
+    turn_number INT not_null
+    description TEXT
+    created_at TIMESTAMP not_null
+}
+
+' Relationships
+match_history }o--|| users : "for user"
+match_history }o--|| games : "references game"
+match_history }o--|| users : "against opponent"
+
+game_logs }|--|| games : "logs"
+game_logs }o--|| users : "red team player"
+game_logs }o--|| users : "blue team player"
+game_logs }o--o| users : "winner"
+
+game_log_entries }o--|| game_logs : "belongs to"
+game_log_entries }o--o| users : "by player"
+
+turn_data }o--|| games : "tracks turns of"
+turn_data }o--|| users : "active player"
+
+player_actions }o--|| games : "in game"
+player_actions }o--|| users : "by player"
+player_actions }o--o| cards : "using card"
+
+state_changes }o--|| games : "in game"
+state_changes }o--o| users : "caused by"
+
+game_states }o--|| games : "tracks state of"
+game_states }o--|| users : "active player"
+
+infrastructure_control_changes }o--|| games : "in game"
+infrastructure_control_changes }o--o| users : "old controller"
+infrastructure_control_changes }o--|| users : "new controller"
+
+chat_messages }o--|| games : "in game"
+chat_messages }o--|| users : "from sender"
+
+history_filter_presets }o--|| users : "belongs to"
+
+replay_bookmarks }o--|| users : "created by"
+replay_bookmarks }o--|| games : "for game"
+
+@enduml

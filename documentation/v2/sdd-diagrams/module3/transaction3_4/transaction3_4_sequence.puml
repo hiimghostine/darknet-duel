@@ -1,0 +1,30 @@
+@startuml
+' Sequence Diagram for Disconnection/Reconnection Handling (Transaction 3.4)
+
+actor Player
+participant GameClient as GC
+participant useGameConnection as Conn
+participant boardgameioServer as Server
+
+Player -> GC: Open game
+GC -> Conn: connectToServer()
+Conn -> Server: Socket.IO connect
+Server -> Conn: Connection established
+Conn -> GC: connectionStatus = connected
+
+alt Disconnection (background)
+  Server -> Conn: disconnect event
+  Conn -> GC: connectionStatus = disconnected
+  Player -> Conn: attemptReconnect() (background)
+  Conn -> Server: Socket.IO reconnect
+  Server -> Conn: Connection re-established
+  Conn -> GC: connectionStatus = connected
+end
+
+alt Player leaves
+  Player -> Conn: leaveMatch()
+  Conn -> Server: POST /games/:name/:id/leave
+  Server -> Conn: Acknowledge leave
+  Conn -> GC: updateUI()
+end
+@enduml 

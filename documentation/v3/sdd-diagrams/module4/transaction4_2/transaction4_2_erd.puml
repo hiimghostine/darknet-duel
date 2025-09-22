@@ -1,0 +1,58 @@
+@startuml
+' Entity-Relationship Diagram for Infrastructure State Tracking (Transaction 4.2)
+
+entity "infrastructure" as Infrastructure {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * state : enum (secure, vulnerable, compromised, shielded, fortified, etc.)
+  * critical : boolean
+}
+
+entity "vulnerabilities" as Vulnerability {
+  * id : string <<PK>>
+  * vector : string
+  * appliedBy : string
+  * appliedByPlayer : string
+  * timestamp : datetime
+  * infrastructureId : string <<FK>>
+}
+
+entity "shields" as Shield {
+  * id : string <<PK>>
+  * vector : string
+  * appliedBy : string
+  * appliedByPlayer : string
+  * timestamp : datetime
+  * infrastructureId : string <<FK>>
+}
+
+entity "effects" as Effect {
+  * id : string <<PK>>
+  * type : string
+  * targetId : string <<FK>>
+  * playerId : string
+  * duration : int
+  * sourceCardId : string
+}
+
+entity "game_state" as GameState {
+  * id : string <<PK>>
+  * infrastructure : Infrastructure[]
+  * temporaryEffects : Effect[]
+  * persistentEffects : Effect[]
+}
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * role : enum (attacker, defender)
+}
+
+Infrastructure ||--o{ Vulnerability : has
+Infrastructure ||--o{ Shield : has
+Infrastructure ||--o{ Effect : affected_by
+GameState ||--o{ Infrastructure : manages
+GameState ||--o{ Effect : applies
+Player ||--o{ Effect : creates
+@enduml 

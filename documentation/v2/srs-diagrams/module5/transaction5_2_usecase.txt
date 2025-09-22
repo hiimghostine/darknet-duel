@@ -1,0 +1,15 @@
+Use Case: Player Performance Statistics (ELO, Win/Loss, Charts)
+
+Description: Allows players to view their performance statistics, including ELO rating, win/loss record, and visual charts of their progress over time. The system retrieves and displays up-to-date statistics from the backend.
+
+Actors: Player
+
+Preconditions: Player has completed at least one match and is authenticated.
+
+Main Flow:
+1. Player navigates to the statistics or profile page.
+2. System retrieves ELO rating, win/loss record, and performance data from the backend.
+3. System displays statistics and charts to the player.
+4. Player reviews their performance and progress.
+
+Postconditions: Player is informed of their current and historical performance statistics. 

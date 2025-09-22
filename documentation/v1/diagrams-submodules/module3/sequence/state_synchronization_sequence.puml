@@ -1,0 +1,116 @@
+@startuml
+
+title State Synchronization - Sequence Diagram
+
+actor "Player" as Player
+participant "Client App" as Client
+participant "GameStateManager" as StateManager
+participant "WebSocketService" as WSService
+participant "GameStateRenderer" as Renderer
+participant "GameSocketHandler" as SocketHandler
+participant "GameStateService" as StateService
+participant "MessageBroker" as Broker
+participant "GameRepository" as GameRepo
+database "Database" as DB
+
+' Initial Connection and State Sync
+Player -> Client: Enter game
+activate Client
+Client -> StateManager: initialize(gameId)
+activate StateManager
+StateManager -> WSService: connect(gameId)
+activate WSService
+
+WSService -> SocketHandler: CONNECT message with gameId and userId
+activate SocketHandler
+SocketHandler -> StateService: getGameState(gameId)
+activate StateService
+StateService -> GameRepo: findById(gameId)
+activate GameRepo
+GameRepo -> DB: SELECT * FROM games WHERE id = ?
+DB --> GameRepo: Game data
+GameRepo --> StateService: Game entity with state
+deactivate GameRepo
+
+StateService -> StateService: Serialize full game state
+StateService --> SocketHandler: Complete game state
+deactivate StateService
+SocketHandler --> WSService: GAME_STATE message (full state)
+deactivate SocketHandler
+WSService --> StateManager: onGameState(fullState)
+StateManager -> StateManager: reconcileState(serverState)
+StateManager -> Renderer: render(gameState)
+activate Renderer
+Renderer --> Client: Update UI with game state
+deactivate Renderer
+deactivate StateManager
+
+' Game continues with steady state updates
+note over Client, DB: Game is in progress
+
+' Player performs an action
+Player -> Client: Perform game action
+activate StateManager
+Client -> StateManager: applyAction(action)
+StateManager -> StateManager: Optimistically update local state
+StateManager -> WSService: sendMessage("/app/game/action", action)
+
+WSService -> SocketHandler: PLAYER_ACTION message
+activate SocketHandler
+SocketHandler -> StateService: applyPlayerAction(gameId, playerId, action)
+activate StateService
+StateService -> GameRepo: findById(gameId)
+GameRepo -> DB: SELECT * FROM games
+DB --> GameRepo: Game data
+GameRepo --> StateService: Game with current state
+
+StateService -> StateService: Apply action to game state
+StateService -> StateService: Validate action result
+StateService -> GameRepo: save(updatedGame)
+GameRepo -> DB: UPDATE games
+DB --> GameRepo: Confirmation
+GameRepo --> StateService: Updated game
+
+' Generate and broadcast state diff
+StateService -> StateService: generateStateDiff(oldState, newState)
+StateService -> Broker: broadcastGameUpdate(gameId, stateDiff)
+activate Broker
+Broker --> WSService: GAME_STATE message (partial update)
+deactivate Broker
+deactivate StateService
+deactivate SocketHandler
+
+WSService --> StateManager: onGameState(partialUpdate)
+StateManager -> StateManager: applyUpdate(update)
+StateManager -> Renderer: updateElement(elementId, data)
+activate Renderer
+Renderer --> Client: Animate change & update UI
+deactivate Renderer
+deactivate StateManager
+deactivate WSService
+
+' Periodic full sync for integrity
+note over Client, DB: After several turns - Periodic full sync
+
+WSService -> SocketHandler: Request full sync
+activate SocketHandler
+SocketHandler -> StateService: getGameState(gameId)
+activate StateService
+StateService -> GameRepo: findById(gameId)
+GameRepo -> DB: SELECT * FROM games
+DB --> GameRepo: Game data
+GameRepo --> StateService: Game with state
+StateService --> SocketHandler: Complete game state
+deactivate StateService
+SocketHandler --> WSService: GAME_STATE message (full state, version=X)
+deactivate SocketHandler
+
+WSService --> StateManager: onGameState(fullState)
+activate StateManager
+StateManager -> StateManager: Compare local state version with server version
+StateManager -> StateManager: reconcileState if needed
+deactivate StateManager
+
+deactivate Client
+
+@enduml

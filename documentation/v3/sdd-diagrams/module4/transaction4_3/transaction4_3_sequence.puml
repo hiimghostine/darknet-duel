@@ -1,0 +1,40 @@
+@startuml
+' Sequence Diagram for Game Rules Enforcement (AP, Hand Size, Win Conditions) (Transaction 4.3)
+
+actor Player
+participant BalatroGameBoard as Board
+participant PlayerHand as Hand
+participant PlayerInfo as Info
+participant GameControls as Controls
+participant boardgameioServer as Server
+participant gameState_ts as GameState
+participant playerManager as PlayerMgr
+participant gamePhases as Phases
+participant actionStageMoves as Moves
+participant phaseUtils as Utils
+participant cardUtils as CardUtils
+
+Player -> Board: Start turn
+Board -> Server: request game state
+Server -> GameState: allocateAP(), drawCards()
+GameState -> PlayerMgr: updateActionPoints(), drawCard()
+GameState -> Phases: enforceHandSize(), progressTurn()
+Phases -> Moves: exposeMoves()
+Moves -> CardUtils: validateMove(AP, hand size, turn)
+alt Move valid
+  Moves -> GameState: update state
+  GameState -> Utils: checkWinConditions()
+  Utils -> GameState: update winner (if any)
+  GameState -> Server: send updated state
+  Server -> Board: send updated game state
+  Board -> Info: updateAP(), updateHandSize()
+  Board -> Controls: enable/disable actions
+else Move invalid
+  Moves -> Board: send error message
+  Board -> Controls: disable actions, show error
+end
+alt Game over
+  GameState -> Board: send win/loss/draw
+  Board -> GameStatus: displayGameOver()
+end
+@enduml 

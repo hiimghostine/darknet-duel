@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Frontend UI" {
+  usecase "View Game State" as UC4_4A
+  usecase "View Card Effects and Animations" as UC4_4B
+}
+Player --> UC4_4A
+Player --> UC4_4B
+@enduml 

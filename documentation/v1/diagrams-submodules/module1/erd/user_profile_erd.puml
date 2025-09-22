@@ -1,0 +1,52 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title User Profile Management - Entity Relationship Diagram
+
+table(users) {
+    primary_key(id) BIGINT
+    unique(username) VARCHAR(50) not_null
+    unique(email) VARCHAR(100) not_null
+    password_hash VARCHAR(255) not_null
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED') not_null
+}
+
+table(user_profiles) {
+    primary_key(profile_id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    display_name VARCHAR(50) not_null
+    avatar_url VARCHAR(255)
+    bio TEXT
+    preferences JSON
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP
+}
+
+table(avatar_files) {
+    primary_key(id) BIGINT
+    foreign_key(profile_id) BIGINT not_null
+    file_name VARCHAR(255) not_null
+    file_path VARCHAR(255) not_null
+    file_size BIGINT not_null
+    file_type VARCHAR(50) not_null
+    upload_date TIMESTAMP not_null
+}
+
+table(user_settings) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    notification_preferences JSON not_null
+    privacy_settings JSON not_null
+    theme_preferences VARCHAR(50)
+    updated_at TIMESTAMP not_null
+}
+
+users ||--o| user_profiles : "has"
+user_profiles ||--o{ avatar_files : "has"
+users ||--o| user_settings : "has"
+
+@enduml

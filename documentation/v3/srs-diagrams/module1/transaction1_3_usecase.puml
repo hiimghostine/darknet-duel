@@ -1,0 +1,14 @@
+@startuml
+left to right direction
+actor User
+rectangle "User Management System" {
+  usecase "View Profile" as UC3a
+  usecase "Edit Profile" as UC3b
+  usecase "Upload Avatar" as UC3c
+  usecase "View Stats" as UC3d
+}
+User --> UC3a
+User --> UC3b
+User --> UC3c
+User --> UC3d
+@enduml 

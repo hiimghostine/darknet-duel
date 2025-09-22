@@ -1,0 +1,66 @@
+@startuml
+' Sequence Diagram for Report Management (Submit, Review, Resolve) (Transaction 7.2)
+
+actor Player
+actor AdminMod
+participant ReportModal as FrontendModal
+participant ReportManagementPage as FrontendPage
+participant reportService as FrontendService
+participant adminService as AdminFrontendService
+participant ReportController as BackendController
+participant ReportService as BackendService
+participant ReportEntity as ReportDB
+participant LogService as LogDB
+
+== Submit Report ==
+Player -> FrontendModal : open, enter details
+FrontendModal -> reportService : createReport(data)
+reportService -> ReportController : POST /api/reports
+ReportController -> ReportService : createReport(data)
+ReportService -> ReportEntity : insert
+ReportEntity --> ReportService : new report
+ReportService --> ReportController : result
+ReportController --> reportService : result
+reportService --> FrontendModal : result
+FrontendModal --> Player : show feedback
+
+== Review Reports ==
+AdminMod -> FrontendPage : open ReportManagementPage
+FrontendPage -> reportService : getReports(filters)
+reportService -> ReportController : GET /api/admin/reports
+ReportController -> ReportService : getReports(filters)
+ReportService -> ReportEntity : query
+ReportEntity --> ReportService : report list
+ReportService --> ReportController : report list
+ReportController --> reportService : report list
+reportService --> FrontendPage : report list
+FrontendPage --> AdminMod : display reports
+
+== Update Report Status ==
+AdminMod -> FrontendPage : update status
+FrontendPage -> reportService : updateReportStatus(id, status)
+reportService -> ReportController : PUT /api/admin/reports/{id}/status
+ReportController -> ReportService : updateReportStatus(id, status, adminId)
+ReportService -> ReportEntity : update status
+ReportEntity --> ReportService : updated report
+ReportService -> LogService : logReportStatusChange(adminId, id, status)
+LogService --> ReportService : ack
+ReportService --> ReportController : result
+ReportController --> reportService : result
+reportService --> FrontendPage : result
+FrontendPage --> AdminMod : show feedback
+
+== Delete Report ==
+AdminMod -> FrontendPage : delete report
+FrontendPage -> reportService : deleteReport(id)
+reportService -> ReportController : DELETE /api/admin/reports/{id}
+ReportController -> ReportService : deleteReport(id, adminId)
+ReportService -> ReportEntity : delete
+ReportEntity --> ReportService : ack
+ReportService -> LogService : logReportStatusChange(adminId, id, 'deleted')
+LogService --> ReportService : ack
+ReportService --> ReportController : result
+ReportController --> reportService : result
+reportService --> FrontendPage : result
+FrontendPage --> AdminMod : show feedback
+@enduml 

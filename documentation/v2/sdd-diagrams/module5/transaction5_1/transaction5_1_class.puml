@@ -1,0 +1,75 @@
+@startuml
+' Class Diagram for Match Result Display (Victory/Defeat, Win Condition) (Transaction 5.1)
+
+package "Frontend" {
+  class BalatroGameBoard {
+    +detectGameOver()
+    +triggerResultDisplay()
+  }
+  class GameStatus {
+    +displayResult()
+    +showWinReason()
+  }
+  class WinnerLobby {
+    +showResultScreen()
+    +showStatistics()
+    +rematchOption()
+    +returnToLobby()
+  }
+  class PostGameChat {
+    +enableChat()
+  }
+  class PowerBar {
+    +showFinalScores()
+  }
+  class PlayerInfo {
+    +showFinalStatus()
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +WebSocketEndpoint
+    +notifyGameOver()
+    +sendResultData()
+    +processRematch()
+    +postGameChat()
+  }
+  class gamePhases {
+    +transitionToGameOver()
+    +determineWinner()
+    +setWinReason()
+  }
+  class gameState_ts {
+    +winner
+    +winReason
+    +gameStats
+  }
+  class phaseUtils {
+    +calculateWinConditions()
+    +getWinReason()
+  }
+  class serverAuth {
+    +sendGameResults()
+    +recordGameHistory()
+    +updatePlayerRatings()
+  }
+}
+
+BalatroGameBoard --> GameStatus : uses
+BalatroGameBoard --> WinnerLobby : uses
+BalatroGameBoard --> PostGameChat : uses
+BalatroGameBoard --> PowerBar : uses
+BalatroGameBoard --> PlayerInfo : uses
+WinnerLobby --> PostGameChat : uses
+boardgameioServer --> gamePhases : uses
+boardgameioServer --> gameState_ts : uses
+boardgameioServer --> phaseUtils : uses
+boardgameioServer --> serverAuth : uses
+gamePhases --> gameState_ts : updates
+gamePhases --> phaseUtils : uses
+
+' Explicitly show the WebSocket connection bridging frontend and backend
+BalatroGameBoard <--> boardgameioServer : WebSocket (boardgame.io protocol)
+
+@enduml 

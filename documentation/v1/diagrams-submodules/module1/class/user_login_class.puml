@@ -1,0 +1,150 @@
+@startuml
+
+title User Login - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "LoginPage" as LoginPage <<Function Component>> {
+        + useState: formData, setFormData
+        + useState: loading, setLoading 
+        + useState: error, setError
+        + useContext: AuthContext
+        + useNavigate: navigate
+        + handleSubmit()
+        + handleInputChange()
+        + render(): JSX
+    }
+
+    class "LoginForm" as LoginForm <<Function Component>> {
+        + props: onSubmit, onChange, error, loading
+        + useRef: emailInputRef
+        + useEffect()
+        + render(): JSX
+    }
+
+    class "FormTextField" as FormTextField <<Function Component>> {
+        + props: label, name, type, value, onChange, error, inputRef
+        + handleChange()
+        + render(): JSX
+    }
+
+    class "SubmitButton" as SubmitButton <<Function Component>> {
+        + props: label, onClick, disabled, isLoading
+        + render(): JSX
+    }
+
+    class "useAuth" as useAuth <<Custom Hook>> {
+        + useState: user, setUser
+        + useState: loading, setLoading
+        + useState: error, setError
+        + useCallback: login
+        + useCallback: logout
+        + useCallback: verifyToken
+        + useEffect()
+        + return: { user, loading, error, login, logout, isAuthenticated }
+    }
+
+    class "AuthContext" as AuthContext <<React Context>> {
+        + defaultValue: { user: null, loading: false, error: null }
+    }
+
+    class "AuthProvider" as AuthProvider <<Function Component>> {
+        + props: children
+        + useAuth: authState
+        + value: { ...authState }
+        + render(): JSX
+    }
+
+    class "LoginDTO" as LoginDTO {
+        + email: string
+        + password: string
+    }
+
+    class "UserDTO" as UserDTO {
+        + id: string
+        + username: string
+        + email: string
+        + profileImageUrl: string
+        + lastLogin: Date
+        + accountCreated: Date
+    }
+
+    class "TokenResponseDTO" as TokenResponseDTO {
+        + accessToken: string
+        + refreshToken: string
+        + tokenType: string
+        + expiresIn: number
+        + user: UserDTO
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class AuthController {
+        - authService: AuthService
+        - jwtService: JwtService
+        - userService: UserService
+        + login(loginRequest: LoginDTO): ResponseEntity<TokenResponseDTO>
+        + refreshToken(refreshToken: String): ResponseEntity<TokenResponseDTO>
+        + logout(token: String): ResponseEntity<Void>
+        + validateToken(token: String): ResponseEntity<Boolean>
+    }
+
+    class AuthService {
+        - userRepository: UserRepository
+        - passwordEncoder: PasswordEncoder
+        - jwtService: JwtService
+        + authenticate(email: String, password: String): TokenResponseDTO
+        + validateUserCredentials(email: String, password: String): User
+        + refreshToken(refreshToken: String): TokenResponseDTO
+        + logout(token: String): void
+        + updateUserLastLogin(userId: Long): void
+    }
+
+    class JwtService {
+        - secretKey: String
+        - refreshSecretKey: String
+        - tokenValidity: Long
+        - refreshTokenValidity: Long
+        + generateToken(user: User): String
+        + generateRefreshToken(user: User): String
+        + validateToken(token: String): boolean
+        + getUserIdFromToken(token: String): Long
+        + invalidateToken(token: String): void
+    }
+
+    class UserRepository {
+        + findByEmail(email: String): Optional<User>
+        + findById(id: Long): Optional<User>
+        + save(user: User): User
+    }
+
+    class User {
+        - id: Long
+        - username: String
+        - email: String
+        - password: String
+        - profileImageUrl: String
+        - lastLogin: Date
+        - accountCreated: Date
+        - tokenVersion: Integer
+        - active: Boolean
+    }
+}
+
+' Frontend relationships
+LoginPage --> LoginForm : uses
+LoginForm --> FormTextField : uses
+LoginForm --> SubmitButton : uses
+LoginPage ..> useAuth : uses
+LoginPage ..> AuthContext : consumes
+AuthProvider ..> useAuth : uses
+AuthProvider ..> AuthContext : provides
+useAuth ..> AuthController : API calls
+
+' Backend relationships
+AuthController --> AuthService : uses
+AuthController --> JwtService : uses
+AuthService --> UserRepository : uses
+AuthService --> JwtService : uses
+UserRepository --> User : manages
+
+@enduml

@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Server" {
+  usecase "Persist Game State" as UC3_5A
+  usecase "Recover Game State" as UC3_5B
+}
+Player --> UC3_5A
+Player --> UC3_5B
+@enduml 

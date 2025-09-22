@@ -1,0 +1,31 @@
+@startuml
+' Sequence Diagram for User Modification (Modify Username, Email, Password) (Transaction 7.4)
+
+actor AdminMod
+participant UserManagement as Frontend
+participant UserEditModal as Modal
+participant adminService as FrontendService
+participant AdminController as BackendController
+participant AdminService as BackendService
+participant AccountEntity as AccountDB
+participant LogService as LogDB
+
+== Search and Select User ==
+AdminMod -> Frontend : search/select user
+Frontend -> Modal : show(user)
+
+== Edit and Update User ==
+AdminMod -> Modal : edit details
+Modal -> adminService : updateUser(userId, updateData)
+adminService -> AdminController : PUT /api/admin/users/{id}
+AdminController -> AdminService : updateUser(id, updateData, adminId)
+AdminService -> AccountEntity : update fields
+AccountEntity --> AdminService : updated user
+AdminService -> LogService : logUserUpdate(adminId, username, changes)
+LogService --> AdminService : ack
+AdminService --> AdminController : result
+AdminController --> adminService : result
+adminService --> Modal : result
+Modal --> Frontend : update user in list
+Frontend --> AdminMod : show feedback
+@enduml 

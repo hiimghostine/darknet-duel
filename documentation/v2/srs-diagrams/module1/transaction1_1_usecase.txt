@@ -1,0 +1,17 @@
+Use Case: Register Account
+
+Description: Allows a new user to create an account by providing a username, email, and password. The system validates the input, checks for existing accounts, hashes the password, creates a new user record, and confirms successful registration.
+
+Actors: User
+
+Preconditions: User is not already registered.
+
+Main Flow:
+1. User enters registration details (username, email, password).
+2. System validates input data.
+3. System checks for existing account with the same email or username.
+4. System hashes the password.
+5. System creates a new user record in the database.
+6. System notifies the user of successful registration.
+
+Postconditions: New user account is created and ready for login. 

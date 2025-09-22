@@ -1,0 +1,57 @@
+@startuml
+' Class Diagram for Lobby Browser (Transaction 2.1)
+
+package "Frontend" {
+  class LobbyBrowser {
+    +render()
+    +fetchMatches()
+    +handleJoinMatch()
+    +handleJoinPrivateLobby()
+  }
+  class LobbyService {
+    +getMatches()
+    +createMatch()
+    +joinMatch()
+    +leaveMatch()
+    +joinPrivateLobby()
+    +getMatch()
+    +updateReadyStatus()
+    +startMatch()
+  }
+  class AuthStore {
+    +user: User
+    +isAuthenticated: boolean
+  }
+}
+
+package "Backend" {
+  class BoardgameIOServer {
+    +listMatches()
+    +createMatch()
+    +joinMatch()
+    +leaveMatch()
+    +fetchMatch()
+    +customEndpoints()
+  }
+  class LobbyCleanupService {
+    +start()
+    +setCleanupInterval()
+    +setAbandonedGameTTL()
+    +setInactiveGameTTL()
+    +cleanupAbandonedGames()
+  }
+  class LobbyDatabase {
+    +listMatches()
+    +fetchMatch()
+    +wipe()
+    +storeMetadata()
+  }
+}
+
+LobbyBrowser --> LobbyService : uses
+LobbyService --> BoardgameIOServer : calls API
+LobbyService --> AuthStore : uses user info
+BoardgameIOServer --> LobbyDatabase : persists/queries
+BoardgameIOServer --> LobbyCleanupService : manages cleanup
+
+@enduml 
