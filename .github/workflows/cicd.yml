@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    environment: dev
     env:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
     steps:
@@ -24,6 +25,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ env.GHCR_PAT }}
+
+      - name: Create .env for docker compose
+        run: |
+          cat > .env <<EOF
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          SERVER_API_KEY=${{ secrets.SERVER_API_KEY }}
+          XENDIT_API_KEY=${{ secrets.XENDIT_API_KEY }}
+          EOF
 
       - name: Build images (no push)
         run: |

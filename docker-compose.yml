@@ -6,7 +6,7 @@ services:
     container_name: darknet_mysql
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=example
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?required}
       - MYSQL_DATABASE=darknet_duel
     command: ["--default-authentication-plugin=mysql_native_password", "--innodb_flush_method=O_DIRECT"]
     volumes:
@@ -28,18 +28,20 @@ services:
       db:
         condition: service_healthy
     environment:
+      - TZ="Asia/Manila"
       - NODE_ENV=production
       - HOST=0.0.0.0
       - PORT=8000
       - DB_HOST=db
       - DB_PORT=3306
       - DB_USERNAME=root
-      - DB_PASSWORD=example
+      - DB_PASSWORD=${DB_PASSWORD:?required}
       - DB_NAME=darknet_duel
       - ALLOWED_ORIGINS=http://192.168.1.180,http://192.168.1.180:80,http://192.168.1.180:3000,http://192.168.1.180:5173
       - PUBLIC_URL=http://192.168.1.180:8000
-      - SERVER_API_KEY=bmlnZ2VybmlnZ2VybmlnZ2VybmlnZ2Vy
-      - XENDIT_API_KEY=xnd_development_aTQpov9kK2zMVEzHp3hoXAVIERM7JJN7dAEn36a3c7D3e95fN4OR1rhzusVGx # PALDOOOOOOOOOOO
+      - JWT_SECRET=${JWT_SECRET:?required}
+      - SERVER_API_KEY=${SERVER_API_KEY:?required}
+      - XENDIT_API_KEY=${XENDIT_API_KEY:?required}
     ports:
       - "8000:8000"
     networks:
@@ -58,7 +60,7 @@ services:
       - GAME_SERVER_PORT=8001
       - PUBLIC_SERVER_URL=http://192.168.1.180:8001
       - BACKEND_URL=http://backend:8000/api
-      - SERVER_API_KEY=bmlnZ2VybmlnZ2VybmlnZ2VybmlnZ2Vy
+      - SERVER_API_KEY=${SERVER_API_KEY:?required}
     ports:
       - "8001:8001"
     networks:
