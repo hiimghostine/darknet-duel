@@ -37,8 +37,8 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=${DB_PASSWORD:?required}
       - DB_NAME=darknet_duel
-      - ALLOWED_ORIGINS=http://192.168.1.180,http://192.168.1.180:80,http://192.168.1.180:3000,http://192.168.1.180:5173
-      - PUBLIC_URL=http://192.168.1.180:8000
+      - ALLOWED_ORIGINS=${FRONTEND_URL:?required},${BACKEND_URL:?required},${GAME_URL:?required}
+      - PUBLIC_URL=${BACKEND_URL:?required}
       - JWT_SECRET=${JWT_SECRET:?required}
       - SERVER_API_KEY=${SERVER_API_KEY:?required}
       - XENDIT_API_KEY=${XENDIT_API_KEY:?required}
@@ -58,7 +58,7 @@ services:
       - NODE_ENV=production
       - GAME_SERVER_HOST=0.0.0.0
       - GAME_SERVER_PORT=8001
-      - PUBLIC_SERVER_URL=http://192.168.1.180:8001
+      - PUBLIC_SERVER_URL=${GAME_URL:?required}
       - BACKEND_URL=http://backend:8000/api
       - SERVER_API_KEY=${SERVER_API_KEY:?required}
     ports:
@@ -71,8 +71,8 @@ services:
       context: .
       dockerfile: darknet-duel-frontend/Dockerfile
       args:
-        VITE_API_URL: http://192.168.1.180:8000/api
-        VITE_GAME_SERVER_URL: http://192.168.1.180:8001
+        VITE_API_URL: ${BACKEND_URL:?required}/api
+        VITE_GAME_SERVER_URL: ${GAME_URL:?required}
     container_name: darknet_frontend
     depends_on:
       - backend
