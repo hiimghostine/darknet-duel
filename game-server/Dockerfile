@@ -36,6 +36,6 @@ COPY game-server/package*.json ./
 
 EXPOSE 8001
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/server/index.js"]
 
 

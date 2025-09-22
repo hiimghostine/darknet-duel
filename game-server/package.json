@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc || true",
-    "start": "node dist/server.js",
+    "start": "node dist/server/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server/index.ts",
     "dev:host": "GAME_SERVER_HOST=0.0.0.0 ts-node-dev --respawn --transpile-only src/server/index.ts",
     "test": "jest"
