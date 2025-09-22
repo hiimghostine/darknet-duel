@@ -13,11 +13,11 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "shared-types": ["../shared-types"],
-      "shared-types/*": ["../shared-types/*"]
+      "shared-types": ["../shared-types", "./shared-types"],
+      "shared-types/*": ["../shared-types/*", "./shared-types/*"]
     },
     "typeRoots": ["./node_modules/@types", "../shared-types"]
   },
-  "include": ["src/**/*", "../shared-types/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "include": ["src/**/*", "../shared-types/**/*", "./shared-types/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/**/tests/**", "**/*.bak"]
 }
