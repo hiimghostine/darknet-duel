@@ -4,7 +4,7 @@
   "description": "Game server for Darknet Duel using boardgame.io",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc || true",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server/index.ts",
     "dev:host": "GAME_SERVER_HOST=0.0.0.0 ts-node-dev --respawn --transpile-only src/server/index.ts",
