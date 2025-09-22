@@ -66,13 +66,13 @@ services:
     build:
       context: .
       dockerfile: darknet-duel-frontend/Dockerfile
+      args:
+        VITE_API_URL: http://192.168.1.180:8000/api
+        VITE_GAME_SERVER_URL: http://192.168.1.180:8001
     container_name: darknet_frontend
     depends_on:
       - backend
       - game_server
-    environment:
-      - VITE_API_URL=http://192.168.1.180:8000/api
-      - VITE_GAME_SERVER_URL=http://192.168.1.180:8001
     ports:
       - "80:80"
     networks:

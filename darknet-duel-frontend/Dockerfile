@@ -10,6 +10,12 @@ RUN npm ci --no-audit --no-fund
 COPY darknet-duel-frontend/. .
 # Ensure shared-types are present for Vite alias
 COPY shared-types ./shared-types
+
+# Inject Vite env at build time
+ARG VITE_API_URL
+ARG VITE_GAME_SERVER_URL
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_GAME_SERVER_URL=${VITE_GAME_SERVER_URL}
 RUN npm run build
 
 FROM nginx:alpine AS runner
