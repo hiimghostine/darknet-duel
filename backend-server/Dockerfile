@@ -3,12 +3,23 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+# Harden npm for flaky networks
+ENV npm_config_loglevel=warn \
+    npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_mintimeout=20000 \
+    npm_config_fetch_retry_maxtimeout=120000 \
+    npm_config_fetch_timeout=600000
+RUN npm ci --omit=dev --no-audit --no-fund
 
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+ENV npm_config_loglevel=warn \
+    npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_mintimeout=20000 \
+    npm_config_fetch_retry_maxtimeout=120000 \
+    npm_config_fetch_timeout=600000
+RUN npm ci --no-audit --no-fund
 COPY tsconfig.json ./
 COPY src ./src
 COPY assets ./assets
