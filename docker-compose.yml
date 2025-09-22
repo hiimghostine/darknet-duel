@@ -78,6 +78,22 @@ services:
     networks:
       - darknet_net
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: darknet_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - UPLOAD_LIMIT=256M
+    ports:
+      - "3307:80"
+    networks:
+      - darknet_net
+
 volumes:
   db_data:
 
