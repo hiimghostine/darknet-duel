@@ -1,0 +1,82 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: darknet_mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=example
+      - MYSQL_DATABASE=darknet_duel
+    command: ["--default-authentication-plugin=mysql_native_password", "--innodb_flush_method=O_DIRECT"]
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - darknet_net
+
+  backend:
+    build:
+      context: ./backend-server
+      dockerfile: Dockerfile
+    container_name: darknet_backend
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USERNAME=root
+      - DB_PASSWORD=example
+      - DB_NAME=darknet_duel
+      - ALLOWED_ORIGINS=http://192.168.1.180,http://192.168.1.180:80,http://192.168.1.180:3000,http://192.168.1.180:5173
+      - PUBLIC_URL=http://192.168.1.180:8000
+      - SERVER_API_KEY=dev-server-key
+    ports:
+      - "8000:8000"
+    networks:
+      - darknet_net
+
+  game_server:
+    build:
+      context: ./game-server
+      dockerfile: Dockerfile
+    container_name: darknet_game_server
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - GAME_SERVER_HOST=0.0.0.0
+      - GAME_SERVER_PORT=8001
+      - PUBLIC_SERVER_URL=http://192.168.1.180:8001
+      - BACKEND_URL=http://backend:8000/api
+    ports:
+      - "8001:8001"
+    networks:
+      - darknet_net
+
+  frontend:
+    build:
+      context: ./darknet-duel-frontend
+      dockerfile: Dockerfile
+    container_name: darknet_frontend
+    depends_on:
+      - backend
+      - game_server
+    environment:
+      - VITE_API_URL=http://192.168.1.180:8000/api
+      - VITE_GAME_SERVER_URL=http://192.168.1.180:8001
+    ports:
+      - "80:80"
+    networks:
+      - darknet_net
+
+volumes:
+  db_data:
+
+networks:
+  darknet_net:
+    driver: bridge
+
+
