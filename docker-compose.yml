@@ -40,8 +40,8 @@ services:
 
   game_server:
     build:
-      context: ./game-server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: game-server/Dockerfile
     container_name: darknet_game_server
     depends_on:
       - backend
@@ -58,8 +58,8 @@ services:
 
   frontend:
     build:
-      context: ./darknet-duel-frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: darknet-duel-frontend/Dockerfile
     container_name: darknet_frontend
     depends_on:
       - backend

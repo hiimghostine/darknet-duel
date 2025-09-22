@@ -1,8 +1,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+COPY darknet-duel-frontend/package*.json ./
 RUN npm ci
-COPY . .
+COPY darknet-duel-frontend/. .
+# Ensure shared-types are present for Vite alias
+COPY shared-types ./shared-types
 RUN npm run build
 
 FROM nginx:alpine AS runner
