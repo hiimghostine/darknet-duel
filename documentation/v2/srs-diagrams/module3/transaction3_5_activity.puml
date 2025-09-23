@@ -1,0 +1,14 @@
+@startuml
+start
+:System periodically saves game state;
+if (Disconnection or failure?) then (yes)
+  :Retain last saved state;
+  :Player reconnects or recovers session;
+  :Restore game state for all players;
+  :Resume gameplay from last saved state;
+  stop
+else (no)
+  :Continue normal gameplay;
+  stop
+endif
+@enduml 

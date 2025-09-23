@@ -1,0 +1,53 @@
+@startuml
+' Entity-Relationship Diagram for Card Play, Targeting, and Effect Resolution (Transaction 4.1)
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * role : enum (attacker, defender)
+  * hand : Card[]
+  * discard : Card[]
+  * actionPoints : int
+}
+
+entity "cards" as Card {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * cost : int
+  * description : string
+  * isReactive : boolean
+  * wildcardType : string[]
+  * specialEffect : string
+}
+
+entity "infrastructure" as Infrastructure {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * state : enum (secure, vulnerable, compromised, shielded, fortified, etc.)
+  * critical : boolean
+}
+
+entity "game_state" as GameState {
+  * id : string <<PK>>
+  * attacker : Player
+  * defender : Player
+  * infrastructure : Infrastructure[]
+  * actions : GameAction[]
+  * pendingWildcardChoice : object
+  * pendingChainChoice : object
+  * pendingHandChoice : object
+  * temporaryEffects : object[]
+  * persistentEffects : object[]
+}
+
+Player ||--o{ Card : has
+Player ||--o{ Infrastructure : targets
+GameState ||--o{ Player : has
+GameState ||--o{ Infrastructure : manages
+GameState ||--o{ Card : tracks
+GameState ||--o{ "temporaryEffects" : applies
+GameState ||--o{ "persistentEffects" : applies
+Infrastructure ||--o{ Card : affected_by
+@enduml 

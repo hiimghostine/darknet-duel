@@ -1,0 +1,55 @@
+@startuml
+' Class Diagram for Payment Integration (for Top-Up) (Transaction 6.3)
+
+package "Frontend" {
+  class TopUpPage {
+    +selectPackage()
+    +initiatePayment()
+  }
+  class PaymentModal {
+    +showStatus()
+    +openPaymentWindow()
+    +pollStatus()
+  }
+  class paymentService {
+    +createPayment()
+    +checkPaymentStatus()
+    +processPayment()
+    +completePurchase()
+  }
+  class useAuthStore {
+    +user
+    +crypts
+  }
+}
+
+package "Backend Server" {
+  class PaymentController {
+    +POST /api/payment/create
+    +GET /api/payment/status/{invoiceId}
+    +POST /api/payment/process
+  }
+  class PaymentService {
+    +createPayment()
+    +checkPaymentStatus()
+    +processSuccessfulPayment()
+  }
+  class CurrencyService {
+    +addCurrency()
+  }
+  class AccountEntity {
+    +crypts
+  }
+}
+
+' Relationships
+TopUpPage --> paymentService : uses
+PaymentModal --> paymentService : uses
+TopUpPage --> useAuthStore : uses
+
+paymentService --> PaymentController : REST API (create, status, process)
+PaymentController --> PaymentService : delegates
+PaymentService --> CurrencyService : uses
+CurrencyService --> AccountEntity : updates
+
+@enduml 

@@ -1,0 +1,54 @@
+@startuml
+' Class Diagram for System Logs and Audit Trails (Transaction 7.3)
+
+package "Frontend" {
+  class SecurityOverviewPage {
+    +viewLogs()
+    +filterLogs()
+    +viewLogDetails()
+  }
+  class logService {
+    +getLogs()
+    +getLogById()
+  }
+  class useAuthStore {
+    +user
+    +type
+  }
+}
+
+package "Backend Server" {
+  class LogController {
+    +GET /api/logs
+    +GET /api/logs/{id}
+  }
+  class LogService {
+    +createLog()
+    +getLogs()
+    +getLogById()
+    +logUserLogin()
+    +logFailedLogin()
+  }
+  class LogEntity {
+    +id
+    +userId
+    +text
+    +createdAt
+  }
+  class AccountEntity {
+    +id
+    +username
+    +email
+  }
+}
+
+' Relationships
+SecurityOverviewPage --> logService : uses
+SecurityOverviewPage --> useAuthStore : uses
+
+logService --> LogController : REST API (logs)
+LogController --> LogService : delegates
+LogService --> LogEntity : manages
+LogEntity --> AccountEntity : user relation
+
+@enduml 

@@ -1,0 +1,15 @@
+Use Case: Infrastructure State Tracking (Secure, Vulnerable, Compromised, Fortified)
+
+Description: Allows the system to track and update the state of infrastructure cards (e.g., secure, vulnerable, compromised, fortified) as a result of player actions and card effects. Players can view the current state of all infrastructure cards.
+
+Actors: Player
+
+Preconditions: Game session is active and infrastructure cards are in play.
+
+Main Flow:
+1. System initializes infrastructure cards with default states.
+2. Player actions or card effects trigger state changes (e.g., attack, defend, fortify).
+3. System updates the state of affected infrastructure cards.
+4. Players view the updated state of all infrastructure cards in real time.
+
+Postconditions: Infrastructure card states are accurately tracked and visible to all players. 

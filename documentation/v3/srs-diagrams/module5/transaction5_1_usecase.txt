@@ -1,0 +1,15 @@
+Use Case: Match Result Display (Victory/Defeat, Win Condition)
+
+Description: Allows players to view the outcome of a completed match, including victory or defeat and the specific win condition. The system displays the result immediately after the game ends.
+
+Actors: Player
+
+Preconditions: Game session has ended and results are available.
+
+Main Flow:
+1. Game ends and system determines the winner and win condition.
+2. System stores the match result in the backend.
+3. System displays the match result (victory/defeat) and win condition to all players.
+4. Players view the result and may proceed to statistics or match history.
+
+Postconditions: Players are informed of the match outcome and win condition. 

@@ -1,0 +1,23 @@
+@startuml
+skinparam shadowing true
+actor User
+participant App
+participant FirstTimeFlow
+participant InteractiveTutorial
+participant TutorialSteps
+participant ProfileService
+
+App -> FirstTimeFlow : launchTutorial()
+FirstTimeFlow -> InteractiveTutorial : start()
+InteractiveTutorial -> TutorialSteps : getCurrent()
+loop per step
+  User -> InteractiveTutorial : follow instructions
+  InteractiveTutorial -> TutorialSteps : next()
+end
+InteractiveTutorial -> FirstTimeFlow : finish()
+FirstTimeFlow -> ProfileService : setFirstTimeComplete(userId)
+ProfileService --> FirstTimeFlow : ok
+FirstTimeFlow -> App : unlock main app
+@enduml
+
+

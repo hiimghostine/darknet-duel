@@ -1,0 +1,18 @@
+@startuml
+skinparam shadowing true
+start
+:Start interactive tutorial;
+:Load steps;
+repeat
+  :Show current step;
+  :Wait for user action;
+  if (Valid action?) then (yes)
+    :Advance to next step;
+  else (no)
+    :Show hint/error;
+  endif
+repeat while (More steps?) is (yes)
+:Mark first-time complete;
+:Unlock main app;
+stop
+@enduml

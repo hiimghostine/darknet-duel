@@ -1,0 +1,27 @@
+@startuml
+' Entity-Relationship Diagram for Game State Persistence and Recovery (Transaction 3.5)
+
+entity "matches" as Match {
+  * matchID : string <<PK>>
+  * gameName : string
+  * state : object
+  * metadata : object
+  * status : enum (waiting, in_progress, completed, abandoned)
+}
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * matchID : string <<FK>>
+  * name : string
+  * role : enum (attacker, defender)
+}
+
+entity "game_state" as GameState {
+  * matchID : string <<FK>>
+  * stateData : json
+  * lastUpdated : datetime
+}
+
+Match ||--o{ Player : has
+Match ||--|| GameState : persists
+@enduml 

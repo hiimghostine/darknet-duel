@@ -1,0 +1,21 @@
+@startuml
+' Entity-Relationship Diagram for Real-Time State Synchronization (Transaction 3.3)
+
+entity "matches" as Match {
+  * matchID : string <<PK>>
+  * gameName : string
+  * state : object
+  * metadata : object
+  * status : enum (waiting, in_progress, completed, abandoned)
+}
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * matchID : string <<FK>>
+  * name : string
+  * role : enum (attacker, defender)
+  * isConnected : boolean
+}
+
+Match ||--o{ Player : has
+@enduml 

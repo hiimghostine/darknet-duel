@@ -1,0 +1,55 @@
+@startuml
+' Sequence Diagram for In-Game Currency Management (Transaction 6.1)
+
+actor Player
+participant DashboardPage as Frontend
+participant currencyService as FrontendService
+participant handleGameEnd as GameServer
+participant CurrencyController as BackendController
+participant CurrencyService as BackendService
+participant AccountEntity as Entity
+
+== View Balances ==
+Player -> Frontend : open Dashboard/TopUp page
+Frontend -> currencyService : getBalance()
+currencyService -> CurrencyController : GET /api/currency/balance
+CurrencyController -> CurrencyService : getBalance(userId)
+CurrencyService -> AccountEntity : query creds, crypts
+AccountEntity --> CurrencyService : balances
+CurrencyService --> CurrencyController : balances
+CurrencyController --> currencyService : balances
+currencyService --> Frontend : balances
+Frontend --> Player : display balances
+
+== Earn Creds After Match ==
+handleGameEnd -> CurrencyController : POST /api/currency/add (userId, creds)
+CurrencyController -> CurrencyService : addCurrency(userId, creds)
+CurrencyService -> AccountEntity : update creds
+AccountEntity --> CurrencyService : new balance
+CurrencyService --> CurrencyController : new balance
+CurrencyController --> handleGameEnd : ack
+
+== Spend Currency (Purchase) ==
+Player -> Frontend : purchase item
+Frontend -> currencyService : purchaseItem()
+currencyService -> CurrencyController : POST /api/currency/subtract
+CurrencyController -> CurrencyService : subtractCurrency(userId, amount)
+CurrencyService -> AccountEntity : update creds/crypts
+AccountEntity --> CurrencyService : new balance
+CurrencyService --> CurrencyController : new balance
+CurrencyController --> currencyService : new balance
+currencyService --> Frontend : new balance
+Frontend --> Player : show purchase result
+
+== Transfer Currency ==
+Player -> Frontend : transfer currency
+Frontend -> currencyService : transferCurrency(toUserId, type, amount)
+currencyService -> CurrencyController : POST /api/currency/transfer
+CurrencyController -> CurrencyService : transferCurrency(fromUserId, toUserId, type, amount)
+CurrencyService -> AccountEntity : update balances
+AccountEntity --> CurrencyService : new balances
+CurrencyService --> CurrencyController : new balances
+CurrencyController --> currencyService : new balances
+currencyService --> Frontend : new balances
+Frontend --> Player : show transfer result
+@enduml 

@@ -1,0 +1,13 @@
+@startuml
+left to right direction
+actor "Player" as Player
+actor "Admin/Moderator" as AdminMod
+rectangle "Admin & Moderation System" {
+  usecase "Submit Report" as UC7_2A
+  usecase "Review Report" as UC7_2B
+  usecase "Resolve Report" as UC7_2C
+}
+Player --> UC7_2A
+AdminMod --> UC7_2B
+AdminMod --> UC7_2C
+@enduml 

@@ -1,0 +1,79 @@
+@startuml
+' Class Diagram for Profile Management (Transaction 1.3)
+
+package "Frontend" {
+  class ProfilePage {
+    +render()
+    +handleEditProfile()
+    +handleReportUser()
+  }
+  class EditProfileModal {
+    +open()
+    +close()
+    +submit()
+    +validate()
+  }
+  class UserProfilePopup {
+    +open()
+    +close()
+    +render()
+  }
+  class AccountService {
+    +getMyAccount()
+    +getAccountByUuid(uuid)
+    +updateMyAccount(data)
+    +getAvatarUrl(uuid)
+    +resizeImage(file, size)
+  }
+  class InfoService {
+    +getProfileStats()
+    +getRecentActivity(limit)
+  }
+}
+
+package "Backend" {
+  class AccountController {
+    +getMyAccount(req, res)
+    +updateMyAccount(req, res)
+    +getAccountByUuid(req, res)
+    +searchAccountByUsername(req, res)
+  }
+  class InfoController {
+    +getProfile(req, res)
+    +getProfileByUserId(req, res)
+    +getProfileStats(req, res)
+    +getRecentActivity(req, res)
+  }
+  class FilesController {
+    +getAvatar(req, res)
+  }
+  class AccountServiceBackend {
+    +updateAccount(id, updateData)
+    +getAvatarById(id)
+  }
+  class Account {
+    +id: string
+    +email: string
+    +username: string
+    +password: string
+    +bio: string
+    +avatar: Buffer
+    +avatarMimeType: string
+    +... (other fields)
+  }
+}
+
+ProfilePage --> EditProfileModal : uses
+ProfilePage --> UserProfilePopup : uses
+ProfilePage --> AccountService : uses
+ProfilePage --> InfoService : uses
+EditProfileModal --> AccountService : uses
+UserProfilePopup --> AccountService : uses
+UserProfilePopup --> InfoService : uses
+AccountService --> AccountController : calls API
+InfoService --> InfoController : calls API
+AccountController --> AccountServiceBackend : uses
+FilesController --> AccountServiceBackend : uses
+AccountServiceBackend --> Account : persists/queries
+
+@enduml 

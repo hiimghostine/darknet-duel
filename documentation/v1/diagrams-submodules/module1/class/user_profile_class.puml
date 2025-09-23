@@ -1,0 +1,139 @@
+@startuml
+
+title User Profile Management - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "ProfilePage" as ProfilePage <<Function Component>> {
+        + useState: profile, setProfile, isEditing, setIsEditing, isLoading, setIsLoading, errors, setErrors
+        + useEffect()
+        + useContext: AuthContext
+        + useCallback()
+        + loadProfile()
+        + toggleEditMode()
+        + handleSaveProfile()
+        + render(): JSX
+    }
+    
+    class "ProfileForm" as ProfileForm <<Function Component>> {
+        + props: profile, errors, onSubmit, onCancel, isLoading
+        + useState: formData, setFormData
+        + handleInputChange()
+        + handleSubmit(e)
+        + render(): JSX
+    }
+    
+    class "AvatarSelector" as AvatarSelector <<Function Component>> {
+        + props: currentAvatar, onAvatarChange, userId
+        + useState: avatar, setAvatar, previewUrl, setPreviewUrl, isUploading, setIsUploading
+        + useRef: fileInputRef
+        + handleFileSelect()
+        + uploadAvatar()
+        + render(): JSX
+    }
+    
+    class "ProfileStatistics" as ProfileStatistics <<Function Component>> {
+        + props: userId, showDetailed
+        + useState: stats, setStats, isLoading, setIsLoading
+        + useEffect()
+        + fetchStatistics()
+        + render(): JSX
+    }
+    
+    class "useProfile" as useProfile <<Custom Hook>> {
+        + useState: profile, setProfile, isLoading, setIsLoading, error, setError
+        + useCallback: fetchProfile, updateProfile, uploadAvatar
+        + useEffect()
+        + return: { profile, isLoading, error, fetchProfile, updateProfile, uploadAvatar }
+    }
+    
+    class "ProfileApiService" as ProfileApiService <<Utility>> {
+        + getProfile(userId)
+        + updateProfile(profileData)
+        + uploadAvatar(userId, file)
+        + getProfileStatistics(userId)
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class ProfileController {
+        - profileService: ProfileService
+        - userService: UserService
+        - fileStorageService: FileStorageService
+        + getProfile(Long): ResponseEntity<ProfileDTO>
+        + updateProfile(ProfileDTO): ResponseEntity<ProfileDTO>
+        + uploadAvatar(Long, MultipartFile): ResponseEntity<String>
+        + getProfileStatistics(Long): ResponseEntity<ProfileStatisticsDTO>
+    }
+    
+    class ProfileService {
+        - profileRepository: ProfileRepository
+        - userRepository: UserRepository
+        - statisticsService: StatisticsService
+        + getProfileByUserId(Long): Profile
+        + updateProfile(ProfileDTO): Profile
+        + saveAvatar(Long, String): void
+        + getProfileStatistics(Long): ProfileStatistics
+    }
+    
+    class FileStorageService {
+        - fileStorageLocation: Path
+        - maxFileSize: long
+        - allowedExtensions: List<String>
+        + storeFile(MultipartFile): String
+        + loadFileAsResource(String): Resource
+        + deleteFile(String): boolean
+        + validateFile(MultipartFile): void
+    }
+    
+    class ProfileRepository {
+        + findByUserId(Long): Optional<Profile>
+        + save(Profile): Profile
+    }
+    
+    class Profile {
+        - id: Long
+        - userId: Long
+        - displayName: String
+        - bio: String
+        - avatarUrl: String
+        - preferences: Map<String, String>
+        - lastUpdated: Date
+    }
+    
+    class ProfileDTO {
+        + userId: Long
+        + username: String
+        + displayName: String
+        + bio: String
+        + avatarUrl: String
+        + preferences: Map<String, String>
+        + lastUpdated: Date
+    }
+    
+    class ProfileStatistics {
+        - id: Long
+        - userId: Long
+        - gamesPlayed: int
+        - gamesWon: int
+        - gamesLost: int
+        - winRate: double
+        - averageGameDuration: long
+        - favoriteCards: List<CardUsageStats>
+    }
+}
+
+' Frontend relationships
+ProfilePage --> ProfileForm : uses
+ProfilePage --> AvatarSelector : uses
+ProfilePage --> ProfileStatistics : uses
+ProfilePage ..> useProfile : uses
+useProfile ..> ProfileApiService : uses
+
+' Backend relationships
+ProfileController --> ProfileService : uses
+ProfileController --> FileStorageService : uses
+ProfileService --> ProfileRepository : uses
+ProfileService --> StatisticsService : uses
+ProfileRepository --> Profile : manages
+
+@enduml

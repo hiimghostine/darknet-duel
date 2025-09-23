@@ -1,0 +1,8 @@
+@startuml
+start
+:Navigate to lobby browser page;
+:Retrieve list of available lobbies;
+:Display lobby list;
+:Player selects a lobby or leaves page;
+stop
+@enduml 

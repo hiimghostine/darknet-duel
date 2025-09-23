@@ -1,0 +1,16 @@
+Use Case: System Logs and Audit Trails
+
+Description: Allows admins and moderators to view, filter, and search system logs and audit trails for security, moderation, and troubleshooting purposes. The system records all relevant actions and provides tools for log analysis.
+
+Actors: Admin, Moderator
+
+Preconditions: Admin or moderator is authenticated and has appropriate privileges.
+
+Main Flow:
+1. Admin/moderator accesses the system logs or audit trails interface.
+2. System displays logs and audit records.
+3. Admin/moderator applies filters or searches for specific events or users.
+4. System updates the displayed logs based on filters/search.
+5. Admin/moderator reviews log details for security or moderation purposes.
+
+Postconditions: Admins and moderators can analyze system activity and audit trails for security and moderation. 

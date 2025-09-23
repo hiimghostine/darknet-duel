@@ -1,0 +1,95 @@
+@startuml
+
+title Card Action Processing - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "CardComponent" as CardComponent {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "CardTooltip" as CardTooltip {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useCardActions" as useCardActions {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+    class "useCardTooltip" as useCardTooltip {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class CardController {
+        -attributes
+        + methods()
+    }
+
+    class CardEffectService {
+        -attributes
+        + methods()
+    }
+
+    class CardService {
+        -attributes
+        + methods()
+    }
+
+    class EffectHandler {
+        -attributes
+        + methods()
+    }
+
+    class DamageEffectHandler {
+        -attributes
+        + methods()
+    }
+
+    class BuffEffectHandler {
+        -attributes
+        + methods()
+    }
+
+    class EffectFactory {
+        -attributes
+        + methods()
+    }
+
+    class Card {
+        -attributes
+        + methods()
+    }
+
+    class CardRepository {
+        -attributes
+        + methods()
+    }
+
+}
+
+CardComponent --> useCardActions
+CardComponent --> useCardTooltip
+useCardActions --> GameContext
+useCardActions --> WebSocketContext
+CardController --> CardService
+CardController --> CardEffectService
+CardService --> CardRepository
+CardEffectService --> EffectHandler
+CardEffectService --> EffectFactory
+CardComponent ..> CardController : API calls
+
+@enduml

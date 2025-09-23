@@ -1,0 +1,93 @@
+@startuml
+title Lobby Creation - Sequence Diagram
+
+actor "User" as User
+participant "LobbyCreationForm" as Form
+participant "LobbySettings" as Settings
+participant "LobbyController" as Controller
+participant "LobbyService" as Service
+participant "LobbyCodeGenerator" as CodeGen
+participant "LobbyRepository" as Repo
+database "Database" as DB
+
+User -> Form: Click "Create Lobby"
+activate Form
+Form --> User: Show lobby creation form
+
+User -> Settings: Configure lobby settings
+activate Settings
+Settings -> Settings: updateSettings()
+Settings --> Form: Updated settings
+deactivate Settings
+
+User -> Form: Toggle private lobby
+Form -> Settings: togglePrivate()
+activate Settings
+Settings -> Settings: Update isPrivate setting
+Settings --> Form: Updated setting
+deactivate Settings
+
+User -> Form: Set player limit
+Form -> Settings: setPlayerLimit()
+activate Settings
+Settings -> Settings: Update playerLimit setting
+Settings --> Form: Updated setting
+deactivate Settings
+
+User -> Form: Click "Create" button
+Form -> Form: validateForm()
+
+alt Validation Failed
+    Form -> Form: displayErrors()
+    Form --> User: Show validation errors
+else Validation Passed
+    opt Private Lobby
+        Form -> Form: generatePrivateCode()
+    end
+    
+    Form -> Controller: POST /api/lobbies
+    activate Controller
+    Controller -> Service: createLobby(LobbyDTO, currentUser)
+    activate Service
+    
+    Service -> Service: validateLobbyData()
+    
+    opt Private Lobby
+        Service -> CodeGen: generateUniqueCode()
+        activate CodeGen
+        CodeGen -> Repo: isCodeUnique(code)
+        activate Repo
+        Repo -> DB: SELECT * FROM lobbies WHERE lobby_code = ?
+        DB --> Repo: Result
+        Repo --> CodeGen: boolean
+        deactivate Repo
+        CodeGen --> Service: unique code
+        deactivate CodeGen
+    end
+    
+    Service -> Repo: save(newLobby)
+    activate Repo
+    Repo -> DB: INSERT INTO lobbies
+    DB --> Repo: Success
+    Repo --> Service: Saved Lobby
+    deactivate Repo
+    
+    Service -> Service: Create initial LobbyMembership for host
+    Service -> Repo: save(lobbyMembership)
+    activate Repo
+    Repo -> DB: INSERT INTO lobby_memberships
+    DB --> Repo: Success
+    Repo --> Service: Saved LobbyMembership
+    deactivate Repo
+    
+    Service --> Controller: Created Lobby with code
+    deactivate Service
+    Controller --> Form: 201 Created with lobby data
+    deactivate Controller
+    
+    Form --> User: Show success, redirect to lobby waiting room
+end
+
+deactivate Form
+
+@enduml

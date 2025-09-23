@@ -1,0 +1,14 @@
+Use Case: Lobby Browser
+
+Description: Allows a player to view a list of available game lobbies. The system retrieves the current lobby list and displays it to the player in real time.
+
+Actors: Player
+
+Preconditions: Player is authenticated and on the lobby browser page.
+
+Main Flow:
+1. Player navigates to the lobby browser.
+2. System retrieves the list of available lobbies.
+3. Player views the lobby list.
+
+Postconditions: Player sees an up-to-date list of available lobbies. 

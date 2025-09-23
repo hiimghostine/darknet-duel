@@ -1,0 +1,17 @@
+Use Case: Match History Storage and Browsing
+
+Description: The system stores completed match history and enables players to browse their past matches and view detailed information about each match. The system retrieves and displays match history from the backend.
+
+Actors: Player, System
+
+Preconditions: Player has completed at least one match and is authenticated.
+
+Main Flow:
+1. System stores match history after each completed game.
+2. Player navigates to the match history page.
+3. System retrieves the player's match history from the backend.
+4. Player browses the list of past matches.
+5. Player selects a match to view detailed information.
+6. System displays match details (result, participants, stats, etc.).
+
+Postconditions: Player can review and analyze their match history and details. 

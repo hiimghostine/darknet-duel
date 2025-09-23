@@ -1,0 +1,8 @@
+@startuml
+start
+:System receives updated game state from server;
+:Frontend UI updates game state display;
+:Frontend displays visual feedback (animations, highlights);
+:Player views updated game state and effects;
+stop
+@enduml 

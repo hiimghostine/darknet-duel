@@ -1,0 +1,146 @@
+@startuml
+
+title State Synchronization - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "useGameState" as useGameState <<Custom Hook>> {
+        + useState: currentState, setCurrentState, lastSyncTime, setLastSyncTime, isLoading, setIsLoading, updateQueue, setUpdateQueue
+        + useContext: WebSocketContext
+        + useRef(): gameId
+        + useEffect()
+        + useCallback: initialize, applyUpdate, getPendingUpdates, getGameState, reconcileState
+        + return: { currentState, isLoading, initialize, applyUpdate, getGameState, reconcileState }
+    }
+    
+    class "useWebSocket" as useWebSocket <<Custom Hook>> {
+        + useState: connected, setConnected, subscriptions, setSubscriptions, reconnectAttempts, setReconnectAttempts
+        + useRef(): stompClient
+        + useEffect()
+        + useCallback: connect, disconnect, subscribe, unsubscribe, sendMessage, isConnected
+        + return: { connected, connect, disconnect, subscribe, unsubscribe, sendMessage }
+    }
+    
+    class "WebSocketProvider" as WebSocketProvider <<Function Component>> {
+        + props: children, url
+        + useWebSocket(): webSocket
+        + value: { connected, connect, disconnect, subscribe, unsubscribe, sendMessage }
+        + render(): JSX
+    }
+    
+    class "WebSocketContext" as WebSocketContext <<React Context>> {
+        + defaultValue: { connected, connect, disconnect, subscribe, unsubscribe, sendMessage }
+    }
+    
+    class "GameStateProvider" as GameStateProvider <<Function Component>> {
+        + props: children, gameId
+        + useGameState(): gameState
+        + useEffect()
+        + value: { gameState, isLoading, applyUpdate }
+        + render(): JSX
+    }
+    
+    class "GameStateContext" as GameStateContext <<React Context>> {
+        + defaultValue: { gameState, isLoading, applyUpdate }
+    }
+    
+    class "GameRenderer" as GameRenderer <<Function Component>> {
+        + props: children
+        + useContext: GameStateContext: { gameState }
+        + useState: renderedElements, setRenderedElements
+        + useEffect()
+        + updateElement(elementId, data)
+        + animateChanges(previousState, currentState)
+        + render(): JSX
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class GameSocketHandler {
+        - sessionRegistry: PlayerSessionRegistry
+        - gameStateService: GameStateService
+        + afterConnectionEstablished(session: WebSocketSession): void
+        + handleTextMessage(session: WebSocketSession, message: TextMessage): void
+        + afterConnectionClosed(session: WebSocketSession, status: CloseStatus): void
+    }
+    
+    class GameStateService {
+        - gameRepository: GameRepository
+        - messageBroker: MessageBroker
+        - stateDiffGenerator: StateDiffGenerator
+        + getGameState(gameId: long): GameState
+        + applyPlayerAction(gameId: long, playerId: long, action: PlayerAction): void
+        + broadcastGameState(gameId: long, fullSync: boolean): void
+        + generateStateDiff(oldState: GameState, newState: GameState): StateDiff
+    }
+    
+    class MessageBroker {
+        - simpMessagingTemplate: SimpMessagingTemplate
+        + sendToUser(userId: long, destination: string, payload: Object): void
+        + sendToGame(gameId: long, destination: string, payload: Object): void
+        + broadcastGameUpdate(gameId: long, update: Object): void
+    }
+    
+    class StateDiffGenerator {
+        + generateDiff(oldState: Object, newState: Object): Object
+        + applyDiff(baseState: Object, diff: Object): Object
+    }
+    
+    class GameRepository {
+        + findById(gameId: long): Optional<Game>
+        + save(game: Game): Game
+        + updateGameState(gameId: long, serializedState: String): void
+    }
+    
+    class Game {
+        - id: long
+        - lobbyId: long
+        - players: List<Player>
+        - currentTurn: int
+        - currentPlayer: long
+        - gamePhase: GamePhase
+        - actionPointsRemaining: int
+        - startTime: Date
+        - lastUpdateTime: Date
+        - state: GameState
+    }
+    
+    class GameState {
+        - gameId: long
+        - players: Map<Long, PlayerState>
+        - cards: Map<Long, CardState>
+        - infrastructureNodes: Map<Long, NodeState>
+        - connections: List<Connection>
+        - securityPoints: Map<String, Integer>
+        - version: long
+    }
+    
+    enum GamePhase {
+        SETUP
+        PLAYING
+        PAUSED
+        GAME_OVER
+    }
+}
+
+' Frontend relationships
+WebSocketProvider --> WebSocketContext : provides
+GameStateProvider --> GameStateContext : provides
+GameRenderer --> GameStateContext : consumes
+useGameState --> WebSocketContext : consumes
+GameStateProvider --> useGameState : uses
+WebSocketProvider --> useWebSocket : uses
+
+' Backend relationships
+GameSocketHandler --> GameStateService : uses
+GameStateService --> GameRepository : uses
+GameStateService --> MessageBroker : sends messages via
+GameStateService --> StateDiffGenerator : uses
+GameRepository --> Game : manages
+Game *-- GameState : contains
+Game --> GamePhase : has
+
+' Cross-layer relationships
+useWebSocket ..> GameSocketHandler : connects to
+useGameState ..> GameState : synchronizes with
+
+@enduml

@@ -1,0 +1,140 @@
+@startuml
+
+title Disconnection Handling - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "useConnectionMonitor" as useConnectionMonitor <<Custom Hook>> {
+        + useState: connectionStatus, setConnectionStatus, lastPingResponse, setLastPingResponse
+        + useContext: WebSocketContext
+        + useRef(): pingIntervalId, connectionListeners
+        + useEffect()
+        + useCallback: startMonitoring, stopMonitoring, sendPing, checkConnection, addConnectionListener, getConnectionStatus
+        + return: { connectionStatus, startMonitoring, stopMonitoring, checkConnection, addConnectionListener }
+    }
+    
+    class "ReconnectionDialog" as ReconnectionDialog <<Function Component>> {
+        + props: isVisible, attemptCount, maxAttempts, status, onCancel
+        + renderProgressBar()
+        + handleCancel()
+        + render(): JSX
+    }
+    
+    class "ConnectionStatusIndicator" as ConnectionStatusIndicator <<Function Component>> {
+        + props: status
+        + useState: lastUpdate, setLastUpdate
+        + useEffect()
+        + render(): JSX
+    }
+    
+    class "ConnectionProvider" as ConnectionProvider <<Function Component>> {
+        + props: children
+        + useConnectionMonitor(): connectionMonitor
+        + useState: reconnectDialogVisible, setReconnectDialogVisible, reconnectAttempts, setReconnectAttempts, reconnectStatus, setReconnectStatus
+        + useEffect()
+        + handleConnectionChange(status)
+        + handleReconnectCancel()
+        + value: { connectionStatus, checkConnection }
+        + render(): JSX
+    }
+    
+    class "ConnectionContext" as ConnectionContext <<React Context>> {
+        + defaultValue: { connectionStatus, checkConnection }
+    }
+    
+    class "WebSocketContext" as WebSocketContext <<React Context>> {
+        + defaultValue: { connect, disconnect, send, subscribe, connected }
+    }
+    
+    enum ConnectionStatus {
+        CONNECTED
+        CONNECTING
+        UNSTABLE
+        RECONNECTING
+        DISCONNECTED
+        FAILED
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class DisconnectionHandler {
+        - playerSessionRegistry: PlayerSessionRegistry
+        - gamePauseService: GamePauseService
+        - gameStateService: GameStateService
+        - reconnectionTimeoutMs: long
+        + handleDisconnection(sessionId: String): void
+        + processReconnection(sessionId: String, userId: long): void
+        + checkTimeoutForSession(sessionId: String): void
+        + notifyPlayersOfDisconnection(gameId: long, playerId: long): void
+    }
+    
+    class GamePauseService {
+        - gameRepository: GameRepository
+        - messageBroker: MessageBroker
+        - maxPauseTimeSeconds: int
+        + pauseGame(gameId: long, reason: PauseReason): void
+        + resumeGame(gameId: long): void
+        + checkAutomaticResume(gameId: long): boolean
+        + isPaused(gameId: long): boolean
+        + getPauseReason(gameId: long): PauseReason
+        + getPauseTime(gameId: long): long
+    }
+    
+    class PlayerSessionRegistry {
+        - sessions: Map<String, PlayerSession>
+        - userIdToSession: Map<Long, String>
+        - scheduledExecutor: ScheduledExecutorService
+        + registerSession(sessionId: String, userId: long, gameId: long): void
+        + removeSession(sessionId: String): void
+        + getSessionByUserId(userId: long): Optional<PlayerSession>
+        + updateConnectionStatus(sessionId: String, status: ConnectionStatus): void
+        + scheduleHeartbeatCheck(): void
+        + findTimeoutSessions(): List<PlayerSession>
+    }
+    
+    class PlayerSession {
+        - sessionId: String
+        - userId: long
+        - gameId: long
+        - connectionStatus: ConnectionStatus
+        - lastHeartbeat: Date
+        - disconnectionTime: Date
+        - reconnectionAttempts: int
+        + updateHeartbeat(): void
+        + updateConnectionStatus(status: ConnectionStatus): void
+        + getTimeSinceLastHeartbeat(): long
+        + getDisconnectionDuration(): long
+        + incrementReconnectionAttempt(): int
+    }
+    
+    enum PauseReason {
+        PLAYER_DISCONNECTED
+        PLAYER_REQUESTED
+        SYSTEM_MAINTENANCE
+        ERROR
+    }
+    
+    enum ConnectionStatus {
+        CONNECTED
+        DISCONNECTED
+        RECONNECTING
+    }
+}
+
+' Frontend relationships
+ConnectionProvider --> ConnectionContext : provides
+useConnectionMonitor --> WebSocketContext : consumes
+ConnectionProvider --> ReconnectionDialog : renders when needed
+ConnectionProvider --> ConnectionStatusIndicator : renders
+useConnectionMonitor -- ConnectionStatus : uses
+
+' Backend relationships
+DisconnectionHandler --> PlayerSessionRegistry : uses
+DisconnectionHandler --> GamePauseService : uses
+GamePauseService --> PauseReason : uses
+PlayerSessionRegistry *-- PlayerSession : manages
+PlayerSession -- ConnectionStatus : has
+
+' Cross-layer relationships
+useConnectionMonitor ..> DisconnectionHandler : interacts with via WebSocket
+
+@enduml

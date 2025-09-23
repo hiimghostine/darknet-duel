@@ -1,0 +1,48 @@
+@startuml
+' Class Diagram for User Registration (Transaction 1.1)
+
+package "Frontend" {
+  class RegisterForm {
+    +onSubmit()
+    +render()
+  }
+  class AuthStore {
+    +register(data)
+    +login(credentials)
+    +clearError()
+  }
+  class AuthService {
+    +register(data)
+    +login(credentials)
+    +getProfile()
+  }
+}
+
+package "Backend" {
+  class AuthController {
+    +register(req, res)
+    +login(req, res)
+    +getProfile(req, res)
+  }
+  class AuthServiceBackend {
+    +createUser(userData)
+    +findByEmailOrUsername(email, username)
+  }
+  class Account {
+    +id: string
+    +email: string
+    +username: string
+    +password: string
+    +type: AccountType
+    +isActive: boolean
+    +... (other fields)
+  }
+}
+
+RegisterForm --> AuthStore : uses
+AuthStore --> AuthService : uses
+AuthService --> AuthController : calls API
+AuthController --> AuthServiceBackend : uses
+AuthServiceBackend --> Account : persists
+
+@enduml 

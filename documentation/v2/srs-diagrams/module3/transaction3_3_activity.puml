@@ -1,0 +1,8 @@
+@startuml
+start
+:Player performs action (e.g., play card);
+:System updates game state;
+:System broadcasts updated state to all clients;
+:Clients update UI with new state;
+stop
+@enduml 

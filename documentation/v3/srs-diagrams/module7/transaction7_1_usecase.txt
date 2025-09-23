@@ -1,0 +1,17 @@
+Use Case: User Search, Ban, and Moderation
+
+Description: Allows admins and moderators to search for users, ban or unban users, and moderate user behavior (e.g., issue warnings, temporary bans). The system enforces access control and logs all moderation actions.
+
+Actors: Admin, Moderator
+
+Preconditions: Admin or moderator is authenticated and has appropriate privileges.
+
+Main Flow:
+1. Admin/moderator searches for a user by username, email, or other criteria.
+2. System displays matching user accounts.
+3. Admin/moderator selects a user and chooses an action (ban, unban, warn, etc.).
+4. System performs the selected moderation action and updates the user's status.
+5. System logs the moderation action for audit purposes.
+6. System notifies the affected user (if applicable).
+
+Postconditions: User status is updated and all moderation actions are logged for future reference. 

@@ -1,0 +1,46 @@
+@startuml
+' Sequence Diagram for Store Browsing, Item Purchase, and Application of Decoration (Transaction 6.2)
+
+actor Player
+participant StorePage as Frontend
+participant storeService as FrontendService
+participant StoreController as BackendController
+participant StoreService as BackendService
+participant PurchaseEntity as PurchaseDB
+participant AccountEntity as AccountDB
+
+== Browse Store ==
+Player -> Frontend : open Store page
+Frontend -> storeService : getStoreData()
+storeService -> StoreController : GET /api/store
+StoreController -> StoreService : getStoreData()
+StoreService --> StoreController : store categories/items
+StoreController --> storeService : store categories/items
+storeService --> Frontend : store categories/items
+Frontend --> Player : display store
+
+== Purchase Item ==
+Player -> Frontend : purchase item
+Frontend -> storeService : purchaseItem(itemId)
+storeService -> StoreController : POST /api/purchase/{itemId}
+StoreController -> StoreService : purchaseItem(userId, itemId)
+StoreService -> PurchaseEntity : create record
+StoreService -> AccountEntity : deduct currency
+AccountEntity --> StoreService : new balance
+StoreService --> StoreController : purchase result
+StoreController --> storeService : purchase result
+storeService --> Frontend : purchase result
+Frontend --> Player : show purchase result
+
+== Apply Decoration ==
+Player -> Frontend : apply decoration
+Frontend -> storeService : applyDecoration(decorationId)
+storeService -> StoreController : POST /api/account/apply/decoration/{decorationId}
+StoreController -> StoreService : applyDecoration(userId, decorationId)
+StoreService -> AccountEntity : update decoration
+AccountEntity --> StoreService : ack
+StoreService --> StoreController : result
+StoreController --> storeService : result
+storeService --> Frontend : result
+Frontend --> Player : show apply result
+@enduml 

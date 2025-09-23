@@ -1,0 +1,139 @@
+@startuml
+
+title Game Rules Enforcement - Sequence Diagram
+
+actor "Player" as Player
+participant "Client" as Client
+participant "ActionValidator\n(Frontend)" as FEValidator
+participant "PlayableCardIndicator" as CardIndicator
+participant "RuleViolationAlert" as Alert
+participant "GameSocketHandler" as SocketHandler
+participant "RuleEngine" as RuleEngine
+participant "ActionValidator\n(Backend)" as BEValidator
+participant "RuleRepository" as RuleRepo
+participant "GameStateService" as StateService
+database "Database" as DB
+
+' Initial setup - load game state and validate possible actions
+Player -> Client: Enter game / start turn
+activate Client
+Client -> FEValidator: initialize(gameState)
+activate FEValidator
+FEValidator -> FEValidator: loadRules()
+FEValidator -> FEValidator: updateValidActions()
+
+loop For each card in hand
+    FEValidator -> FEValidator: checkPlayCardValidity(cardId, null)
+    FEValidator -> CardIndicator: setPlayable(isPlayable)
+    activate CardIndicator
+    CardIndicator -> CardIndicator: updateVisualIndicator()
+    deactivate CardIndicator
+end
+deactivate FEValidator
+
+' Player attempts to play a card
+Player -> Client: Select card
+Client -> FEValidator: getValidTargetsForCard(cardId)
+activate FEValidator
+FEValidator -> FEValidator: checkRules for targeting
+FEValidator --> Client: Array of valid target IDs
+deactivate FEValidator
+
+Client -> CardIndicator: highlightValidTargets(targets)
+activate CardIndicator
+CardIndicator -> CardIndicator: visuallyIndicateTargets()
+deactivate CardIndicator
+
+' Player selects an invalid target
+Player -> Client: Select invalid target
+Client -> FEValidator: validateAction(playCard(cardId, targetId))
+activate FEValidator
+FEValidator -> FEValidator: check against client rules
+FEValidator --> Client: ValidationResult(valid=false, message, severity)
+deactivate FEValidator
+
+Client -> Alert: show(message, severity)
+activate Alert
+Alert -> Alert: display error message
+Alert --> Player: Show rule violation message
+deactivate Alert
+
+' Player selects a valid target
+Player -> Client: Select valid target
+Client -> FEValidator: validateAction(playCard(cardId, targetId))
+activate FEValidator
+FEValidator -> FEValidator: check against client rules
+FEValidator --> Client: ValidationResult(valid=true)
+deactivate FEValidator
+
+' Send action to server for authoritative validation
+Client -> SocketHandler: PLAY_CARD message (cardId, targetId)
+activate SocketHandler
+SocketHandler -> RuleEngine: validateAction(gameId, action)
+activate RuleEngine
+
+RuleEngine -> RuleRepo: getApplicableRules(gameId, CARD_PLAY)
+activate RuleRepo
+RuleRepo -> DB: SELECT * FROM game_rules WHERE game_id = ? AND rule_type = ?
+DB --> RuleRepo: List of applicable rules
+RuleRepo --> RuleEngine: List<GameRule>
+deactivate RuleRepo
+
+RuleEngine -> BEValidator: validateCardPlay(gameId, playerId, cardId, targetId)
+activate BEValidator
+BEValidator -> StateService: getGameState(gameId)
+StateService -> DB: SELECT * FROM games WHERE id = ?
+DB --> StateService: Game state
+StateService --> BEValidator: Current game state
+
+' Complex validation logic
+BEValidator -> BEValidator: Check if it's player's turn
+BEValidator -> BEValidator: Check if in correct phase
+BEValidator -> BEValidator: Check if player has card
+BEValidator -> BEValidator: Check if player has enough action points
+BEValidator -> BEValidator: Check if target is valid
+BEValidator --> RuleEngine: ValidationResult
+deactivate BEValidator
+
+alt Valid Action
+    RuleEngine -> StateService: applyCardPlay(gameId, playerId, cardId, targetId)
+    StateService -> DB: UPDATE game state
+    StateService --> RuleEngine: Updated game state
+    RuleEngine --> SocketHandler: ValidationResult(valid=true)
+    SocketHandler -> Client: CARD_PLAYED message (success)
+    SocketHandler -> SocketHandler: Broadcast state update to all players
+else Invalid Action (Server caught something client missed)
+    RuleEngine -> RuleEngine: createRuleViolation(gameId, playerId, rule, action)
+    RuleEngine -> RuleEngine: logViolation(violation)
+    RuleEngine -> DB: INSERT INTO rule_violations
+    RuleEngine --> SocketHandler: ValidationResult(valid=false, message, severity)
+    SocketHandler -> Client: ACTION_REJECTED message (with details)
+    
+    Client -> Alert: show(message, severity)
+    activate Alert
+    Alert -> Alert: display server error message
+    Alert --> Player: Show server-side rule violation
+    deactivate Alert
+end
+deactivate RuleEngine
+deactivate SocketHandler
+
+' Continuous validation as game state changes
+note over Player, DB: Game state changes (other player's turn, etc.)
+
+Client -> SocketHandler: Request valid actions update
+activate SocketHandler
+SocketHandler -> RuleEngine: getValidActionsForPlayer(gameId, playerId)
+activate RuleEngine
+RuleEngine -> BEValidator: computeValidActions(gameId, playerId)
+BEValidator -> StateService: getGameState(gameId)
+StateService --> BEValidator: Current game state
+BEValidator --> RuleEngine: List<ValidAction>
+deactivate RuleEngine
+SocketHandler --> Client: VALID_ACTIONS message
+deactivate SocketHandler
+
+Client -> FEValidator: updateValidActions(serverActions)
+FEValidator -> CardIndicator: updateAllCardIndicators()
+
+@enduml

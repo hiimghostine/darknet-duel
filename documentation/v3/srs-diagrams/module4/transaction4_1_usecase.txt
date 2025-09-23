@@ -1,0 +1,17 @@
+Use Case: Card Play, Targeting, and Effect Resolution
+
+Description: Allows a player to play a card from their hand, select valid targets (if required), and have the system resolve the card's effects according to game rules. The system validates the action, applies effects, and updates the game state.
+
+Actors: Player
+
+Preconditions: Game session is active, player has cards in hand, and it is the player's turn.
+
+Main Flow:
+1. Player selects a card from their hand to play.
+2. System checks if the card can be played (AP, rules, etc.).
+3. If the card requires a target, player selects valid target(s).
+4. System validates the target(s).
+5. System resolves the card's effect(s) and updates the game state.
+6. System notifies all players of the action and its outcome.
+
+Postconditions: Card is played, effects are resolved, and game state is updated for all players. 

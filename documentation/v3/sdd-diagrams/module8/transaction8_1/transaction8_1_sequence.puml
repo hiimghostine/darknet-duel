@@ -1,0 +1,28 @@
+@startuml
+skinparam shadowing true
+actor User
+participant App
+participant AuthStore
+participant FirstTimeFlow
+participant LoreVideo
+participant ProfileService
+
+User -> App : Login
+App -> AuthStore : get user
+App -> FirstTimeFlow : startIfNeeded(user)
+FirstTimeFlow -> ProfileService : getPreferences(userId)
+ProfileService --> FirstTimeFlow : preferences
+alt firstTimeComplete == false
+  FirstTimeFlow -> LoreVideo : render & play
+  User -> LoreVideo : watch/skip
+  LoreVideo -> FirstTimeFlow : onComplete/skip
+  FirstTimeFlow -> ProfileService : setFirstTimeComplete(userId)
+  ProfileService --> FirstTimeFlow : ok
+  FirstTimeFlow -> AuthStore : setFirstTimeComplete(true)
+  FirstTimeFlow -> App : launchTutorial()
+else already complete
+  FirstTimeFlow -> App : continue normally
+end
+@enduml
+
+

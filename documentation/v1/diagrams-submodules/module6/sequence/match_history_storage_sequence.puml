@@ -1,0 +1,236 @@
+@startuml
+
+title Match History Storage - Sequence Diagram
+
+actor "Player" as Player
+participant "MatchHistoryBrowser" as Browser
+participant "HistoryFilterBar" as FilterBar
+participant "MatchDetailViewer" as DetailViewer
+participant "ReplayViewer" as Replay
+participant "ApiService" as ApiService
+participant "HistoryController" as HistoryCtrl
+participant "MatchHistoryService" as HistoryService
+participant "GameLogRepository" as LogRepo
+participant "ExportService" as ExportSvc
+database "Database" as DB
+
+' Player opens match history
+Player -> Browser: Navigate to match history
+activate Browser
+Browser -> Browser: initialize(userId)
+Browser -> ApiService: getMatchHistory(userId)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/players/{userId}/matches
+activate HistoryCtrl
+HistoryCtrl -> HistoryService: getMatchHistoryForUser(userId)
+activate HistoryService
+
+' Retrieve match history from database
+HistoryService -> DB: SELECT * FROM match_history WHERE user_id = ?
+DB --> HistoryService: Match history records
+HistoryService -> HistoryService: formatMatchForDisplay()
+HistoryService --> HistoryCtrl: List<MatchHistoryDTO>
+deactivate HistoryService
+HistoryCtrl --> ApiService: MatchHistoryDTO JSON
+deactivate HistoryCtrl
+ApiService --> Browser: List<MatchHistoryDTO>
+deactivate ApiService
+
+' Display match history list
+Browser -> Browser: renderMatchList()
+Browser --> Player: Display match history
+deactivate Browser
+
+' Player applies filters
+Player -> FilterBar: Select "Show Wins Only"
+activate FilterBar
+FilterBar -> FilterBar: setFilter("result", WIN)
+FilterBar -> FilterBar: applyFilters()
+FilterBar -> Browser: applyFilters(filters)
+deactivate FilterBar
+activate Browser
+
+' Query with filters
+Browser -> ApiService: getMatchHistoryFiltered(userId, filters)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/players/{userId}/matches/filtered
+activate HistoryCtrl
+HistoryCtrl -> HistoryService: getFilteredMatchHistory(userId, filters)
+activate HistoryService
+
+' Database query with filters
+HistoryService -> DB: SELECT * FROM match_history WHERE user_id = ? AND result = 'WIN'
+DB --> HistoryService: Filtered matches
+HistoryService -> HistoryService: formatMatchForDisplay()
+HistoryService --> HistoryCtrl: Filtered List<MatchHistoryDTO>
+deactivate HistoryService
+HistoryCtrl --> ApiService: Filtered MatchHistoryDTO JSON
+deactivate HistoryCtrl
+ApiService --> Browser: Filtered List<MatchHistoryDTO>
+deactivate ApiService
+
+' Update display with filtered results
+Browser -> Browser: updateMatchList()
+Browser --> Player: Display filtered matches
+deactivate Browser
+
+' Player selects a match to view details
+Player -> Browser: Click on match
+activate Browser
+Browser -> DetailViewer: openMatchDetail(matchId)
+deactivate Browser
+activate DetailViewer
+
+' Load match details
+DetailViewer -> ApiService: getMatchDetails(matchId)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/matches/{matchId}
+activate HistoryCtrl
+HistoryCtrl -> HistoryService: getMatchDetails(matchId)
+activate HistoryService
+
+' Fetch detailed match data
+HistoryService -> DB: SELECT * FROM match_history WHERE id = ?
+DB --> HistoryService: Match basic info
+
+HistoryService -> DB: SELECT * FROM game_events WHERE game_id = ? AND is_key_event = true
+DB --> HistoryService: Key events
+
+HistoryService -> DB: SELECT * FROM cards_played WHERE game_id = ?
+DB --> HistoryService: Cards played data
+
+HistoryService -> DB: SELECT * FROM turn_data WHERE game_id = ?
+DB --> HistoryService: Turn by turn data
+
+HistoryService -> DB: SELECT * FROM infrastructure_control_changes WHERE game_id = ?
+DB --> HistoryService: Infrastructure control data
+
+HistoryService -> DB: SELECT * FROM chat_messages WHERE game_id = ?
+DB --> HistoryService: Chat log
+
+' Assemble match details
+HistoryService -> HistoryService: assembleMatchDetail()
+HistoryService -> HistoryService: formatDetailForDisplay()
+HistoryService --> HistoryCtrl: MatchDetailDTO
+deactivate HistoryService
+HistoryCtrl --> ApiService: MatchDetailDTO JSON
+deactivate HistoryCtrl
+ApiService --> DetailViewer: MatchDetailDTO
+deactivate ApiService
+
+' Render match details
+DetailViewer -> DetailViewer: renderMatchDetails()
+DetailViewer --> Player: Display match details
+deactivate DetailViewer
+
+' Player toggles a section
+Player -> DetailViewer: Toggle "Key Events" section
+activate DetailViewer
+DetailViewer -> DetailViewer: toggleSection("keyEvents")
+DetailViewer -> DetailViewer: renderSection("keyEvents")
+DetailViewer --> Player: Expanded key events section
+deactivate DetailViewer
+
+' Player requests replay
+Player -> DetailViewer: Click "View Replay"
+activate DetailViewer
+DetailViewer -> Replay: requestReplay(matchId)
+deactivate DetailViewer
+activate Replay
+
+' Load replay data
+Replay -> ApiService: getReplayData(matchId)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/matches/{matchId}/replay
+activate HistoryCtrl
+HistoryCtrl -> HistoryService: createReplayData(matchId)
+activate HistoryService
+
+' Fetch complete game log
+HistoryService -> LogRepo: findByGameId(gameId)
+activate LogRepo
+LogRepo -> DB: SELECT * FROM game_logs WHERE game_id = ?
+DB --> LogRepo: Game log
+LogRepo -> DB: SELECT * FROM game_log_entries WHERE game_log_id = ?
+DB --> LogRepo: Game log entries
+LogRepo --> HistoryService: Complete GameLog
+deactivate LogRepo
+
+' Get initial game state
+HistoryService -> DB: SELECT * FROM game_states WHERE game_id = ? AND turn_number = 0
+DB --> HistoryService: Initial game state
+
+' Get final game state
+HistoryService -> DB: SELECT * FROM game_states WHERE game_id = ? ORDER BY turn_number DESC LIMIT 1
+DB --> HistoryService: Final game state
+
+' Get player actions
+HistoryService -> DB: SELECT * FROM player_actions WHERE game_id = ? ORDER BY turn_number, timestamp
+DB --> HistoryService: Player actions
+
+' Get state changes
+HistoryService -> DB: SELECT * FROM state_changes WHERE game_id = ? ORDER BY turn_number, timestamp
+DB --> HistoryService: State changes
+
+' Assemble replay data
+HistoryService -> HistoryService: assembleReplayData()
+HistoryService --> HistoryCtrl: ReplayData
+deactivate HistoryService
+HistoryCtrl --> ApiService: ReplayData JSON
+deactivate HistoryCtrl
+ApiService --> Replay: ReplayData
+deactivate ApiService
+
+' Initialize replay viewer
+Replay -> Replay: initializeReplay()
+Replay -> Replay: setInitialGameState()
+Replay -> Replay: buildTimelineControls()
+Replay --> Player: Display replay viewer
+deactivate Replay
+
+' Player controls replay
+Player -> Replay: Click Play
+activate Replay
+Replay -> Replay: play()
+Replay -> Replay: startReplaySequence()
+Replay --> Player: Playing replay
+deactivate Replay
+
+Player -> Replay: Drag timeline slider
+activate Replay
+Replay -> Replay: setTurn(turnNumber)
+Replay -> Replay: renderGameStateAtTurn(turnNumber)
+Replay --> Player: Game state at selected turn
+deactivate Replay
+
+' Player exports match history
+Player -> Browser: Click "Export History" (CSV)
+activate Browser
+Browser -> ApiService: exportMatchHistory(userId, "CSV")
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/players/{userId}/export?format=CSV
+activate HistoryCtrl
+HistoryCtrl -> HistoryService: getMatchHistoryForUser(userId)
+activate HistoryService
+HistoryService -> DB: SELECT * FROM match_history WHERE user_id = ?
+DB --> HistoryService: Match history records
+HistoryService --> HistoryCtrl: List<MatchHistory>
+deactivate HistoryService
+
+HistoryCtrl -> ExportSvc: exportToCsv(matchHistoryList)
+activate ExportSvc
+ExportSvc -> ExportSvc: formatMatchHistoryForCsv()
+ExportSvc -> ExportSvc: generateCsvFile()
+ExportSvc --> HistoryCtrl: CSV byte[]
+deactivate ExportSvc
+
+HistoryCtrl --> ApiService: CSV file
+deactivate HistoryCtrl
+ApiService --> Browser: CSV file
+deactivate ApiService
+
+Browser -> Browser: triggerDownload(csvFile)
+Browser --> Player: Download CSV file
+deactivate Browser
+
+@enduml

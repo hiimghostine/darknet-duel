@@ -1,0 +1,16 @@
+@startuml
+start
+:Player initiates game creation;
+:System verifies lobby readiness;
+if (Lobby ready?) then (yes)
+  :Create game session;
+  :Assign player roles;
+  :Shuffle decks and deal hands;
+  :Initialize game board and state;
+  :Notify all players game is ready;
+  stop
+else (no)
+  :Show error (not enough players/settings invalid);
+  stop
+endif
+@enduml 

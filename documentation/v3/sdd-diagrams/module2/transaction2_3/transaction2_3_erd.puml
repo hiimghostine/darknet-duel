@@ -1,0 +1,22 @@
+@startuml
+' Entity-Relationship Diagram for Real-Time Lobby Updates (Transaction 2.3)
+
+entity "matches" as Match {
+  * matchID : string <<PK>>
+  * gameName : string
+  * players : Player[]
+  * setupData : object
+  * metadata : object
+  * state : object
+}
+
+entity "players" as Player {
+  * id : int
+  * name : string
+  * isConnected : boolean
+  * left : boolean
+  * data : object
+}
+
+Match ||--o{ Player : has
+@enduml 

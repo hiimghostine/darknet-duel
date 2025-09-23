@@ -1,0 +1,34 @@
+@startuml
+' Sequence Diagram for Game State Persistence and Recovery (Transaction 3.5)
+
+actor Player
+participant GameClient as GC
+participant useGameConnection as Conn
+participant boardgameioServer as Server
+participant LobbyCleanupService as Cleanup
+
+Player -> GC: Open game
+GC -> Conn: connectToServer()
+Conn -> Server: Socket.IO connect
+Server -> Conn: Connection established
+Conn -> GC: receiveGameState()
+GC -> GC: renderGameBoard()
+
+alt Disconnection and Reconnection
+  Server -> Conn: disconnect event
+  Conn -> GC: connectionStatus = disconnected
+  Player -> Conn: attemptReconnect() (background)
+  Conn -> Server: Socket.IO reconnect
+  Server -> Conn: Connection re-established
+  Server -> Conn: serve latest game state
+  Conn -> GC: receiveGameState()
+  GC -> GC: renderGameBoard()
+end
+
+alt Game completed or abandoned
+  Server -> Cleanup: removeCompletedOrAbandonedGame()
+  Cleanup -> Server: Game removed from storage
+  Server -> Conn: notify game removal
+  Conn -> GC: updateUI()
+end
+@enduml 

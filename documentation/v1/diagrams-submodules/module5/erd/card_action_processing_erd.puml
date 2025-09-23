@@ -1,0 +1,113 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Card Action Processing - Entity Relationship Diagram
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+    category ENUM('NETWORK', 'SOCIAL', 'MALWARE', 'WEB') not_null
+    action_point_cost INT not_null
+    description TEXT not_null
+    effects JSON not_null
+    image_url VARCHAR(255)
+    is_reactive BOOLEAN not_null
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP
+}
+
+table(card_effects) {
+    primary_key(id) BIGINT
+    foreign_key(card_id) BIGINT not_null
+    effect_type VARCHAR(50) not_null
+    target_type VARCHAR(50) not_null
+    value INT
+    duration INT
+    conditions JSON
+    priority INT not_null
+}
+
+table(player_cards) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    location ENUM('HAND', 'DECK', 'DISCARD', 'PLAY_AREA') not_null
+    position INT
+    is_playable BOOLEAN not_null
+    drawn_at TIMESTAMP
+    played_at TIMESTAMP
+}
+
+table(card_played_logs) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    foreign_key(target_id) BIGINT
+    target_type VARCHAR(50)
+    played_at TIMESTAMP not_null
+    action_points_spent INT not_null
+    turn_number INT not_null
+    effect_result JSON
+}
+
+table(game_decks) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    deck_type ENUM('MAIN', 'INFRASTRUCTURE', 'SPECIAL') not_null
+    cards_json JSON not_null
+    shuffle_count INT not_null
+    created_at TIMESTAMP not_null
+}
+
+table(card_effect_results) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(card_played_log_id) BIGINT not_null
+    foreign_key(target_id) BIGINT not_null
+    target_type VARCHAR(50) not_null
+    effect_type VARCHAR(50) not_null
+    value_applied INT not_null
+    state_before JSON
+    state_after JSON
+    applied_at TIMESTAMP not_null
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    current_player_id BIGINT not_null
+    current_phase ENUM('DRAW', 'ACTION', 'END') not_null
+    current_turn INT not_null
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    action_points INT not_null
+    hand_size INT not_null
+}
+
+' Relationships
+cards ||--o{ card_effects : "defines"
+cards ||--o{ player_cards : "instance of"
+cards ||--o{ card_played_logs : "played as"
+player_cards }o--|| players : "held by"
+player_cards }o--|| games : "part of"
+card_played_logs }o--|| players : "performed by"
+card_played_logs }o--|| games : "recorded in"
+card_played_logs ||--o{ card_effect_results : "produced"
+game_decks }o--|| games : "belongs to"
+game_decks }o--|| players : "owned by"
+games ||--o{ players : "has"
+
+@enduml

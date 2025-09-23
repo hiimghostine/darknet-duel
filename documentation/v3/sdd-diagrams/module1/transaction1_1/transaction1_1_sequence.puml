@@ -1,0 +1,32 @@
+@startuml
+' Sequence Diagram for User Registration (Transaction 1.1)
+
+actor User
+participant RegisterForm as RF
+participant AuthStore as AS
+participant AuthService as FS
+participant "API /auth/register" as API
+participant AuthController as AC
+participant AuthServiceBackend as BS
+participant Account as DB
+
+User -> RF: Fill registration form
+User -> RF: Click submit
+RF -> AS: register(data)
+AS -> FS: register(data)
+FS -> API: POST /auth/register {email, username, password}
+API -> AC: register(req, res)
+AC -> BS: findByEmailOrUsername(email, username)
+BS -> DB: Query for existing user
+DB --> BS: Result (null or user)
+BS --> AC: Return result
+AC -> BS: createUser(userData)
+BS -> DB: Insert new user
+DB --> BS: New user
+BS --> AC: Return new user
+AC --> API: Return user (no password)
+API --> FS: Response (success or error)
+FS --> AS: Response
+AS --> RF: Response
+RF --> User: Show result (success/error)
+@enduml 

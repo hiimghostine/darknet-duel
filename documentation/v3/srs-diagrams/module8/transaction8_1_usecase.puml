@@ -1,0 +1,13 @@
+@startuml
+left to right direction
+actor User
+rectangle "First-Time Experience" {
+  usecase "Play Lore Video" as UC_Play
+  usecase "Skip Lore Video" as UC_Skip
+  usecase "Mark First-Time Complete" as UC_Complete
+}
+User -- UC_Play
+User -- UC_Skip
+UC_Play --> UC_Complete : <<includes>>
+UC_Skip --> UC_Complete : <<includes>>
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+' Entity-Relationship Diagram for Match Result Display (Victory/Defeat, Win Condition) (Transaction 5.1)
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * role : enum (attacker, defender)
+}
+
+entity "matches" as Match {
+  * id : string <<PK>>
+  * startTime : datetime
+  * endTime : datetime
+  * winner : string
+  * winReason : string
+  * gameStats : object
+}
+
+entity "game_state" as GameState {
+  * id : string <<PK>>
+  * matchId : string <<FK>>
+  * winner : string
+  * winReason : string
+  * gameStats : object
+}
+
+entity "result" as Result {
+  * id : string <<PK>>
+  * matchId : string <<FK>>
+  * winner : string
+  * winReason : string
+  * statistics : object
+}
+
+entity "statistics" as Statistics {
+  * id : string <<PK>>
+  * matchId : string <<FK>>
+  * duration : int
+  * cardsPlayed : int
+  * infrastructureChanged : int
+}
+
+Match ||--o{ Player : has
+Match ||--|| GameState : has
+Match ||--|| Result : has
+Result ||--|| Statistics : has
+@enduml 

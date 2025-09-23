@@ -1,0 +1,49 @@
+@startuml
+' Entity-Relationship Diagram for Turn-Based Gameplay, AP Allocation, Card Play, and Targeting (Transaction 3.2)
+
+entity "turns" as Turn {
+  * turnNumber : int <<PK>>
+  * gameId : string <<FK>>
+  * playerId : string <<FK>>
+  * startTime : datetime
+  * endTime : datetime
+  * actionPointsAllocated : int
+  * actionPointsUsed : int
+  * cardsPlayed : int
+  * actionsSummary : json
+}
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * gameId : string <<FK>>
+  * name : string
+  * role : enum (attacker, defender)
+  * actionPoints : int
+  * handSize : int
+}
+
+entity "cards" as Card {
+  * id : string <<PK>>
+  * name : string
+  * type : enum (attack, exploit, defense, wildcard, etc.)
+  * cost : int
+  * effects : json
+  * isReactive : boolean
+}
+
+entity "actions" as Action {
+  * id : string <<PK>>
+  * turnNumber : int <<FK>>
+  * playerId : string <<FK>>
+  * cardId : string <<FK>>
+  * actionType : string
+  * targetId : string
+  * timestamp : datetime
+  * effectResult : json
+}
+
+Turn ||--o{ Action : has
+Player ||--o{ Action : performs
+Card ||--o{ Action : used_in
+Player ||--o{ Turn : takes
+@enduml 

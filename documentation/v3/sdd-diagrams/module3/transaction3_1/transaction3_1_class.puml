@@ -1,0 +1,77 @@
+@startuml
+' Class Diagram for Game Creation and Initialization (Transaction 3.1)
+
+package "Frontend" {
+  class LobbyBrowser {
+    +render()
+    +fetchMatches()
+    +handleJoinMatch()
+    +handleCreateLobby()
+  }
+  class CreateLobby {
+    +render()
+    +handleCreateLobby()
+  }
+  class LobbyService {
+    +getMatches()
+    +createMatch()
+    +joinMatch()
+    +leaveMatch()
+    +startMatch()
+    +getMatch()
+  }
+  class BalatroGameBoard {
+    +render()
+    +initializeBoard()
+    +syncGameState()
+  }
+  class GameControls {
+    +onLeaveGame()
+    +showDebugInfo()
+  }
+  class useGameState {
+    +currentPlayerObj
+    +opponent
+    +currentPhase
+    +isAttacker
+    +isDefender
+  }
+}
+
+package "Backend (Game Server)" {
+  class DarknetDuel {
+    +setup()
+    +phases
+    +moves
+  }
+  class gameState {
+    +createInitialState()
+    +checkGameEnd()
+  }
+  class gamePhases {
+    +setupPhase
+    +playingPhase
+    +gameOverPhase
+  }
+  class playerManager {
+    +initializePlayer()
+    +initializePlayerWithData()
+    +drawStartingHand()
+  }
+  class LobbyCleanupService {
+    +start()
+    +setCleanupInterval()
+  }
+}
+
+LobbyBrowser --> LobbyService : uses
+CreateLobby --> LobbyService : uses
+LobbyService --> "Backend (Game Server)" : API/WebSocket
+BalatroGameBoard --> useGameState : uses
+BalatroGameBoard --> GameControls : uses
+"Backend (Game Server)" --> DarknetDuel : runs
+DarknetDuel --> gameState : uses
+DarknetDuel --> gamePhases : uses
+DarknetDuel --> playerManager : uses
+
+@enduml 

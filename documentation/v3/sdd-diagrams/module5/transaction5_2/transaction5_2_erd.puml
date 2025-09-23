@@ -1,0 +1,41 @@
+@startuml
+' Entity-Relationship Diagram for Player Performance Statistics (ELO, Win/Loss, Charts) (Transaction 5.2)
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * elo : int
+  * winCount : int
+  * lossCount : int
+}
+
+entity "statistics" as Statistics {
+  * id : string <<PK>>
+  * playerId : string <<FK>>
+  * elo : int
+  * winCount : int
+  * lossCount : int
+  * streak : int
+  * lastUpdated : datetime
+}
+
+entity "match_history" as MatchHistory {
+  * id : string <<PK>>
+  * playerId : string <<FK>>
+  * opponentId : string
+  * result : enum (win, loss, draw)
+  * eloChange : int
+  * date : datetime
+}
+
+entity "elo_ratings" as ELORating {
+  * id : string <<PK>>
+  * playerId : string <<FK>>
+  * rating : int
+  * date : datetime
+}
+
+Player ||--|| Statistics : has
+Player ||--o{ MatchHistory : has
+Player ||--o{ ELORating : has
+@enduml 

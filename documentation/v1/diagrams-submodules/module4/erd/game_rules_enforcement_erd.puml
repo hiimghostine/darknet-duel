@@ -1,0 +1,97 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Game Rules Enforcement - Entity Relationship Diagram
+
+table(game_rules) {
+    primary_key(id) BIGINT
+    rule_type ENUM('CARD_PLAY_RULE', 'MOVE_RULE', 'RESOURCE_RULE', 'PHASE_RULE', 'TARGET_RULE', 'GAME_STATE_RULE') not_null
+    description TEXT not_null
+    validation_logic JSON not_null
+    error_message TEXT not_null
+    severity ENUM('INFO', 'WARNING', 'ERROR', 'CRITICAL') not_null
+    enabled BOOLEAN not_null
+    applies_to_action_type VARCHAR(50)
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP
+}
+
+table(game_rule_configurations) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT
+    foreign_key(rule_id) BIGINT not_null
+    enabled BOOLEAN not_null
+    custom_parameters JSON
+    priority INT not_null
+}
+
+table(game_rule_violations) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(rule_id) BIGINT not_null
+    action_type VARCHAR(50) not_null
+    action_data JSON not_null
+    message TEXT not_null
+    severity ENUM('INFO', 'WARNING', 'ERROR', 'CRITICAL') not_null
+    timestamp TIMESTAMP not_null
+    client_state_version BIGINT
+    server_state_version BIGINT not_null
+}
+
+table(valid_actions) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    turn_number INT not_null
+    action_type VARCHAR(50) not_null
+    source_id BIGINT
+    available_targets JSON
+    requirements JSON
+    computed_at TIMESTAMP not_null
+    valid_until TIMESTAMP
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    current_turn INT not_null
+    foreign_key(current_player_id) BIGINT not_null
+    game_phase ENUM('SETUP', 'PLAYING', 'PAUSED', 'COMPLETED') not_null
+    state_version BIGINT not_null
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+}
+
+table(action_log) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    action_type VARCHAR(50) not_null
+    action_data JSON not_null
+    timestamp TIMESTAMP not_null
+    validated BOOLEAN not_null
+    success BOOLEAN not_null
+    rejection_reason TEXT
+}
+
+' Relationships
+games ||--o{ game_rule_configurations : "configures"
+games ||--o{ game_rule_violations : "records"
+games ||--o{ valid_actions : "computes"
+games ||--o{ players : "has"
+games ||--o{ action_log : "records"
+game_rules ||--o{ game_rule_configurations : "applied via"
+game_rules ||--o{ game_rule_violations : "referenced in"
+players }o--|| game_rule_violations : "commits"
+players }o--|| valid_actions : "has"
+players }o--|| action_log : "performs"
+
+@enduml
