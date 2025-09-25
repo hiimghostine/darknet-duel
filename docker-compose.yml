@@ -39,6 +39,7 @@ services:
       - DB_NAME=darknet_duel
       - ALLOWED_ORIGINS=${FRONTEND_URL:?required},${BACKEND_URL:?required},${GAME_URL:?required}
       - PUBLIC_URL=${BACKEND_URL:?required}
+      - FRONTEND_URL=${FRONTEND_URL:?required}
       - JWT_SECRET=${JWT_SECRET:?required}
       - SERVER_API_KEY=${SERVER_API_KEY:?required}
       - XENDIT_API_KEY=${XENDIT_API_KEY:?required}
