@@ -22,14 +22,11 @@ ENV VITE_BUILD_ENV=${VITE_BUILD_ENV}
 ENV VITE_COMMIT_SHA=${VITE_COMMIT_SHA}
 RUN npm run build
 
-FROM nginx:alpine AS runner
-WORKDIR /usr/share/nginx/html
-COPY --from=build /app/dist ./
-
-# Provide default nginx config
-COPY darknet-duel-frontend/nginx.conf /etc/nginx/conf.d/default.conf
-
+FROM node:20-alpine AS runner
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+RUN npm i -g http-server@14
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["sh", "-lc", "http-server ./dist -p 80 -a 0.0.0.0"]
 
 

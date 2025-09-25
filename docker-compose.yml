@@ -43,7 +43,7 @@ services:
       - SERVER_API_KEY=${SERVER_API_KEY:?required}
       - XENDIT_API_KEY=${XENDIT_API_KEY:?required}
     ports:
-      - "${BACKEND_PUBLISH_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
+      - "${BACKEND_PORT:-8000}:8000"
     networks:
       - darknet_net
 
@@ -62,7 +62,7 @@ services:
       - BACKEND_URL=http://backend:8000/api
       - SERVER_API_KEY=${SERVER_API_KEY:?required}
     ports:
-      - "${GAME_PUBLISH_PORT:-8001}:${GAME_INTERNAL_PORT:-8001}"
+      - "${GAME_PORT:-8001}:8001"
     networks:
       - darknet_net
 
@@ -80,7 +80,7 @@ services:
       - backend
       - game_server
     ports:
-      - "${FRONTEND_PUBLISH_PORT:-8002}:80"
+      - "${FRONTEND_PORT:-8002}:80"
     networks:
       - darknet_net
 
@@ -96,7 +96,7 @@ services:
       - PMA_PORT=3306
       - UPLOAD_LIMIT=256M
     ports:
-      - "${PHPMYADMIN_PUBLISH_PORT:-8003}:80"
+      - "${PHPMYADMIN_PORT:-8003}:80"
     networks:
       - darknet_net
 

@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ${{ github.ref_name == 'main' && 'thunder-server' || 'self-hosted' }}
+    runs-on: ${{ github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]') }}
     environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     env:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
@@ -31,23 +31,45 @@ jobs:
 
       - name: Create .env for docker compose
         run: |
+          # Derive host and ports per environment
+          if [ "${{ job.environment.name }}" = "prod" ]; then
+            HOSTNAME=thunder-server
+            FRONTEND_URL=https://prod-dnd.aetherrflare.org
+            BACKEND_URL=https://prod-backend-dnd.aetherrflare.org
+            GAME_URL=https://prod-game-dnd.aetherrflare.org
+            FRONTEND_PORT=10000
+            BACKEND_PORT=10001
+            GAME_PORT=10002
+            DB_PORT=10003
+            PHPMYADMIN_PORT=10004
+          else
+            HOSTNAME=ghostine-server
+            FRONTEND_URL=${{ vars.FRONTEND_URL }}
+            BACKEND_URL=${{ vars.BACKEND_URL }}
+            GAME_URL=${{ vars.GAME_URL }}
+            FRONTEND_PORT=80
+            BACKEND_PORT=8000
+            GAME_PORT=8001
+            DB_PORT=3306
+            PHPMYADMIN_PORT=3307
+          fi
           cat > .env <<EOF
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           SERVER_API_KEY=${{ secrets.SERVER_API_KEY }}
           XENDIT_API_KEY=${{ secrets.XENDIT_API_KEY }}
-          FRONTEND_URL=${{ vars.FRONTEND_URL }}
-          BACKEND_URL=${{ vars.BACKEND_URL }}
-          GAME_URL=${{ vars.GAME_URL }}
+          FRONTEND_URL=${FRONTEND_URL}
+          BACKEND_URL=${BACKEND_URL}
+          GAME_URL=${GAME_URL}
           GITHUB_SHA=${{ github.sha }}
           GITHUB_ENVIRONMENT=${{ job.environment.name }}
-          FRONTEND_PUBLISH_PORT=${{ github.ref_name == 'main' && '10000' || '8002' }}
-          BACKEND_PUBLISH_PORT=${{ github.ref_name == 'main' && '10001' || '8000' }}
-          GAME_PUBLISH_PORT=${{ github.ref_name == 'main' && '10002' || '8001' }}
-          PHPMYADMIN_PUBLISH_PORT=${{ github.ref_name == 'main' && '10004' || '8003' }}
-          BACKEND_INTERNAL_PORT=${{ github.ref_name == 'main' && '10001' || '8000' }}
-          GAME_INTERNAL_PORT=${{ github.ref_name == 'main' && '10002' || '8001' }}
+          HOSTNAME=${HOSTNAME}
+          FRONTEND_PORT=${FRONTEND_PORT}
+          BACKEND_PORT=${BACKEND_PORT}
+          GAME_PORT=${GAME_PORT}
+          DB_PORT=${DB_PORT}
+          PHPMYADMIN_PORT=${PHPMYADMIN_PORT}
           EOF
 
       - name: Build images (no push)
