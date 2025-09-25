@@ -25,8 +25,8 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 COPY --from=build /app/dist ./dist
-RUN npm i -g http-server@14
+RUN npm i -g serve@14
 EXPOSE 80
-CMD ["sh", "-lc", "http-server ./dist -p 80 -a 0.0.0.0"]
+CMD ["sh", "-lc", "serve dist -s -l 80"]
 
 
