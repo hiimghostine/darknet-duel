@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: ${{ github.ref_name == 'main' && 'thunder-server' || 'self-hosted' }}
     environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     env:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
@@ -42,6 +42,12 @@ jobs:
           GAME_URL=${{ vars.GAME_URL }}
           GITHUB_SHA=${{ github.sha }}
           GITHUB_ENVIRONMENT=${{ job.environment.name }}
+          FRONTEND_PUBLISH_PORT=${{ github.ref_name == 'main' && '10000' || '8002' }}
+          BACKEND_PUBLISH_PORT=${{ github.ref_name == 'main' && '10001' || '8000' }}
+          GAME_PUBLISH_PORT=${{ github.ref_name == 'main' && '10002' || '8001' }}
+          PHPMYADMIN_PUBLISH_PORT=${{ github.ref_name == 'main' && '10004' || '8003' }}
+          BACKEND_INTERNAL_PORT=${{ github.ref_name == 'main' && '10001' || '8000' }}
+          GAME_INTERNAL_PORT=${{ github.ref_name == 'main' && '10002' || '8001' }}
           EOF
 
       - name: Build images (no push)
