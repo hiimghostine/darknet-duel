@@ -6,6 +6,7 @@ import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
+import AppFooter from '../components/AppFooter';
 import LogoutScreen from '../components/LogoutScreen';
 import UserTypeTag from '../components/UserTypeTag';
 import TutorialButton from '../components/tutorial/TutorialButton';
@@ -457,12 +458,7 @@ const DashboardPage: React.FC = () => {
         </main>
         
         {/* Footer */}
-        <footer className="p-4 border-t border-primary/20 text-center mt-8">
-          <div className="text-base-content/60 text-xs font-mono">
-            DARKNET_DUEL v0.0.1 • {new Date().toISOString().split('T')[0]} • 
-            <span className="text-primary ml-1 text-flicker">NETWORK: SECURE</span>
-          </div>
-        </footer>
+        <AppFooter />
       </div>
       </div>
       

@@ -73,6 +73,8 @@ services:
       args:
         VITE_API_URL: ${BACKEND_URL:?required}/api
         VITE_GAME_SERVER_URL: ${GAME_URL:?required}
+        VITE_BUILD_ENV: ${GITHUB_ENVIRONMENT:-dev}
+        VITE_COMMIT_SHA: ${GITHUB_SHA:-local}
     container_name: darknet_frontend
     depends_on:
       - backend

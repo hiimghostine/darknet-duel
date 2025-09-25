@@ -38,6 +38,8 @@ jobs:
           FRONTEND_URL=${{ vars.FRONTEND_URL }}
           BACKEND_URL=${{ vars.BACKEND_URL }}
           GAME_URL=${{ vars.GAME_URL }}
+          GITHUB_SHA=${{ github.sha }}
+          GITHUB_ENVIRONMENT=${{ job.environment.name }}
           EOF
 
       - name: Build images (no push)

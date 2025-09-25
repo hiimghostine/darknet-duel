@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
+import AppFooter from '../components/AppFooter';
 import coverPhoto from '../assets/Cover Photo.png';
 
 const HomePage: React.FC = () => {
@@ -152,11 +153,7 @@ const HomePage: React.FC = () => {
       </main>
       
       {/* Footer */}
-      <footer className="relative z-10 container mx-auto px-4 py-6 mt-auto">
-        <div className="border-t border-base-content/10 pt-6 text-center text-xs text-base-content/50 font-mono">
-          DARKNET_DUEL v0.0.1 • SYSTEM ACCESSED: {new Date().toLocaleDateString()}
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 };
