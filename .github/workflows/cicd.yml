@@ -47,7 +47,7 @@ jobs:
             FRONTEND_URL=${{ vars.FRONTEND_URL }}
             BACKEND_URL=${{ vars.BACKEND_URL }}
             GAME_URL=${{ vars.GAME_URL }}
-            FRONTEND_PORT=80
+            FRONTEND_PORT=8002
             BACKEND_PORT=8000
             GAME_PORT=8001
             DB_PORT=3306
