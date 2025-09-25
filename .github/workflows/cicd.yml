@@ -5,11 +5,21 @@ on:
     branches:
       - dev
       - main
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Environment to build and deploy"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - main
 
 jobs:
   build-and-deploy:
-    runs-on: ${{ github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]') }}
-    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'main') && fromJSON('["self-hosted","thunder-server"]') || (github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]')) }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_env == 'main' && 'prod' || 'dev')) || (github.ref_name == 'main' && 'prod' || 'dev') }}
     env:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
     steps:
