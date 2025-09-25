@@ -22,7 +22,7 @@ export const createInitialState = (): GameState => {
       maxTurns: 15,            // Game length: 15 rounds maximum
       startingHandSize: 5,     // Each player draws 5 cards initially
       infrastructureCount: 5,   // 5 infrastructure cards (network, web, data, user, critical systems)
-      initialActionPoints: 0,   // Starting AP at game start - both players start with 0 AP
+      initialActionPoints: 2,   // Starting AP at game start - both players start with 2 AP
       attackerActionPointsPerTurn: 2,  // Attacker gets 2 AP per turn
       defenderActionPointsPerTurn: 3,  // Defender gets 3 AP per turn
       maxActionPoints: 10,      // Maximum AP cap - AP carries over between turns up to 10
@@ -44,12 +44,6 @@ export const checkGameEnd = (G: GameState) => {
     return undefined;
   }
   
-  // Check for max turns - standard mode is 15 rounds max
-  if (G.turnNumber > G.gameConfig.maxTurns) {
-    // If we hit max rounds, defender wins (defenders advantage)
-    return { winner: 'defender' };
-  }
-  
   // Check for infrastructure control win condition
   if (G.infrastructure && G.infrastructure.length > 0) {
     // Count controlled infrastructure for each side
@@ -64,21 +58,32 @@ export const checkGameEnd = (G: GameState) => {
       }
     });
     
-    // For standard mode: if a player controls 3 or more infrastructure cards, they win
-    const infrastructureThreshold = Math.ceil(G.infrastructure.length / 2) + 1; // 3+ out of 5
+    // ✅ UPDATED: Two different win conditions
+    const totalInfrastructure = G.infrastructure.length;
+    const isMaxTurnsReached = G.turnNumber > G.gameConfig.maxTurns;
     
-    if (attackerControlled >= infrastructureThreshold) {
-      return { winner: 'attacker' };
-    }
-    if (defenderControlled >= infrastructureThreshold) {
-      return { winner: 'defender' };
+    if (isMaxTurnsReached) {
+      // ✅ TURN LIMIT WIN: Use majority rule (3+ out of 5)
+      const majorityThreshold = Math.ceil(totalInfrastructure / 2) + 1; // 3+ out of 5
+      
+      if (attackerControlled >= majorityThreshold) {
+        return { winner: 'attacker' }; // Attacker wins with majority
+      } else {
+        return { winner: 'defender' }; // Defender wins by default (including ties)
+      }
+    } else {
+      // ✅ IMMEDIATE WIN: Requires ALL infrastructure cards (5/5)
+      const immediateWinThreshold = totalInfrastructure; // Must control ALL infrastructure cards
+      
+      if (attackerControlled >= immediateWinThreshold) {
+        return { winner: 'attacker' };
+      }
+      if (defenderControlled >= immediateWinThreshold) {
+        return { winner: 'defender' };
+      }
     }
   }
   
-  // Check for game abandonment due to disconnection
-  if (G.gamePhase === 'gameOver' && G.winner === 'abandoned') {
-    return { winner: 'abandoned' };
-  }
   
   return undefined; // Game continues
 };

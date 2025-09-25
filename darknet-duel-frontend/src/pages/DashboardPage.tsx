@@ -6,8 +6,10 @@ import { useAudioManager } from '../hooks/useAudioManager';
 import AppBar from '../components/AppBar';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
+import AppFooter from '../components/AppFooter';
 import LogoutScreen from '../components/LogoutScreen';
 import UserTypeTag from '../components/UserTypeTag';
+import TutorialButton from '../components/tutorial/TutorialButton';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
 import accountService from '../services/account.service';
 import storeService from '../services/store.service';
@@ -243,6 +245,15 @@ const DashboardPage: React.FC = () => {
                       CREATE_NEW_GAME
                     </Link>
                   </div>
+                  
+                  {/* Tutorial Button */}
+                  <div className="mt-4">
+                    <TutorialButton 
+                      variant="secondary" 
+                      size="sm" 
+                      showProgress={true}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -364,22 +375,64 @@ const DashboardPage: React.FC = () => {
                   
                   <div className="space-y-3">
                     {activitiesData.length > 0 ? (
-                      activitiesData.map((activity, index) => (
-                        <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
-                          <div className="flex items-center">
-                            <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
-                            <div className="font-mono">
-                              <div className="text-sm font-bold">
-                                {activity.type} vs {activity.opponent}
+                      activitiesData.map((activity, index) => {
+                        // Use the actual timestamp and add 8 hours for Asia/Manila timezone
+                        const formatTimeWithTimezone = (timestamp: string): string => {
+                          try {
+                            console.log('Original timestamp:', timestamp); // Diagnostic logging
+                            
+                            // Parse the ISO timestamp from backend
+                            const date = new Date(timestamp);
+                            if (isNaN(date.getTime())) {
+                              console.error('Invalid timestamp:', timestamp);
+                              return activity.time; // Fallback to relative time
+                            }
+                            
+                            // Add 8 hours for Asia/Manila timezone (UTC+8)
+                            const adjustedDate = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+                            
+                            // Calculate relative time from adjusted date
+                            const now = new Date();
+                            const diffMs = now.getTime() - adjustedDate.getTime();
+                            
+                            const minutes = Math.floor(diffMs / (1000 * 60));
+                            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            
+                            let result: string;
+                            if (minutes < 60) {
+                              result = minutes <= 1 ? 'just now' : `${minutes}m ago`;
+                            } else if (hours < 24) {
+                              result = `${hours}h ago`;
+                            } else {
+                              result = `${days}d ago`;
+                            }
+                            
+                            console.log('Adjusted time:', result);
+                            return result;
+                          } catch (error) {
+                            console.error('Error adjusting timezone:', error);
+                            return activity.time; // Fallback to relative time
+                          }
+                        };
+
+                        return (
+                          <div key={index} className="border border-primary/30 bg-base-300/50 p-3 flex justify-between items-center">
+                            <div className="flex items-center">
+                              <div className={`w-2 h-2 rounded-full mr-3 ${activity.type === 'WIN' ? 'bg-success pulse-glow' : 'bg-error'}`}></div>
+                              <div className="font-mono">
+                                <div className="text-sm font-bold">
+                                  {activity.type} vs {activity.opponent}
+                                </div>
+                                <div className="text-xs text-base-content/70">{formatTimeWithTimezone(activity.timestamp)}</div>
                               </div>
-                              <div className="text-xs text-base-content/70">{activity.time}</div>
+                            </div>
+                            <div className="text-xs font-mono text-primary">
+                              {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
                             </div>
                           </div>
-                          <div className="text-xs font-mono text-primary">
-                            {activity.pointsChange || (activity.type === 'WIN' ? '+125 PTS' : '-75 PTS')}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="border border-primary/30 bg-base-300/50 p-3 text-center">
                         <div className="font-mono text-sm text-base-content/70">No recent games</div>
@@ -405,12 +458,7 @@ const DashboardPage: React.FC = () => {
         </main>
         
         {/* Footer */}
-        <footer className="p-4 border-t border-primary/20 text-center mt-8">
-          <div className="text-base-content/60 text-xs font-mono">
-            DARKNET_DUEL v0.0.1 • {new Date().toISOString().split('T')[0]} • 
-            <span className="text-primary ml-1 text-flicker">NETWORK: SECURE</span>
-          </div>
-        </footer>
+        <AppFooter />
       </div>
       </div>
       

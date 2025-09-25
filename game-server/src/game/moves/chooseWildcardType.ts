@@ -138,9 +138,12 @@ export const chooseWildcardTypeMove = ({ G, ctx, playerID }: { G: GameState; ctx
   );
   
   // Check if this card should trigger reaction phase (like in throwCardMove)
-  const shouldTriggerReaction = !reactionsBlocked && 
-                             !card.preventReaction && 
-                             (chosenType === 'attack' || chosenType === 'exploit');
+  // Attack/exploit cards trigger reactions from defenders
+  // Shield/fortify cards trigger reactions from attackers (counter-attacks)
+  const shouldTriggerReaction = !reactionsBlocked &&
+                             !card.preventReaction &&
+                             (chosenType === 'attack' || chosenType === 'exploit' ||
+                              chosenType === 'shield' || chosenType === 'fortify');
   
   // Calculate scores based on infrastructure states
   const { attackerScore, defenderScore } = calculateScores(newInfrastructure);

@@ -12,7 +12,8 @@ import { TemporaryEffectsManager } from './temporaryEffectsManager';
  * This handles general card playing and effects
  */
 export const playCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; playerID: string }, cardId: string, targetId?: string): GameState => {
-  const isAttacker = playerID === G.attacker?.id;
+  // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
+  const isAttacker = playerID === '0';
   const player = isAttacker ? G.attacker : G.defender;
   
   if (!player) return G;

@@ -35,38 +35,6 @@ function checkEndConditions(G: GameState, ctx: any, events: any): GameState {
  * All moves available during the action stage of a turn
  */
 export const actionStageMoves = {
-  // Chat message functionality
-  sendChatMessage: ({ G, playerID }: MoveParams<GameState>, content: string) => {
-    console.log('SERVER: Received chat message in action stage:', content, 'from player:', playerID);
-    
-    // Option 1: Mutation style (preferred for simpler code)
-    if (!G.chat) {
-      G.chat = {
-        messages: [],
-        lastReadTimestamp: {}
-      };
-    }
-    
-    // Determine player role
-    const senderRole = playerID === G.attacker?.id ? 'attacker' as PlayerRole : 'defender' as PlayerRole;
-    
-    // Add message to chat
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: playerID || 'unknown',
-      senderRole,
-      content,
-      timestamp: Date.now(),
-      isSystem: false
-    };
-    
-    // Just push the new message to the existing array (mutation)
-    G.chat.messages.push(newMessage);
-    
-    // Do not return anything when using mutation style
-    // This fixes the Immer error
-  },
-
   // Surrender functionality - use centralized handler
   surrender: handleSurrender,
   
@@ -179,23 +147,8 @@ export const actionStageMoves = {
     // Deep copy the player to avoid reference issues
     let updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
     
-    // Always draw exactly 2 cards at end of turn, but respect maximum hand size
-    const maxHandSize = G.gameConfig.maxHandSize; // Max hand size from config
-    const cardsToDrawPerTurn = G.gameConfig.cardsDrawnPerTurn; // Cards to draw from config
-    
-    // Calculate how many cards we can draw without exceeding max hand size
-    const currentHandSize = updatedPlayer.hand?.length || 0;
-    const cardsToDrawCount = Math.min(cardsToDrawPerTurn, maxHandSize - currentHandSize);
-    
-    console.log(`End of turn: Drawing ${cardsToDrawCount} cards for ${isAttacker ? 'attacker' : 'defender'} (hand: ${currentHandSize}/${maxHandSize})`);
-    
-    // Draw cards up to the calculated amount
-    if (cardsToDrawCount > 0) {
-      for (let i = 0; i < cardsToDrawCount; i++) {
-        const drawCardFn = require('../playerManager').drawCard;
-        updatedPlayer = drawCardFn(updatedPlayer);
-      }
-    }
+    // Card drawing is handled at turn start, not turn end
+    // This prevents duplicate card drawing (was drawing at both start and end)
     
     // Reset free card cycles counter for next turn
     updatedPlayer.freeCardCyclesUsed = 0;
@@ -222,33 +175,34 @@ export const actionStageMoves = {
     const { chooseChainTargetMove } = require('../../moves/chooseChainTarget');
     const updatedG = chooseChainTargetMove(G, ctx, playerID, targetId);
     
-    // After chain effect is resolved, transition to reaction phase
-    if (!updatedG.pendingChainChoice) {
-      // Chain effect completed, now allow reaction to the original card
-      // FIXED: Use boardgame.io player IDs for opponent lookup
-      const opponentID = playerID === '0' ? '1' : '0';
-      if (opponentID) {
-        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
-      }
-    }
+    // Chain effect completed - let the normal game flow continue
+    // Don't force phase transitions here as it can corrupt the game state
     
     return updatedG;
   },
   
   // Card selection from deck functionality (A306 AI-Powered Attack)
   chooseCardFromDeck: ({ G, ctx, playerID, events }, selectedCardId) => {
+    console.log(`🎯 ACTION STAGE DEBUG: chooseCardFromDeck called with selectedCardId: ${selectedCardId}`);
+    console.log(`🎯 ACTION STAGE DEBUG: playerID: ${playerID}, typeof selectedCardId: ${typeof selectedCardId}`);
+    
     const { chooseCardFromDeckMove } = require('../../moves/chooseCardFromDeck');
     const updatedG = chooseCardFromDeckMove(G, ctx, playerID, selectedCardId);
     
+    console.log(`🎯 ACTION STAGE DEBUG: Move completed. pendingCardChoice cleared: ${!updatedG.pendingCardChoice}`);
+    
     // After card selection is resolved, transition to reaction phase
     if (!updatedG.pendingCardChoice) {
-      console.log('DEBUG: Card selection completed, transitioning to reaction phase');
+      console.log('🎯 ACTION STAGE DEBUG: Card selection completed, transitioning to reaction phase');
       // Card selection completed, now allow reaction to the original card
       // FIXED: Use boardgame.io player IDs for opponent lookup
       const opponentID = playerID === '0' ? '1' : '0';
+      console.log(`🎯 ACTION STAGE DEBUG: Setting opponent ${opponentID} to reaction stage`);
       if (opponentID) {
         events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
       }
+    } else {
+      console.log('🎯 ACTION STAGE DEBUG: pendingCardChoice still exists, not transitioning to reaction');
     }
     
     return updatedG;

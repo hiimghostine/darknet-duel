@@ -60,11 +60,34 @@ export const cycleCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     updatedPlayer.freeCardCyclesUsed += 1;
   }
   
-  // Draw a new card and insert it at the same position as the cycled card
+  // DEBUG: Log hand state before drawing
+  console.log(`[CYCLE DEBUG] Before draw - Hand size: ${updatedPlayer.hand.length}, Cards:`,
+    updatedPlayer.hand.map(c => ({ id: c.id, name: c.name })));
+  console.log(`[CYCLE DEBUG] Cycling card at index ${cardIndex}: ${discardedCard.id} (${discardedCard.name})`);
+  
+  // Draw a new card - this will add it to the end of the hand
   const playerWithNewCard = drawCard(updatedPlayer);
   const newCard = playerWithNewCard.hand[playerWithNewCard.hand.length - 1]; // Get the newly drawn card
-  // Insert the new card at the same position where the old card was removed
-  updatedPlayer.hand.splice(cardIndex, 0, newCard);
+  
+  // DEBUG: Log state after drawCard
+  console.log(`[CYCLE DEBUG] After drawCard - Hand size: ${playerWithNewCard.hand.length}, New card:`,
+    { id: newCard.id, name: newCard.name });
+  
+  // CRITICAL BUG FIX: Use playerWithNewCard.hand, remove the last card (newly drawn),
+  // and insert it at the original position
+  const finalHand = [...playerWithNewCard.hand];
+  finalHand.pop(); // Remove the newly drawn card from the end
+  finalHand.splice(cardIndex, 0, newCard); // Insert it at the original position
+  
+  // Update the player with the corrected hand
+  updatedPlayer = {
+    ...playerWithNewCard,
+    hand: finalHand
+  };
+  
+  // DEBUG: Log final hand state
+  console.log(`[CYCLE DEBUG] After reorder - Final hand size: ${updatedPlayer.hand.length}, Cards:`,
+    updatedPlayer.hand.map(c => ({ id: c.id, name: c.name })));
   
   // Record action
   const newAction: GameAction = {

@@ -13,6 +13,7 @@ export interface PendingHandChoice {
   pendingCardPlay?: {
     cardId: string;
     targetInfrastructureId: string;
+    originalCtx?: any; // Store the original context for proper validation
   };
 }
 

@@ -114,9 +114,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             {(card as any).flavor && (
               <div className="card-flavor">{(card as any).flavor}</div>
             )}
-            {card.power !== undefined && (
-              <div className="card-power">Power: {card.power}</div>
-            )}
+
           </>
         )}
       </div>

@@ -46,7 +46,13 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     playerRole: isAttacker! ? 'attacker' : 'defender',
     actionType: 'throwCard',
     timestamp: Date.now(),
-    payload: { cardId, targetInfrastructureId, cardType: card!.type }
+    payload: { 
+      cardId, 
+      cardName: card!.name,
+      cardType: card!.type,
+      targetInfrastructureId,
+      targetInfrastructureName: targetInfrastructure?.name || null
+    }
   };
 
   // Phase 2: Attack vector resolution (ENHANCED FOR ALL CARD TYPES)
@@ -168,19 +174,33 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     };
   }
   
-  // Phase 5: Handle hand management (remove card from hand) - MOVED EARLIER
-  const newHand = [...player!.hand];
-  const cardIndex = newHand.findIndex(c => c.id === cardId);
-  newHand.splice(cardIndex, 1);
+  // Phase 5: Handle wildcard validation BEFORE hand management
+  if (card!.type === 'wildcard' && card!.wildcardType && targetInfrastructure) {
+    console.log(`Wildcard card detected: ${card!.name} with wildcardType: ${card!.wildcardType}`);
+    
+    // Get available types for this wildcard using context-aware resolver
+    const { WildcardResolver } = require('../wildcardResolver');
+    const wildcardContext = {
+      gameState: G,
+      playerRole: isAttacker ? 'attacker' : 'defender',
+      card: extendedCard,
+      targetInfrastructure: targetInfrastructure,
+      playerID: playerID
+    };
+    const availableTypes = WildcardResolver.getAvailableTypes(extendedCard, wildcardContext);
+    console.log(`Available wildcard types:`, availableTypes);
+    
+    // If no valid types available for this target, reject the move
+    if (availableTypes.length === 0) {
+      console.log(`🚫 INVALID MOVE: No valid wildcard types available for target ${targetInfrastructure.name} (${targetInfrastructure.state})`);
+      return {
+        ...G,
+        message: `${card!.name} cannot target ${targetInfrastructure.name} in its current state (${targetInfrastructure.state})`
+      };
+    }
+  }
   
-  // Create updated player state with card removed from hand
-  const updatedPlayerWithCardRemoved = {
-    ...player,
-    hand: newHand,
-    actionPoints: player!.actionPoints - effectiveCost
-  };
-
-  // Check for temporary_tax effects that apply to this card type
+  // Phase 6: Check for temporary_tax effects that apply to this card type BEFORE removing card from hand
   // This creates a pending hand choice for the player to select which cards to discard
   // Skip tax check if this is a continuation after tax has already been paid
   if (effectiveCardType === 'exploit' && isAttacker && !skipTaxCheck) {
@@ -192,44 +212,58 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
         const taxAmount = taxEffect.metadata.taxAmount || 1;
         console.log(`🍯 Honeypot Network tax triggered! Attacker must choose ${taxAmount} card(s) to discard`);
         
-        // Check if player has enough cards to discard (after the exploit card was removed)
-        if (updatedPlayerWithCardRemoved.hand.length >= taxAmount) {
-          // Create pending hand choice for the tax - use the updated hand without the exploit card
-          const gameStateWithCardRemoved = {
-            ...G,
-            attacker: isAttacker ? updatedPlayerWithCardRemoved : G.attacker,
-            defender: !isAttacker ? updatedPlayerWithCardRemoved : G.defender,
-          };
-          
+        // Check if player has enough cards to discard (excluding the exploit card being played)
+        if (player!.hand.length - 1 >= taxAmount) {
+          // Create pending hand choice for the tax - show original hand (exploit card not removed yet)
           const updatedGameState = {
-            ...gameStateWithCardRemoved,
+            ...G,
             pendingHandChoice: {
               type: 'discard_from_hand' as const,
               targetPlayerId: playerID,
-              revealedHand: [...updatedPlayerWithCardRemoved.hand], // Show hand WITHOUT the exploit card
+              revealedHand: [...player!.hand], // Show original hand (exploit card still present)
               count: taxAmount,
               pendingCardPlay: {
                 cardId: cardId,
-                targetInfrastructureId: targetInfrastructureId
+                targetInfrastructureId: targetInfrastructureId,
+                originalCtx: {
+                  phase: ctx.phase,
+                  currentPlayer: ctx.currentPlayer,
+                  activePlayers: ctx.activePlayers ? { ...ctx.activePlayers } : undefined,
+                  playOrder: ctx.playOrder ? [...ctx.playOrder] : undefined,
+                  turn: ctx.turn,
+                  numPlayers: ctx.numPlayers
+                } // Store a serializable copy of the essential context properties
               }
             },
             message: `Honeypot Network activated! Choose ${taxAmount} card${taxAmount > 1 ? 's' : ''} to discard, then your exploit will be played.`
           };
           
-          console.log(`✅ Tax pending: Player must choose ${taxAmount} cards to discard from remaining ${updatedPlayerWithCardRemoved.hand.length} cards`);
+          console.log(`✅ Tax pending: Player must choose ${taxAmount} cards to discard from ${player!.hand.length} cards (excluding the exploit being played)`);
           return updatedGameState;
         } else {
-          console.log(`⚠️ Player only has ${updatedPlayerWithCardRemoved.hand.length} cards remaining, cannot pay tax of ${taxAmount} cards`);
+          console.log(`⚠️ Player only has ${player!.hand.length - 1} cards remaining after exploit, cannot pay tax of ${taxAmount} cards`);
           return {
             ...G,
-            message: `Cannot play exploit: Honeypot Network requires ${taxAmount} additional card${taxAmount > 1 ? 's' : ''} to discard, but you only have ${updatedPlayerWithCardRemoved.hand.length} card${updatedPlayerWithCardRemoved.hand.length !== 1 ? 's' : ''} remaining.`
+            message: `Cannot play exploit: Honeypot Network requires ${taxAmount} additional card${taxAmount > 1 ? 's' : ''} to discard, but you only have ${player!.hand.length - 1} card${player!.hand.length - 1 !== 1 ? 's' : ''} remaining.`
           };
         }
       }
     }
   }
 
-  // Phase 6: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
+  // Phase 7: Handle hand management (remove card from hand) - MOVED AFTER tax check
+  const newHand = [...player!.hand];
+  const cardIndex = newHand.findIndex(c => c.id === cardId);
+  newHand.splice(cardIndex, 1);
+  
+  // Create updated player state with card removed from hand
+  const updatedPlayerWithCardRemoved = {
+    ...player,
+    hand: newHand,
+    actionPoints: player!.actionPoints - effectiveCost
+  };
+
+  // Phase 8: Handle wildcard cards (COMPLETE PRESERVED LOGIC FROM ORIGINAL)
   if (card!.type === 'wildcard' && card!.wildcardType) {
     console.log(`Wildcard card detected at source: ${card!.name} with wildcardType: ${card!.wildcardType}`);
     
@@ -290,17 +324,33 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       console.log(`Applying Emergency Response Team wildcard effects`);
       const gameStateWithWildcardEffects = WildcardResolver.applyWildcardEffects(extendedCard, wildcardContext);
       
+      // CRITICAL: Recalculate scores after D303 mass restore (this was missing!)
+      console.log(`🔍 D303 SPECIAL HANDLING - Recalculating scores after mass restore...`);
+      const { attackerScore, defenderScore } = calculateScores(gameStateWithWildcardEffects.infrastructure);
+      console.log(`🔍 D303 SPECIAL HANDLING - New scores: Attacker=${attackerScore}, Defender=${defenderScore}`);
+      
       return {
         ...gameStateWithWildcardEffects,
         attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker,
         defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender,
         actions: [...gameStateWithWildcardEffects.actions, newAction],
-        message: gameStateWithWildcardEffects.message || `${card!.name} emergency response activated!`
+        message: gameStateWithWildcardEffects.message || `${card!.name} emergency response activated!`,
+        // Update scores in the returned game state
+        attackerScore,
+        defenderScore
       };
     }
     
-    // Get available types for this wildcard
-    const availableTypes = getAvailableCardTypes(card!.wildcardType);
+    // Get available types for this wildcard using context-aware resolver
+    const { WildcardResolver } = require('../wildcardResolver');
+    const wildcardContext = {
+      gameState: G,
+      playerRole: isAttacker ? 'attacker' : 'defender',
+      card: extendedCard,
+      targetInfrastructure: targetInfrastructure,
+      playerID: playerID
+    };
+    const availableTypes = WildcardResolver.getAvailableTypes(extendedCard, wildcardContext);
     console.log(`Available wildcard types:`, availableTypes);
     
     // Smart auto-selection: Choose the best type based on target infrastructure state
@@ -320,19 +370,6 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
             ...G,
             message: `${card!.name} can only target compromised infrastructure`
           };
-        }
-      }
-      else
-      // Special handling for Security Automation Suite (D304) - auto-select based on target state
-      if (card!.id === 'D304' || card!.id.startsWith('D304')) {
-        if (targetInfrastructure) {
-          if (targetInfrastructure.state === 'secure' || targetInfrastructure.state === 'vulnerable') {
-            autoSelectedType = 'shield';
-            console.log(`Security Automation Suite - auto-selecting shield for ${targetInfrastructure.state} infrastructure`);
-          } else if (targetInfrastructure.state === 'shielded') {
-            autoSelectedType = 'fortify';
-            console.log(`Security Automation Suite - auto-selecting fortify for shielded infrastructure`);
-          }
         }
       }
       // Special handling for Honeypot Network (D306) - defender wildcard that acts defensively
@@ -376,12 +413,84 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           }
         }
       }
-      // For special wildcards with only one type, auto-select it
-      else if (card!.wildcardType === 'special' && availableTypes.length === 1) {
+      // Special handling for attacker special wildcards like Lateral Movement (A303)
+      else if (card!.wildcardType === 'special' && isAttacker && targetInfrastructure) {
+        console.log(`Attacker special wildcard ${card!.name} - using infrastructure-based auto-selection`);
+        switch (targetInfrastructure.state) {
+          case 'secure':
+          case 'fortified':
+          case 'fortified_weaken':
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - auto-selecting exploit for ${targetInfrastructure.state} infrastructure`);
+            break;
+          case 'vulnerable':
+            autoSelectedType = 'attack';
+            console.log(`Special wildcard ${card!.name} - auto-selecting attack for vulnerable infrastructure`);
+            break;
+          case 'shielded':
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - auto-selecting exploit for shielded infrastructure`);
+            break;
+          case 'compromised':
+            // For compromised infrastructure, use special effects if available
+            autoSelectedType = 'special';
+            console.log(`Special wildcard ${card!.name} - auto-selecting special for compromised infrastructure`);
+            break;
+          default:
+            autoSelectedType = 'exploit';
+            console.log(`Special wildcard ${card!.name} - defaulting to exploit`);
+            break;
+        }
+      }
+      // For defender special wildcards, use intelligent infrastructure-based auto-selection
+      else if (card!.wildcardType === 'special' && !isAttacker && targetInfrastructure) {
+        console.log(`Defender special wildcard ${card!.name} - using infrastructure-based auto-selection`);
+        switch (targetInfrastructure.state) {
+          case 'secure':
+            if (availableTypes.includes('shield')) {
+              autoSelectedType = 'shield';
+              console.log(`Special wildcard ${card!.name} - auto-selecting shield for secure infrastructure`);
+            }
+            break;
+          case 'shielded':
+            if (availableTypes.includes('fortify')) {
+              autoSelectedType = 'fortify';
+              console.log(`Special wildcard ${card!.name} - auto-selecting fortify for shielded infrastructure`);
+            }
+            break;
+          case 'vulnerable':
+            // For vulnerable infrastructure, prefer shield to protect it
+            if (availableTypes.includes('shield')) {
+              autoSelectedType = 'shield';
+              console.log(`Special wildcard ${card!.name} - auto-selecting shield for vulnerable infrastructure`);
+            }
+            break;
+          case 'compromised':
+            // Cannot use shield/fortify on compromised infrastructure
+            console.log(`Special wildcard ${card!.name} - cannot target compromised infrastructure`);
+            return {
+              ...G,
+              message: `${card!.name} cannot target compromised infrastructure`
+            };
+          case 'fortified':
+          case 'fortified_weaken':
+            // Cannot improve fortified infrastructure further
+            console.log(`Special wildcard ${card!.name} - cannot target ${targetInfrastructure.state} infrastructure`);
+            return {
+              ...G,
+              message: `${card!.name} cannot target ${targetInfrastructure.state} infrastructure`
+            };
+          default:
+            autoSelectedType = null;
+            break;
+        }
+      }
+      // For defender special wildcards without target infrastructure or with single type
+      else if (card!.wildcardType === 'special' && !isAttacker && availableTypes.length === 1) {
         autoSelectedType = availableTypes[0];
-        console.log(`Special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
+        console.log(`Defender special wildcard ${card!.name} - auto-selecting single type: ${autoSelectedType}`);
       } else if (card!.wildcardType === 'special') {
-        console.log(`Special wildcard ${card!.name} - skipping auto-selection (multiple types)`);
+        console.log(`Special wildcard ${card!.name} - skipping auto-selection (no valid logic found)`);
         autoSelectedType = null;
       } else if (availableTypes.length === 1) {
         // Handle single-type wildcards by auto-selecting the only available type
@@ -552,22 +661,6 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           );
         }
         
-        // Special handling for Security Automation Suite chain security effect
-        if (card!.id === 'D304' || card!.id.startsWith('D304')) {
-          console.log(`Triggering chain security effect for ${card!.name}`);
-          const { handleChainSecurity } = require('../chainEffects');
-          const chainGameState = handleChainSecurity(
-            { ...gameStateWithWildcardEffects, infrastructure: effectResult },
-            extendedCard,
-            playerID
-          );
-          
-          // Update the game state with the pending chain choice
-          if (chainGameState.pendingChainChoice) {
-            gameStateWithWildcardEffects.pendingChainChoice = chainGameState.pendingChainChoice;
-            gameStateWithWildcardEffects.message = `${card!.name} played! Choose another infrastructure to shield.`;
-          }
-        }
       } else {
         // For hand-targeting cards, we already applied the effect via wildcard resolver
         // Just return the current infrastructure unchanged
@@ -598,26 +691,56 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
           return { ...infra };
         });
         
+        // FIXED: Process persistent effects for wildcards too!
+        // Start with base game state that includes wildcard effects and updated player
+        let gameStateWithPersistentEffects: GameState = {
+          ...gameStateWithWildcardEffects,
+          attacker: isAttacker ? updatedPlayer : gameStateWithWildcardEffects.attacker || G.attacker!,
+          defender: !isAttacker ? updatedPlayer : gameStateWithWildcardEffects.defender || G.defender!
+        };
+
+        if (G.infrastructure && cleanInfrastructure !== G.infrastructure) {
+          console.log(`🎯 Checking persistent effects after wildcard card effect`);
+          // Check each infrastructure for state changes
+          for (let i = 0; i < Math.min(G.infrastructure.length, cleanInfrastructure.length); i++) {
+            const oldInfra = G.infrastructure[i];
+            const newInfra = cleanInfrastructure[i];
+            if (oldInfra.state !== newInfra.state) {
+              console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+              
+              // First process persistent effects (rewards)
+              gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+                gameStateWithPersistentEffects,
+                newInfra.id,
+                oldInfra.state,
+                newInfra.state
+              );
+              
+              // Then clean up persistent effects for state changes that invalidate them
+              gameStateWithPersistentEffects = TemporaryEffectsManager.cleanupPersistentEffectsOnStateChange(
+                gameStateWithPersistentEffects,
+                newInfra.id,
+                oldInfra.state,
+                newInfra.state
+              );
+            }
+          }
+        }
+        
         // Check if we have a pending chain choice - if so, don't trigger reactions yet
         const hasPendingChainChoice = gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice;
         
         const finalState = {
-          ...G, // Use original game state as base
-          attacker: isAttacker ? updatedPlayer : G.attacker,
-          defender: !isAttacker ? updatedPlayer : G.defender,
+          ...gameStateWithPersistentEffects, // Use the state with processed persistent effects
           infrastructure: cleanInfrastructure,
-          actions: [...G.actions, newAction],
-          message: gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType}${targetInfrastructure ? ` on ${targetInfrastructure.name}` : ' targeting opponent hand'}`,
+          actions: [...gameStateWithPersistentEffects.actions, newAction],
+          message: gameStateWithPersistentEffects.message || gameStateWithWildcardEffects.message || `${card!.name} played as ${autoSelectedType}${targetInfrastructure ? ` on ${targetInfrastructure.name}` : ' targeting opponent hand'}`,
           attackerScore,
           defenderScore,
-          // Include all wildcard effects properties
-          temporaryEffects: gameStateWithWildcardEffects.temporaryEffects || G.temporaryEffects,
-          persistentEffects: gameStateWithWildcardEffects.persistentEffects || G.persistentEffects,
-          pendingCardChoice: gameStateWithWildcardEffects.pendingCardChoice || G.pendingCardChoice,
           // Include hand choice (important for D302 Threat Intelligence Network) - prioritize the one from wildcard effects
-          pendingHandChoice: gameStateWithWildcardEffects.pendingHandChoice || G.pendingHandChoice,
+          pendingHandChoice: gameStateWithPersistentEffects.pendingHandChoice || gameStateWithWildcardEffects.pendingHandChoice || G.pendingHandChoice,
           // Include chain choice (important for Lateral Movement) - prioritize the one from wildcard effects
-          pendingChainChoice: gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
+          pendingChainChoice: gameStateWithPersistentEffects.pendingChainChoice || gameStateWithWildcardEffects.pendingChainChoice || G.pendingChainChoice
         };
         
         console.log(`DEBUG: Final state has pendingChainChoice: ${finalState.pendingChainChoice ? 'YES' : 'NO'}`);
@@ -664,7 +787,7 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
     };
   }
   
-  // Phase 7: Handle regular (non-wildcard) cards (PRESERVED FROM ORIGINAL)
+  // Phase 9: Handle regular (non-wildcard) cards (PRESERVED FROM ORIGINAL)
   // Create a deep copy of the card to ensure all properties are preserved during serialization
   const cardCopy = JSON.parse(JSON.stringify(card));
   
@@ -755,7 +878,17 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
       const newInfra = newInfrastructure[i];
       if (oldInfra.state !== newInfra.state) {
         console.log(`🔄 Infrastructure ${newInfra.id} state changed: ${oldInfra.state} → ${newInfra.state}`);
+        
+        // First process persistent effects (rewards)
         gameStateWithPersistentEffects = TemporaryEffectsManager.processPersistentEffects(
+          gameStateWithPersistentEffects,
+          newInfra.id,
+          oldInfra.state,
+          newInfra.state
+        );
+        
+        // Then clean up persistent effects for state changes that invalidate them
+        gameStateWithPersistentEffects = TemporaryEffectsManager.cleanupPersistentEffectsOnStateChange(
           gameStateWithPersistentEffects,
           newInfra.id,
           oldInfra.state,
@@ -766,8 +899,11 @@ export const throwCardMove = ({ G, ctx, playerID }: { G: GameState; ctx: Ctx; pl
   }
   
   // Check if this card should trigger reaction phase
+  // Attack/exploit cards trigger reactions from defenders
+  // Shield/fortify cards trigger reactions from attackers (counter-attacks)
   const shouldTriggerReaction = !extendedCard.preventReaction &&
-                              (effectiveCardType === 'attack' || effectiveCardType === 'exploit');
+                              (effectiveCardType === 'attack' || effectiveCardType === 'exploit' ||
+                               effectiveCardType === 'shield' || effectiveCardType === 'fortify');
   
   // Calculate scores based on infrastructure states
   const { attackerScore, defenderScore } = calculateScores(newInfrastructure);

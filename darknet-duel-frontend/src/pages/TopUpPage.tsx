@@ -32,7 +32,7 @@ const TopUpPage: React.FC = () => {
 
   // Top-up packages with pricing
   const packages: TopUpPackage[] = [
-    { id: 'starter', crypts: 15, price: 20.50 },
+    { id: 'starter', crypts: 15, price: 20 },
     { id: 'small', crypts: 50, price: 53, isPopular: true },
     { id: 'medium', crypts: 150, price: 159 },
     { id: 'large', crypts: 250, price: 264 },

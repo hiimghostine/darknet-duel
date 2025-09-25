@@ -146,19 +146,29 @@ export class TemporaryEffectsManager {
 
     // Update triggered effects and remove auto-remove effects
     if (triggeredEffects.length > 0) {
+      console.log(`🎯 Processing ${triggeredEffects.length} triggered effects`);
+      
+      // FIXED: First mark effects as triggered, then filter out auto-remove effects
       const updatedPersistentEffects = gameState.persistentEffects.map(effect => {
         if (triggeredEffects.includes(effect.sourceCardId)) {
+          console.log(`✅ Marking effect from ${effect.sourceCardId} as triggered (autoRemove: ${effect.autoRemove})`);
           return { ...effect, triggered: true };
         }
         return effect;
-      }).filter(effect => !(effect.triggered && effect.autoRemove));
+      }).filter(effect => {
+        const shouldRemove = effect.triggered && effect.autoRemove;
+        if (shouldRemove) {
+          console.log(`🗑️ Removing auto-remove effect from ${effect.sourceCardId} (type: ${effect.type})`);
+        }
+        return !shouldRemove;
+      });
 
       updatedGameState = {
         ...updatedGameState,
         persistentEffects: updatedPersistentEffects
       };
 
-      console.log(`🧹 Updated persistent effects. Remaining: ${updatedPersistentEffects.length}`);
+      console.log(`🧹 Updated persistent effects. Before: ${gameState.persistentEffects.length}, After: ${updatedPersistentEffects.length}`);
     }
 
     return updatedGameState;
@@ -168,8 +178,28 @@ export class TemporaryEffectsManager {
    * Apply the reward from a persistent effect
    */
   private static applyPersistentReward(gameState: GameState, effect: PersistentEffect): GameState {
-    const isAttacker = effect.playerId === gameState.attacker?.id;
-    const currentPlayer = isAttacker ? gameState.attacker : gameState.defender;
+    console.log(`🔍 DEBUG REWARD: effect.playerId="${effect.playerId}"`);
+    console.log(`🔍 DEBUG REWARD: gameState.attacker.id="${gameState.attacker?.id}"`);
+    console.log(`🔍 DEBUG REWARD: gameState.defender.id="${gameState.defender?.id}"`);
+    
+    // FIXED: Handle both BoardGame.io player IDs ('0', '1') and game player IDs
+    let isAttacker: boolean;
+    let currentPlayer: any;
+    
+    // First try exact match with game player IDs
+    if (effect.playerId === gameState.attacker?.id) {
+      isAttacker = true;
+      currentPlayer = gameState.attacker;
+    } else if (effect.playerId === gameState.defender?.id) {
+      isAttacker = false;
+      currentPlayer = gameState.defender;
+    } else {
+      // Fallback: try BoardGame.io player IDs ('0' = attacker, '1' = defender)
+      isAttacker = effect.playerId === '0';
+      currentPlayer = isAttacker ? gameState.attacker : gameState.defender;
+    }
+    
+    console.log(`🔍 DEBUG REWARD: isAttacker=${isAttacker}, currentPlayer.name="${currentPlayer?.name}"`);
 
     if (!currentPlayer) {
       console.error(`❌ Could not find player ${effect.playerId} for persistent effect reward`);
@@ -249,14 +279,72 @@ export class TemporaryEffectsManager {
   }
 
   /**
-   * Calculate and apply maintenance costs at turn start
-   * New balanced mechanic:
-   * - 3 shielded/vulnerable = 1 AP cost
-   * - 4 shielded/vulnerable = 2 AP cost
-   * - 5 shielded/vulnerable = 3 AP cost
-   * - If can't pay: randomly remove 1 infrastructure with that state next round
+   * Clean up persistent effects when infrastructure state changes away from the watched state
+   * This prevents Multi-Stage Malware effects from persisting when infrastructure is restored
    */
-  static processMaintenanceCosts(gameState: GameState): GameState {
+  static cleanupPersistentEffectsOnStateChange(
+    gameState: GameState,
+    infrastructureId: string,
+    oldState: string,
+    newState: string
+  ): GameState {
+    if (!gameState.persistentEffects || gameState.persistentEffects.length === 0) {
+      return gameState;
+    }
+
+    console.log(`🔄 PERSISTENT EFFECT CLEANUP: Infrastructure ${infrastructureId} state changed: ${oldState} → ${newState}`);
+
+    const beforeCount = gameState.persistentEffects.length;
+    let filteredEffects = [...gameState.persistentEffects];
+
+    // Clean up effects when infrastructure changes away from the state they're watching
+    // For example: Multi-Stage Malware watches vulnerable→compromised, so if it goes vulnerable→secure, clean up
+    for (const effect of gameState.persistentEffects) {
+      if (effect.targetId === infrastructureId) {
+        // Check if the state change invalidates this persistent effect
+        let shouldRemove = false;
+
+        if (effect.type === 'on_compromise') {
+          // If infrastructure was vulnerable and goes to secure (reaction card), remove the effect
+          if (oldState === 'vulnerable' && newState === 'secure') {
+            shouldRemove = true;
+            console.log(`🗑️ Removing Multi-Stage Malware effect: infrastructure restored from vulnerable to secure`);
+          }
+          // If infrastructure was compromised and goes to secure (response card), remove the effect
+          else if (oldState === 'compromised' && newState === 'secure') {
+            shouldRemove = true;
+            console.log(`🗑️ Removing Multi-Stage Malware effect: infrastructure restored from compromised to secure`);
+          }
+        }
+
+        if (shouldRemove) {
+          filteredEffects = filteredEffects.filter(e => e !== effect);
+          console.log(`🧹 Removed persistent effect ${effect.type} from ${effect.sourceCardId} targeting ${infrastructureId}`);
+        }
+      }
+    }
+
+    const afterCount = filteredEffects.length;
+    if (beforeCount !== afterCount) {
+      console.log(`🔄 CLEANUP RESULT: Removed ${beforeCount - afterCount} persistent effects due to state change`);
+      return {
+        ...gameState,
+        persistentEffects: filteredEffects
+      };
+    }
+
+    return gameState;
+  }
+
+  /**
+   * Calculate and apply maintenance costs at turn start (per-turn basis)
+   * Graduated timing: Each player pays maintenance at the start of their own turn
+   * - 3 shielded/vulnerable = 1 AP cost per turn
+   * - 4 shielded/vulnerable = 2 AP cost per turn
+   * - 5 shielded/vulnerable = 3 AP cost per turn
+   * - If can't pay: randomly remove 1 infrastructure with that state next turn
+   */
+  static processMaintenanceCosts(gameState: GameState, currentPlayerId?: string): GameState {
     if (!gameState.infrastructure || !gameState.attacker || !gameState.defender) {
       return gameState;
     }
@@ -273,8 +361,11 @@ export class TemporaryEffectsManager {
       return count - 2; // 3->1, 4->2, 5->3
     };
 
-    // Attacker maintenance cost for vulnerable infrastructure
-    if (vulnerableCount >= 3) {
+    const isAttackerTurn = currentPlayerId === '0';
+    const isDefenderTurn = currentPlayerId === '1';
+
+    // Attacker maintenance cost for vulnerable infrastructure (only on attacker's turn)
+    if (isAttackerTurn && vulnerableCount >= 3) {
       const maintenanceCost = calculateMaintenanceCost(vulnerableCount);
       const attacker = updatedGameState.attacker!;
       
@@ -342,8 +433,8 @@ export class TemporaryEffectsManager {
       }
     }
 
-    // Defender maintenance cost for shielded infrastructure
-    if (shieldedCount >= 3) {
+    // Defender maintenance cost for shielded infrastructure (only on defender's turn)
+    if (isDefenderTurn && shieldedCount >= 3) {
       const maintenanceCost = calculateMaintenanceCost(shieldedCount);
       const defender = updatedGameState.defender!;
       

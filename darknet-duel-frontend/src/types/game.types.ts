@@ -92,7 +92,7 @@ export interface InfrastructureCard {
   type: 'network' | 'web' | 'data' | 'user' | 'critical';
   description: string;
   flavor: string;
-  vulnerableVectors?: AttackVector[];
+  vulnerableVectors: AttackVector[];
   vulnerabilities: Vulnerability[] | string[];
   img: string;
   healthPoints?: number; // Added during gameplay

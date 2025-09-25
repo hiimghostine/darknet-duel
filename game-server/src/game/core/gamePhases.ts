@@ -177,27 +177,66 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
     onBegin: ({ G, ctx, events }: FnContext<GameState>) => {
       let updatedG = TemporaryEffectsManager.processTurnStart(G);
       const isAttacker = G.currentTurn === 'attacker';
+      const currentPlayer = isAttacker ? updatedG.attacker : updatedG.defender;
 
-      // Add AP at the start of the turn
-      if (isAttacker && updatedG.attacker) {
-        const { updateActionPoints } = require('./playerManager');
+      // CARD REPLENISHMENT: Draw cards at the start of the turn ONLY starting from round 2 (same as AP)
+      let updatedPlayer = null;
+      if (currentPlayer && updatedG.currentRound >= 2) {
+        updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
+        
+        const maxHandSize = updatedG.gameConfig.maxHandSize;
+        const cardsToDrawPerTurn = updatedG.gameConfig.cardsDrawnPerTurn;
+        const currentHandSize = updatedPlayer.hand?.length || 0;
+        const cardsToDrawCount = Math.min(cardsToDrawPerTurn, maxHandSize - currentHandSize);
+        
+        console.log(`🃏 Turn start card replenishment (Round ${updatedG.currentRound}): ${G.currentTurn} drawing ${cardsToDrawCount} cards (hand: ${currentHandSize}/${maxHandSize})`);
+        
+        if (cardsToDrawCount > 0) {
+          for (let i = 0; i < cardsToDrawCount; i++) {
+            updatedPlayer = drawCard(updatedPlayer);
+          }
+        }
+        
+        // Update the game state with the player who drew cards
         updatedG = {
           ...updatedG,
-          attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
+          [isAttacker ? 'attacker' : 'defender']: updatedPlayer
         };
-      } else if (!isAttacker && updatedG.defender) {
-        const { updateActionPoints } = require('./playerManager');
+      } else if (currentPlayer) {
+        // For round 1, just reset free card cycles without drawing cards
+        updatedPlayer = JSON.parse(JSON.stringify(currentPlayer));
+        updatedPlayer.freeCardCyclesUsed = 0;
+        
         updatedG = {
           ...updatedG,
-          defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
+          [isAttacker ? 'attacker' : 'defender']: updatedPlayer
         };
+        
+        if (updatedG.currentRound < 2) {
+          console.log(`🃏 Round ${updatedG.currentRound}: No card replenishment (starts from Round 2)`);
+        }
       }
 
-      // Only process maintenance costs at the start of new rounds (when attacker starts their turn)
-      if (isAttacker) {
-        console.log(`🔄 NEW ROUND ${G.currentRound}: Processing maintenance costs`);
-        updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG);
+      // Add AP at the start of the turn ONLY starting from round 2
+      if (updatedG.currentRound >= 2) {
+        if (isAttacker && updatedG.attacker) {
+          const { updateActionPoints } = require('./playerManager');
+          updatedG = {
+            ...updatedG,
+            attacker: updateActionPoints(updatedG.attacker, 'attacker', updatedG.gameConfig)
+          };
+        } else if (!isAttacker && updatedG.defender) {
+          const { updateActionPoints } = require('./playerManager');
+          updatedG = {
+            ...updatedG,
+            defender: updateActionPoints(updatedG.defender, 'defender', updatedG.gameConfig)
+          };
+        }
       }
+
+      // Process maintenance costs at the start of each player's turn (graduated timing)
+      console.log(`🔄 TURN START: Processing maintenance costs for ${isAttacker ? 'attacker' : 'defender'}`);
+      updatedG = TemporaryEffectsManager.processMaintenanceCosts(updatedG, isAttacker ? '0' : '1');
 
       events.setActivePlayers({ currentPlayer: 'action' });
 
@@ -221,15 +260,12 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
       if (G.currentTurn === 'defender') {
         updatedG.currentRound = G.currentRound + 1;
         
-        if (updatedG.currentRound > 15) {
-          if (updatedG.attackerScore > updatedG.defenderScore) {
-            updatedG.winner = 'attacker' as PlayerRole;
-          } else if (updatedG.defenderScore > updatedG.attackerScore) {
-            updatedG.winner = 'defender' as PlayerRole;
-          } else {
-            updatedG.winner = undefined; 
-            updatedG.message = `Game ended after ${updatedG.currentRound - 1} rounds. It's a draw!`;
-          }
+        // Import and use the correct win determination logic
+        const { checkGameEnd } = require('./gameState');
+        const gameEndResult = checkGameEnd(updatedG);
+        
+        if (gameEndResult) {
+          updatedG.winner = gameEndResult.winner as PlayerRole;
           updatedG.gameEnded = true;
           updatedG.gamePhase = 'gameOver' as const;
           events.setPhase('gameOver');
@@ -244,7 +280,10 @@ export const playingPhase: PhaseConfig<GameState, Record<string, unknown>> = {
         currentTurn: nextTurn,
         turnNumber: nextTurn === 'attacker' ? G.turnNumber + 1 : G.turnNumber,
         currentStage: null as TurnStage,
-        message: `${roundMsg} - ${turnMsg}`
+        message: `${roundMsg} - ${turnMsg}`,
+        pendingReactions: [],
+        reactionComplete: false,
+        currentActionPlayer: undefined
       };
     },
     
@@ -337,7 +376,7 @@ export const gameOverPhase = {
                 id: Date.now().toString(),
                 sender: 'system',
                 senderRole: 'attacker' as PlayerRole,
-                content: `${playerID === G.attacker?.id ? 'Attacker' : 'Defender'} has requested a rematch!`,
+                content: `${playerID === '0' ? 'Attacker' : 'Defender'} has requested a rematch!`,
                 timestamp: Date.now(),
                 isSystem: true
               };
@@ -366,13 +405,34 @@ export const gameOverPhase = {
   onBegin: ({ G, ctx }: FnContext<GameState>) => {
     console.log('Game over, winner:', G.winner);
     
-    const gameDuration = Date.now() - (G.actions[0]?.timestamp || Date.now());
-    const cardsPlayed = G.actions.filter(action => 
-      action.actionType === 'playCard' || action.actionType === 'throwCard'
-    ).length;
-    const infrastructureChanged = G.actions.filter(action => 
-      action.payload.infrastructureId !== undefined
-    ).length;
+    // FIXED: Calculate game duration properly
+    const gameStartTime = G.actions.length > 0 ? G.actions[0].timestamp : Date.now();
+    const gameEndTime = Date.now();
+    const gameDuration = gameEndTime - gameStartTime;
+    
+    // FIXED: Count all card-related actions properly
+    const cardsPlayed = G.actions.filter(action => {
+      return action.actionType === 'playCard' ||
+             action.actionType === 'throwCard' ||
+             action.actionType === 'cycleCard';
+    }).length;
+    
+    // FIXED: Count actual infrastructure state changes, not just targeting
+    const infrastructureChanged = G.actions.filter(action => {
+      // Check if action has payload and involves infrastructure state changes
+      return action.payload &&
+             (action.payload.infrastructureId !== undefined ||
+              action.payload.oldState !== undefined ||
+              action.payload.newState !== undefined ||
+              action.actionType === 'throwCard'); // throwCard always affects infrastructure
+    }).length;
+    
+    console.log(`📊 Game stats calculated:`, {
+      gameDuration: `${Math.floor(gameDuration / 1000)}s`,
+      cardsPlayed,
+      infrastructureChanged,
+      totalActions: G.actions.length
+    });
     
     // Determine win reason
     let winReason = 'Unknown';

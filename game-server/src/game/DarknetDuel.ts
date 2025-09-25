@@ -53,14 +53,29 @@ const DarknetDuel: Game<GameState> = {
   
   // Game moves (actions players can take)
   moves: {
+    // Forfeit move for disconnection/inactivity handling
+    forfeitGame: ({ G, ctx, playerID }, reason: 'disconnection' | 'inactivity') => {
+      console.log(`Player ${playerID} forfeited due to ${reason}`);
+      
+      // Determine winner (opponent of forfeiting player)
+      const opponentID = playerID === '0' ? '1' : '0';
+      const winnerRole = G.attacker?.id === opponentID ? 'attacker' : 'defender';
+      
+      // Update game state to end with forfeit
+      G.gamePhase = 'gameOver';
+      G.gameEnded = true;
+      G.winner = winnerRole;
+      G.message = `Player ${playerID} forfeited due to ${reason}`;
+    },
+    
     // Send chat message
     sendChatMessage: ({ G, playerID }, message) => {
       // Determine player role based on game state
-      // Default to attacker if we can't determine, but we'll always try to get the correct role
+      // FIXED: Use BoardGame.io player IDs (0 = attacker, 1 = defender) instead of UUIDs
       let senderRole: PlayerRole = 'attacker';
-      if (playerID === G.attacker?.id) {
+      if (playerID === '0') {
         senderRole = 'attacker';
-      } else if (playerID === G.defender?.id) {
+      } else if (playerID === '1') {
         senderRole = 'defender';
       }
       

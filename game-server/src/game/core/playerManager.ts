@@ -20,8 +20,8 @@ export const initializePlayer = (playerId: string, role: PlayerRole, gameConfig:
     name: `Player ${playerId}`, // Adding name property with a default value
     role: role, // Explicitly set the player role
     resources: gameConfig.initialResources,
-    // Initialize action points to 0 at game start
-    actionPoints: 0,
+    // Initialize action points based on game config
+    actionPoints: gameConfig.initialActionPoints,
     freeCardCyclesUsed: 0, // Reset card cycles used counter
     deck: deck,
     hand: [],
@@ -50,12 +50,13 @@ export const initializePlayerWithData = (
   console.log(`Created ${role} deck with ${deck.length} cards for player ${userData.name} (UUID: ${userData.id}, BGio ID: ${playerId})`);
 
   return {
-    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1")
+    id: playerId,                // ✅ Use boardgame.io player ID ("0" or "1") for game logic
+    uuid: userData.id,           // ✅ Store real user UUID for server operations  
     name: userData.name,         // ✅ Use real user name
-    realUserId: userData.id,     // ✅ Store real user UUID separately
+    realUserId: userData.id,     // ✅ Keep for backward compatibility
     role: role,
     resources: gameConfig.initialResources,
-    actionPoints: 0,
+    actionPoints: gameConfig.initialActionPoints,
     freeCardCyclesUsed: 0,
     deck: deck,
     hand: [],
@@ -71,13 +72,21 @@ export const initializePlayerWithData = (
  */
 export const drawCard = (player: Player): Player => {
   if (player.deck.length === 0) {
+    console.log(`[DRAW DEBUG] Deck is empty for player ${player.id}`);
     return player;
   }
+  
+  // DEBUG: Log deck state before drawing
+  console.log(`[DRAW DEBUG] Player ${player.id} deck size: ${player.deck.length}`);
+  console.log(`[DRAW DEBUG] Next 3 cards in deck:`,
+    player.deck.slice(0, 3).map(c => ({ id: c.id, name: c.name })));
   
   const [card, ...remainingDeck] = player.deck;
   
   // Create a deep copy of the card to ensure all properties are preserved during serialization
   const cardCopy = JSON.parse(JSON.stringify(card));
+  
+  console.log(`[DRAW DEBUG] Drew card: ${cardCopy.id} (${cardCopy.name}), deck now has ${remainingDeck.length} cards`);
   
   return {
     ...player,

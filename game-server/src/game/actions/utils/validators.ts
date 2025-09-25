@@ -126,7 +126,7 @@ export function validateCardTargeting(
 
   switch (cardType) {
     case 'exploit':
-      // Exploit cards can target secure, fortified, or fortified_weaken infrastructure
+      // Exploit cards can target secure, fortified, or fortified_weaken infrastructure (NOT shielded - only counter-attacks can target shielded)
       if (infrastructure.state !== 'secure' &&
           infrastructure.state !== 'fortified' &&
           infrastructure.state !== 'fortified_weaken') {
@@ -177,11 +177,12 @@ export function validateCardTargeting(
       return { valid: true };
       
     case 'shield':
-      // Shield cards can target secure or vulnerable infrastructure (not compromised, shielded, or fortified)
-      if (infrastructure.state !== 'secure' && infrastructure.state !== 'vulnerable') {
+      // Shield cards can target secure or fortified_weaken infrastructure
+      // fortified_weaken infrastructure can be re-shielded to maintain protection
+      if (infrastructure.state !== 'secure' && infrastructure.state !== 'fortified_weaken') {
         return {
           valid: false,
-          message: "Shield cards can only target secure or vulnerable infrastructure"
+          message: "Shield cards can only target secure or fortified_weaken infrastructure"
         };
       }
       
@@ -237,13 +238,11 @@ export function validateCardTargeting(
       return { valid: true };
 
     case 'reaction':
-      // Reaction cards can target vulnerable or compromised infrastructure
-      if (infrastructure.state !== 'vulnerable' &&
-          infrastructure.state !== 'compromised' &&
-          (!infrastructure.vulnerabilities || infrastructure.vulnerabilities.length === 0)) {
+      // Reaction cards can ONLY target vulnerable infrastructure (not compromised)
+      if (infrastructure.state !== 'vulnerable') {
         return {
           valid: false,
-          message: "Reaction cards can only target vulnerable or compromised infrastructure"
+          message: "Reaction cards can only target vulnerable infrastructure"
         };
       }
       

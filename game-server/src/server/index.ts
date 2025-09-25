@@ -10,6 +10,7 @@ import bodyParser from 'koa-bodyparser';
 import { LobbyCleanupService } from '../services/lobbyCleanupService';
 import { GameState } from 'shared-types/game.types';
 import cardDataRouter from './cardDataRoutes';
+import { HeartbeatManager } from './heartbeat';
 
 // Environment variables
 const PORT = parseInt(process.env.GAME_SERVER_PORT || '8001');
@@ -41,6 +42,9 @@ const server = Server({
     PUBLIC_URL ? new URL(PUBLIC_URL).origin : '',
   ].filter(Boolean),
 });
+
+// Initialize heartbeat manager
+const heartbeatManager = new HeartbeatManager(server);
 
 // Configure server to use lobby
 if (server.db) {
@@ -97,25 +101,27 @@ server.router.use(async (ctx, next) => {
             // Create a new game state with updated player data
             const newGameState = { ...gameState };
             
-            // Update attacker if we have real data for player 0
+            // ✅ FIXED: Update attacker with both BoardGame.io ID and UUID
             if (realUserMap['0'] && gameState.attacker) {
               newGameState.attacker = {
                 ...gameState.attacker,
-                id: realUserMap['0'].id,
+                id: '0', // ← Keep BoardGame.io ID for game logic
+                uuid: realUserMap['0'].id, // ← Add real UUID for server operations
                 name: realUserMap['0'].name
               };
-              console.log(`✅ Updated attacker: ${newGameState.attacker.name} (${newGameState.attacker.id})`);
+              console.log(`✅ Updated attacker: ${newGameState.attacker.name} (ID: ${newGameState.attacker.id}, UUID: ${newGameState.attacker.uuid})`);
               stateUpdated = true;
             }
             
-            // Update defender if we have real data for player 1
+            // ✅ FIXED: Update defender with both BoardGame.io ID and UUID  
             if (realUserMap['1'] && gameState.defender) {
               newGameState.defender = {
                 ...gameState.defender,
-                id: realUserMap['1'].id,
+                id: '1', // ← Keep BoardGame.io ID for game logic
+                uuid: realUserMap['1'].id, // ← Add real UUID for server operations
                 name: realUserMap['1'].name
               };
-              console.log(`✅ Updated defender: ${newGameState.defender.name} (${newGameState.defender.id})`);
+              console.log(`✅ Updated defender: ${newGameState.defender.name} (ID: ${newGameState.defender.id}, UUID: ${newGameState.defender.uuid})`);
               stateUpdated = true;
             }
             
@@ -289,6 +295,57 @@ router.get('/health', (ctx: any) => {
   };
 });
 
+// Heartbeat endpoint with body parser middleware
+const parseJsonBody = bodyParser();
+router.post('/heartbeat', parseJsonBody, async (ctx: any) => {
+  try {
+    const { matchID, playerID, timestamp } = ctx.request.body;
+    
+    if (!matchID || !playerID || !timestamp) {
+      ctx.status = 400;
+      ctx.body = { error: 'Missing required fields: matchID, playerID, timestamp' };
+      return;
+    }
+
+    // Update heartbeat for the player
+    const playerHeartbeat = heartbeatManager.updateHeartbeat(matchID, playerID, timestamp);
+    
+    // Get opponent heartbeat status
+    const opponentHeartbeat = heartbeatManager.getOpponentHeartbeat(matchID, playerID);
+    
+    // Check for disconnection detection (immediate check)
+    await heartbeatManager.checkDisconnectionForfeit(matchID);
+    
+    // Check for inactivity-based forfeit
+    await heartbeatManager.checkInactivityForfeit(matchID);
+    
+    ctx.body = {
+      success: true,
+      playerStatus: {
+        isConnected: playerHeartbeat.isConnected,
+        latency: playerHeartbeat.latency,
+        lastHeartbeat: playerHeartbeat.lastHeartbeat,
+        reconnectAttempts: 0
+      },
+      opponentStatus: opponentHeartbeat ? {
+        isConnected: heartbeatManager.isPlayerConnected(matchID, opponentHeartbeat.playerID),
+        latency: opponentHeartbeat.latency,
+        lastHeartbeat: opponentHeartbeat.lastHeartbeat,
+        reconnectAttempts: 0
+      } : {
+        isConnected: false,
+        latency: 0,
+        lastHeartbeat: 0,
+        reconnectAttempts: 0
+      }
+    };
+  } catch (error) {
+    console.error('Error handling heartbeat:', error);
+    ctx.status = 500;
+    ctx.body = { error: 'Internal server error' };
+  }
+});
+
 // Validate auth token with main backend server
 router.post('/validate-token', async (ctx: any) => {
   try {
@@ -436,20 +493,22 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       // Look for players in the state object
       if (state.G && state.G.attacker && state.G.defender) {
         // Game-specific structure where players are in G as attacker/defender
-        // ✅ Use real player data if available, otherwise fall back to game state
+        // ✅ FIXED: Prefer UUID from game state, fallback to real player data, last resort to BoardGame.io ID
         players = {
           '0': realPlayerData['0'] || {
-            id: state.G.attacker.id || '0',
+            id: state.G.attacker.uuid || state.G.attacker.id || '0', // ← Try UUID first!
             name: state.G.attacker.name || 'Attacker',
             role: 'attacker'
           },
           '1': realPlayerData['1'] || {
-            id: state.G.defender.id || '1',
+            id: state.G.defender.uuid || state.G.defender.id || '1', // ← Try UUID first!
             name: state.G.defender.name || 'Defender',
             role: 'defender'
           }
         };
-        console.log(`Using game-specific player structure with real data overlay`);
+        console.log(`Using game-specific player structure with UUID priority`);
+        console.log(`Player 0 ID: ${players['0'].id} (from ${state.G.attacker.uuid ? 'game state UUID' : state.G.attacker.id === '0' ? 'BoardGame.io ID' : 'game state ID'})`);
+        console.log(`Player 1 ID: ${players['1'].id} (from ${state.G.defender.uuid ? 'game state UUID' : state.G.defender.id === '1' ? 'BoardGame.io ID' : 'game state ID'})`);
       } else if (state.players) {
         // Players are directly in state - overlay real data
         players = { ...state.players };
@@ -561,10 +620,14 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       const player = players[key];
       let playerId = player.id || key;
       
-      // Check if this is likely a development/test player ID (numeric)
+      // ✅ FIXED: Check if we have a UUID vs BoardGame.io ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(playerId);
       const isDevPlayerId = /^\d+$/.test(playerId);
-      if (isDevPlayerId) {
-        console.log(`WARNING: Using unmapped player ID: ${playerId} - this may cause foreign key errors in backend`);
+      
+      if (isUuid) {
+        console.log(`✅ Using UUID for player ${key}: ${playerId}`);
+      } else if (isDevPlayerId) {
+        console.log(`⚠️ Using development/test player ID: ${playerId} - this may cause foreign key errors in backend`);
       }
       
       return {
@@ -599,7 +662,6 @@ const handleGameEnd = async (gameID: string, matchData: ServerMatchData): Promis
       endTime: endTime,
       actions: G.actions || [],
       gameMode,
-      abandonReason: winnerRole === 'abandoned' ? 'players_disconnected' : undefined
     };
     
     console.log('🔍 Final winner object being sent:', JSON.stringify(gameResult.winner, null, 2));
@@ -698,192 +760,8 @@ const serverConfig = { port: PORT };
 // Initialize the lobby cleanup service
 const lobbyCleanupService = new LobbyCleanupService(server);
 
-// Function to check if all players have disconnected and mark the game as abandoned
-const checkAndHandleAbandonment = async (matchID: string) => {
-  if (!server.db) return;
-  
-  try {
-    // Get match data
-    const match = await server.db.fetch(matchID, { state: true, metadata: true });
-    if (!match) return;
 
-    // Check if any players are still connected
-    const metadata = match.metadata;
-    let anyPlayersConnected = false;
-    
-    if (metadata?.players) {
-      // Convert players object to array to check connections
-      const playerEntries = Object.entries(metadata.players);
-      anyPlayersConnected = playerEntries.some(([_, player]) => {
-        return player && typeof player === 'object' && (player as any).isConnected;
-      });
-    }
-    
-    if (!anyPlayersConnected) {
-      console.log(`All players disconnected from match ${matchID}, marking as abandoned and removing immediately`);
-      
-      // Get the current game state
-      const currentState = match.state;
-      if (!currentState || !currentState.G) return;
-      
-      // Set the game as abandoned
-      const updatedG = {
-        ...currentState.G,
-        gamePhase: 'gameOver',
-        gameEnded: true,
-        winner: 'abandoned',
-        message: 'Game abandoned due to all players disconnecting'
-      };
-      
-      // Update the game state with the complete state structure
-      await server.db.setState(matchID, {
-        ...currentState,
-        G: updatedG
-      });
-      
-      // Immediately remove the abandoned game
-      await lobbyCleanupService.removeAbandonedGame(matchID);
-    }
-  } catch (error) {
-    console.error(`Error checking abandonment for match ${matchID}:`, error);
-  }
-};
 
-// Instead of trying to listen to socket events directly, we'll implement a function to
-// regularly check for games with all players disconnected and mark them as abandoned
-const checkAllGamesForDisconnections = async () => {
-  if (!server.db) return;
-  
-  try {
-    // Get all active matches
-    const matches = await server.db.listMatches();
-    
-    for (const matchID of matches) {
-      try {
-        // Check each match's metadata for player connections
-        const match = await server.db.fetch(matchID, { metadata: true, state: true });
-        
-        if (!match || !match.state || !match.metadata) continue;
-        
-        // Get player metadata
-        const metadata = match.metadata;
-        
-        // Skip games that are already marked as abandoned
-        const gameState = match.state.G;
-        if (gameState && gameState.winner === 'abandoned') continue;
-        
-        // Check all players' connection status
-        let anyRealPlayersConnected = false;
-        let atLeastOneRealPlayer = false;
-        let hostConnected = false;
-        let connectedPlayerIds: string[] = [];
-        
-        if (metadata.players) {
-          const playerEntries = Object.entries(metadata.players);
-          
-          // Check each player
-          for (const [playerId, player] of playerEntries) {
-            if (player && typeof player === 'object') {
-              const hasName = !!(player as any).name;
-              const isConnected = !!(player as any).isConnected;
-              
-              // Check if this is the host (player 0)
-              if (playerId === '0') {
-                hostConnected = hasName && isConnected;
-              }
-              
-              if (hasName) {
-                atLeastOneRealPlayer = true;
-                
-                if (isConnected) {
-                  anyRealPlayersConnected = true;
-                  connectedPlayerIds.push(playerId);
-                }
-              }
-            }
-          }
-          
-          // Handle host transfer if host is disconnected but other players remain
-          if (!hostConnected && anyRealPlayersConnected && connectedPlayerIds.length > 0) {
-            console.log(`Host disconnected from match ${matchID}, transferring host role to another player`);
-            
-            // Get the next connected player to make host
-            const newHostId = connectedPlayerIds[0];
-            
-            if (newHostId && newHostId !== '0' && metadata.players && (metadata.players as Record<string, any>)[newHostId]) {
-              try {
-                // Get the current player data
-                const players = metadata.players as Record<string, any>;
-                const currentHostData = players['0'] || {};
-                const newHostData = players[newHostId] || {};
-                
-                // Transfer host data to player 0 slot
-                players['0'] = {
-                  ...newHostData,
-                  id: 0 // Ensure correct ID
-                };
-                
-                // Move original host data to the other player slot
-                players[newHostId] = {
-                  ...currentHostData,
-                  id: parseInt(newHostId) // Ensure correct ID
-                };
-                
-                // Update game metadata with the new host assignment
-                await server.db.setMetadata(matchID, metadata);
-                
-                console.log(`Successfully transferred host from player 0 to player ${newHostId} in match ${matchID}`);
-                
-                // Since we transferred the host, we don't need to mark as abandoned
-                hostConnected = true;
-              } catch (error) {
-                console.error(`Failed to transfer host for match ${matchID}:`, error);
-              }
-            }
-          }
-        }
-        
-        // Get the creation time of the match from metadata
-        const creationTime = metadata?.createdAt ? new Date(metadata.createdAt).getTime() : 0;
-        const now = Date.now();
-        const matchAge = now - creationTime;
-        
-        // Don't mark games as abandoned if they're less than 60 seconds old
-        // This gives players time to properly connect to new games
-        const NEW_GAME_GRACE_PERIOD = 60000; // 60 seconds
-        
-        // Only mark as abandoned if there were real players, none are connected, and the game isn't brand new
-        if (atLeastOneRealPlayer && !anyRealPlayersConnected && match.state && matchAge > NEW_GAME_GRACE_PERIOD) {
-          console.log(`All players disconnected from match ${matchID} (age: ${Math.round(matchAge/1000)}s), marking as abandoned`);
-          
-          // Update the game state to be abandoned
-          const updatedG = {
-            ...match.state.G,
-            gamePhase: 'gameOver',
-            gameEnded: true,
-            winner: 'abandoned',
-            message: 'Game abandoned due to all players disconnecting'
-          };
-          
-          // Update the state
-          await server.db.setState(matchID, {
-            ...match.state,
-            G: updatedG
-          });
-        } else if (atLeastOneRealPlayer && !anyRealPlayersConnected && match.state && matchAge <= NEW_GAME_GRACE_PERIOD) {
-          console.log(`Skipping abandonment check for new match ${matchID} (age: ${Math.round(matchAge/1000)}s < ${NEW_GAME_GRACE_PERIOD/1000}s grace period)`);
-        }
-      } catch (error) {
-        console.error(`Error checking disconnections for match ${matchID}:`, error);
-      }
-    }
-  } catch (error) {
-    console.error('Error checking games for disconnections:', error);
-  }
-};
-
-// Run disconnection check frequently (every 10 seconds)
-setInterval(checkAllGamesForDisconnections, 10000);
 
 // Configure the cleanup service to run frequently (every 10 seconds)
 lobbyCleanupService.setCleanupInterval(10000); // 10 seconds

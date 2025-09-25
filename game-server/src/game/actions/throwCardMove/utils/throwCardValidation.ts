@@ -125,7 +125,7 @@ export function validateTargetInfrastructure(G: GameState, targetInfrastructureI
 /**
  * Determines the effective card type for validation
  */
-export function determineEffectiveCardType(card: Card, targetInfrastructure: any): {
+export function determineEffectiveCardType(card: Card, targetInfrastructure: any, isAttacker?: boolean): {
   effectiveCardType: CardType;
   validationCardType: CardType;
 } {
@@ -159,10 +159,30 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
   // For wildcard cards, we need to validate against the intended type, not 'wildcard'
   let validationCardType = effectiveCardType;
   if (effectiveCardType === 'wildcard' && card.wildcardType) {
-    // Handle special wildcards differently
+    // Handle special wildcards differently based on player role
     if (card.wildcardType === 'special') {
-      validationCardType = 'special'; // Special cards like Lateral Movement
-      console.log(`Special wildcard validation: Using special type for ${card.name}`);
+      if (isAttacker && targetInfrastructure) {
+        // Attacker special wildcards: select based on infrastructure state
+        switch (targetInfrastructure.state) {
+          case 'secure':
+          case 'fortified':
+          case 'fortified_weaken':
+          case 'shielded':
+            validationCardType = 'exploit';
+            break;
+          case 'vulnerable':
+            validationCardType = 'attack';
+            break;
+          default:
+            validationCardType = 'exploit';
+            break;
+        }
+        console.log(`Special wildcard validation: Using ${validationCardType} type for attacker targeting ${targetInfrastructure.state} infrastructure`);
+      } else {
+        // Defender special wildcards or no target
+        validationCardType = 'special';
+        console.log(`Special wildcard validation: Using special type for ${card.name}`);
+      }
     } else if (targetInfrastructure) {
       // For other wildcards, determine the intended type based on target infrastructure
       if (targetInfrastructure.state === 'secure') {
@@ -178,6 +198,69 @@ export function determineEffectiveCardType(card: Card, targetInfrastructure: any
       }
       
       console.log(`Wildcard validation: Using ${validationCardType} type for ${targetInfrastructure.state} infrastructure`);
+    }
+  }
+  // Special handling for exploit-attack wildcards - override effectiveCardType logic
+  else if (card.wildcardType === 'exploit-attack' && targetInfrastructure) {
+    // For exploit-attack wildcards, choose the type based on target infrastructure state
+    if (targetInfrastructure.state === 'vulnerable') {
+      validationCardType = 'attack'; // attack can target vulnerable infrastructure
+      console.log(`🎯 Exploit-attack wildcard validation: Using ATTACK type for vulnerable infrastructure ${targetInfrastructure.name}`);
+    } else if (targetInfrastructure.state === 'secure' || targetInfrastructure.state === 'fortified' || targetInfrastructure.state === 'fortified_weaken') {
+      validationCardType = 'exploit'; // exploit can target secure/fortified infrastructure
+      console.log(`🎯 Exploit-attack wildcard validation: Using EXPLOIT type for ${targetInfrastructure.state} infrastructure ${targetInfrastructure.name}`);
+    } else {
+      validationCardType = 'exploit'; // default to exploit for other states
+      console.log(`🎯 Exploit-attack wildcard validation: Using EXPLOIT type (default) for ${targetInfrastructure.state} infrastructure ${targetInfrastructure.name}`);
+    }
+  }
+  // Special handling for shield-fortify wildcards - override effectiveCardType logic
+  else if (card.wildcardType === 'shield_or_fortify' && targetInfrastructure) {
+    // For shield-fortify wildcards, choose the type based on target infrastructure state
+    if (targetInfrastructure.state === 'shielded') {
+      validationCardType = 'fortify'; // fortify can target shielded infrastructure
+      console.log(`🛡️ Shield-fortify wildcard validation: Using FORTIFY type for shielded infrastructure ${targetInfrastructure.name}`);
+    } else if (targetInfrastructure.state === 'secure') {
+      validationCardType = 'shield'; // shield can target secure infrastructure
+      console.log(`🛡️ Shield-fortify wildcard validation: Using SHIELD type for secure infrastructure ${targetInfrastructure.name}`);
+    } else {
+      validationCardType = 'shield'; // default to shield for other states
+      console.log(`🛡️ Shield-fortify wildcard validation: Using SHIELD type (default) for ${targetInfrastructure.state} infrastructure ${targetInfrastructure.name}`);
+    }
+  }
+  // Special handling for ANY wildcards - intelligent role-based validation
+  else if (card.wildcardType === 'any' && targetInfrastructure) {
+    // Determine player role
+    const isAttackerCard = card.id.startsWith('A');
+    const playerRole = isAttackerCard ? 'attacker' : 'defender';
+    
+    // Choose validation type based on infrastructure state AND player role
+    switch (targetInfrastructure.state) {
+      case 'secure':
+        validationCardType = isAttackerCard ? 'exploit' : 'shield';
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting secure -> ${validationCardType.toUpperCase()} type`);
+        break;
+      case 'vulnerable':
+        validationCardType = isAttackerCard ? 'attack' : 'reaction';
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting vulnerable -> ${validationCardType.toUpperCase()} type`);
+        break;
+      case 'shielded':
+        validationCardType = isAttackerCard ? 'counter-attack' : 'fortify';
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting shielded -> ${validationCardType.toUpperCase()} type`);
+        break;
+      case 'fortified':
+      case 'fortified_weaken':
+        validationCardType = 'exploit'; // Both roles can exploit fortified infrastructure
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting ${targetInfrastructure.state} -> EXPLOIT type`);
+        break;
+      case 'compromised':
+        validationCardType = 'response'; // Both roles can respond to compromised infrastructure
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting compromised -> RESPONSE type`);
+        break;
+      default:
+        validationCardType = isAttackerCard ? 'exploit' : 'shield';
+        console.log(`🌟 ANY wildcard validation: ${playerRole} targeting ${targetInfrastructure.state} -> ${validationCardType.toUpperCase()} type (default)`);
+        break;
     }
   }
   
@@ -265,7 +348,8 @@ export function validateThrowCardMove(context: ValidationContext): ValidationRes
   // Step 5: Determine effective card types
   const { effectiveCardType, validationCardType } = determineEffectiveCardType(
     card,
-    targetInfrastructure
+    targetInfrastructure,
+    turnValidation.isAttacker
   );
   
   return {

@@ -30,11 +30,21 @@ export function shieldEffect(
   const shieldArray = currentInfra.shields ? [...currentInfra.shields] : [];
   shieldArray.push(newShield);
   
+  // Determine the correct target state based on current infrastructure state
+  let targetState: InfrastructureState;
+  if (currentInfra.state === 'fortified_weaken') {
+    // fortified_weaken + shield -> return to fortified state
+    targetState = 'fortified';
+  } else {
+    // secure + shield -> shielded state (normal behavior)
+    targetState = 'shielded';
+  }
+  
   // Create a new infra object with updated state and shields
   newInfrastructure[infraIndex] = {
     ...currentInfra,
     shields: shieldArray,
-    state: 'shielded' as InfrastructureState
+    state: targetState
   };
   
   return newInfrastructure;

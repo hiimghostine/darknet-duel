@@ -64,16 +64,19 @@ export const chooseHandDiscardMove = (
     // Import throwCardMove here to avoid circular dependency
     const { throwCardMove } = require('../actions/throwCardMove/throwCardMove');
     
-    // Create a context object
-    const fakeCtx = {
+    // Use the original context if available, otherwise create a fallback
+    const originalCtx = (G.pendingHandChoice?.pendingCardPlay as any)?.originalCtx;
+    const contextToUse = originalCtx || {
       phase: 'playing',
       currentPlayer: playerID,
       activePlayers: { [playerID]: 'action' }
     };
     
+    console.log(`🍯 Using ${originalCtx ? 'original' : 'fallback'} context for tax continuation`);
+    
     // Continue with the original card play now that tax is paid - SKIP TAX CHECK to prevent loop
     return throwCardMove(
-      { G: gameState, ctx: fakeCtx, playerID: playerID },
+      { G: gameState, ctx: contextToUse, playerID: playerID },
       cardId,
       targetInfrastructureId,
       true // skipTaxCheck = true to prevent infinite loop

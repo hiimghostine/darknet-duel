@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
+import AppFooter from '../components/AppFooter';
 import coverPhoto from '../assets/Cover Photo.png';
 
 const HomePage: React.FC = () => {
@@ -85,7 +86,7 @@ const HomePage: React.FC = () => {
               </span>
             </h1>
             <p className="text-base-content/80 text-lg mb-8 font-light max-w-md leading-relaxed">
-              Connect to the network, customize your digital fighter, and compete in the ultimate cyberpunk hacking tournament where only the elite survive.
+             Enter the digital battlefield, assemble your cybersecurity arsenal, and engage in the ultimate hacking duel where only the most strategic minds prevail.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -152,11 +153,7 @@ const HomePage: React.FC = () => {
       </main>
       
       {/* Footer */}
-      <footer className="relative z-10 container mx-auto px-4 py-6 mt-auto">
-        <div className="border-t border-base-content/10 pt-6 text-center text-xs text-base-content/50 font-mono">
-          DARKNET_DUEL v0.0.1 • SYSTEM ACCESSED: {new Date().toLocaleDateString()}
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 };

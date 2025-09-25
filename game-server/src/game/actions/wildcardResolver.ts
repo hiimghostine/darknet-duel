@@ -9,6 +9,23 @@ import { GameState, InfrastructureState } from 'shared-types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardUtils';
 import { InfrastructureCard } from 'shared-types/game.types';
 import { TemporaryEffectsManager, TemporaryEffect, PersistentEffect } from './temporaryEffectsManager';
+import { createInfrastructureCards } from '../cards/infrastructureCardLoader';
+import { calculateScores } from './utils/scoring';
+
+/**
+ * Get original vulnerabilities for an infrastructure card from its definition
+ */
+function getOriginalInfrastructureVulnerabilities(infrastructureId: string): string[] {
+  const originalCards = createInfrastructureCards();
+  const originalCard = originalCards.find(card => card.id === infrastructureId);
+  
+  if (originalCard && Array.isArray(originalCard.vulnerabilities)) {
+    // Filter to only string vulnerabilities (original definition format)
+    return originalCard.vulnerabilities.filter(v => typeof v === 'string') as string[];
+  }
+  
+  return []; // Fallback to empty array if not found
+}
 
 export interface WildcardPlayContext {
   gameState: GameState;
@@ -64,6 +81,17 @@ export class WildcardResolver {
       return ['response'];
     }
     
+    // Special handling for 'special' wildcards based on player role
+    if (card.wildcardType === 'special') {
+      if (context.playerRole === 'attacker') {
+        // Attacker special wildcards (like Lateral Movement) can be exploit or attack
+        return ['exploit', 'attack'];
+      } else {
+        // Defender special wildcards can be shield or fortify
+        return ['shield', 'fortify'];
+      }
+    }
+    
     // Get basic available types from the card
     const basicTypes = getAvailableCardTypes(card.wildcardType);
     
@@ -114,18 +142,19 @@ export class WildcardResolver {
     // Check if the target infrastructure is valid for the card type
     switch (asType) {
       case 'exploit':
-        // Can only exploit secure or shield-protected infrastructure
+        // Can exploit secure, fortified, or fortified_weaken infrastructure (NOT shielded - only counter-attacks can target shielded)
         return targetInfrastructure.state === 'secure' ||
-               targetInfrastructure.state === 'shielded';
+               targetInfrastructure.state === 'fortified' ||
+               targetInfrastructure.state === 'fortified_weaken';
       
       case 'attack':
         // Can only attack vulnerable infrastructure
         return targetInfrastructure.state === 'vulnerable';
       
       case 'shield':
-        // Can shield secure or vulnerable infrastructure (not compromised)
+        // Can shield secure or fortified_weaken infrastructure
         return targetInfrastructure.state === 'secure' ||
-               targetInfrastructure.state === 'vulnerable';
+               targetInfrastructure.state === 'fortified_weaken';
       
       case 'fortify':
         // Can only fortify shielded infrastructure
@@ -247,11 +276,12 @@ export class WildcardResolver {
       console.log(`🎯 D302 Threat Intelligence Network detected! Card ID: ${card.id}`);
       
       // Determine target player (opponent)
-      const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
-      const opponentPlayerId = opponentRole === 'attacker' ?
-        updatedGameState.attacker?.id : updatedGameState.defender?.id;
+      // FIXED: Use BoardGame.io player ID for consistent opponent resolution
+      const isCurrentAttacker = context.playerID === '0';
+      const opponentPlayerId = isCurrentAttacker ? '1' : '0';  // Opponent is always the other player
       
       if (opponentPlayerId) {
+        const opponentRole = isCurrentAttacker ? 'defender' : 'attacker';
         console.log(`🎯 D302: Targeting opponent: ${opponentPlayerId} (${opponentRole})`);
         
         try {
@@ -285,31 +315,22 @@ export class WildcardResolver {
           updatedGameState.message = `${card.name} failed: Hand disruption error`;
         }
         
-        // Add card draw effect for the defender who played this card
-        const currentPlayer = context.playerRole === 'attacker' ?
-          updatedGameState.attacker : updatedGameState.defender;
+        // Add card draw effect - D302 is a defender card, so it ALWAYS draws from defender's deck
+        const defenderPlayer = updatedGameState.defender;
         
-        if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
-          const drawnCard = currentPlayer.deck[0];
-          const newHand = [...currentPlayer.hand, drawnCard];
-          const newDeck = currentPlayer.deck.slice(1);
+        if (defenderPlayer && defenderPlayer.deck && defenderPlayer.deck.length > 0) {
+          const drawnCard = defenderPlayer.deck[0];
+          const newHand = [...defenderPlayer.hand, drawnCard];
+          const newDeck = defenderPlayer.deck.slice(1);
           
-          // Update the current player's hand and deck
-          if (context.playerRole === 'attacker') {
-            updatedGameState.attacker = {
-              ...currentPlayer,
-              hand: newHand,
-              deck: newDeck
-            };
-          } else {
-            updatedGameState.defender = {
-              ...currentPlayer,
-              hand: newHand,
-              deck: newDeck
-            };
-          }
+          // Update the defender's hand and deck
+          updatedGameState.defender = {
+            ...defenderPlayer,
+            hand: newHand,
+            deck: newDeck
+          };
           
-          console.log(`🎯 D302: Drew 1 card for ${context.playerRole}`);
+          console.log(`🎯 D302: Drew 1 card for defender (from defender's deck)`);
         }
         
         updatedGameState.message = `${card.name}: Viewing opponent's hand and forcing discard of 2 cards. Drew 1 card.`;
@@ -331,10 +352,12 @@ export class WildcardResolver {
           if (infra.state === 'compromised') {
             restoredCount++;
             console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+            // Get original vulnerabilities from infrastructure definition
+            const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
             return {
               ...infra,
               state: 'secure' as InfrastructureState,
-              vulnerabilities: [] // Clear vulnerabilities like regular response cards
+              vulnerabilities: originalVulns // Restore original vulnerabilities
             };
           }
           return infra;
@@ -364,9 +387,9 @@ export class WildcardResolver {
         const { handleHandDisruption } = require('./handDisruption');
         
         // Determine target player (opponent)
-        const targetPlayerId = context.playerRole === 'attacker' ?
-          updatedGameState.defender?.id :
-          updatedGameState.attacker?.id;
+        // FIXED: Use BoardGame.io player ID for consistent targeting
+        const isAttackerForMemory = context.playerID === '0';
+        const targetPlayerId = isAttackerForMemory ? '1' : '0';  // Target opponent
         
         if (targetPlayerId) {
           console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
@@ -431,13 +454,39 @@ export class WildcardResolver {
           break;
           
         case 'chain_vulnerability':
-          // Mark that we need to make another infrastructure vulnerable
-          updatedGameState = TemporaryEffectsManager.addEffect(updatedGameState, {
-            type: 'chain_vulnerability',
-            playerId: context.playerID,
-            duration: 0, // Immediate effect
-            sourceCardId: card.id
-          });
+          // Trigger chain vulnerability effect for Lateral Movement
+          console.log(`🔗 Chain vulnerability effect triggered for ${card.name}`);
+          const { handleChainVulnerability } = require('./chainEffects');
+          
+          // Check if there are available targets before triggering
+          const secureInfrastructure = updatedGameState.infrastructure?.filter(infra => infra.state === 'secure') || [];
+          console.log(`🔗 Available secure infrastructure for chain vulnerability: ${secureInfrastructure.length}`);
+          
+          if (secureInfrastructure.length === 0) {
+            console.log(`🔗 No secure infrastructure available, skipping chain vulnerability effect`);
+            updatedGameState.message = `${card.name} played successfully, but no additional infrastructure available to target.`;
+          } else {
+            updatedGameState = handleChainVulnerability(updatedGameState, card, context.playerID || '');
+            console.log(`🔗 Chain vulnerability handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
+          }
+          break;
+        
+        case 'chain_security':
+          // Trigger chain security effect for Security Automation Suite
+          console.log(`🔗 Chain security effect triggered for ${card.name}`);
+          const { handleChainSecurity } = require('./chainEffects');
+          
+          // Check if there are available targets before triggering
+          const secureInfrastructureForSecurity = updatedGameState.infrastructure?.filter(infra => infra.state === 'secure') || [];
+          console.log(`🔗 Available secure infrastructure for chain security: ${secureInfrastructureForSecurity.length}`);
+          
+          if (secureInfrastructureForSecurity.length === 0) {
+            console.log(`🔗 No secure infrastructure available, skipping chain security effect`);
+            updatedGameState.message = `${card.name} played successfully, but no additional infrastructure available to shield.`;
+          } else {
+            updatedGameState = handleChainSecurity(updatedGameState, card, context.playerID || '');
+            console.log(`🔗 Chain security handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
+          }
           break;
         
         case 'prevent_exploits':
@@ -467,9 +516,9 @@ export class WildcardResolver {
           const { handleHandDisruption } = require('./handDisruption');
           
           // Determine target player (opponent)
-          const targetPlayerId = context.playerRole === 'attacker' ?
-            updatedGameState.defender?.id :
-            updatedGameState.attacker?.id;
+          // FIXED: Use BoardGame.io player ID for consistent targeting
+          const isAttackerForDiscard = context.playerID === '0';
+          const targetPlayerId = isAttackerForDiscard ? '1' : '0';  // Target opponent
           
           if (targetPlayerId) {
             console.log(`💥 Memory Corruption Attack targeting player: ${targetPlayerId}`);
@@ -490,11 +539,11 @@ export class WildcardResolver {
           console.log(`🎯 Intel disrupt effect detected for card: ${card.id}`);
           
           // Determine target player (opponent)
-          const opponentRole = context.playerRole === 'attacker' ? 'defender' : 'attacker';
-          const opponentPlayerId = opponentRole === 'attacker' ?
-            updatedGameState.attacker?.id : updatedGameState.defender?.id;
+          // FIXED: Use BoardGame.io player ID for consistent opponent resolution
+          const isCurrentAttackerForIntel = context.playerID === '0';
+          const opponentPlayerIdForIntel = isCurrentAttackerForIntel ? '1' : '0';
           
-          if (opponentPlayerId) {
+          if (opponentPlayerIdForIntel) {
             // Import the hand disruption handler
             const { handleHandDisruption } = require('./handDisruption');
             
@@ -502,33 +551,24 @@ export class WildcardResolver {
             updatedGameState = handleHandDisruption(
               updatedGameState,
               'view_and_discard',
-              opponentPlayerId,
+              opponentPlayerIdForIntel,
               2 // Force discard 2 cards
             );
             
-            // Add card draw effect for the defender who played this card
-            const currentPlayer = context.playerRole === 'attacker' ?
-              updatedGameState.attacker : updatedGameState.defender;
+            // Add card draw effect - intel_disrupt is a defender effect, so it ALWAYS draws from defender's deck
+            const defenderPlayer = updatedGameState.defender;
             
-            if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
-              const drawnCard = currentPlayer.deck[0];
-              const newHand = [...currentPlayer.hand, drawnCard];
-              const newDeck = currentPlayer.deck.slice(1);
+            if (defenderPlayer && defenderPlayer.deck && defenderPlayer.deck.length > 0) {
+              const drawnCard = defenderPlayer.deck[0];
+              const newHand = [...defenderPlayer.hand, drawnCard];
+              const newDeck = defenderPlayer.deck.slice(1);
               
-              // Update the current player's hand and deck
-              if (context.playerRole === 'attacker') {
-                updatedGameState.attacker = {
-                  ...currentPlayer,
-                  hand: newHand,
-                  deck: newDeck
-                };
-              } else {
-                updatedGameState.defender = {
-                  ...currentPlayer,
-                  hand: newHand,
-                  deck: newDeck
-                };
-              }
+              // Update the defender's hand and deck
+              updatedGameState.defender = {
+                ...defenderPlayer,
+                hand: newHand,
+                deck: newDeck
+              };
             }
             
             updatedGameState.message = `Intelligence network activated: Opponent must discard 2 cards. Drew 1 card.`;
@@ -539,6 +579,10 @@ export class WildcardResolver {
           // Handle Emergency Response Team (D303) effect
           console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
           
+          // DEBUG: Log current scores before mass restore
+          console.log(`🔍 BEFORE mass_restore - Current scores: Attacker=${updatedGameState.attackerScore}, Defender=${updatedGameState.defenderScore}`);
+          console.log(`🔍 BEFORE mass_restore - Infrastructure states:`, updatedGameState.infrastructure?.map(i => `${i.name}:${i.state}`));
+          
           // Restore ALL compromised infrastructure to secure state
           if (updatedGameState.infrastructure) {
             let restoredCount = 0;
@@ -546,18 +590,34 @@ export class WildcardResolver {
               if (infra.state === 'compromised') {
                 restoredCount++;
                 console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+                // Get original vulnerabilities from infrastructure definition
+                const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
                 return {
                   ...infra,
                   state: 'secure' as InfrastructureState,
-                  vulnerabilities: [] // Clear vulnerabilities like regular response cards
+                  vulnerabilities: originalVulns // Restore original vulnerabilities
                 };
               }
               return infra;
             });
             
+            // DEBUG: Log infrastructure states after restoration
+            console.log(`🔍 AFTER restoration - Infrastructure states:`, updatedGameState.infrastructure.map(i => `${i.name}:${i.state}`));
+            
             if (restoredCount > 0) {
               updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
               console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+              
+              // Recalculate scores after mass restore
+              console.log(`🔍 CALCULATING new scores...`);
+              const { attackerScore, defenderScore } = calculateScores(updatedGameState.infrastructure);
+              console.log(`🔍 CALCULATED scores - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
+              
+              updatedGameState.attackerScore = attackerScore;
+              updatedGameState.defenderScore = defenderScore;
+              
+              console.log(`📊 Scores updated after mass restore - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
+              console.log(`🔍 FINAL game state scores - Attacker: ${updatedGameState.attackerScore}, Defender: ${updatedGameState.defenderScore}`);
             } else {
               updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
               console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
@@ -602,10 +662,12 @@ export class WildcardResolver {
                 if (infra.state === 'compromised') {
                   restoredCount++;
                   console.log(`🔧 Emergency containment: ${infra.name} from compromised to shielded`);
+                  // Get original vulnerabilities from infrastructure definition
+                  const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
                   return {
                     ...infra,
                     state: 'shielded' as InfrastructureState, // Restore and immediately shield
-                    vulnerabilities: [], // Clear vulnerabilities like regular response cards
+                    vulnerabilities: originalVulns, // Restore original vulnerabilities
                     shields: [
                       ...(infra.shields || []),
                       {
@@ -654,25 +716,29 @@ export class WildcardResolver {
     
     if (card.id.startsWith('A305') && context.targetInfrastructure && context.playerID) {
       console.log(`✅ A305 Multi-Stage Malware detected! Creating persistent effect for ${context.targetInfrastructure.name}`);
+      console.log(`🔍 DEBUG A305: context.playerID="${context.playerID}", context.playerRole="${context.playerRole}"`);
+      console.log(`🔍 DEBUG A305: gameState.attacker.id="${context.gameState.attacker?.id}", gameState.defender.id="${context.gameState.defender?.id}"`);
       
-      // Multi-Stage Malware: Create persistent effect to watch for compromise
+      // CORRECTED: Multi-Stage Malware should only trigger on vulnerable → compromised
+      // This is because A305 is an exploit wildcard, so it first makes infrastructure vulnerable
       const persistentEffect: PersistentEffect = {
         type: 'on_compromise',
         targetId: context.targetInfrastructure.id,
         playerId: context.playerID,
         sourceCardId: card.id,
         condition: {
-          fromState: 'vulnerable',  // Only trigger when going from vulnerable to compromised
+          fromState: 'vulnerable',  // CORRECTED: Only trigger when going from vulnerable to compromised
           toState: 'compromised'
         },
         reward: {
           effect: 'gain_ap',
-          amount: card.onCompromise?.amount || 1
+          amount: card.onCompromise?.amount || 2  // Use the correct amount from the card definition
         },
         autoRemove: true,  // Remove after triggering once
         triggered: false
       };
       
+      console.log(`🔍 DEBUG A305: Created persistent effect with playerId="${persistentEffect.playerId}" (condition: ${persistentEffect.condition.fromState} → ${persistentEffect.condition.toState})`);
       updatedGameState = TemporaryEffectsManager.addPersistentEffect(updatedGameState, persistentEffect);
       updatedGameState.message = `${card.name} is monitoring ${context.targetInfrastructure.name} for compromise...`;
       
@@ -684,15 +750,15 @@ export class WildcardResolver {
     if (card.id.startsWith('A306') && context.playerID) {
       console.log(`🎯 A306 AI-Powered Attack detected! Card ID: ${card.id}`);
       
-      // Look at top 3 cards of deck and choose 1 to add to hand
-      const isAttacker = context.playerRole === 'attacker';
+      // FIXED: Use BoardGame.io player ID for consistent player resolution
+      const isAttacker = context.playerID === '0';  // ← Use actual playerID, not context.playerRole
       const currentPlayer = isAttacker ? updatedGameState.attacker : updatedGameState.defender;
       
-      console.log(`🎯 A306: Player role: ${context.playerRole}, isAttacker: ${isAttacker}`);
+      console.log(`🎯 A306: Player ID: ${context.playerID}, isAttacker: ${isAttacker}`);
+      console.log(`🎯 A306: Player role (context): ${context.playerRole}, resolved role: ${isAttacker ? 'attacker' : 'defender'}`);
       console.log(`🎯 A306: Current player exists: ${!!currentPlayer}`);
       console.log(`🎯 A306: Deck exists: ${!!currentPlayer?.deck}`);
       console.log(`🎯 A306: Deck length: ${currentPlayer?.deck?.length || 0}`);
-      console.log(`🎯 A306: Player ID: ${context.playerID}`);
       
       if (currentPlayer && currentPlayer.deck && currentPlayer.deck.length > 0) {
         // Get top 3 cards from deck (or all remaining if less than 3)
@@ -701,17 +767,25 @@ export class WildcardResolver {
         
         console.log(`🎯 A306: Cards to show: ${cardsToShow}`);
         console.log(`🎯 A306: Top cards:`, topCards.map(c => c.name));
+        console.log(`🎯 A306: DECK STATE DEBUG - Current deck IDs:`, currentPlayer.deck.map(c => c.id));
+        console.log(`🎯 A306: DECK STATE DEBUG - Top card IDs being offered:`, topCards.map(c => c.id));
         
-        // Set up pending card choice
+        // ROBUST: Create deep copies of cards to prevent reference issues
+        const availableCards = topCards.map(card => ({ ...card }));
+        
+        // Set up pending card choice with enhanced debugging
         updatedGameState.pendingCardChoice = {
           playerId: context.playerID,
-          availableCards: topCards,
+          availableCards: availableCards,
           choiceType: 'deck_selection' as const,
           sourceCardId: card.id,
           timestamp: Date.now()
         };
         
         console.log(`🎯 A306: Created pendingCardChoice for player ${context.playerID}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - Original deck size: ${currentPlayer.deck.length}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - Original top card IDs: ${topCards.map(c => c.id)}`);
+        console.log(`🎯 A306: DECK STATE DEBUG - pendingCardChoice availableCards IDs:`, availableCards.map(c => c.id));
         updatedGameState.message = `${card.name}: Choose a card from the top ${cardsToShow} cards of your deck`;
       } else {
         console.log(`🎯 A306: Failed to create card choice - missing requirements`);
@@ -729,6 +803,9 @@ export class WildcardResolver {
         // Would need access to player state
       }
     }
+    
+    // DEBUG: Log final game state before returning
+    console.log(`🔍 WILDCARDRESOLVER RETURN - Final scores: Attacker=${updatedGameState.attackerScore}, Defender=${updatedGameState.defenderScore}`);
     
     return updatedGameState;
   }
