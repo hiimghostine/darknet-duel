@@ -150,11 +150,24 @@ class TutorialManager {
   }
 
   private processStep(step: TutorialStep) {
-    // Update highlight target
+    // Clear ALL tutorial highlighting completely
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+      el.classList.remove('tutorial-highlight');
+    });
+    
+    // Update highlight target in state
     if (step.targetElement) {
       this.setState({ highlightTarget: step.targetElement });
-      this.highlightElement(step.targetElement);
+      // Don't call highlightElement here - let TutorialOverlay handle it
+    } else {
+      this.setState({ highlightTarget: undefined });
     }
+
+    // Emit step change event for tutorial components to listen to
+    const stepChangeEvent = new CustomEvent('tutorial-step-changed', {
+      detail: { stepId: step.id, stepIndex: this.state.stepIndex }
+    });
+    window.dispatchEvent(stepChangeEvent);
 
     // Set up validation if specified
     if (step.validation) {
@@ -168,10 +181,52 @@ class TutorialManager {
       }, step.validation?.timeout || 3000);
       this.stepTimeouts.set(step.id, timeout);
     }
+
+    // Emit step event
+    this.emitEvent('tutorial_started', step.id);
   }
 
   private setupValidation(step: TutorialStep) {
     if (!step.validation) return;
+    
+    // For custom validation, we want single auto-advance when condition is met
+    if (step.validation.type === 'custom') {
+      console.log('🔄 Setting up single auto-advance validation for step:', step.id);
+      
+      let hasAdvanced = false; // Prevent multiple advances
+      
+      const checkCustomValidation = () => {
+        if (hasAdvanced) return; // Already advanced, stop checking
+        
+        if (typeof step.validation!.condition === 'function') {
+          const isValid = (step.validation!.condition as Function)();
+          console.log('🎯 TUTORIAL: Custom validation check for', step.id, ':', isValid);
+          
+          if (isValid) {
+            hasAdvanced = true;
+            console.log('✅ TUTORIAL: Auto-advancing step', step.id);
+            setTimeout(() => {
+              this.completeStep();
+            }, 500); // Small delay for user to see the action result
+          }
+        }
+      };
+      
+      // Set up periodic validation check
+      const validationInterval = setInterval(checkCustomValidation, 500);
+      
+      // Set up timeout to stop checking after reasonable time
+      const timeout = setTimeout(() => {
+        clearInterval(validationInterval);
+        this.validationTimeouts.delete(step.id);
+      }, step.validation.timeout || 30000); // 30 second timeout
+      
+      this.validationTimeouts.set(step.id, timeout);
+      
+      // Initial check
+      checkCustomValidation();
+      return;
+    }
 
     const checkValidation = () => {
       let isValid = false;
@@ -244,11 +299,30 @@ class TutorialManager {
     }
 
     const selector = currentStep.validation.condition as string;
-    if (element.matches(selector)) {
+    
+    // Enhanced matching for tutorial-specific selectors
+    let isMatch = false;
+    
+    if (selector === '.player-hand .card:first-child') {
+      // Check if clicked element is the first card in hand
+      const firstCard = document.querySelector('.player-hand .card:first-child, .player-hand [data-card-id]:first-child, .tutorial-first-card');
+      isMatch = element === firstCard || element.closest('.card') === firstCard || element.classList.contains('tutorial-first-card');
+    } else if (selector === '.infrastructure-card[data-vectors*="network"]') {
+      // Check if clicked element is a network infrastructure card
+      const infraId = element.getAttribute('data-infra-id') || element.closest('[data-infra-id]')?.getAttribute('data-infra-id');
+      isMatch = infraId === 'I001' || infraId === 'I005' || infraId === 'I009' || element.classList.contains('tutorial-network-infra');
+    } else {
+      // Standard selector matching
+      isMatch = element.matches(selector) || !!element.closest(selector);
+    }
+    
+    if (isMatch) {
+      console.log('✅ Tutorial click validated:', selector, element);
       this.completeStep();
       return true;
     }
 
+    console.log('❌ Tutorial click not matched:', selector, element);
     return false;
   }
 
@@ -270,13 +344,36 @@ class TutorialManager {
   }
 
   nextStep() {
-    const { stepIndex, currentScript } = this.state;
+    const { stepIndex, currentScript, currentStep } = this.state;
     if (!currentScript) return;
+
+    // Store the current step's action to execute after advancing
+    const actionToExecute = currentStep?.action?.type === 'custom' ? currentStep.action.customHandler : null;
 
     if (stepIndex + 1 >= currentScript.steps.length) {
       this.completeTutorial();
     } else {
+      // First advance to the next step
       this.showStep(stepIndex + 1);
+      
+      // Then execute the custom action after a delay to prevent auto-advancement loops
+      if (actionToExecute) {
+        console.log('🎯 Executing custom action for previous step:', currentStep?.id);
+        setTimeout(() => {
+          try {
+            actionToExecute();
+          } catch (error) {
+            console.error('❌ Custom action failed:', error);
+          }
+        }, 500); // Longer delay to ensure step transition is complete
+      }
+    }
+  }
+
+  previousStep() {
+    const { stepIndex } = this.state;
+    if (stepIndex > 0) {
+      this.showStep(stepIndex - 1);
     }
   }
 
@@ -359,19 +456,8 @@ class TutorialManager {
     this.emitEvent('tutorial_completed', currentScript.id);
   }
 
-  // Utility Methods
-  private highlightElement(selector: string) {
-    // Remove existing highlights
-    document.querySelectorAll('.tutorial-highlight').forEach(el => {
-      el.classList.remove('tutorial-highlight');
-    });
-
-    // Add highlight to target element
-    const element = document.querySelector(selector);
-    if (element) {
-      element.classList.add('tutorial-highlight');
-    }
-  }
+  // Utility Methods - REMOVED highlightElement completely
+  // All highlighting is now handled by TutorialOverlay component
 
   private clearStepTimeouts(stepId: string) {
     const timeout = this.stepTimeouts.get(stepId);

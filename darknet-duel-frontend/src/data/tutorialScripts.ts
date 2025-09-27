@@ -39,8 +39,8 @@ export const basicGameplayTutorial: TutorialScript = {
       title: 'Action Points (AP)',
       description: 'Action Points determine how many actions you can take per turn',
       instruction: 'As an Attacker, you gain 2 AP per turn (max 10). Defenders gain 3 AP per turn.',
-      targetElement: '.action-points-display',
-      position: 'bottom',
+      targetElement: '.game-info-panel',
+      position: 'right',
       autoAdvance: false,
       skipable: true
     },
@@ -56,36 +56,40 @@ export const basicGameplayTutorial: TutorialScript = {
     },
     {
       id: 'exploit_card',
-      title: 'Playing an Exploit Card',
-      description: 'Exploit cards make infrastructure vulnerable to attacks',
-      instruction: 'Find an Exploit card in your hand and click on it to select it.',
-      targetElement: '.player-hand .card[data-type="exploit"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="exploit"]'
-      },
+      title: 'Understanding Exploit Cards',
+      description: 'This is an Exploit card - the foundation of any successful attack. Exploit cards create vulnerabilities in secure infrastructure by finding weaknesses in their defenses. Each exploit targets specific attack vectors like Network, Web, Social Engineering, or Malware.',
+      instruction: 'Click on the highlighted Log4Shell card to select it and enter target mode. This Network exploit can make infrastructure vulnerable to Network-based attacks. Once you\'ve selected the card, click "Next" to learn about targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="exploit"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
       },
       autoAdvance: false,
       skipable: true
     },
     {
       id: 'target_infrastructure',
-      title: 'Target Infrastructure',
-      description: 'Now target an infrastructure card that matches your exploit\'s attack vector',
-      instruction: 'Click on a highlighted infrastructure card to target it with your exploit.',
-      targetElement: '.infrastructure-card.targetable',
-      position: 'bottom',
-      action: {
-        type: 'click',
-        target: '.infrastructure-card.targetable'
-      },
+      title: 'Attack Vectors & Infrastructure Targeting',
+      description: 'Perfect! The Log4Shell card is now selected and glowing, indicating it\'s ready to be used. Notice how the game has entered "target mode" - only compatible infrastructure cards are highlighted. Attack vectors are crucial: your Network exploit can only target infrastructure with Network vulnerabilities.',
+      instruction: 'Click on the highlighted Enterprise Firewall to exploit it. This infrastructure has Network vulnerabilities that match your Log4Shell exploit. Once you\'ve targeted it, the exploit will be executed and the infrastructure will become vulnerable.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
       validation: {
-        type: 'game_state',
-        condition: (gameState) => gameState?.infrastructure?.some((infra: any) => infra.state === 'vulnerable')
+        type: 'custom',
+        condition: () => {
+          // Check if Enterprise Firewall has been exploited (state changed to vulnerable)
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (!enterpriseFirewall) return false;
+          
+          return enterpriseFirewall.getAttribute('data-state') === 'vulnerable' ||
+                 enterpriseFirewall.textContent?.includes('VULNERABLE') === true ||
+                 enterpriseFirewall.textContent?.includes('AT RISK') === true;
+        }
       },
       autoAdvance: false,
       skipable: true
@@ -102,36 +106,49 @@ export const basicGameplayTutorial: TutorialScript = {
     },
     {
       id: 'attack_card',
-      title: 'Playing an Attack Card',
-      description: 'Attack cards compromise vulnerable infrastructure',
-      instruction: 'Find an Attack card in your hand and select it.',
-      targetElement: '.player-hand .card[data-type="attack"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="attack"]'
-      },
+      title: 'Understanding Attack Cards',
+      description: 'Attack cards are used to compromise vulnerable infrastructure. They can only target infrastructure that has already been exploited and is in a vulnerable state. Each attack targets specific vectors and can fully compromise the target.',
+      instruction: 'Click on the highlighted DDoS Attack card to select it and enter target mode. This Network attack can compromise vulnerable infrastructure with Network vulnerabilities. Once you\'ve selected the card, it will automatically advance to targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="attack"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
       },
       autoAdvance: false,
       skipable: true
     },
     {
       id: 'attack_vulnerable',
-      title: 'Attack Vulnerable Infrastructure',
-      description: 'Target the vulnerable infrastructure to compromise it',
-      instruction: 'Click on the vulnerable (yellow) infrastructure card.',
-      targetElement: '.infrastructure-card[data-state="vulnerable"]',
-      position: 'bottom',
-      action: {
-        type: 'click',
-        target: '.infrastructure-card[data-state="vulnerable"]'
-      },
+      title: 'Compromising Vulnerable Infrastructure',
+      description: 'Perfect! The DDoS Attack card is now selected and ready to use. Notice how only the vulnerable Enterprise Firewall is highlighted - Attack cards can only target infrastructure that has been previously exploited and is in a vulnerable state.',
+      instruction: 'Click on the highlighted vulnerable Enterprise Firewall to attack it. This will fully compromise the infrastructure, changing it from vulnerable to compromised state.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
       validation: {
-        type: 'game_state',
-        condition: (gameState) => gameState?.infrastructure?.some((infra: any) => infra.state === 'compromised')
+        type: 'custom',
+        condition: () => {
+          // Check if Enterprise Firewall has been compromised (state changed to compromised)
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (!enterpriseFirewall) {
+            console.log('🎯 TUTORIAL: Enterprise Firewall element not found');
+            return false;
+          }
+          
+          const dataState = enterpriseFirewall.getAttribute('data-state');
+          const textContent = enterpriseFirewall.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking compromised state - data-state:', dataState, 'textContent:', textContent);
+          
+          return dataState === 'compromised' ||
+                 textContent.toLowerCase().includes('compromised') ||
+                 textContent.toLowerCase().includes('controlled') ||
+                 textContent.toLowerCase().includes('breached');
+        }
       },
       autoAdvance: false,
       skipable: true
@@ -143,6 +160,54 @@ export const basicGameplayTutorial: TutorialScript = {
       instruction: 'Compromised infrastructure counts toward your victory condition.',
       position: 'center',
       delay: 1000,
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'reaction_phase',
+      title: 'Understanding Reaction Phase',
+      description: 'Now you\'ll learn about the Reaction Phase - a crucial defensive mechanic. When the attacker\'s turn ends, the defender gets a chance to react and counter-attack. The Corporate Website has been shielded and the game has entered reaction phase.',
+      instruction: 'Click on the highlighted Social Engineer card to select it and enter target mode. This Response card can neutralize shielded infrastructure and return it to a secure state. Once you\'ve selected the card, it will automatically advance to targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'target_shielded',
+      title: 'Neutralizing Shielded Infrastructure',
+      description: 'Perfect! The Social Engineer card is now selected and ready to use. Notice how only the shielded Corporate Website is highlighted - Response cards can target shielded infrastructure to neutralize defensive measures and return them to a secure state.',
+      instruction: 'Click on the highlighted shielded Corporate Website to neutralize it. This will remove the shield and return the infrastructure to a secure state, preventing the attacker from easily exploiting it.',
+      targetElement: '[data-infra-id="I003"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if Corporate Website has been neutralized (state changed back to secure)
+          const corporateWebsite = document.querySelector('[data-infra-id="I003"]');
+          if (!corporateWebsite) {
+            console.log('🎯 TUTORIAL: Corporate Website element not found');
+            return false;
+          }
+          
+          const dataState = corporateWebsite.getAttribute('data-state');
+          const textContent = corporateWebsite.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking secure state - data-state:', dataState, 'textContent:', textContent);
+          
+          return dataState === 'secure' ||
+                 textContent.toLowerCase().includes('secure') ||
+                 textContent.toLowerCase().includes('protected');
+        }
+      },
       autoAdvance: false,
       skipable: true
     },

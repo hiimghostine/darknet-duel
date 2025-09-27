@@ -19,6 +19,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import ReportManagementPage from './pages/ReportManagementPage';
 import SecurityOverviewPage from './pages/SecurityOverviewPage';
 import StorePage from './pages/StorePage';
+import TutorialPage from './pages/TutorialPage';
 import SettingsModal from './components/SettingsModal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useThemeStore } from './store/theme.store';
@@ -43,6 +44,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
           
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>

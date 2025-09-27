@@ -1,0 +1,492 @@
+import type { GameState } from '../types/game.types';
+
+// Mock card data based on actual game cards
+export const mockInfrastructureCards = [
+  {
+    id: "I001",
+    name: "Enterprise Firewall",
+    type: "network" as const,
+    description: "Primary perimeter defense system",
+    flavor: "The first line of defense against external threats",
+    vulnerableVectors: ["network", "malware"],
+    vulnerabilities: ["network", "malware"],
+    img: "firewall",
+    state: "secure" as const
+  },
+  {
+    id: "I003",
+    name: "Corporate Website", 
+    type: "web" as const,
+    description: "Public-facing web presence",
+    flavor: "Your company's digital storefront",
+    vulnerableVectors: ["web", "social"],
+    vulnerabilities: ["web", "social"],
+    img: "website",
+    state: "secure" as const
+  },
+  {
+    id: "I005",
+    name: "Main Database Cluster",
+    type: "data" as const, 
+    description: "Primary data storage for all operations",
+    flavor: "The crown jewels of corporate information",
+    vulnerableVectors: ["network", "web"],
+    vulnerabilities: ["network", "web"],
+    img: "database",
+    state: "secure" as const
+  },
+  {
+    id: "I007",
+    name: "Employee Workstations",
+    type: "user" as const,
+    description: "End-user computing devices", 
+    flavor: "As secure as the humans using them",
+    vulnerableVectors: ["social", "malware"],
+    vulnerabilities: ["social", "malware"],
+    img: "workstation",
+    state: "secure" as const
+  },
+  {
+    id: "I009",
+    name: "Financial System",
+    type: "critical" as const,
+    description: "Core accounting and payment platform",
+    flavor: "Where the money moves - a prime target", 
+    vulnerableVectors: ["network", "web", "malware"],
+    vulnerabilities: ["network", "web", "malware"],
+    img: "financial",
+    state: "secure" as const
+  }
+];
+
+export const mockAttackerCards = [
+  {
+    id: "A003",
+    name: "Log4Shell",
+    type: "exploit", 
+    category: "network",
+    cost: 1,
+    description: "Remote code execution in Java logging",
+    flavor: "One line of code that shook the internet",
+    effect: "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+    img: "log4shell",
+    isReactive: false,
+    target: "infrastructure",
+    vulnerability: "network",
+    playable: true,
+    metadata: {
+      category: "network",
+      flavor: "One line of code that shook the internet"
+    },
+    effects: [
+      {
+        type: "Exploit",
+        value: 1,
+        description: "Makes infrastructure vulnerable to Network attacks"
+      }
+    ]
+  },
+  {
+    id: "A101",
+    name: "DDoS Attack",
+    type: "attack",
+    category: "network",
+    cost: 1,
+    description: "Floods target with traffic to disrupt service",
+    flavor: "Like trying to enter a stadium where all seats are taken by ghosts",
+    effect: "Target 1 infrastructure with a Network exploit. It becomes compromised.",
+    img: "ddos",
+    isReactive: false,
+    target: "vulnerable",
+    attackValue: 1,
+    requires: "A001",
+    playable: true,
+    metadata: {
+      category: "network",
+      flavor: "Like trying to enter a stadium where all seats are taken by ghosts"
+    },
+    effects: [
+      {
+        type: "Attack",
+        value: 1,
+        description: "Compromises vulnerable infrastructure"
+      }
+    ]
+  },
+  {
+    id: "A205",
+    name: "Social Engineer",
+    type: "counter-attack",
+    category: "social",
+    cost: 1,
+    description: "Manipulates security personnel",
+    flavor: "The most sophisticated firewalls can be bypassed with a simple phone call",
+    effect: "Cancel a Shield card being played on infrastructure.",
+    img: "social_engineer",
+    isReactive: true,
+    target: "shield",
+    counterType: "cancel",
+    playable: true,
+    metadata: {
+      category: "social",
+      flavor: "The most sophisticated firewalls can be bypassed with a simple phone call"
+    },
+    effects: [
+      {
+        type: "Counter-Attack",
+        value: 1,
+        description: "Cancels Shield cards being played"
+      }
+    ]
+  },
+  {
+    id: "A301",
+    name: "Advanced Persistent Threat",
+    type: "wildcard",
+    category: "any",
+    cost: 2,
+    description: "Long-term stealthy network infiltration",
+    flavor: "We've been in your network longer than most of your employees",
+    effect: "Can be played as any Exploit or Attack card. Target infrastructure can't be protected by reactive cards for 1 turn.",
+    img: "apt",
+    isReactive: false,
+    target: "any",
+    wildcardType: "exploit-attack",
+    specialEffect: "prevent_reactions",
+    playable: true,
+    metadata: {
+      category: "any",
+      flavor: "We've been in your network longer than most of your employees"
+    },
+    effects: [
+      {
+        type: "Wildcard",
+        value: 1,
+        description: "Can be played as any Exploit or Attack card with special effect"
+      }
+    ]
+  },
+  {
+    id: "A306",
+    name: "AI-Powered Attack",
+    type: "wildcard",
+    category: "any",
+    cost: 2,
+    description: "Uses machine learning to optimize attacks",
+    flavor: "The attack that learns as it goes",
+    effect: "Can be played as any Exploit or Attack card. Look at the top 3 cards of your deck and place one in your hand.",
+    img: "ai_attack",
+    isReactive: false,
+    target: "any",
+    wildcardType: "exploit-attack",
+    draw: 1,
+    lookAt: 3,
+    playable: true,
+    metadata: {
+      category: "any",
+      flavor: "The attack that learns as it goes"
+    },
+    effects: [
+      {
+        type: "Wildcard",
+        value: 1,
+        description: "Can be played as any Exploit or Attack card with card draw benefit"
+      }
+    ]
+  }
+];
+
+export const mockDefenderCards = [
+  {
+    id: "D001",
+    name: "Firewall Rules",
+    type: "shield",
+    category: "network",
+    cost: 1,
+    description: "Network traffic filtering",
+    flavor: "The first line of digital defense",
+    effect: "Shield infrastructure against Network attacks.",
+    img: "firewall_rules",
+    isReactive: false,
+    target: "infrastructure",
+    playable: true,
+    metadata: {
+      category: "network",
+      flavor: "The first line of digital defense"
+    },
+    effects: [
+      {
+        type: "Shield",
+        value: 1,
+        description: "Protects infrastructure against Network attacks"
+      }
+    ]
+  },
+  {
+    id: "D002",
+    name: "Intrusion Detection",
+    type: "shield", 
+    category: "network", 
+    cost: 1,
+    description: "Monitors network for suspicious activity",
+    flavor: "Always watching, always alert",
+    effect: "Reactive: Shield infrastructure against Network attacks during attacker's turn.",
+    img: "ids",
+    isReactive: true,
+    target: "infrastructure",
+    playable: true,
+    metadata: {
+      category: "network",
+      flavor: "Always watching, always alert"
+    },
+    effects: [
+      {
+        type: "Reactive Shield",
+        value: 1,
+        description: "Automatically protects against Network attacks during opponent's turn"
+      }
+    ]
+  },
+  {
+    id: "D004",
+    name: "WAF Implementation",
+    type: "shield",
+    category: "web",
+    cost: 1,
+    description: "Web Application Firewall protection",
+    flavor: "Filtering the good from the bad",
+    effect: "Shield infrastructure against Web attacks.",
+    img: "waf",
+    isReactive: false,
+    target: "infrastructure",
+    playable: true,
+    metadata: {
+      category: "web",
+      flavor: "Filtering the good from the bad"
+    },
+    effects: [
+      {
+        type: "Shield",
+        value: 1,
+        description: "Protects infrastructure against Web attacks"
+      }
+    ]
+  },
+  {
+    id: "DW01",
+    name: "Wildcard",
+    type: "wildcard", 
+    category: "any",
+    cost: 2,
+    description: "Can be played as any card type",
+    flavor: "Flexibility in defense is key",
+    effect: "Choose any card type when played.",
+    img: "wildcard",
+    isReactive: false,
+    target: "any",
+    playable: true,
+    metadata: {
+      category: "any",
+      flavor: "Flexibility in defense is key"
+    },
+    effects: [
+      {
+        type: "Wildcard",
+        value: 1,
+        description: "Can be played as any card type"
+      }
+    ]
+  }
+];
+
+export class MockGameStateProvider {
+  private infrastructureStates: Map<string, 'secure' | 'vulnerable' | 'compromised' | 'shielded' | 'fortified'>;
+  private attackerActionPoints: number;
+  private defenderActionPoints: number;
+  private currentTurn: 'attacker' | 'defender';
+  constructor() {
+    this.infrastructureStates = new Map();
+    mockInfrastructureCards.forEach(card => {
+      this.infrastructureStates.set(card.id, 'secure');
+    });
+    this.attackerActionPoints = 2;
+    this.defenderActionPoints = 3;
+    this.currentTurn = 'attacker';
+  }
+
+  // Generate mock game state for tutorial
+  generateMockGameState(isAttacker: boolean = true): GameState {
+    const infrastructure = mockInfrastructureCards.map(card => ({
+      ...card,
+      state: this.infrastructureStates.get(card.id) || 'secure'
+    }));
+
+    const attackerHand = isAttacker ? mockAttackerCards.slice(0, 5) : mockAttackerCards.slice(0, 3);
+    const defenderHand = !isAttacker ? mockDefenderCards.slice(0, 5) : mockDefenderCards.slice(0, 3);
+
+    return {
+      gamePhase: 'playing',
+      message: '',
+      attackerScore: this.calculateScore('attacker', infrastructure),
+      defenderScore: this.calculateScore('defender', infrastructure),
+      infrastructure,
+      attacker: {
+        id: 'attacker',
+        name: 'Red Team',
+        role: 'attacker',
+        resources: 0,
+        actionPoints: this.attackerActionPoints,
+        freeCardCyclesUsed: 0,
+        deck: [],
+        hand: attackerHand,
+        field: [],
+        discard: []
+      },
+      defender: {
+        id: 'defender', 
+        name: 'Blue Team',
+        role: 'defender',
+        resources: 0,
+        actionPoints: this.defenderActionPoints,
+        freeCardCyclesUsed: 0,
+        deck: [],
+        hand: defenderHand,
+        field: [],
+        discard: []
+      },
+      currentTurn: this.currentTurn,
+      turnNumber: 1,
+      currentRound: 1,
+      actions: [],
+      playerConnections: {
+        'attacker': 'connected',
+        'defender': 'connected'
+      },
+      chat: {
+        messages: [],
+        lastReadTimestamp: {}
+      },
+      rematchRequested: [],
+      temporaryEffects: [],
+      persistentEffects: [],
+      gameConfig: {
+        initialResources: 0,
+        maxTurns: 15,
+        startingHandSize: 5,
+        infrastructureCount: 5,
+        initialActionPoints: 2,
+        attackerActionPointsPerTurn: 2,
+        defenderActionPointsPerTurn: 3,
+        maxActionPoints: 10,
+        freeCardCyclesPerTurn: 1,
+        maxHandSize: 7,
+        cardsDrawnPerTurn: 2
+      }
+    } as GameState;
+  }
+
+  // Generate mock context for BoardGame.io
+  generateMockContext(isAttacker: boolean = true) {
+    const playerID = isAttacker ? '0' : '1';
+    return {
+      phase: 'playing',
+      currentPlayer: playerID,
+      gameover: false,
+      // This is crucial - activePlayers determines if cards are playable
+      activePlayers: {
+        [playerID]: 'action' // Set the current player to 'action' stage
+      },
+      turn: 1,
+      playOrder: ['0', '1'],
+      playOrderPos: isAttacker ? 0 : 1,
+      numPlayers: 2
+    };
+  }
+
+  // Tutorial-specific state mutations
+  setInfrastructureState(infraId: string, state: 'secure' | 'vulnerable' | 'compromised' | 'shielded' | 'fortified') {
+    this.infrastructureStates.set(infraId, state);
+  }
+
+  setActionPoints(role: 'attacker' | 'defender', points: number) {
+    if (role === 'attacker') {
+      this.attackerActionPoints = Math.max(0, Math.min(10, points));
+    } else {
+      this.defenderActionPoints = Math.max(0, Math.min(10, points));
+    }
+  }
+
+  setCurrentTurn(turn: 'attacker' | 'defender') {
+    this.currentTurn = turn;
+  }
+
+  // Simulate tutorial actions
+  simulateExploit(infraId: string) {
+    this.setInfrastructureState(infraId, 'vulnerable');
+    this.setActionPoints('attacker', this.attackerActionPoints - 1);
+  }
+
+  simulateAttack(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    if (currentState === 'vulnerable') {
+      this.setInfrastructureState(infraId, 'compromised');
+      this.setActionPoints('attacker', this.attackerActionPoints - 1);
+    }
+  }
+
+  simulateShield(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    if (currentState === 'secure') {
+      this.setInfrastructureState(infraId, 'shielded');
+      this.setActionPoints('defender', this.defenderActionPoints - 1);
+    }
+  }
+
+  simulateFortify(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    if (currentState === 'shielded') {
+      this.setInfrastructureState(infraId, 'fortified');
+      this.setActionPoints('defender', this.defenderActionPoints - 1);
+    }
+  }
+
+  simulateResponse(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    if (currentState === 'shielded' || currentState === 'fortified') {
+      this.setInfrastructureState(infraId, 'secure');
+      this.setActionPoints('defender', this.defenderActionPoints - 1);
+    }
+  }
+
+  // Tutorial-specific setup for reaction phase
+  setupReactionPhase() {
+    // Shield the Corporate Website for the reaction phase tutorial
+    this.setInfrastructureState('I003', 'shielded');
+    // Switch to defender's turn for reaction phase
+    this.currentTurn = 'defender';
+  }
+
+  // Reset to initial state
+  reset() {
+    this.infrastructureStates.clear();
+    mockInfrastructureCards.forEach(card => {
+      this.infrastructureStates.set(card.id, 'secure');
+    });
+    this.attackerActionPoints = 2;
+    this.defenderActionPoints = 3;
+    this.currentTurn = 'attacker';
+  }
+
+  private calculateScore(role: 'attacker' | 'defender', infrastructure: any[]) {
+    if (role === 'attacker') {
+      return infrastructure.filter(infra => infra.state === 'compromised').length;
+    } else {
+      return infrastructure.filter(infra => 
+        infra.state === 'secure' || infra.state === 'shielded' || infra.state === 'fortified'
+      ).length;
+    }
+  }
+}
+
+// Singleton instance
+export const mockGameStateProvider = new MockGameStateProvider();

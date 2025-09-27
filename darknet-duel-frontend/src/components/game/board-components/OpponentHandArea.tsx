@@ -16,19 +16,26 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
   // Render opponent hand (card backs)
   const renderOpponentHand = () => {
     const handSize = opponent?.hand?.length || 0;
+    // Color coding logic based on opponent's actual role:
+    // If current player is attacker (isAttacker = true), opponent is defender (should be blue)
+    // If current player is defender (isAttacker = false), opponent is attacker (should be red)
+    const opponentIsDefender = isAttacker; // If I'm attacker, opponent is defender
+    const cardColor = opponentIsDefender ? 'border-2 border-blue-500 hover:shadow-blue-500/30' : 'border-2 border-red-500 hover:shadow-red-500/30';
+    const textColor = opponentIsDefender ? 'text-blue-500' : 'text-red-500';
+    
     const cards = Array.from({ length: handSize }, (_, i) => (
       <div 
         key={i} 
         className={`
-          lg:w-20 lg:h-28 w-16 h-24 bg-base-300 border border-error rounded-lg 
-          flex items-center justify-center shadow-lg
-          transition-all duration-300 hover:transform hover:-translate-y-2 hover:z-10
-          hover:shadow-xl hover:shadow-error/30
-          ${i > 0 ? 'lg:-ml-5 -ml-4' : ''}
+          lg:w-16 lg:h-20 w-12 h-16 bg-base-300 ${cardColor} rounded-lg 
+          flex items-center justify-center shadow-md
+          transition-all duration-300 hover:transform hover:-translate-y-1 hover:z-10
+          hover:shadow-lg
+          ${i > 0 ? 'lg:-ml-4 -ml-3' : ''}
         `}
         style={{ zIndex: handSize - i }}
       >
-        <span className="text-error lg:text-2xl text-xl font-bold font-mono text-shadow-sm">?</span>
+        <span className={`${textColor} lg:text-lg text-base font-bold font-mono text-shadow-sm`}>?</span>
       </div>
     ));
     
@@ -41,7 +48,7 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
 
   return (
     <div className={`
-      flex justify-center items-end gap-4 p-4 rounded-lg relative h-40
+      flex justify-center items-end gap-4 p-3 rounded-lg relative h-28
       ${isAttacker ? 'defender-area' : 'attacker-area'}
     `}>
       {/* Corner brackets */}

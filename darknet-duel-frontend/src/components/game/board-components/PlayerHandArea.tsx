@@ -412,7 +412,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
 
   return (
     <div className={`
-      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56
+      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56 player-hand
       ${isAttacker ? 'attacker-area' : 'defender-area'}
       ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
       ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
@@ -429,7 +429,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       </div>
       
       {/* Hand peek indicator */}
-      <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label">
+      <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label tactical-hand-label">
         TACTICAL_HAND • {currentPlayerObj?.hand?.length || 0} CARDS
       </div>
       

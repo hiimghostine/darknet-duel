@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React from 'react';
+import { ArrowLeft, Shield, Sword, GraduationCap, Brain } from 'lucide-react';
 
 // Import types
 import type { GameState } from '../../../types/game.types';
@@ -6,7 +7,6 @@ import type { BoardProps } from 'boardgame.io/react';
 
 // Import hooks
 import { useThemeStore } from '../../../store/theme.store';
-import { useAutoReactionTimer } from '../../../hooks/useAutoReactionTimer';
 import { useAudioManager } from '../../../hooks/useAudioManager';
 
 // Define props interface with exact properties needed
@@ -35,6 +35,15 @@ export interface GameControlsBarProps {
   isInReactionMode: boolean;
   isTimerActive: boolean;
   timeRemaining: number;
+  
+  // Tutorial integration
+  tutorialInfo?: {
+    scriptName: string;
+    role: 'attacker' | 'defender';
+    stepIndex: number;
+    totalSteps: number;
+    onExit: () => void;
+  };
 }
 
 const GameControlsBar: React.FC<GameControlsBarProps> = ({
@@ -48,17 +57,33 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
   isProcessingMove,
   handleEndTurn,
   handleSkipReaction,
-  cycleCard,  // Keep parameter for compatibility
+  cycleCard,
   surrender,
   isInReactionMode,
   isTimerActive,
-  timeRemaining
+  timeRemaining,
+  tutorialInfo
 }) => {
   // Theme support
   const { theme, toggleTheme } = useThemeStore();
   
   // Audio manager for sound effects
   const { triggerClick } = useAudioManager();
+
+  const getScriptIcon = (scriptId: string) => {
+    switch (scriptId) {
+      case 'defender_basics':
+        return <Shield className="w-5 h-5" />;
+      case 'attacker_basics':
+        return <Sword className="w-5 h-5" />;
+      case 'card_encyclopedia':
+        return <GraduationCap className="w-5 h-5" />;
+      case 'advanced_mechanics':
+        return <Brain className="w-5 h-5" />;
+      default:
+        return <GraduationCap className="w-5 h-5" />;
+    }
+  };
 
   return (
     <header className={`
@@ -68,16 +93,62 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
         : 'bg-blue-900/80 border-blue-700/30'
       }
     `}>
-      <h1 className={`
-        text-xl font-bold font-mono uppercase tracking-wide
-        ${isAttacker 
-          ? 'text-red-300 bg-clip-text text-transparent bg-gradient-to-r from-red-300 to-red-500' 
-          : 'text-blue-300 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500'
-        }
-      `}>
-        DARKNET_DUEL
-      </h1>
-      <div className="flex gap-2">
+      {/* Left side - Game title or tutorial info */}
+      <div className="flex items-center gap-4">
+        {tutorialInfo ? (
+          <>
+            <button
+              onClick={() => {
+                triggerClick();
+                tutorialInfo.onExit();
+              }}
+              className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Exit Tutorial
+            </button>
+            
+            <div className="divider divider-horizontal"></div>
+            
+            <div className="flex items-center gap-3">
+              {getScriptIcon(tutorialInfo.scriptName.toLowerCase().replace(/\s+/g, '_'))}
+              <div>
+                <h1 className="text-lg font-bold text-base-content">
+                  {tutorialInfo.scriptName}
+                </h1>
+                <p className="text-sm text-base-content/70">
+                  Playing as: {tutorialInfo.role === 'attacker' ? 'Red Team (Attacker)' : 'Blue Team (Defender)'}
+                </p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <h1 className={`
+            text-xl font-bold font-mono uppercase tracking-wide
+            ${isAttacker 
+              ? 'text-red-300 bg-clip-text text-transparent bg-gradient-to-r from-red-300 to-red-500' 
+              : 'text-blue-300 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500'
+            }
+          `}>
+            DARKNET_DUEL
+          </h1>
+        )}
+      </div>
+
+      {/* Right side - Controls and tutorial progress */}
+      <div className="flex items-center gap-2">
+        {tutorialInfo && (
+          <>
+            <div className="badge badge-info">
+              Step {tutorialInfo.stepIndex + 1} of {tutorialInfo.totalSteps}
+            </div>
+            <div className="badge badge-success">
+              {Math.round(((tutorialInfo.stepIndex + 1) / tutorialInfo.totalSteps) * 100)}%
+            </div>
+            <div className="divider divider-horizontal"></div>
+          </>
+        )}
+        
         <button 
           className={`
             btn btn-sm font-mono font-bold uppercase transition-all duration-200
@@ -97,8 +168,6 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
           ) : 'END_TURN'}
         </button>
         
-        {/* ✅ REMOVED: Cycle Card Button as requested */}
-        
         <button
           className={`
             btn btn-sm font-mono font-bold uppercase transition-all duration-200
@@ -116,7 +185,7 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
         >
           SURRENDER
         </button>
-        {/* Theme Switcher Button - right of Surrender */}
+        
         <button
           onClick={() => {
             triggerClick(); // Play click sound on button press
