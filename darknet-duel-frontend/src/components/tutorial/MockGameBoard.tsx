@@ -17,6 +17,7 @@ import GameStatusOverlays from '../game/board-components/GameStatusOverlays';
 // Import hooks
 import { useThemeStore } from '../../store/theme.store';
 import { useToastStore } from '../../store/toast.store';
+import { useTutorial } from '../../hooks/useTutorial';
 
 interface MockGameBoardProps {
   isAttacker?: boolean;
@@ -49,15 +50,15 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
   const [targetMode, setTargetMode] = useState(false);
   const [targetedInfraId, setTargetedInfraId] = useState<string | null>(null);
   const [validTargets, setValidTargets] = useState<string[]>([]);
-  
-  // Persistent hand state to prevent cards from reappearing
   const [persistentHand, setPersistentHand] = useState<any[]>(() => {
     const initialState = mockGameStateProvider.generateMockGameState(isAttacker);
     return isAttacker ? initialState.attacker?.hand || [] : initialState.defender?.hand || [];
   });
-
+  
+  // Hooks
   const { theme } = useThemeStore();
   const { addToast } = useToastStore();
+  const { tutorialState } = useTutorial();
 
   // Mock player data
   const playerID = isAttacker ? '0' : '1';
@@ -477,17 +478,18 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
   }, [targetMode, selectedCard, validTargets, mockMoves, addToast, tutorialStep]);
 
   const cancelTargeting = useCallback(() => {
-    console.log('🎯 TUTORIAL: cancelTargeting called', { tutorialStep });
+    console.log('🎯 TUTORIAL: cancelTargeting called', { tutorialStep, currentStep: tutorialState.currentStep });
     
-    // Prevent canceling during step 6 - users must proceed with tutorial
-    if (tutorialStep === 'exploit_card') {
+    // Check if current tutorial step prevents target mode exit
+    const currentStep = tutorialState.currentStep;
+    if (currentStep?.preventTargetModeExit) {
       addToast({
         type: 'warning',
         title: 'Tutorial in Progress',
-        message: 'Click "Next" to continue learning about targeting.',
-        duration: 2000
+        message: 'Complete the current tutorial step to continue. You cannot exit target mode during this step.',
+        duration: 3000
       });
-      return; // Don't allow canceling in step 6
+      return; // Don't allow canceling when preventTargetModeExit is true
     }
     
     // Allow canceling in other steps
@@ -495,7 +497,7 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
     setTargetMode(false);
     setTargetedInfraId(null);
     setValidTargets([]);
-  }, [tutorialStep, addToast]);
+  }, [tutorialStep, tutorialState.currentStep, addToast]);
 
   const handleEndTurn = useCallback(() => {
     mockMoves.endTurn();
@@ -550,6 +552,7 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
         gameState={gameState}
         ctx={context}
         playerID={playerID}
+        onExit={tutorialInfo?.onExit}
       />
 
       {/* Game Background Elements */}

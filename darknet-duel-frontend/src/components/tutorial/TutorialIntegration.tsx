@@ -7,12 +7,14 @@ interface TutorialIntegrationProps {
   gameState?: GameState;
   ctx?: any;
   playerID?: string | null;
+  onExit?: () => void;
 }
 
 const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
   gameState,
   ctx: _ctx,
-  playerID: _playerID
+  playerID: _playerID,
+  onExit
 }) => {
   const {
     tutorialState,
@@ -28,6 +30,26 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
       validateGameState(gameState);
     }
   }, [gameState, isActive, validateGameState]);
+
+  // Handle tutorial completion - listen for completion event
+  useEffect(() => {
+    if (!onExit) return;
+
+    const handleTutorialCompleted = () => {
+      console.log('🎯 TUTORIAL: Tutorial completed event received, calling exit handler');
+      // Small delay to ensure tutorial completion is processed
+      setTimeout(() => {
+        onExit();
+      }, 100);
+    };
+
+    // Listen for tutorial completion event
+    window.addEventListener('tutorial-completed', handleTutorialCompleted);
+    
+    return () => {
+      window.removeEventListener('tutorial-completed', handleTutorialCompleted);
+    };
+  }, [onExit]);
 
   // Add tutorial-specific CSS classes to game elements
   useEffect(() => {
@@ -134,7 +156,7 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
     <TutorialOverlay
       tutorialState={tutorialState}
       onNext={nextStep}
-      onCancel={cancelTutorial}
+      onCancel={onExit || cancelTutorial}
     />
   );
 };

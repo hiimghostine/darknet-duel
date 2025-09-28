@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import TutorialMenu from './TutorialMenu';
 import { useTutorial } from '../../hooks/useTutorial';
@@ -17,17 +16,12 @@ const TutorialButton: React.FC<TutorialButtonProps> = ({
   showProgress = false
 }) => {
   const [showTutorialMenu, setShowTutorialMenu] = useState(false);
-  const navigate = useNavigate();
   const { getAvailableScripts, isScriptCompleted } = useTutorial();
 
   const availableScripts = getAvailableScripts();
   const completedScripts = availableScripts.filter(script => isScriptCompleted(script.id));
   const progressText = `${completedScripts.length}/${availableScripts.length} completed`;
 
-  const handleStartInteractiveTutorial = (scriptId: string) => {
-    setShowTutorialMenu(false);
-    navigate(`/tutorial?script=${scriptId}&role=attacker`);
-  };
 
   const getButtonClasses = () => {
     const baseClasses = "flex items-center gap-2 font-mono transition-all duration-200 btn-cyberpunk";
@@ -74,7 +68,6 @@ const TutorialButton: React.FC<TutorialButtonProps> = ({
         {showTutorialMenu && (
           <TutorialMenu
             onClose={() => setShowTutorialMenu(false)}
-            onStartInteractiveTutorial={handleStartInteractiveTutorial}
           />
         )}
       </AnimatePresence>

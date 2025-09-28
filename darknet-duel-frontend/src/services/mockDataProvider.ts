@@ -224,20 +224,20 @@ export const mockAttackerCards = [
 export const mockDefenderCards = [
   {
     id: "D001",
-    name: "Firewall Rules",
+    name: "Firewall",
     type: "shield",
     category: "network",
     cost: 1,
-    description: "Network traffic filtering",
-    flavor: "The first line of digital defense",
+    description: "Blocks unauthorized network access",
+    flavor: "The digital equivalent of a castle moat",
     effect: "Shield infrastructure against Network attacks.",
-    img: "firewall_rules",
+    img: "firewall",
     isReactive: false,
     target: "infrastructure",
     playable: true,
     metadata: {
       category: "network",
-      flavor: "The first line of digital defense"
+      flavor: "The digital equivalent of a castle moat"
     },
     effects: [
       {
@@ -248,71 +248,96 @@ export const mockDefenderCards = [
     ]
   },
   {
-    id: "D005",
-    name: "Intrusion Detection",
-    type: "shield", 
-    category: "network", 
+    id: "D101",
+    name: "DMZ Implementation",
+    type: "fortify",
+    category: "network",
     cost: 1,
-    description: "Monitors network for suspicious activity",
-    flavor: "Always watching, always alert",
-    effect: "Reactive: Shield infrastructure against Network attacks during attacker's turn.",
-    img: "ids",
-    isReactive: true,
+    description: "Creates secure network boundary",
+    flavor: "A buffer zone between trust and chaos",
+    effect: "Fortify shielded infrastructure against Network attacks.",
+    img: "dmz",
+    isReactive: false,
     target: "infrastructure",
     playable: true,
     metadata: {
       category: "network",
-      flavor: "Always watching, always alert"
+      flavor: "A buffer zone between trust and chaos"
+    },
+    effects: [
+      {
+        type: "Fortify",
+        value: 1,
+        description: "Strengthens shielded infrastructure against Network attacks"
+      }
+    ]
+  },
+  {
+    id: "D007",
+    name: "Phishing Defense",
+    type: "reaction",
+    category: "social",
+    cost: 1,
+    description: "Email filtering and user education",
+    flavor: "Teaching humans to spot digital deception",
+    effect: "Reactive: Shield infrastructure against Social attacks during attacker's turn.",
+    img: "phishing_defense",
+    isReactive: true,
+    target: "infrastructure",
+    playable: true,
+    metadata: {
+      category: "social",
+      flavor: "Teaching humans to spot digital deception"
     },
     effects: [
       {
         type: "Reactive Shield",
         value: 1,
-        description: "Automatically protects against Network attacks during opponent's turn"
+        description: "Automatically protects against Social attacks during opponent's turn"
       }
     ]
   },
   {
-    id: "D004",
-    name: "WAF Implementation",
-    type: "shield",
-    category: "web",
+    id: "D201",
+    name: "Incident Response Team",
+    type: "response",
+    category: "network",
     cost: 1,
-    description: "Web Application Firewall protection",
-    flavor: "Filtering the good from the bad",
-    effect: "Shield infrastructure against Web attacks.",
-    img: "waf",
+    description: "Specialized security breach handlers",
+    flavor: "When things go wrong, we make them right",
+    effect: "Restore compromised infrastructure to secure state.",
+    img: "incident_response",
     isReactive: false,
     target: "infrastructure",
     playable: true,
     metadata: {
-      category: "web",
-      flavor: "Filtering the good from the bad"
+      category: "network",
+      flavor: "When things go wrong, we make them right"
     },
     effects: [
       {
-        type: "Shield",
+        type: "Response",
         value: 1,
-        description: "Protects infrastructure against Web attacks"
+        description: "Restores compromised infrastructure to secure state"
       }
     ]
   },
   {
-    id: "DW01",
-    name: "Wildcard",
-    type: "wildcard", 
+    id: "D301",
+    name: "Advanced Threat Defense",
+    type: "wildcard",
     category: "any",
     cost: 2,
-    description: "Can be played as any card type",
-    flavor: "Flexibility in defense is key",
+    description: "Multi-layered security system with reactive blocking",
+    flavor: "Adaptability is the ultimate defense",
     effect: "Choose any card type when played.",
-    img: "wildcard",
+    img: "advanced_threat_defense",
     isReactive: false,
     target: "any",
     playable: true,
     metadata: {
       category: "any",
-      flavor: "Flexibility in defense is key"
+      flavor: "Adaptability is the ultimate defense"
     },
     effects: [
       {

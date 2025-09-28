@@ -1,9 +1,9 @@
 import type { TutorialScript } from '../types/tutorial.types';
 
-export const basicGameplayTutorial: TutorialScript = {
-  id: 'basic_gameplay',
-  name: 'Basic Gameplay Tutorial',
-  description: 'Learn the fundamentals of Darknet Duel gameplay',
+export const attackerBasicsTutorial: TutorialScript = {
+  id: 'attacker_basics',
+  name: 'Attacker Basics Tutorial',
+  description: 'Master the art of digital infiltration and system compromise',
   estimatedDuration: 10,
   steps: [
     {
@@ -70,7 +70,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'target_infrastructure',
@@ -92,7 +93,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'infrastructure_vulnerable',
@@ -120,7 +122,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'attack_vulnerable',
@@ -151,7 +154,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'infrastructure_compromised',
@@ -206,7 +210,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'target_shielded',
@@ -236,7 +241,8 @@ export const basicGameplayTutorial: TutorialScript = {
         }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'win_conditions',
@@ -272,7 +278,9 @@ export const basicGameplayTutorial: TutorialScript = {
       instruction: 'You\'re ready to play! Remember: Exploit → Attack → Compromise. Good luck!',
       position: 'center',
       autoAdvance: false,
-      skipable: false
+      skipable: false,
+      customButtonText: 'Finish Tutorial',
+      customButtonAction: 'exit_tutorial'
     }
   ]
 };
@@ -378,79 +386,6 @@ export const defenderTutorial: TutorialScript = {
       title: 'Defender Tutorial Complete!',
       description: 'You\'re ready to defend the digital realm',
       instruction: 'Remember: Shield → Fortify → Victory. Protect your infrastructure!',
-      position: 'center',
-      autoAdvance: false,
-      skipable: false
-    }
-  ]
-};
-
-export const attackerBasicsTutorial: TutorialScript = {
-  id: 'attacker_basics',
-  name: 'Attacker Basics Tutorial',
-  description: 'Master the art of digital infiltration and system compromise',
-  estimatedDuration: 10,
-  prerequisites: ['basic_gameplay'],
-  steps: [
-    {
-      id: 'attacker_mindset',
-      title: 'The Attacker Mindset',
-      description: 'As an Attacker, you are the Red Team - the digital infiltrator',
-      instruction: 'Your mission: Find vulnerabilities, exploit weaknesses, and compromise infrastructure.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attack_vectors',
-      title: 'Attack Vectors',
-      description: 'Attackers use four primary attack vectors to compromise systems',
-      instruction: 'Network, Web, Social Engineering, and Malware - each targets different vulnerabilities.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'exploit_strategy',
-      title: 'Exploit Strategy',
-      description: 'Exploit cards are your primary tool for creating vulnerabilities',
-      instruction: 'Always exploit before attacking. Match attack vectors to infrastructure weaknesses.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attack_timing',
-      title: 'Attack Timing',
-      description: 'Timing your attacks is crucial for success',
-      instruction: 'Strike when defenders are low on AP or lack appropriate reaction cards.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'counter_attacks',
-      title: 'Counter-Attack Cards',
-      description: 'Counter-attacks disrupt defender strategies',
-      instruction: 'Use counter-attacks to remove shields or prevent fortifications.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'resource_management',
-      title: 'AP Management',
-      description: 'With only 2 AP per turn, every action counts',
-      instruction: 'Plan your moves carefully. Save AP for critical moments.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attacker_complete',
-      title: 'Attacker Training Complete!',
-      description: 'You are now ready to lead digital infiltration missions',
-      instruction: 'Remember: Exploit vulnerabilities, time your attacks, manage resources wisely.',
       position: 'center',
       autoAdvance: false,
       skipable: false
@@ -607,7 +542,7 @@ export const advancedMechanicsTutorial: TutorialScript = {
   name: 'Advanced Mechanics Tutorial',
   description: 'Learn about wildcards, chain effects, and special abilities',
   estimatedDuration: 12,
-  prerequisites: ['basic_gameplay', 'attacker_basics'],
+  prerequisites: ['attacker_basics'],
   steps: [
     {
       id: 'wildcard_intro',
@@ -667,9 +602,8 @@ export const advancedMechanicsTutorial: TutorialScript = {
 };
 
 export const tutorialScripts: TutorialScript[] = [
-  basicGameplayTutorial,
-  defenderTutorial,
   attackerBasicsTutorial,
+  defenderTutorial,
   cardEncyclopediaTutorial,
   advancedMechanicsTutorial
 ];

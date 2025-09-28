@@ -138,7 +138,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             case 'right':
               top = rect.top + (rect.height - overlayRect.height) / 2;
               // Add extra spacing for card selection steps to avoid covering the expanded card on hover
-              const extraSpacing = (currentStep.id === 'exploit_card' || currentStep.id === 'attack_card') ? 100 : 20;
+              const extraSpacing = (currentStep.id === 'exploit_card' || currentStep.id === 'attack_card' || currentStep.id === 'reaction_phase') ? 100 : 20;
               left = rect.right + extraSpacing;
               break;
             case 'center':
@@ -330,14 +330,22 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         {/* Footer with controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-600">
           <div className="flex items-center space-x-2">
-            {/* Next button */}
+            {/* Next/Custom Action button */}
             <button
-              onClick={onNext}
-              disabled={!canGoNext}
+              onClick={() => {
+                if (currentStep.customButtonAction === 'exit_tutorial') {
+                  console.log('🎯 TUTORIAL: Finish tutorial clicked - completing tutorial');
+                  // Complete the tutorial properly by calling onNext, which will trigger completeTutorial()
+                  if (onNext) onNext();
+                } else {
+                  if (onNext) onNext();
+                }
+              }}
+              disabled={!canGoNext && !currentStep.customButtonAction}
               className="flex items-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors text-sm"
             >
-              <span>Next</span>
-              <ChevronRight size={16} />
+              <span>{currentStep.customButtonText || 'Next'}</span>
+              {!currentStep.customButtonAction && <ChevronRight size={16} />}
             </button>
           </div>
 
@@ -345,11 +353,15 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             {/* Reset Tutorial button */}
             <button
               onClick={() => {
-                console.log('🎯 TUTORIAL: Reset tutorial clicked - refreshing page');
-                window.location.reload();
+                console.log('🎯 TUTORIAL: Reset tutorial clicked - restarting tutorial');
+                if (currentScript) {
+                  // Reset progress for current script and restart
+                  tutorialManager.resetProgress(currentScript.id);
+                  tutorialManager.startTutorial(currentScript.id);
+                }
               }}
               className="flex items-center space-x-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors text-sm"
-              title="Reset Tutorial (Refresh Page)"
+              title="Reset Tutorial"
             >
               <RotateCcw size={16} />
               <span>Reset Tutorial</span>

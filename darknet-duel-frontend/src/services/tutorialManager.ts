@@ -13,8 +13,10 @@ class TutorialManager {
   private eventListeners: Map<TutorialEventType, ((event: TutorialEvent) => void)[]>;
   private validationTimeouts: Map<string, NodeJS.Timeout>;
   private stepTimeouts: Map<string, NodeJS.Timeout>;
+  private completions: Record<string, boolean>;
 
   constructor() {
+    this.completions = this.loadCompletions();
     this.state = {
       isActive: false,
       stepIndex: 0,
@@ -37,25 +39,33 @@ class TutorialManager {
     this.saveProgress();
   }
 
-  // Progress Persistence
-  private loadProgress(): TutorialProgress[] {
-    // Disabled localStorage loading - always start fresh
-    console.log('🎯 TUTORIAL: Progress loading disabled - starting fresh');
-    
-    // Clean up any existing localStorage data
+  // Simple completion tracking
+  private loadCompletions(): Record<string, boolean> {
     try {
-      localStorage.removeItem('darknet_duel_tutorial_progress');
-      console.log('🎯 TUTORIAL: Cleaned up existing localStorage data');
+      const stored = localStorage.getItem('darknet_duel_tutorial_completions');
+      return stored ? JSON.parse(stored) : {};
     } catch (error) {
-      console.log('🎯 TUTORIAL: No localStorage cleanup needed');
+      console.log('🎯 TUTORIAL: Error loading completions, starting fresh');
+      return {};
     }
-    
+  }
+
+  private saveCompletions(completions: Record<string, boolean>) {
+    try {
+      localStorage.setItem('darknet_duel_tutorial_completions', JSON.stringify(completions));
+      console.log('🎯 TUTORIAL: Completions saved:', completions);
+    } catch (error) {
+      console.log('🎯 TUTORIAL: Error saving completions');
+    }
+  }
+
+  // Progress Persistence (legacy - keeping for compatibility)
+  private loadProgress(): TutorialProgress[] {
     return [];
   }
 
   private saveProgress() {
-    // Disabled localStorage saving - no persistence
-    console.log('🎯 TUTORIAL: Progress saving disabled - no persistence');
+    // No-op for compatibility
   }
 
   // Script Management
@@ -63,7 +73,7 @@ class TutorialManager {
     return tutorialScripts.filter(script => {
       if (!script.prerequisites) return true;
       return script.prerequisites.every(prereq => 
-        this.state.progress.some(p => p.scriptId === prereq && p.completed)
+        this.completions[prereq] === true
       );
     });
   }
@@ -73,7 +83,7 @@ class TutorialManager {
   }
 
   isScriptCompleted(scriptId: string): boolean {
-    return this.state.progress.some(p => p.scriptId === scriptId && p.completed);
+    return this.completions[scriptId] === true;
   }
 
   getScriptProgress(scriptId: string): TutorialProgress | undefined {
@@ -437,12 +447,11 @@ class TutorialManager {
     const { currentScript } = this.state;
     if (!currentScript) return;
 
-    // Update progress
-    const progress = this.getScriptProgress(currentScript.id);
-    if (progress) {
-      progress.completed = true;
-      progress.completedAt = Date.now();
-    }
+    // Mark tutorial as completed
+    console.log('🎯 TUTORIAL: Marking tutorial as completed:', currentScript.id);
+    this.completions[currentScript.id] = true;
+    this.saveCompletions(this.completions);
+    console.log('🎯 TUTORIAL: Current completions:', this.completions);
 
     this.clearAllTimeouts();
     this.setState({
@@ -456,6 +465,11 @@ class TutorialManager {
     });
 
     this.emitEvent('tutorial_completed', currentScript.id);
+    
+    // Also dispatch a window event for components that need to react to completion
+    window.dispatchEvent(new CustomEvent('tutorial-completed', { 
+      detail: { scriptId: currentScript.id } 
+    }));
   }
 
   // Utility Methods - REMOVED highlightElement completely
@@ -524,17 +538,24 @@ class TutorialManager {
   // Reset Methods
   resetProgress(scriptId?: string) {
     if (scriptId) {
+      // Reset specific tutorial completion
+      delete this.completions[scriptId];
       this.state.progress = this.state.progress.filter(p => p.scriptId !== scriptId);
     } else {
+      // Reset all completions
+      this.completions = {};
       this.state.progress = [];
     }
+    this.saveCompletions(this.completions);
     this.saveProgress();
   }
 
   resetAllProgress() {
+    this.completions = {};
     this.state.progress = [];
-    this.saveProgress(); // This is now a no-op
-    console.log('🎯 TUTORIAL: All progress reset - no localStorage cleanup needed');
+    this.saveCompletions(this.completions);
+    this.saveProgress();
+    console.log('🎯 TUTORIAL: All progress and completions reset');
   }
 }
 
