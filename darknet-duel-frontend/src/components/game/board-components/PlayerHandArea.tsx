@@ -163,6 +163,14 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             if (isInReactionMode) {
               // In reaction mode, only reactive cards can be played
               const isReactiveCard = isReactiveCardObject(card, G);
+              console.log('🎯 TUTORIAL: Reaction mode card check:', { 
+                cardName: card.name, 
+                cardType: card.type, 
+                isReactive: card.isReactive, 
+                isReactiveCard, 
+                cardPlayable: card.playable,
+                isInReactionMode 
+              });
               if (isReactiveCard && card.playable) {
                 if (isD307) {
                   // D307 special condition: only playable if there's compromised infrastructure

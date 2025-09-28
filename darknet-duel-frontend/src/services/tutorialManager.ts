@@ -39,21 +39,23 @@ class TutorialManager {
 
   // Progress Persistence
   private loadProgress(): TutorialProgress[] {
+    // Disabled localStorage loading - always start fresh
+    console.log('🎯 TUTORIAL: Progress loading disabled - starting fresh');
+    
+    // Clean up any existing localStorage data
     try {
-      const saved = localStorage.getItem('darknet_duel_tutorial_progress');
-      return saved ? JSON.parse(saved) : [];
+      localStorage.removeItem('darknet_duel_tutorial_progress');
+      console.log('🎯 TUTORIAL: Cleaned up existing localStorage data');
     } catch (error) {
-      console.error('Failed to load tutorial progress:', error);
-      return [];
+      console.log('🎯 TUTORIAL: No localStorage cleanup needed');
     }
+    
+    return [];
   }
 
   private saveProgress() {
-    try {
-      localStorage.setItem('darknet_duel_tutorial_progress', JSON.stringify(this.state.progress));
-    } catch (error) {
-      console.error('Failed to save tutorial progress:', error);
-    }
+    // Disabled localStorage saving - no persistence
+    console.log('🎯 TUTORIAL: Progress saving disabled - no persistence');
   }
 
   // Script Management
@@ -531,8 +533,8 @@ class TutorialManager {
 
   resetAllProgress() {
     this.state.progress = [];
-    this.saveProgress();
-    localStorage.removeItem('darknet_duel_tutorial_progress');
+    this.saveProgress(); // This is now a no-op
+    console.log('🎯 TUTORIAL: All progress reset - no localStorage cleanup needed');
   }
 }
 

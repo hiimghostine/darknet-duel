@@ -65,6 +65,9 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
   // Tutorial-specific card filtering based on current step
   const [tutorialStep, setTutorialStep] = useState<string | null>(null);
   
+  // Reaction mode state for tutorial
+  const [tutorialReactionMode, setTutorialReactionMode] = useState(false);
+  
   // Listen for tutorial step changes
   useEffect(() => {
     const handleTutorialStep = (event: CustomEvent) => {
@@ -83,8 +86,46 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
         setValidTargets(['I001']); // Only Enterprise Firewall for tutorial
       } else if (newStepId === 'reaction_phase') {
         // Transitioning to step 12 - setup reaction phase
-        console.log('🎯 TUTORIAL: Setting up reaction phase - shielding Corporate Website');
+        console.log('🎯 TUTORIAL: Setting up reaction phase - shielding Corporate Website and enabling reaction mode');
         mockGameStateProvider.setupReactionPhase();
+        setTutorialReactionMode(true);
+        
+        // Check if Social Engineer is already in hand, if not add it
+        setPersistentHand(prevHand => {
+          // Check if Social Engineer (A205) is already in the hand
+          const hasSocialEngineer = prevHand.some(card => card.id === 'A205');
+          
+          if (hasSocialEngineer) {
+            console.log('🎯 TUTORIAL: Social Engineer already in hand, keeping existing cards');
+            return prevHand; // Don't change anything if Social Engineer is already there
+          }
+          
+          // Only add Social Engineer if it's not already in the hand
+          const socialEngineerCard = {
+            id: "A205",
+            name: "Social Engineer",
+            type: "counter-attack",
+            category: "social",
+            cost: 1,
+            description: "Manipulates security personnel",
+            flavor: "The most sophisticated firewalls can be bypassed with a simple phone call",
+            effect: "Cancel a Shield card being played on infrastructure.",
+            img: "social_engineer",
+            isReactive: true,
+            target: "shield",
+            counterType: "cancel",
+            playable: true
+          };
+          
+          const newHand = [socialEngineerCard, ...prevHand.slice(1)]; // Replace first card with Social Engineer
+          console.log('🎯 TUTORIAL: Added Social Engineer to hand for reaction mode:', newHand.map(c => c.name));
+          return newHand;
+        });
+        
+        // Refresh context to include reaction mode
+        const newContext = mockGameStateProvider.generateMockContext(isAttacker);
+        setContext(newContext);
+        console.log('🎯 TUTORIAL: Updated context for reaction mode:', newContext);
       } else if (newStepId === 'target_shielded' && selectedCard && targetMode) {
         // Transitioning from step 12 to step 13 - enable targeting ONLY for shielded Corporate Website
         console.log('🎯 TUTORIAL: Enabling targeting for step 13 - Shielded Corporate Website only');
@@ -130,8 +171,9 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
           playable = false;
           break;
         case 'reaction_phase':
-          // Step 12: Allow first card (now a Social Engineer Response card) to be playable
+          // Step 12: Allow first card (now a Shield Breaker Counter-Attack card) to be playable
           playable = index === 0;
+          console.log('🎯 TUTORIAL: Step 12 - Card filtering:', { index, cardName: c.name, cardType: c.type, isReactive: c.isReactive, playable });
           break;
         case 'target_shielded':
           // Step 13: Keep first card playable during targeting
@@ -188,6 +230,23 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
       } else if (card.type === 'response') {
         console.log('🎯 TUTORIAL: Simulating response on', targetId);
         mockGameStateProvider.simulateResponse(targetId);
+      } else if (card.type === 'counter-attack') {
+        console.log('🎯 TUTORIAL: Simulating counter-attack on', targetId);
+        mockGameStateProvider.simulateResponse(targetId); // Counter-attacks use same logic as response
+        
+        // After counter-attack is played, exit reaction mode and return to action mode
+        if (tutorialStep === 'target_shielded') {
+          console.log('🎯 TUTORIAL: Counter-attack played, returning to action mode');
+          setTutorialReactionMode(false);
+          
+          // Exit reaction phase in the mock provider
+          mockGameStateProvider.exitReactionPhase();
+          
+          // Update context to return to action mode
+          const newContext = mockGameStateProvider.generateMockContext(isAttacker);
+          setContext(newContext);
+          console.log('🎯 TUTORIAL: Updated context back to action mode:', newContext);
+        }
       }
       
       // Update persistent hand by removing the played card
@@ -449,7 +508,7 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
   // Mock processing states
   const isProcessingMove = false;
   const isActive = gameState.currentTurn === (isAttacker ? 'attacker' : 'defender');
-  const isInReactionMode = false;
+  const isInReactionMode = tutorialReactionMode;
 
   // Optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({

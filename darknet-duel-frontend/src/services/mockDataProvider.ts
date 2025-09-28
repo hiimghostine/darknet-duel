@@ -193,6 +193,31 @@ export const mockAttackerCards = [
         description: "Can be played as any Exploit or Attack card with card draw benefit"
       }
     ]
+  },
+  {
+    id: "CA001",
+    name: "Shield Breaker",
+    type: "counter-attack",
+    category: "network",
+    cost: 1,
+    description: "Neutralize defensive shields through advanced techniques",
+    flavor: "Every shield has a weakness, you just need to find it",
+    effect: "Remove shield from shielded infrastructure",
+    img: "shield_breaker",
+    isReactive: true,
+    target: "infrastructure",
+    playable: true,
+    metadata: {
+      category: "counter",
+      flavor: "Breaking through defenses"
+    },
+    effects: [
+      {
+        type: "Counter-Attack",
+        value: 1,
+        description: "Remove shield from shielded infrastructure"
+      }
+    ]
   }
 ];
 
@@ -223,7 +248,7 @@ export const mockDefenderCards = [
     ]
   },
   {
-    id: "D002",
+    id: "D005",
     name: "Intrusion Detection",
     type: "shield", 
     category: "network", 
@@ -300,17 +325,17 @@ export const mockDefenderCards = [
 ];
 
 export class MockGameStateProvider {
-  private infrastructureStates: Map<string, 'secure' | 'vulnerable' | 'compromised' | 'shielded' | 'fortified'>;
-  private attackerActionPoints: number;
-  private defenderActionPoints: number;
-  private currentTurn: 'attacker' | 'defender';
+  private infrastructureStates = new Map<string, string>();
+  private attackerActionPoints = 2;
+  private defenderActionPoints = 3;
+  private currentTurn: 'attacker' | 'defender' = 'attacker';
+  private currentStage: 'action' | 'reaction' | 'end' | null = null;
   constructor() {
     this.infrastructureStates = new Map();
     mockInfrastructureCards.forEach(card => {
       this.infrastructureStates.set(card.id, 'secure');
     });
     this.attackerActionPoints = 2;
-    this.defenderActionPoints = 3;
     this.currentTurn = 'attacker';
   }
 
@@ -394,7 +419,7 @@ export class MockGameStateProvider {
       gameover: false,
       // This is crucial - activePlayers determines if cards are playable
       activePlayers: {
-        [playerID]: 'action' // Set the current player to 'action' stage
+        [playerID]: this.currentStage || 'action' // Use current stage or default to 'action'
       },
       turn: 1,
       playOrder: ['0', '1'],
@@ -462,8 +487,17 @@ export class MockGameStateProvider {
   setupReactionPhase() {
     // Shield the Corporate Website for the reaction phase tutorial
     this.setInfrastructureState('I003', 'shielded');
-    // Switch to defender's turn for reaction phase
-    this.currentTurn = 'defender';
+    // Keep attacker as current turn since they need to play counter-attack cards in reaction mode
+    this.currentTurn = 'attacker';
+    // Set stage to reaction mode
+    this.currentStage = 'reaction';
+  }
+
+  // Return to action mode after reaction phase
+  exitReactionPhase() {
+    // Return to action mode
+    this.currentStage = 'action';
+    console.log('🎯 TUTORIAL: Exited reaction phase, returned to action mode');
   }
 
   // Reset to initial state

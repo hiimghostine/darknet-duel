@@ -166,16 +166,43 @@ export const basicGameplayTutorial: TutorialScript = {
     {
       id: 'reaction_phase',
       title: 'Understanding Reaction Phase',
-      description: 'Now you\'ll learn about the Reaction Phase - a crucial defensive mechanic. When the attacker\'s turn ends, the defender gets a chance to react and counter-attack. The Corporate Website has been shielded and the game has entered reaction phase.',
-      instruction: 'Click on the highlighted Social Engineer card to select it and enter target mode. This Response card can neutralize shielded infrastructure and return it to a secure state. Once you\'ve selected the card, it will automatically advance to targeting.',
+      description: 'Now you\'ll learn about the Reaction Phase - a crucial mechanic for both players. When a player makes a move, the opponent gets a chance to react with special cards. The Corporate Website has been shielded and the game has entered reaction phase.',
+      instruction: 'Click on the highlighted Social Engineer card to select it and enter target mode. This Counter-Attack card can be played in reaction mode to cancel shield effects on infrastructure. Once you\'ve selected the card, it will automatically advance to targeting.',
       targetElement: '.player-hand .card:first-child',
       position: 'right',
       validation: {
         type: 'custom',
         condition: () => {
-          // Check if user is in target mode (card selected)
+          // Check if Social Engineer card is selected (multiple ways to detect selection)
+          const socialEngineerCard = document.querySelector('.player-hand .card[data-card-id="A205"]');
+          
+          if (socialEngineerCard) {
+            // Check for various selection states
+            const hasBorderSuccess = socialEngineerCard.classList.contains('border-success');
+            const hasSelectedClass = socialEngineerCard.classList.contains('selected');
+            const hasActiveClass = socialEngineerCard.classList.contains('active');
+            
+            console.log('🎯 TUTORIAL: Social Engineer card found, checking selection state:', {
+              hasBorderSuccess,
+              hasSelectedClass,
+              hasActiveClass,
+              classList: Array.from(socialEngineerCard.classList)
+            });
+            
+            if (hasBorderSuccess || hasSelectedClass || hasActiveClass) {
+              console.log('🎯 TUTORIAL: Social Engineer card selected, validation passed');
+              return true;
+            }
+          }
+          
+          // Also check if we're in target mode (alternative detection)
           const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
-          return !!mockBoard;
+          if (mockBoard) {
+            console.log('🎯 TUTORIAL: Target mode detected, validation passed');
+            return true;
+          }
+          
+          return false;
         }
       },
       autoAdvance: false,
@@ -183,9 +210,9 @@ export const basicGameplayTutorial: TutorialScript = {
     },
     {
       id: 'target_shielded',
-      title: 'Neutralizing Shielded Infrastructure',
-      description: 'Perfect! The Social Engineer card is now selected and ready to use. Notice how only the shielded Corporate Website is highlighted - Response cards can target shielded infrastructure to neutralize defensive measures and return them to a secure state.',
-      instruction: 'Click on the highlighted shielded Corporate Website to neutralize it. This will remove the shield and return the infrastructure to a secure state, preventing the attacker from easily exploiting it.',
+      title: 'Breaking Through Shields',
+      description: 'Perfect! The Social Engineer card is now selected and ready to use. Notice how only the shielded Corporate Website is highlighted - Counter-Attack cards can be played in reaction mode to cancel shield effects.',
+      instruction: 'Click on the highlighted shielded Corporate Website to cancel its shield effect. This will neutralize the defensive measure and return the infrastructure to a secure state.',
       targetElement: '[data-infra-id="I003"]',
       position: 'right',
       validation: {

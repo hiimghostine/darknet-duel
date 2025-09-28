@@ -284,9 +284,12 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
               {stepIndex + 1} / {currentScript.steps.length}
             </span>
             <button
-              onClick={onCancel}
+              onClick={() => {
+                console.log('🎯 TUTORIAL: Exit tutorial clicked');
+                if (onCancel) onCancel();
+              }}
               className="text-gray-400 hover:text-red-400 transition-colors"
-              title="Cancel Tutorial"
+              title="Exit Tutorial"
             >
               <X size={20} />
             </button>
@@ -341,9 +344,12 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           <div className="flex items-center space-x-2">
             {/* Reset Tutorial button */}
             <button
-              onClick={onCancel}
+              onClick={() => {
+                console.log('🎯 TUTORIAL: Reset tutorial clicked - refreshing page');
+                window.location.reload();
+              }}
               className="flex items-center space-x-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors text-sm"
-              title="Reset Tutorial"
+              title="Reset Tutorial (Refresh Page)"
             >
               <RotateCcw size={16} />
               <span>Reset Tutorial</span>
