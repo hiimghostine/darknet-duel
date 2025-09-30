@@ -93,11 +93,11 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               group relative lg:w-52 lg:h-64 w-48 h-56 border-2 rounded-xl lg:p-4 p-3
               flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
               font-mono lg:text-base text-sm overflow-visible
-              ${getInfraStateClasses(infra.state)}
+              ${getInfraStateClasses(infra.state).replace(' animate-pulse', '')}
               ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40' : ''}
               ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
               ${targetMode && !isTargetable ? 'opacity-50 cursor-not-allowed' : ''}
-              ${!targetMode ? 'hover:scale-150 hover:z-[9999] hover:shadow-2xl transform-gpu' : ''}
+              ${!targetMode ? 'hover:z-[9999] hover:shadow-2xl transform-gpu' : ''}
               ${hasMonitoringEffects ? 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100' : ''}
             `}
             onClick={() => {
@@ -110,7 +110,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
           >
 
             {/* Compact Infrastructure Card View */}
-            <div className="group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-between h-full text-center p-1">
+            <div className={`group-hover:opacity-0 group-hover:invisible transition-all duration-300 flex flex-col justify-between h-full text-center p-1 ${(infra.state === 'vulnerable' || infra.state === 'compromised') ? 'animate-pulse' : ''}`}>
               {/* Top section - ID and Type Icon */}
               <div className="flex items-center justify-between w-full mb-1">
                 <div className="lg:text-xs text-[10px] bg-base-300 text-base-content rounded px-1.5 py-1 font-semibold">
@@ -176,13 +176,13 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               </div>
             </div>
 
-            {/* Expanded Infrastructure Card View (on hover) - Card-like proportions */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[99999] transform scale-125 origin-center shadow-2xl w-48 h-72 p-2.5 flex flex-col pointer-events-none">
+            {/* Expanded Infrastructure Card View (on hover) - Scaled for readability */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-lg border-2 border-base-content/20 z-[99999] shadow-2xl w-48 h-64 p-3 flex flex-col pointer-events-none transform scale-125 origin-center">
               {/* Infrastructure Card Header */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <div className={`
-                    w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-base-content
+                    w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-base-content
                     ${infra.state === 'compromised' ? 'bg-red-600' :
                       infra.state === 'fortified' ? 'bg-blue-600' :
                       infra.state === 'vulnerable' ? 'bg-amber-600' :
@@ -199,7 +199,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                     {infra.id}
                   </div>
                 </div>
-                <div className="text-xl">
+                <div className="text-lg">
                   {infra.type === 'network' ? '🌐' :
                    infra.type === 'data' ? '💾' :
                    infra.type === 'web' ? '🖥️' :
@@ -266,30 +266,22 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               </div>
 
               {/* Infrastructure Footer - Additional Info */}
-              <div className="space-y-1">
+              <div className="text-center">
                 {/* Security Level Indicator */}
-                <div className="text-center">
-                  <div className={`
-                    text-[10px] font-bold py-0.5 px-1.5 rounded text-base-content
-                    ${infra.state === 'compromised' ? 'bg-red-600' :
-                      infra.state === 'fortified' ? 'bg-blue-600' :
-                      infra.state === 'vulnerable' ? 'bg-amber-600' :
-                      infra.state === 'shielded' ? 'bg-purple-600' :
-                      'bg-green-600'}
-                  `}>
-                    Security: {infra.state === 'compromised' ? 'BREACHED' :
-                              infra.state === 'fortified' ? 'FORTIFIED' :
-                              infra.state === 'vulnerable' ? 'AT RISK' :
-                              infra.state === 'shielded' ? 'SHIELDED' :
-                              'SECURE'}
-                  </div>
+                <div className={`
+                  text-[10px] font-bold py-0.5 px-1.5 rounded text-base-content
+                  ${infra.state === 'compromised' ? 'bg-red-600' :
+                    infra.state === 'fortified' ? 'bg-blue-600' :
+                    infra.state === 'vulnerable' ? 'bg-amber-600' :
+                    infra.state === 'shielded' ? 'bg-purple-600' :
+                    'bg-green-600'}
+                `}>
+                  Security: {infra.state === 'compromised' ? 'BREACHED' :
+                            infra.state === 'fortified' ? 'FORTIFIED' :
+                            infra.state === 'vulnerable' ? 'AT RISK' :
+                            infra.state === 'shielded' ? 'SHIELDED' :
+                            'SECURE'}
                 </div>
-
-                {/* Infrastructure Type Category */}
-                <div className="text-center text-[10px] bg-base-300 text-base-content/70 py-0.5 px-1.5 rounded">
-                  Category: {infra.type.charAt(0).toUpperCase() + infra.type.slice(1)}
-                </div>
-                
               </div>
             </div>
           </div>

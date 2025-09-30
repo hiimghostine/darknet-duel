@@ -1,25 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronRight, ChevronLeft, X, Play, Pause, RotateCcw, BookOpen } from 'lucide-react';
-import type { TutorialStep, TutorialState } from '../../types/tutorial.types';
+import { ChevronRight, RotateCcw, BookOpen, X } from 'lucide-react';
+import type { TutorialState } from '../../types/tutorial.types';
 import tutorialManager from '../../services/tutorialManager';
 
 interface TutorialOverlayProps {
   tutorialState: TutorialState;
   onNext?: () => void;
-  onPrevious?: () => void;
-  onSkip?: () => void;
-  onPause?: () => void;
-  onResume?: () => void;
   onCancel?: () => void;
 }
 
 const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   tutorialState,
   onNext,
-  onPrevious,
-  onSkip,
-  onPause,
-  onResume,
   onCancel
 }) => {
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -37,7 +29,86 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     }
 
     const updatePosition = () => {
-      const element = document.querySelector(highlightTarget);
+      // NEW HIGHLIGHTING SYSTEM - Direct element targeting by step
+      let element = null;
+      
+      // Step-specific element selection
+      switch (highlightTarget) {
+        case '.infrastructure-grid':
+          element = document.querySelector('.infrastructure-grid');
+          console.log('Step 3 - Infrastructure Grid:', element);
+          break;
+          
+        case '.game-info-panel':
+          element = document.querySelector('.game-info-panel');
+          console.log('Step 4 - Game Info Panel:', element);
+          break;
+          
+        case '.player-hand':
+          // Target the entire player hand area container
+          element = document.querySelector('.player-hand');
+          console.log('Step 5 - Player Hand Container:', element);
+          break;
+          
+        case '.player-hand .card:first-child':
+          // Target the first card in the player hand
+          element = document.querySelector('.player-hand .card:first-child');
+          console.log('Step 6 - First Card in Hand:', element);
+          if (!element) {
+            // Fallback: try to find the first card with data-card-id
+            element = document.querySelector('.player-hand [data-card-id]:first-child');
+            console.log('Step 6 - Fallback First Card:', element);
+          }
+          break;
+          
+        case '.infrastructure-card[data-vectors*="network"]':
+          // Target infrastructure cards with network vectors
+          const networkCards = document.querySelectorAll('[data-infra-id]');
+          console.log('Step 7 - Looking for network infrastructure cards:', networkCards.length);
+          
+          // Find infrastructure cards that have network vulnerability
+          for (const card of networkCards) {
+            const infraId = card.getAttribute('data-infra-id');
+            // Check if this is a network-vulnerable infrastructure
+            if (infraId === 'I001' || infraId === 'I005' || infraId === 'I009') { // Enterprise Firewall, Main Database, Financial System
+              element = card;
+              console.log('Step 7 - Found network infrastructure:', infraId, element);
+              break;
+            }
+          }
+          
+          if (!element) {
+            // Fallback: just target the first infrastructure card
+            element = document.querySelector('[data-infra-id]');
+            console.log('Step 7 - Fallback infrastructure card:', element);
+          }
+          break;
+          
+        case '.tactical-hand-label':
+          // Target specifically the TACTICAL_HAND label
+          element = document.querySelector('.tactical-hand-label');
+          console.log('Step 5 - Tactical Hand Label:', element);
+          if (!element) {
+            // Fallback: try to find any element with TACTICAL_HAND text
+            const allElements = document.querySelectorAll('*');
+            for (const el of allElements) {
+              if (el.textContent?.includes('TACTICAL_HAND')) {
+                element = el;
+                console.log('Step 5 - Found TACTICAL_HAND via text search:', element);
+                break;
+              }
+            }
+          }
+          break;
+          
+        default:
+          if (highlightTarget) {
+            element = document.querySelector(highlightTarget);
+            console.log('Other step - Target:', highlightTarget, element);
+          }
+          break;
+      }
+      
       if (element) {
         const rect = element.getBoundingClientRect();
         setHighlightRect(rect);
@@ -66,12 +137,14 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
               break;
             case 'right':
               top = rect.top + (rect.height - overlayRect.height) / 2;
-              left = rect.right + 20;
+              // Add extra spacing for card selection steps to avoid covering the expanded card on hover
+              const extraSpacing = (currentStep.id === 'exploit_card' || currentStep.id === 'attack_card' || currentStep.id === 'reaction_phase') ? 100 : 20;
+              left = rect.right + extraSpacing;
               break;
             case 'center':
             default:
               top = (viewportHeight - overlayRect.height) / 2;
-              left = (viewportWidth - overlayRect.width) / 2;
+              left = (viewportWidth - overlayRect.width) / 2 + 100; // Move 100px to the right
               break;
           }
           
@@ -114,28 +187,70 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     return null;
   }
 
-  const canGoNext = stepIndex < currentScript.steps.length - 1;
-  const canGoPrevious = stepIndex > 0;
-  const canSkip = currentStep.skipable !== false;
+  // Check if current step validation is satisfied
+  const [validationTrigger, setValidationTrigger] = React.useState(0);
+  
+  // Trigger validation re-check periodically for dynamic validation
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setValidationTrigger(prev => prev + 1);
+    }, 500); // Check every 500ms
+    
+    return () => clearInterval(interval);
+  }, [currentStep]);
+  
+  const isCurrentStepValid = React.useMemo(() => {
+    // Force re-evaluation by including validationTrigger
+    validationTrigger; // This ensures the memo re-runs
+    
+    if (!currentStep?.validation) return true; // No validation required
+    
+    if (currentStep.validation.type === 'custom' && typeof currentStep.validation.condition === 'function') {
+      try {
+        const result = currentStep.validation.condition();
+        console.log('🎯 TUTORIAL: Validation check for step', currentStep.id, ':', result);
+        return result;
+      } catch (error) {
+        console.error('Tutorial validation error:', error);
+        return false;
+      }
+    }
+    
+    return true; // Default to valid for other validation types
+  }, [currentStep, validationTrigger]);
+
+  const canGoNext = stepIndex < currentScript.steps.length - 1 && isCurrentStepValid;
 
   return (
     <>
-      {/* Backdrop with highlight cutout */}
-      <div className="fixed inset-0 z-40 pointer-events-none">
+      {/* Clean highlight overlay - VERY LOW Z-INDEX to stay under all card interactions */}
+      <div className="fixed inset-0 z-[1] pointer-events-none">
         {highlightRect && (
-          <div className="absolute inset-0 bg-black bg-opacity-60">
-            {/* Highlight cutout */}
+          <>
+            {/* Enhanced border highlight with glow effect - NO BLUR, LOWER Z-INDEX */}
             <div
-              className="absolute bg-transparent border-4 border-blue-400 rounded-lg shadow-lg animate-pulse"
+              className="absolute border-4 border-blue-400 rounded-lg shadow-lg animate-pulse bg-blue-400/10"
               style={{
                 top: highlightRect.top - 8,
                 left: highlightRect.left - 8,
                 width: highlightRect.width + 16,
                 height: highlightRect.height + 16,
-                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)'
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.1)',
+                zIndex: 1
               }}
             />
-            {/* Animated arrow pointing to target */}
+            {/* Additional outer glow - LOWER Z-INDEX */}
+            <div
+              className="absolute border-2 border-blue-300/50 rounded-lg animate-ping"
+              style={{
+                top: highlightRect.top - 12,
+                left: highlightRect.left - 12,
+                width: highlightRect.width + 24,
+                height: highlightRect.height + 24,
+                zIndex: 1
+              }}
+            />
+            {/* Single animated arrow */}
             <div
               className="absolute text-blue-400 animate-bounce"
               style={{
@@ -145,7 +260,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             >
               <div className="text-2xl">↓</div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -154,6 +269,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         ref={overlayRef}
         className="fixed z-50 bg-gray-900 border border-gray-600 rounded-lg shadow-2xl max-w-md w-full mx-4"
         style={overlayPosition ? overlayPosition : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        data-tutorial-step={currentStep.id}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-600">
@@ -169,9 +285,12 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
               {stepIndex + 1} / {currentScript.steps.length}
             </span>
             <button
-              onClick={onCancel}
+              onClick={() => {
+                console.log('🎯 TUTORIAL: Exit tutorial clicked');
+                if (onCancel) onCancel();
+              }}
               className="text-gray-400 hover:text-red-400 transition-colors"
-              title="Cancel Tutorial"
+              title="Exit Tutorial"
             >
               <X size={20} />
             </button>
@@ -212,72 +331,46 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         {/* Footer with controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-600">
           <div className="flex items-center space-x-2">
-            {/* Previous button */}
+            {/* Next/Custom Action button */}
             <button
-              onClick={onPrevious}
-              disabled={!canGoPrevious}
-              className="flex items-center space-x-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors text-sm"
+              onClick={() => {
+                if (currentStep.customButtonAction === 'exit_tutorial') {
+                  console.log('🎯 TUTORIAL: Finish tutorial clicked - completing tutorial');
+                  // Complete the tutorial properly by calling onNext, which will trigger completeTutorial()
+                  if (onNext) onNext();
+                } else {
+                  if (onNext) onNext();
+                }
+              }}
+              disabled={!canGoNext && !currentStep.customButtonAction}
+              className="flex items-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors text-sm"
             >
-              <ChevronLeft size={16} />
-              <span>Previous</span>
-            </button>
-
-            {/* Pause/Resume button */}
-            <button
-              onClick={isActive ? onPause : onResume}
-              className="flex items-center space-x-1 px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-md transition-colors text-sm"
-              title={isActive ? "Pause Tutorial" : "Resume Tutorial"}
-            >
-              {isActive ? <Pause size={16} /> : <Play size={16} />}
+              <span>{currentStep.customButtonText || 'Next'}</span>
+              {!currentStep.customButtonAction && <ChevronRight size={16} />}
             </button>
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Skip button */}
-            {canSkip && (
-              <button
-                onClick={onSkip}
-                className="px-3 py-2 text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                Skip
-              </button>
-            )}
-
-            {/* Next button */}
+            {/* Reset Tutorial button */}
             <button
-              onClick={onNext}
-              className="flex items-center space-x-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors text-sm font-medium"
+              onClick={() => {
+                console.log('🎯 TUTORIAL: Reset tutorial clicked - restarting tutorial');
+                if (currentScript) {
+                  // Reset progress for current script and restart
+                  tutorialManager.resetProgress(currentScript.id);
+                  tutorialManager.startTutorial(currentScript.id);
+                }
+              }}
+              className="flex items-center space-x-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors text-sm"
+              title="Reset Tutorial"
             >
-              <span>{canGoNext ? 'Next' : 'Complete'}</span>
-              <ChevronRight size={16} />
+              <RotateCcw size={16} />
+              <span>Reset Tutorial</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tutorial-specific CSS */}
-      <style jsx global>{`
-        .tutorial-highlight {
-          position: relative;
-          z-index: 41;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3) !important;
-          border-radius: 8px;
-          animation: tutorialPulse 2s infinite;
-        }
-        
-        @keyframes tutorialPulse {
-          0%, 100% {
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
-          }
-          50% {
-            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3), 0 0 30px rgba(59, 130, 246, 0.5);
-          }
-        }
-        
-        .tutorial-overlay-backdrop {
-          backdrop-filter: blur(2px);
-        }
-      `}</style>
     </>
   );
 };

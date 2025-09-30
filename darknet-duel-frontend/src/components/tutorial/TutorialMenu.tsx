@@ -14,40 +14,69 @@ import type { TutorialScript } from '../../types/tutorial.types';
 import { useTutorial } from '../../hooks/useTutorial';
 import VideoTutorial from './VideoTutorial';
 import CardEncyclopedia from './CardEncyclopedia';
+import MockGameBoard from './MockGameBoard';
+import { tutorialScripts } from '../../data/tutorialScripts';
+import { mockGameStateProvider } from '../../services/mockDataProvider';
 
 interface TutorialMenuProps {
   onClose?: () => void;
-  onStartInteractiveTutorial?: (scriptId: string) => void;
 }
 
-const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose, onStartInteractiveTutorial }) => {
+const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
   const [showVideoTutorial, setShowVideoTutorial] = useState(false);
   const [showCardEncyclopedia, setShowCardEncyclopedia] = useState(false);
+  
+  // Tutorial execution state
+  const [isInTutorial, setIsInTutorial] = useState(false);
+  const [selectedScript, setSelectedScript] = useState<string | null>(null);
+  const [tutorialRole, setTutorialRole] = useState<'attacker' | 'defender'>('attacker');
   
   const { 
     getAvailableScripts, 
     isScriptCompleted, 
-    getScriptProgress, 
-    startTutorial 
+    startTutorial,
+    tutorialState,
+    cancelTutorial
   } = useTutorial();
 
   const availableScripts = getAvailableScripts();
 
-  const handleStartInteractiveTutorial = (scriptId: string) => {
+  const handleStartInteractiveTutorial = async (scriptId: string) => {
     if (scriptId === 'card_encyclopedia') {
       setShowCardEncyclopedia(true);
       return;
     }
     
-    if (onStartInteractiveTutorial) {
-      onStartInteractiveTutorial(scriptId);
-      if (onClose) onClose();
+    // Reset mock game state
+    mockGameStateProvider.reset();
+    
+    // Set tutorial role based on script (defender_basics gets defender role)
+    const role = scriptId === 'defender_basics' ? 'defender' : 'attacker';
+    setTutorialRole(role);
+    setSelectedScript(scriptId);
+    
+    // Handle tutorial execution directly in the modal
+    console.log('🎯 Starting tutorial:', { scriptId, role });
+    
+    // Start the tutorial
+    const success = await startTutorial(scriptId);
+    if (success) {
+      setIsInTutorial(true);
     }
+  };
+
+  // Handle tutorial exit
+  const handleExitTutorial = () => {
+    console.log('🎯 Exiting tutorial');
+    cancelTutorial();
+    setIsInTutorial(false);
+    setSelectedScript(null);
+    mockGameStateProvider.reset();
   };
 
   const getScriptIcon = (scriptId: string) => {
     switch (scriptId) {
-      case 'basic_gameplay':
+      case 'attacker_basics':
         return <Target className="text-primary" size={24} />;
       case 'defender_basics':
         return <Shield className="text-primary" size={24} />;
@@ -64,13 +93,9 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose, onStartInteractive
 
   const getCompletionStatus = (script: TutorialScript) => {
     const isCompleted = isScriptCompleted(script.id);
-    const progress = getScriptProgress(script.id);
     
     if (isCompleted) {
       return { status: 'completed', text: 'COMPLETED', color: 'text-success' };
-    } else if (progress && progress.currentStep > 0) {
-      const percentage = Math.round((progress.currentStep / script.steps.length) * 100);
-      return { status: 'in_progress', text: `${percentage}% COMPLETE`, color: 'text-warning' };
     } else {
       return { status: 'not_started', text: 'NOT_STARTED', color: 'text-base-content/60' };
     }
@@ -140,7 +165,22 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose, onStartInteractive
       exit="exit"
       onClick={onClose}
     >
-        {showVideoTutorial ? (
+        {isInTutorial && selectedScript ? (
+          // Tutorial execution view with MockGameBoard
+          <div className="w-full h-full bg-base-100 text-base-content" onClick={(e) => e.stopPropagation()}>
+            <MockGameBoard 
+              isAttacker={tutorialRole === 'attacker'}
+              tutorialScriptId={selectedScript}
+              tutorialInfo={{
+                scriptName: tutorialScripts.find(s => s.id === selectedScript)?.name || '',
+                role: tutorialRole,
+                stepIndex: tutorialState.stepIndex,
+                totalSteps: tutorialState.currentScript?.steps.length || 0,
+                onExit: handleExitTutorial
+              }}
+            />
+          </div>
+        ) : showVideoTutorial ? (
           <motion.div
             key="video"
             variants={modalVariants}
@@ -284,10 +324,12 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose, onStartInteractive
                                   <span>{formatDuration(script.estimatedDuration)}</span>
                                 </div>
                                 
-                                <div className="flex items-center gap-1">
-                                  <span className="text-base-content/60">STATUS:</span>
-                                  <span className={completion.color}>{completion.text}</span>
-                                </div>
+                                {script.id !== 'card_encyclopedia' && (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-base-content/60">STATUS:</span>
+                                    <span className={completion.color}>{completion.text}</span>
+                                  </div>
+                                )}
                                 
                                 {script.prerequisites && (
                                   <div className="flex items-center text-base-content/60">

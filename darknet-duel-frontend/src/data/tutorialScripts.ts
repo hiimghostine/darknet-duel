@@ -1,9 +1,9 @@
 import type { TutorialScript } from '../types/tutorial.types';
 
-export const basicGameplayTutorial: TutorialScript = {
-  id: 'basic_gameplay',
-  name: 'Basic Gameplay Tutorial',
-  description: 'Learn the fundamentals of Darknet Duel gameplay',
+export const attackerBasicsTutorial: TutorialScript = {
+  id: 'attacker_basics',
+  name: 'Attacker Basics Tutorial',
+  description: 'Master the art of digital infiltration and system compromise',
   estimatedDuration: 10,
   steps: [
     {
@@ -39,8 +39,8 @@ export const basicGameplayTutorial: TutorialScript = {
       title: 'Action Points (AP)',
       description: 'Action Points determine how many actions you can take per turn',
       instruction: 'As an Attacker, you gain 2 AP per turn (max 10). Defenders gain 3 AP per turn.',
-      targetElement: '.action-points-display',
-      position: 'bottom',
+      targetElement: '.game-info-panel',
+      position: 'right',
       autoAdvance: false,
       skipable: true
     },
@@ -56,39 +56,45 @@ export const basicGameplayTutorial: TutorialScript = {
     },
     {
       id: 'exploit_card',
-      title: 'Playing an Exploit Card',
-      description: 'Exploit cards make infrastructure vulnerable to attacks',
-      instruction: 'Find an Exploit card in your hand and click on it to select it.',
-      targetElement: '.player-hand .card[data-type="exploit"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="exploit"]'
-      },
+      title: 'Understanding Exploit Cards',
+      description: 'This is an Exploit card - the foundation of any successful attack. Exploit cards create vulnerabilities in secure infrastructure by finding weaknesses in their defenses. Each exploit targets specific attack vectors like Network, Web, Social Engineering, or Malware.',
+      instruction: 'Click on the highlighted Log4Shell card to select it and enter target mode. This Network exploit can make infrastructure vulnerable to Network-based attacks. Once you\'ve selected the card, click "Next" to learn about targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="exploit"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'target_infrastructure',
-      title: 'Target Infrastructure',
-      description: 'Now target an infrastructure card that matches your exploit\'s attack vector',
-      instruction: 'Click on a highlighted infrastructure card to target it with your exploit.',
-      targetElement: '.infrastructure-card.targetable',
-      position: 'bottom',
-      action: {
-        type: 'click',
-        target: '.infrastructure-card.targetable'
-      },
+      title: 'Attack Vectors & Infrastructure Targeting',
+      description: 'Perfect! The Log4Shell card is now selected and glowing, indicating it\'s ready to be used. Notice how the game has entered "target mode" - only compatible infrastructure cards are highlighted. Attack vectors are crucial: your Network exploit can only target infrastructure with Network vulnerabilities.',
+      instruction: 'Click on the highlighted Enterprise Firewall to exploit it. This infrastructure has Network vulnerabilities that match your Log4Shell exploit. Once you\'ve targeted it, the exploit will be executed and the infrastructure will become vulnerable.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
       validation: {
-        type: 'game_state',
-        condition: (gameState) => gameState?.infrastructure?.some((infra: any) => infra.state === 'vulnerable')
+        type: 'custom',
+        condition: () => {
+          // Check if Enterprise Firewall has been exploited (state changed to vulnerable)
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (!enterpriseFirewall) return false;
+          
+          return enterpriseFirewall.getAttribute('data-state') === 'vulnerable' ||
+                 enterpriseFirewall.textContent?.includes('VULNERABLE') === true ||
+                 enterpriseFirewall.textContent?.includes('AT RISK') === true;
+        }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'infrastructure_vulnerable',
@@ -102,39 +108,54 @@ export const basicGameplayTutorial: TutorialScript = {
     },
     {
       id: 'attack_card',
-      title: 'Playing an Attack Card',
-      description: 'Attack cards compromise vulnerable infrastructure',
-      instruction: 'Find an Attack card in your hand and select it.',
-      targetElement: '.player-hand .card[data-type="attack"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="attack"]'
-      },
+      title: 'Understanding Attack Cards',
+      description: 'Attack cards are used to compromise vulnerable infrastructure. They can only target infrastructure that has already been exploited and is in a vulnerable state. Each attack targets specific vectors and can fully compromise the target.',
+      instruction: 'Click on the highlighted DDoS Attack card to select it and enter target mode. This Network attack can compromise vulnerable infrastructure with Network vulnerabilities. Once you\'ve selected the card, it will automatically advance to targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="attack"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'attack_vulnerable',
-      title: 'Attack Vulnerable Infrastructure',
-      description: 'Target the vulnerable infrastructure to compromise it',
-      instruction: 'Click on the vulnerable (yellow) infrastructure card.',
-      targetElement: '.infrastructure-card[data-state="vulnerable"]',
-      position: 'bottom',
-      action: {
-        type: 'click',
-        target: '.infrastructure-card[data-state="vulnerable"]'
-      },
+      title: 'Compromising Vulnerable Infrastructure',
+      description: 'Perfect! The DDoS Attack card is now selected and ready to use. Notice how only the vulnerable Enterprise Firewall is highlighted - Attack cards can only target infrastructure that has been previously exploited and is in a vulnerable state.',
+      instruction: 'Click on the highlighted vulnerable Enterprise Firewall to attack it. This will fully compromise the infrastructure, changing it from vulnerable to compromised state.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
       validation: {
-        type: 'game_state',
-        condition: (gameState) => gameState?.infrastructure?.some((infra: any) => infra.state === 'compromised')
+        type: 'custom',
+        condition: () => {
+          // Check if Enterprise Firewall has been compromised (state changed to compromised)
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (!enterpriseFirewall) {
+            console.log('🎯 TUTORIAL: Enterprise Firewall element not found');
+            return false;
+          }
+          
+          const dataState = enterpriseFirewall.getAttribute('data-state');
+          const textContent = enterpriseFirewall.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking compromised state - data-state:', dataState, 'textContent:', textContent);
+          
+          return dataState === 'compromised' ||
+                 textContent.toLowerCase().includes('compromised') ||
+                 textContent.toLowerCase().includes('controlled') ||
+                 textContent.toLowerCase().includes('breached');
+        }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'infrastructure_compromised',
@@ -145,6 +166,83 @@ export const basicGameplayTutorial: TutorialScript = {
       delay: 1000,
       autoAdvance: false,
       skipable: true
+    },
+    {
+      id: 'reaction_phase',
+      title: 'Understanding Reaction Phase',
+      description: 'Now you\'ll learn about the Reaction Phase - a crucial mechanic for both players. When a player makes a move, the opponent gets a chance to react with special cards. The Corporate Website has been shielded and the game has entered reaction phase.',
+      instruction: 'Click on the highlighted Social Engineer card to select it and enter target mode. This Counter-Attack card can be played in reaction mode to cancel shield effects on infrastructure. Once you\'ve selected the card, it will automatically advance to targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if Social Engineer card is selected (multiple ways to detect selection)
+          const socialEngineerCard = document.querySelector('.player-hand .card[data-card-id="A205"]');
+          
+          if (socialEngineerCard) {
+            // Check for various selection states
+            const hasBorderSuccess = socialEngineerCard.classList.contains('border-success');
+            const hasSelectedClass = socialEngineerCard.classList.contains('selected');
+            const hasActiveClass = socialEngineerCard.classList.contains('active');
+            
+            console.log('🎯 TUTORIAL: Social Engineer card found, checking selection state:', {
+              hasBorderSuccess,
+              hasSelectedClass,
+              hasActiveClass,
+              classList: Array.from(socialEngineerCard.classList)
+            });
+            
+            if (hasBorderSuccess || hasSelectedClass || hasActiveClass) {
+              console.log('🎯 TUTORIAL: Social Engineer card selected, validation passed');
+              return true;
+            }
+          }
+          
+          // Also check if we're in target mode (alternative detection)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          if (mockBoard) {
+            console.log('🎯 TUTORIAL: Target mode detected, validation passed');
+            return true;
+          }
+          
+          return false;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'target_shielded',
+      title: 'Breaking Through Shields',
+      description: 'Perfect! The Social Engineer card is now selected and ready to use. Notice how only the shielded Corporate Website is highlighted - Counter-Attack cards can be played in reaction mode to cancel shield effects.',
+      instruction: 'Click on the highlighted shielded Corporate Website to cancel its shield effect. This will neutralize the defensive measure and return the infrastructure to a secure state.',
+      targetElement: '[data-infra-id="I003"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if Corporate Website has been neutralized (state changed back to secure)
+          const corporateWebsite = document.querySelector('[data-infra-id="I003"]');
+          if (!corporateWebsite) {
+            console.log('🎯 TUTORIAL: Corporate Website element not found');
+            return false;
+          }
+          
+          const dataState = corporateWebsite.getAttribute('data-state');
+          const textContent = corporateWebsite.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking secure state - data-state:', dataState, 'textContent:', textContent);
+          
+          return dataState === 'secure' ||
+                 textContent.toLowerCase().includes('secure') ||
+                 textContent.toLowerCase().includes('protected');
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'win_conditions',
@@ -180,7 +278,9 @@ export const basicGameplayTutorial: TutorialScript = {
       instruction: 'You\'re ready to play! Remember: Exploit → Attack → Compromise. Good luck!',
       position: 'center',
       autoAdvance: false,
-      skipable: false
+      skipable: false,
+      customButtonText: 'Finish Tutorial',
+      customButtonAction: 'exit_tutorial'
     }
   ]
 };
@@ -211,66 +311,148 @@ export const defenderTutorial: TutorialScript = {
     },
     {
       id: 'shield_card',
-      title: 'Shield Cards',
-      description: 'Shield cards protect infrastructure from specific attack vectors',
-      instruction: 'Find a Shield card in your hand and select it.',
-      targetElement: '.player-hand .card[data-type="shield"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="shield"]'
-      },
+      title: 'Understanding Shield Cards',
+      description: 'This is a Shield card - the foundation of any successful defense. Shield cards protect infrastructure from specific attack vectors by creating a defensive barrier. Each shield targets specific attack vectors like Network, Web, Social Engineering, or Malware.',
+      instruction: 'Click on the highlighted Firewall card to select it and enter target mode. This Network shield can protect infrastructure from Network-based attacks. Once you\'ve selected the card, click "Next" to learn about targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="shield"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
       },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'shield_infrastructure',
-      title: 'Shield Infrastructure',
-      description: 'Apply the shield to protect infrastructure',
-      instruction: 'Click on a secure infrastructure card to shield it.',
-      targetElement: '.infrastructure-card[data-state="secure"]',
-      position: 'bottom',
-      action: {
-        type: 'click',
-        target: '.infrastructure-card[data-state="secure"]'
-      },
+      title: 'Defense Vectors & Infrastructure Targeting',
+      description: 'Perfect! The Firewall card is now selected and glowing, indicating it\'s ready to be used. Notice how the game has entered "target mode" - only compatible infrastructure cards are highlighted. Defense vectors are crucial: your Network shield can only protect infrastructure with Network vulnerabilities.',
+      instruction: 'Click on the highlighted Enterprise Firewall to shield it. This infrastructure has Network vulnerabilities that match your Firewall shield. Once you\'ve targeted it, the shield will be applied and the infrastructure will become protected.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
       validation: {
-        type: 'game_state',
-        condition: (gameState) => gameState?.infrastructure?.some((infra: any) => infra.state === 'shielded')
+        type: 'custom',
+        condition: () => {
+          // Primary check: Has target mode been exited? (indicates successful card play)
+          const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
+          const targetModeExited = !targetModeActive;
+          
+          console.log('🎯 TUTORIAL: Shield validation check:', {
+            targetModeActive: !!targetModeActive,
+            targetModeExited
+          });
+          
+          if (targetModeExited) {
+            console.log('🎯 TUTORIAL: Target mode exited - shield applied successfully!');
+            return true;
+          }
+          
+          // Secondary check: Look for DOM changes in the infrastructure
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (!enterpriseFirewall) {
+            console.log('🎯 TUTORIAL: Enterprise Firewall element not found');
+            return false;
+          }
+          
+          // Check for various ways the shielded state might be indicated
+          const hasShieldedClass = enterpriseFirewall.classList.contains('shielded');
+          const hasShieldedState = enterpriseFirewall.getAttribute('data-state') === 'shielded';
+          const hasShieldedIndicator = enterpriseFirewall.querySelector('.shield-indicator');
+          const hasShieldIcon = enterpriseFirewall.querySelector('[class*="shield"]');
+          const hasProtectedState = enterpriseFirewall.getAttribute('data-state') === 'protected';
+          
+          console.log('🎯 TUTORIAL: DOM shield state check:', {
+            hasShieldedClass,
+            hasShieldedState,
+            hasProtectedState,
+            hasShieldedIndicator: !!hasShieldedIndicator,
+            hasShieldIcon: !!hasShieldIcon,
+            allClasses: enterpriseFirewall.className,
+            dataState: enterpriseFirewall.getAttribute('data-state')
+          });
+          
+          return hasShieldedClass || hasShieldedState || hasProtectedState || !!hasShieldedIndicator || !!hasShieldIcon;
+        }
       },
       autoAdvance: false,
       skipable: true
     },
     {
       id: 'fortify_card',
-      title: 'Fortify Cards',
-      description: 'Fortify cards strengthen shielded infrastructure',
-      instruction: 'Find a Fortify card and select it to strengthen your shield.',
-      targetElement: '.player-hand .card[data-type="fortify"]',
-      position: 'top',
-      action: {
-        type: 'click',
-        target: '.player-hand .card[data-type="fortify"]'
-      },
+      title: 'Understanding Fortify Cards',
+      description: 'Fortify cards are the second layer of defense that strengthen already shielded infrastructure. They can only be applied to infrastructure that has been shielded first, creating a "fortified" state that provides enhanced protection against attacks. Think of shields as armor, and fortify as reinforcing that armor.',
+      instruction: 'Click on the highlighted DMZ Implementation card to select it and enter target mode. This Network fortify card can strengthen infrastructure that already has Network shields. Once you\'ve selected the card, click "Next" to learn about fortify targeting.',
+      targetElement: '.player-hand .card:nth-child(2)',
+      position: 'right',
       validation: {
-        type: 'element_clicked',
-        condition: '.player-hand .card[data-type="fortify"]'
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (fortify card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'fortify_infrastructure',
+      title: 'Fortify Targeting & Shielded Infrastructure',
+      description: 'Excellent! The DMZ Implementation card is now selected and ready to use. Notice that fortify cards can only target infrastructure that has already been shielded. The game automatically filters valid targets - only shielded infrastructure with matching defense vectors will be highlighted.',
+      instruction: 'Click on the shielded Enterprise Firewall to fortify it. Since this infrastructure is already shielded against Network attacks and your DMZ card provides Network fortification, they are compatible. Fortifying will upgrade the infrastructure from "shielded" to "fortified" state.',
+      targetElement: '[data-infra-id="I001"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if target mode has been exited (fortify applied)
+          const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
+          const targetModeExited = !targetModeActive;
+          
+          if (targetModeExited) {
+            console.log('🎯 TUTORIAL: Target mode exited - fortify applied successfully!');
+            return true;
+          }
+          
+          // Secondary check: Look for fortified state
+          const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
+          if (enterpriseFirewall) {
+            const hasFortifiedClass = enterpriseFirewall.classList.contains('fortified');
+            const hasFortifiedState = enterpriseFirewall.getAttribute('data-state') === 'fortified';
+            console.log('🎯 TUTORIAL: Fortify state check:', { hasFortifiedClass, hasFortifiedState });
+            return hasFortifiedClass || hasFortifiedState;
+          }
+          
+          return false;
+        }
       },
       autoAdvance: false,
       skipable: true
     },
     {
-      id: 'response_cards',
-      title: 'Response Cards',
-      description: 'Response cards can recover compromised infrastructure',
-      instruction: 'Response cards change compromised infrastructure back to secure state.',
-      position: 'center',
+      id: 'response_card',
+      title: 'Understanding Response Cards',
+      description: 'Response cards are the defender\'s recovery mechanism - they can restore compromised infrastructure back to a secure state. Unlike shields and fortify cards that prevent attacks, response cards are used reactively to undo damage that has already been done. They are essential for recovering from successful attacker moves.',
+      instruction: 'Click on the highlighted Incident Response Team card to select it. This Network response card can restore compromised infrastructure with Network vulnerabilities back to secure state. Response cards are your "undo" button against attacker success.',
+      targetElement: '.player-hand .card:nth-child(4)',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (response card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
       autoAdvance: false,
-      skipable: true
+      skipable: true,
+      preventTargetModeExit: true
     },
     {
       id: 'reaction_cards',
@@ -286,79 +468,6 @@ export const defenderTutorial: TutorialScript = {
       title: 'Defender Tutorial Complete!',
       description: 'You\'re ready to defend the digital realm',
       instruction: 'Remember: Shield → Fortify → Victory. Protect your infrastructure!',
-      position: 'center',
-      autoAdvance: false,
-      skipable: false
-    }
-  ]
-};
-
-export const attackerBasicsTutorial: TutorialScript = {
-  id: 'attacker_basics',
-  name: 'Attacker Basics Tutorial',
-  description: 'Master the art of digital infiltration and system compromise',
-  estimatedDuration: 10,
-  prerequisites: ['basic_gameplay'],
-  steps: [
-    {
-      id: 'attacker_mindset',
-      title: 'The Attacker Mindset',
-      description: 'As an Attacker, you are the Red Team - the digital infiltrator',
-      instruction: 'Your mission: Find vulnerabilities, exploit weaknesses, and compromise infrastructure.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attack_vectors',
-      title: 'Attack Vectors',
-      description: 'Attackers use four primary attack vectors to compromise systems',
-      instruction: 'Network, Web, Social Engineering, and Malware - each targets different vulnerabilities.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'exploit_strategy',
-      title: 'Exploit Strategy',
-      description: 'Exploit cards are your primary tool for creating vulnerabilities',
-      instruction: 'Always exploit before attacking. Match attack vectors to infrastructure weaknesses.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attack_timing',
-      title: 'Attack Timing',
-      description: 'Timing your attacks is crucial for success',
-      instruction: 'Strike when defenders are low on AP or lack appropriate reaction cards.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'counter_attacks',
-      title: 'Counter-Attack Cards',
-      description: 'Counter-attacks disrupt defender strategies',
-      instruction: 'Use counter-attacks to remove shields or prevent fortifications.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'resource_management',
-      title: 'AP Management',
-      description: 'With only 2 AP per turn, every action counts',
-      instruction: 'Plan your moves carefully. Save AP for critical moments.',
-      position: 'center',
-      autoAdvance: false,
-      skipable: true
-    },
-    {
-      id: 'attacker_complete',
-      title: 'Attacker Training Complete!',
-      description: 'You are now ready to lead digital infiltration missions',
-      instruction: 'Remember: Exploit vulnerabilities, time your attacks, manage resources wisely.',
       position: 'center',
       autoAdvance: false,
       skipable: false
@@ -515,7 +624,7 @@ export const advancedMechanicsTutorial: TutorialScript = {
   name: 'Advanced Mechanics Tutorial',
   description: 'Learn about wildcards, chain effects, and special abilities',
   estimatedDuration: 12,
-  prerequisites: ['basic_gameplay', 'attacker_basics'],
+  prerequisites: ['attacker_basics'],
   steps: [
     {
       id: 'wildcard_intro',
@@ -575,9 +684,8 @@ export const advancedMechanicsTutorial: TutorialScript = {
 };
 
 export const tutorialScripts: TutorialScript[] = [
-  basicGameplayTutorial,
-  defenderTutorial,
   attackerBasicsTutorial,
+  defenderTutorial,
   cardEncyclopediaTutorial,
   advancedMechanicsTutorial
 ];

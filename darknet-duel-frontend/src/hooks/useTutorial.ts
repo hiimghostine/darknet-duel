@@ -43,6 +43,10 @@ export const useTutorial = () => {
     tutorialManager.nextStep();
   }, []);
 
+  const previousStep = useCallback(() => {
+    tutorialManager.previousStep();
+  }, []);
+
   const skipStep = useCallback(() => {
     tutorialManager.skipStep();
   }, []);
@@ -90,6 +94,7 @@ export const useTutorial = () => {
     // Control methods
     startTutorial,
     nextStep,
+    previousStep,
     skipStep,
     pauseTutorial,
     resumeTutorial,
