@@ -373,6 +373,13 @@ export class MockGameStateProvider {
 
     const attackerHand = isAttacker ? mockAttackerCards.slice(0, 5) : mockAttackerCards.slice(0, 3);
     const defenderHand = !isAttacker ? mockDefenderCards.slice(0, 5) : mockDefenderCards.slice(0, 3);
+    
+    // Debug: Check if defender cards have playable property set correctly
+    if (!isAttacker) {
+      console.log('🎯 TUTORIAL: Defender hand cards playable status:', 
+        defenderHand.map(card => ({ name: card.name, playable: card.playable }))
+      );
+    }
 
     return {
       gamePhase: 'playing',

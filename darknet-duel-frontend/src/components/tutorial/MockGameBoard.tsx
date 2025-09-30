@@ -36,9 +36,13 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
   tutorialScriptId: _tutorialScriptId,
   tutorialInfo
 }) => {
-  const [gameState, setGameState] = useState<GameState>(() => 
-    mockGameStateProvider.generateMockGameState(isAttacker)
-  );
+  const [gameState, setGameState] = useState<GameState>(() => {
+    // For defender tutorial, ensure we start with defender's turn
+    if (!isAttacker) {
+      mockGameStateProvider.setCurrentTurn('defender');
+    }
+    return mockGameStateProvider.generateMockGameState(isAttacker);
+  });
   const [context, setContext] = useState(() => {
     const mockContext = mockGameStateProvider.generateMockContext(isAttacker);
     console.log('🎯 TUTORIAL: Mock context generated:', mockContext);
@@ -75,12 +79,65 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
       const newStepId = event.detail.stepId;
       setTutorialStep(newStepId);
       console.log('🎯 TUTORIAL: Step changed to:', newStepId);
-      
       // Handle step-specific state changes
       if (newStepId === 'target_infrastructure' && selectedCard && targetMode) {
         // Transitioning from step 6 to step 7 - enable targeting ONLY for Enterprise Firewall
         console.log('🎯 TUTORIAL: Enabling targeting for step 7 - Enterprise Firewall only');
         setValidTargets(['I001']); // Only Enterprise Firewall for tutorial
+      } else if (newStepId === 'shield_card' || newStepId === 'fortify_card' || newStepId === 'response_card') {
+        // Defender tutorial: Ensure defender is in active phase for card playability
+        console.log(`🎯 TUTORIAL: Setting up defender turn for ${tutorialStep}`);
+        mockGameStateProvider.setCurrentTurn('defender');
+        const newGameState = mockGameStateProvider.generateMockGameState(isAttacker);
+        const newContext = mockGameStateProvider.generateMockContext(isAttacker);
+        setGameState(newGameState);
+        setContext(newContext);
+        console.log('🎯 TUTORIAL: Set to defender turn for card playability', { 
+          currentTurn: newGameState.currentTurn, 
+          isAttacker, 
+          playerID,
+          step: tutorialStep
+        });
+        
+        // For fortify_card step, ensure Enterprise Firewall is shielded
+        if (tutorialStep === 'fortify_card') {
+          mockGameStateProvider.setInfrastructureState('I001', 'shielded');
+          console.log('🎯 TUTORIAL: Set Enterprise Firewall to shielded for fortify step');
+        }
+        
+        // Add a small delay to ensure DOM is updated before validation
+        setTimeout(() => {
+          const firstCard = document.querySelector('.player-hand .card:first-child');
+          console.log('🎯 TUTORIAL: First card after setup:', firstCard);
+          if (firstCard) {
+            console.log('🎯 TUTORIAL: Card classes:', firstCard.className);
+            console.log('🎯 TUTORIAL: Card data attributes:', (firstCard as HTMLElement).dataset);
+          }
+          
+          // Also check for alternative selectors
+          const playerHand = document.querySelector('.player-hand');
+          console.log('🎯 TUTORIAL: Player hand container:', playerHand);
+          if (playerHand) {
+            const allCards = playerHand.querySelectorAll('.card, [data-card-id], [class*="card"]');
+            console.log('🎯 TUTORIAL: All cards in hand:', allCards.length, Array.from(allCards));
+          }
+        }, 100);
+      } else if (newStepId === 'shield_infrastructure' && selectedCard && targetMode) {
+        // Defender tutorial: Transitioning from shield_card to shield_infrastructure - enable targeting for Enterprise Firewall
+        console.log('🎯 TUTORIAL: Enabling targeting for defender shield step - Enterprise Firewall only');
+        setValidTargets(['I001']); // Only Enterprise Firewall for tutorial
+        
+        // Ensure we're in defender's turn for card playability
+        mockGameStateProvider.setCurrentTurn('defender');
+        const newGameState = mockGameStateProvider.generateMockGameState(isAttacker);
+        const newContext = mockGameStateProvider.generateMockContext(isAttacker);
+        setGameState(newGameState);
+        setContext(newContext);
+        console.log('🎯 TUTORIAL: Set to defender turn for shield targeting', { 
+          currentTurn: newGameState.currentTurn, 
+          isAttacker, 
+          playerID 
+        });
       } else if (newStepId === 'attack_vulnerable' && selectedCard && targetMode) {
         // Transitioning from step 9 to step 10 - enable targeting ONLY for vulnerable Enterprise Firewall
         console.log('🎯 TUTORIAL: Enabling targeting for step 10 - Vulnerable Enterprise Firewall only');
@@ -436,6 +493,85 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
         message: `${card.name} selected. Target the shielded Corporate Website.`,
         duration: 2000
       });
+    } else if (tutorialStep === 'shield_card') {
+      // Defender tutorial: Filter infrastructure by card's attack vector
+      const cardCategory = card.category?.toLowerCase();
+      console.log('🎯 TUTORIAL: Defender card selected:', { cardName: card.name, cardCategory });
+      
+      if (cardCategory) {
+        const compatibleInfra = gameState.infrastructure?.filter(infra => {
+          const hasMatchingVector = infra.vulnerabilities?.includes(cardCategory) || 
+                                   infra.vulnerableVectors?.includes(cardCategory);
+          console.log('🎯 TUTORIAL: Infrastructure compatibility check:', {
+            infraName: infra.name,
+            infraId: infra.id,
+            vulnerabilities: infra.vulnerabilities,
+            vulnerableVectors: infra.vulnerableVectors,
+            cardCategory,
+            hasMatchingVector
+          });
+          return hasMatchingVector;
+        }) || [];
+        
+        const validTargetIds = compatibleInfra.map(infra => infra.id);
+        console.log('🎯 TUTORIAL: Valid targets for', card.name, ':', validTargetIds);
+        setValidTargets(validTargetIds);
+        
+        addToast({
+          type: 'info',
+          title: 'Shield Card Selected',
+          message: `${card.name} selected. Target infrastructure with ${cardCategory} vulnerabilities.`,
+          duration: 3000
+        });
+      } else {
+        // Fallback if no category
+        setValidTargets(['I001']);
+        addToast({
+          type: 'info',
+          title: 'Shield Card Selected',
+          message: `${card.name} selected. Target the Enterprise Firewall.`,
+          duration: 2000
+        });
+      }
+    } else if (tutorialStep === 'fortify_card') {
+      // Defender tutorial: Fortify cards can only target shielded infrastructure
+      const cardCategory = card.category?.toLowerCase();
+      console.log('🎯 TUTORIAL: Fortify card selected:', { cardName: card.name, cardCategory });
+      
+      if (cardCategory) {
+        // For tutorial, only allow targeting shielded Enterprise Firewall
+        setValidTargets(['I001']); // Enterprise Firewall should be shielded
+        
+        addToast({
+          type: 'info',
+          title: 'Fortify Card Selected',
+          message: `${card.name} selected. Target the shielded Enterprise Firewall to fortify it.`,
+          duration: 3000
+        });
+      } else {
+        // Fallback
+        setValidTargets(['I001']);
+        addToast({
+          type: 'info',
+          title: 'Fortify Card Selected',
+          message: `${card.name} selected. Target the shielded infrastructure.`,
+          duration: 2000
+        });
+      }
+    } else if (tutorialStep === 'response_card') {
+      // Defender tutorial: Response cards can target compromised infrastructure
+      const cardCategory = card.category?.toLowerCase();
+      console.log('🎯 TUTORIAL: Response card selected:', { cardName: card.name, cardCategory });
+      
+      // For tutorial, we'll just show the concept without requiring compromised infrastructure
+      setValidTargets([]); // No targeting needed for tutorial - just show the card selection
+      
+      addToast({
+        type: 'info',
+        title: 'Response Card Selected',
+        message: `${card.name} selected. Response cards restore compromised infrastructure to secure state.`,
+        duration: 3000
+      });
     } else {
       // Default behavior for other steps
       setValidTargets(['I001', 'I003', 'I005', 'I007', 'I009']);
@@ -509,8 +645,20 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
 
   // Mock processing states
   const isProcessingMove = false;
-  const isActive = gameState.currentTurn === (isAttacker ? 'attacker' : 'defender');
+  const expectedRole = isAttacker ? 'attacker' : 'defender';
+  const isActive = gameState.currentTurn === expectedRole;
   const isInReactionMode = tutorialReactionMode;
+  
+  // Debug logging for defender tutorial
+  if (!isAttacker) {
+    console.log('🎯 TUTORIAL: Defender isActive check:', {
+      gameStateCurrentTurn: gameState.currentTurn,
+      expectedRole,
+      isAttacker,
+      isActive,
+      playerID
+    });
+  }
 
   // Optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({

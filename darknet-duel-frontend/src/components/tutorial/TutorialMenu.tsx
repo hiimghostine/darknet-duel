@@ -47,9 +47,6 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
       return;
     }
     
-    // Handle tutorial execution directly in the modal
-    console.log('🎯 Starting tutorial:', { scriptId, role: tutorialRole });
-    
     // Reset mock game state
     mockGameStateProvider.reset();
     
@@ -57,6 +54,9 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
     const role = scriptId === 'defender_basics' ? 'defender' : 'attacker';
     setTutorialRole(role);
     setSelectedScript(scriptId);
+    
+    // Handle tutorial execution directly in the modal
+    console.log('🎯 Starting tutorial:', { scriptId, role });
     
     // Start the tutorial
     const success = await startTutorial(scriptId);

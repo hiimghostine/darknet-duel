@@ -269,6 +269,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         ref={overlayRef}
         className="fixed z-50 bg-gray-900 border border-gray-600 rounded-lg shadow-2xl max-w-md w-full mx-4"
         style={overlayPosition ? overlayPosition : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        data-tutorial-step={currentStep.id}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-600">
