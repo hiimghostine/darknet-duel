@@ -22,6 +22,7 @@ const TutorialButton: React.FC<TutorialButtonProps> = ({
   const completedScripts = availableScripts.filter(script => isScriptCompleted(script.id));
   const progressText = `${completedScripts.length}/${availableScripts.length} completed`;
 
+
   const getButtonClasses = () => {
     const baseClasses = "flex items-center gap-2 font-mono transition-all duration-200 btn-cyberpunk";
     
@@ -67,7 +68,6 @@ const TutorialButton: React.FC<TutorialButtonProps> = ({
         {showTutorialMenu && (
           <TutorialMenu
             onClose={() => setShowTutorialMenu(false)}
-            onStartInteractiveTutorial={() => setShowTutorialMenu(false)}
           />
         )}
       </AnimatePresence>

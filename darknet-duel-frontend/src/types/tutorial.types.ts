@@ -10,6 +10,9 @@ export interface TutorialStep {
   autoAdvance?: boolean;
   delay?: number; // milliseconds to wait before showing step
   skipable?: boolean;
+  preventTargetModeExit?: boolean; // Prevents player from exiting target mode during this step
+  customButtonText?: string; // Custom text for the action button
+  customButtonAction?: 'exit_tutorial' | 'restart_tutorial' | string; // Custom action for the button
 }
 
 export interface TutorialAction {

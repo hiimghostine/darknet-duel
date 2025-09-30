@@ -3,7 +3,6 @@ import type { GameState } from '../../../types/game.types';
 import PlayerInfo from './PlayerInfo';
 import PlayerBoard from './PlayerBoard';
 import PowerBar from './PowerBar';
-import PostGameChat from './PostGameChat';
 
 interface GameInfoPanelsProps {
   G: GameState;
@@ -13,14 +12,14 @@ interface GameInfoPanelsProps {
   moves: any;
   isAttacker: boolean;
   currentPlayerObj: any;
-  opponent: any;
+  opponent?: any;
   currentPhase: string;
   optimizedInfrastructureData: {
     cards: any[];
     length: number;
     states: any[];
   };
-  sendChatMessage: (content: string) => void;
+  sendChatMessage?: (content: string) => void;
 }
 
 const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
@@ -31,10 +30,8 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
   moves,
   isAttacker,
   currentPlayerObj,
-  opponent,
   currentPhase,
-  optimizedInfrastructureData,
-  sendChatMessage
+  optimizedInfrastructureData
 }) => {
   // Common props to pass to child components
   const commonProps = {
@@ -51,7 +48,7 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
       {/* Left info panel */}
       <div className="flex flex-col gap-4 lg:w-64 w-full flex-shrink-0 lg:order-1 order-2">
         <div className={`
-          rounded-lg p-4 relative backdrop-blur-sm border
+          rounded-lg p-4 relative backdrop-blur-sm border game-info-panel
           ${isAttacker 
             ? 'bg-red-900/60 border-red-700/40' 
             : 'bg-blue-900/60 border-blue-700/40'
@@ -73,7 +70,7 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
           <div className="space-y-2 text-sm">
             <div>Round: {G.currentRound || 1}</div>
             <div>Phase: {currentPhase}</div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="action-points">
               <span>AP:</span>
               <span className="text-accent font-bold">
                 {currentPlayerObj?.actionPoints || 0}/{G?.gameConfig?.maxActionPoints || 10}
@@ -141,22 +138,6 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
           </div>
         </div>
         
-        {/* Chat Panel */}
-        {G?.chat && (
-          <div className="bg-base-200 border border-primary/20 rounded-lg p-4 relative backdrop-blur-sm">
-            <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-            
-            <h3 className="text-primary font-bold text-sm mb-3 font-mono uppercase tracking-wide">TACTICAL_CHAT</h3>
-            <div className="h-32 overflow-hidden">
-              <PostGameChat
-                chat={G.chat}
-                playerID={playerID || undefined}
-                sendMessage={sendChatMessage}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
