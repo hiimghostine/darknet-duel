@@ -28,11 +28,17 @@ jobs:
           git config --global lfs.skipSmudge true
           git config --global http.version HTTP/1.1
           git config --global http.postBuffer 524288000
+          git config --global pack.threads 1
+          git config --global core.packedGitWindowSize 16m
+          git config --global core.packedGitLimit 128m
+          git config --global core.deltaBaseCacheLimit 1m
+          git config --global pack.window 0
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history to avoid shallow edge stalls
-          fetch-depth: 0
+          # Prefer partial clone to reduce pack size on constrained runners
+          fetch-depth: 1
+          filter: blob:none
           # Disable submodules unless needed
           submodules: false
           # Disable LFS smudge to prevent hangs
@@ -42,6 +48,9 @@ jobs:
         env:
           GIT_TRACE: '1'
           GIT_CURL_VERBOSE: '1'
+          GIT_MMAP: '0'
+          GIT_TRACE_PACK_ACCESS: '1'
+          GIT_TRACE_PACKET: '1'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
