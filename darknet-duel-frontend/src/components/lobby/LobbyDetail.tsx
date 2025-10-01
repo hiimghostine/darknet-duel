@@ -358,7 +358,7 @@ const LobbyDetail: React.FC = () => {
             </h2>
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm font-mono text-primary/70">LOBBY #{matchID.substring(0, 8)}</span>
+            <span className="text-sm font-mono text-primary/70">LOBBY #{matchID}</span>
             {match?.setupData.isPrivate && (
               <>
                 <span className="text-primary/50">•</span>

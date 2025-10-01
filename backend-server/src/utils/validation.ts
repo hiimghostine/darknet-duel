@@ -23,6 +23,8 @@ export const validateEmail = (email: string): boolean => {
 export const validatePassword = (password: string): boolean => {
   // Check minimum length
   if (password.length < 8) return false;
+  // Check maximum length (security/usability cap)
+  if (password.length > 63) return false;
   
   // Check for uppercase letter
   if (!/[A-Z]/.test(password)) return false;
@@ -37,4 +39,16 @@ export const validatePassword = (password: string): boolean => {
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
   
   return true;
+};
+
+/**
+ * Validates username length constraints
+ * Requirements:
+ * - Between 6 and 16 characters (inclusive)
+ * 
+ * @param username Username to validate
+ * @returns Boolean indicating if username meets length requirements
+ */
+export const validateUsernameLength = (username: string): boolean => {
+  return typeof username === 'string' && username.length >= 6 && username.length <= 16;
 };
