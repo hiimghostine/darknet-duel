@@ -59,10 +59,23 @@ export class ChatSocketService {
           
           console.log(`🏠 Chat: ${socket.username} joining chat ${chatId}`);
           
-          // Leave any previous chat rooms
+          // Leave any previous chat rooms and update presence for those rooms
           socket.rooms.forEach(room => {
             if (room !== socket.id) {
               socket.leave(room);
+              // Update presence map
+              if (this.connectedUsers.has(room)) {
+                const set = this.connectedUsers.get(room)!;
+                set.delete(socket.userId!);
+                if (set.size === 0) {
+                  this.connectedUsers.delete(room);
+                }
+                // Broadcast updated presence to that room
+                this.io.to(room).emit('users_connected', {
+                  count: set.size,
+                  users: Array.from(set)
+                });
+              }
             }
           });
 
@@ -83,6 +96,13 @@ export class ChatSocketService {
           socket.to(chatId).emit('user_joined', { 
             userId: socket.userId, 
             username: socket.username 
+          });
+
+          // Broadcast current presence to ALL users in the room (including the joiner)
+          const presenceSet = this.connectedUsers.get(chatId)!;
+          this.io.to(chatId).emit('users_connected', {
+            count: presenceSet.size,
+            users: Array.from(presenceSet)
           });
 
           console.log(`✅ Chat: ${socket.username} successfully joined ${chatId}`);
@@ -146,10 +166,16 @@ export class ChatSocketService {
         
         // Remove from connected users
         if (this.connectedUsers.has(chatId)) {
-          this.connectedUsers.get(chatId)!.delete(socket.userId!);
-          if (this.connectedUsers.get(chatId)!.size === 0) {
+          const set = this.connectedUsers.get(chatId)!;
+          set.delete(socket.userId!);
+          if (set.size === 0) {
             this.connectedUsers.delete(chatId);
           }
+          // Broadcast updated presence to ALL in the room
+          this.io.to(chatId).emit('users_connected', {
+            count: set.size,
+            users: Array.from(set)
+          });
         }
 
         // Notify others that user left
@@ -174,6 +200,11 @@ export class ChatSocketService {
             socket.to(chatId).emit('user_left', { 
               userId: socket.userId, 
               username: socket.username 
+            });
+            // Broadcast updated presence after disconnect
+            this.io.to(chatId).emit('users_connected', {
+              count: users.size,
+              users: Array.from(users)
             });
           }
         });
