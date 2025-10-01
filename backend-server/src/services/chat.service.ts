@@ -1,8 +1,8 @@
 import { AppDataSource } from '../utils/database';
 import { LobbyChat } from '../entities/lobby-chat.entity';
 import { Account } from '../entities/account.entity';
-import enList from '../../external-dependencies/profanity-list/en.json';
-import tlcbList from '../../external-dependencies/profanity-list/tl_cb.json';
+import enList from '../../external-dependencies/badwords-list/en.json';
+import tlcbList from '../../external-dependencies/badwords-list/tl_cb.json';
 
 export interface ChatMessage {
   id: string;
