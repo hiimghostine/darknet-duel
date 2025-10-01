@@ -23,6 +23,7 @@ RUN npm ci --no-audit --no-fund
 COPY tsconfig.json ./
 COPY src ./src
 COPY assets ./assets
+COPY files ./files
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -35,6 +36,7 @@ ENV PORT=8000
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY assets ./assets
+COPY files ./files
 COPY package*.json ./
 
 EXPOSE 8000
