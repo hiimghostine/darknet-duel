@@ -7,20 +7,19 @@ interface TutorialIntegrationProps {
   gameState?: GameState;
   ctx?: any;
   playerID?: string | null;
+  onExit?: () => void;
 }
 
 const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
   gameState,
-  ctx,
-  playerID
+  ctx: _ctx,
+  playerID: _playerID,
+  onExit
 }) => {
   const {
     tutorialState,
     isActive,
     nextStep,
-    skipStep,
-    pauseTutorial,
-    resumeTutorial,
     cancelTutorial,
     validateGameState
   } = useTutorial();
@@ -31,6 +30,26 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
       validateGameState(gameState);
     }
   }, [gameState, isActive, validateGameState]);
+
+  // Handle tutorial completion - listen for completion event
+  useEffect(() => {
+    if (!onExit) return;
+
+    const handleTutorialCompleted = () => {
+      console.log('🎯 TUTORIAL: Tutorial completed event received, calling exit handler');
+      // Small delay to ensure tutorial completion is processed
+      setTimeout(() => {
+        onExit();
+      }, 100);
+    };
+
+    // Listen for tutorial completion event
+    window.addEventListener('tutorial-completed', handleTutorialCompleted);
+    
+    return () => {
+      window.removeEventListener('tutorial-completed', handleTutorialCompleted);
+    };
+  }, [onExit]);
 
   // Add tutorial-specific CSS classes to game elements
   useEffect(() => {
@@ -55,33 +74,61 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
           apDisplay.classList.add('tutorial-target', 'action-points-display');
         }
 
+        // Game info panel
+        const gameInfoPanel = document.querySelector('.game-info-panel');
+        if (gameInfoPanel) {
+          gameInfoPanel.classList.add('tutorial-target');
+        }
+
+        // Tactical hand label
+        const tacticalHandLabel = document.querySelector('.tactical-hand-label');
+        if (tacticalHandLabel) {
+          tacticalHandLabel.classList.add('tutorial-target');
+        }
+
         // End turn button
         const endTurnBtn = document.querySelector('[data-testid="end-turn-button"]');
         if (endTurnBtn) {
           endTurnBtn.classList.add('tutorial-target', 'end-turn-button');
         }
 
-        // Infrastructure cards
-        document.querySelectorAll('.infrastructure-card').forEach((card, index) => {
+        // Infrastructure cards - add network vector targeting
+        document.querySelectorAll('.infrastructure-card, [data-infra-id]').forEach((card) => {
           card.classList.add('tutorial-target');
           const state = card.getAttribute('data-state');
           if (state) {
             card.setAttribute('data-tutorial-state', state);
           }
+          
+          // Add network vector attribute for tutorial targeting
+          const infraId = card.getAttribute('data-infra-id');
+          if (infraId === 'I001' || infraId === 'I005' || infraId === 'I009') {
+            card.setAttribute('data-vectors', 'network');
+            card.classList.add('tutorial-network-infra');
+          }
         });
 
-        // Player cards
-        document.querySelectorAll('.player-hand .card').forEach((card) => {
+        // Player cards - add proper targeting attributes
+        document.querySelectorAll('.player-hand .card, .player-hand [data-card-id]').forEach((card, index) => {
           card.classList.add('tutorial-target');
           const cardType = card.getAttribute('data-type');
           if (cardType) {
             card.setAttribute('data-tutorial-type', cardType);
           }
+          // Add first-child class for easier targeting
+          if (index === 0) {
+            card.classList.add('tutorial-first-card');
+          }
         });
 
         // Add targetable class for highlighted infrastructure
-        document.querySelectorAll('.infrastructure-card.can-target').forEach((card) => {
+        document.querySelectorAll('.infrastructure-card.can-target, [data-infra-id].can-target').forEach((card) => {
           card.classList.add('targetable');
+        });
+        
+        // Add tutorial-specific targeting for network infrastructure
+        document.querySelectorAll('.tutorial-network-infra').forEach((card) => {
+          card.classList.add('tutorial-targetable');
         });
       };
 
@@ -109,10 +156,7 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
     <TutorialOverlay
       tutorialState={tutorialState}
       onNext={nextStep}
-      onSkip={skipStep}
-      onPause={pauseTutorial}
-      onResume={resumeTutorial}
-      onCancel={cancelTutorial}
+      onCancel={onExit || cancelTutorial}
     />
   );
 };

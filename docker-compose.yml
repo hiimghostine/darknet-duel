@@ -4,7 +4,7 @@ services:
   db:
     image: mysql:8.0
     container_name: darknet_mysql
-    restart: unless-stopped
+    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?required}
       - MYSQL_DATABASE=darknet_duel
@@ -24,6 +24,7 @@ services:
       context: ./backend-server
       dockerfile: Dockerfile
     container_name: darknet_backend
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +54,7 @@ services:
       context: .
       dockerfile: game-server/Dockerfile
     container_name: darknet_game_server
+    restart: always
     depends_on:
       - backend
     environment:
@@ -77,6 +79,7 @@ services:
         VITE_BUILD_ENV: ${GITHUB_ENVIRONMENT:-dev}
         VITE_COMMIT_SHA: ${GITHUB_SHA:-local}
     container_name: darknet_frontend
+    restart: always
     depends_on:
       - backend
       - game_server

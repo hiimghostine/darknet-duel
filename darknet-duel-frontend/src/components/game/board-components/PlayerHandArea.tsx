@@ -156,6 +156,32 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
           
           // Proper reaction mode filtering - only reactive cards can be played
           let isPlayable = false;
+          
+          // Debug logging for defender tutorial
+          if (card.name === 'Firewall') {
+            console.log('🎯 TUTORIAL: Firewall playability check:', {
+              cardName: card.name,
+              targetMode,
+              isActive,
+              ctxPhase: ctx.phase,
+              currentStage,
+              isInActionMode,
+              isInReactionMode,
+              cardPlayable: card.playable,
+              playerID,
+              currentPlayer: ctx.currentPlayer
+            });
+            
+            // TEMPORARY FIX: Force defender cards to be playable in tutorial during specific steps
+            const currentTutorialStep = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
+            const isDefenderTutorialStep = ['shield_card', 'fortify_card', 'response_card'].includes(currentTutorialStep || '');
+            
+            if (!card.playable && currentStage === 'action' && isActive && isDefenderTutorialStep) {
+              console.log(`🎯 TUTORIAL: Forcing ${card.name} to be playable for ${currentTutorialStep} step`);
+              card.playable = true;
+            }
+          }
+          
           if (!targetMode && isActive && ctx.phase === 'playing') {
             // Special handling for D307 - can be played in both normal and reaction modes
             const isD307 = card.id?.startsWith('D307') || card.specialEffect === 'emergency_restore_shield';
@@ -163,6 +189,14 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             if (isInReactionMode) {
               // In reaction mode, only reactive cards can be played
               const isReactiveCard = isReactiveCardObject(card, G);
+              console.log('🎯 TUTORIAL: Reaction mode card check:', { 
+                cardName: card.name, 
+                cardType: card.type, 
+                isReactive: card.isReactive, 
+                isReactiveCard, 
+                cardPlayable: card.playable,
+                isInReactionMode 
+              });
               if (isReactiveCard && card.playable) {
                 if (isD307) {
                   // D307 special condition: only playable if there's compromised infrastructure
@@ -412,7 +446,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
 
   return (
     <div className={`
-      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56
+      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56 player-hand
       ${isAttacker ? 'attacker-area' : 'defender-area'}
       ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
       ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
@@ -429,7 +463,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       </div>
       
       {/* Hand peek indicator */}
-      <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label">
+      <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label tactical-hand-label">
         TACTICAL_HAND • {currentPlayerObj?.hand?.length || 0} CARDS
       </div>
       
