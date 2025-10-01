@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { ExtendedCard } from '../components/game/board-components/types';
 import { isAttackerCard } from '../types/card.types';
-import { logMoveAttempt, debugWildcardTargeting, debugVectorCompatibility } from '../utils/gameDebugUtils';
+import { logMoveAttempt, debugWildcardTargeting } from '../utils/gameDebugUtils';
 import type { InfrastructureCard, AttackVector } from '../types/game.types';
 import { getAvailableCardTypes } from '../utils/wildcardTypeUtils';
 
@@ -432,6 +432,12 @@ export function useCardActions(props: BoardProps & {
             return stateMatch && vectorMatch;
           })
           .map((infra: InfrastructureCard) => infra.id);
+      }
+      // For wildcards that haven't matched any specific type, return empty array
+      // This happens when a wildcard has no valid targets for its allowed types
+      else if (card.type === 'wildcard' && effectiveCardType === 'wildcard') {
+        console.log(`⚠️ Wildcard ${card.name} with wildcardType ${card.wildcardType} has no valid targets for its allowed types`);
+        targets = [];
       }
       // For all other card types, provide all infrastructure as targets
       else {

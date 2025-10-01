@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import type { GameMatch } from '../../services/lobby.service';
 import { useAuthStore } from '../../store/auth.store';
-import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt, FaLock } from 'react-icons/fa';
+import { FaUserSecret, FaShieldAlt, FaExclamationTriangle, FaExclamationCircle, FaCog, FaClock, FaDoorOpen, FaPlay, FaCheck, FaTimes, FaUserAlt, FaLock, FaSync } from 'react-icons/fa';
 import LobbyChat from './LobbyChat';
 import UserTypeTag from '../UserTypeTag';
 import accountService from '../../services/account.service';
@@ -26,6 +26,11 @@ const LobbyDetail: React.FC = () => {
   const [isPolling, setIsPolling] = useState(false);
   const [opponentData, setOpponentData] = useState<any>(null);
   const [bothPlayersReady, setBothPlayersReady] = useState(false);
+  
+  // Position swap state
+  const [swapRequested, setSwapRequested] = useState(false);
+  const [opponentRequestedSwap, setOpponentRequestedSwap] = useState(false);
+  const [swapInProgress, setSwapInProgress] = useState(false);
 
   // Track previous player slots for detecting host transfers using ref to avoid dependency issues
   const prevPlayerIDsRef = useRef<{[key: string]: number}>({});
@@ -74,25 +79,83 @@ const LobbyDetail: React.FC = () => {
         
         // Check if user is in this match
         const storedPlayerID = localStorage.getItem(`match_${matchID}_playerID`);
+        const storedCredentials = localStorage.getItem(`match_${matchID}_credentials`);
         
-        if (storedPlayerID) {
+        if (storedPlayerID && storedCredentials) {
           // Convert stored ID to number for consistent comparison
           const storedPlayerIdNum = parseInt(storedPlayerID || '0', 10);
-          setCurrentPlayerID(storedPlayerIdNum.toString());
           
-          // Always check if the player is currently in the host position
-          // This ensures correct host status even after transfers
-          setIsHost(false); // Reset first
+          // ✅ SWAP DETECTION: Check if our credentials/username are in a different slot
+          // This handles the requesting player's side of the swap
+          let actualPlayerSlot = matchDetails.players.find(p => p.credentials === storedCredentials);
           
-          // Find current player by ID and name for host check
-          const currentPlayer = matchDetails.players.find(p => p.id === storedPlayerIdNum);
-          if (currentPlayer) {
-            // Look for isReady inside player.data object
-            setIsReady(!!currentPlayer.data?.isReady);
+          // Fallback: If credentials aren't in the response, use username
+          if (!actualPlayerSlot && user) {
+            actualPlayerSlot = matchDetails.players.find(p => p.name === user.username);
+          }
+          
+          if (actualPlayerSlot && actualPlayerSlot.id !== storedPlayerIdNum) {
+            console.log(`🔄 SWAP DETECTED! Our credentials moved from slot ${storedPlayerIdNum} to slot ${actualPlayerSlot.id}`);
+            console.log(`   Updating localStorage with new player ID: ${actualPlayerSlot.id}`);
             
-            // If player is in slot 0, they are the host
-            if (storedPlayerIdNum === 0) {
-              setIsHost(true);
+            // Update localStorage with our actual position
+            localStorage.setItem(`match_${matchID}_playerID`, actualPlayerSlot.id.toString());
+            setCurrentPlayerID(actualPlayerSlot.id.toString());
+            setIsHost(actualPlayerSlot.id === 0);
+            
+            // Clear swap flags since swap completed
+            setSwapRequested(false);
+            setOpponentRequestedSwap(false);
+            
+            // Trigger a positive sound
+            triggerPositiveClick();
+            
+            // Continue with the new player ID
+            const newPlayerIdNum = actualPlayerSlot.id;
+            
+            // Find current player data
+            const currentPlayer = matchDetails.players.find(p => p.id === newPlayerIdNum);
+            if (currentPlayer) {
+              setIsReady(!!currentPlayer.data?.isReady);
+              setSwapRequested(!!currentPlayer.data?.swapRequested);
+            }
+            
+            // Check opponent's swap request
+            const opponentPlayer = matchDetails.players.find(p => p.id !== newPlayerIdNum && p.name);
+            if (opponentPlayer) {
+              setOpponentRequestedSwap(!!opponentPlayer.data?.swapRequested);
+            } else {
+              setOpponentRequestedSwap(false);
+            }
+          } else {
+            // Normal flow - no swap detected
+            setCurrentPlayerID(storedPlayerIdNum.toString());
+            
+            // Always check if the player is currently in the host position
+            // This ensures correct host status even after transfers
+            setIsHost(false); // Reset first
+            
+            // Find current player by ID and name for host check
+            const currentPlayer = matchDetails.players.find(p => p.id === storedPlayerIdNum);
+            if (currentPlayer) {
+              // Look for isReady inside player.data object
+              setIsReady(!!currentPlayer.data?.isReady);
+              
+              // Check for swap flags
+              setSwapRequested(!!currentPlayer.data?.swapRequested);
+              
+              // If player is in slot 0, they are the host
+              if (storedPlayerIdNum === 0) {
+                setIsHost(true);
+              }
+            }
+            
+            // Check opponent's swap request
+            const opponentPlayer = matchDetails.players.find(p => p.id !== storedPlayerIdNum && p.name);
+            if (opponentPlayer) {
+              setOpponentRequestedSwap(!!opponentPlayer.data?.swapRequested);
+            } else {
+              setOpponentRequestedSwap(false);
             }
           }
           
@@ -198,6 +261,13 @@ const LobbyDetail: React.FC = () => {
     if (!matchID) return;
     
     try {
+      // If readying up while swap is pending, cancel the swap
+      if (!isReady && (swapRequested || opponentRequestedSwap)) {
+        await lobbyService.cancelPositionSwap(matchID);
+        setSwapRequested(false);
+        setOpponentRequestedSwap(false);
+      }
+      
       const success = await lobbyService.updateReadyStatus(matchID, !isReady);
       if (success) {
         setIsReady(!isReady);
@@ -214,6 +284,13 @@ const LobbyDetail: React.FC = () => {
   // Handle game start (host only)
   const handleStartGame = async () => {
     if (!matchID) return;
+    
+    // Prevent starting during swap
+    if (swapRequested || opponentRequestedSwap || swapInProgress) {
+      setError('Cannot start game while position swap is pending');
+      triggerNegativeClick();
+      return;
+    }
     
     // First, update the match with started flag
     const success = await lobbyService.startMatch(matchID);
@@ -235,6 +312,100 @@ const LobbyDetail: React.FC = () => {
     } catch (err) {
       console.error('Error leaving match:', err);
       setError('Failed to leave the lobby');
+    }
+  };
+  
+  // ============================================
+  // Position Swap Handlers
+  // ============================================
+  
+  const handleRequestPositionSwap = async () => {
+    if (!matchID || swapRequested || swapInProgress) return;
+    
+    // Must be unready to swap
+    if (isReady) {
+      setError('Please unready yourself before requesting a swap');
+      triggerNegativeClick();
+      return;
+    }
+    
+    try {
+      const success = await lobbyService.requestPositionSwap(matchID);
+      if (success) {
+        setSwapRequested(true);
+        triggerClick();
+      } else {
+        triggerNegativeClick();
+        setError('Failed to request position swap');
+      }
+    } catch (err) {
+      console.error('Error requesting position swap:', err);
+      setError('Failed to request position swap');
+      triggerNegativeClick();
+    }
+  };
+  
+  const handleAcceptPositionSwap = async () => {
+    if (!matchID || swapInProgress) return;
+    
+    setSwapInProgress(true);
+    
+    try {
+      const result = await lobbyService.acceptPositionSwap(matchID);
+      if (result.success) {
+        triggerPositiveClick();
+        
+        console.log('🎉 Swap successful, new player ID:', result.newPlayerID);
+        
+        // Update local player ID state immediately
+        if (result.newPlayerID) {
+          setCurrentPlayerID(result.newPlayerID);
+          
+          // Check if we're now the host
+          setIsHost(result.newPlayerID === '0');
+        }
+        
+        // Clear swap flags
+        setSwapRequested(false);
+        setOpponentRequestedSwap(false);
+        setSwapInProgress(false);
+        
+        // Wait a moment for the swap to propagate on the server
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Force multiple refreshes to ensure state is updated
+        await fetchMatchDetails(true);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        await fetchMatchDetails(true);
+        
+        console.log('✅ Position swap complete and UI refreshed');
+      } else {
+        triggerNegativeClick();
+        setError('Failed to complete position swap');
+        setSwapInProgress(false);
+      }
+    } catch (err) {
+      console.error('Error accepting position swap:', err);
+      setError('Failed to accept position swap');
+      triggerNegativeClick();
+      setSwapInProgress(false);
+    }
+  };
+  
+  const handleCancelPositionSwap = async () => {
+    if (!matchID || swapInProgress) return;
+    
+    try {
+      const success = await lobbyService.cancelPositionSwap(matchID);
+      if (success) {
+        setSwapRequested(false);
+        triggerClick();
+      } else {
+        triggerNegativeClick();
+      }
+    } catch (err) {
+      console.error('Error canceling position swap:', err);
+      triggerNegativeClick();
     }
   };
 
@@ -520,6 +691,118 @@ const LobbyDetail: React.FC = () => {
         </div>
       </div>
       
+      {/* Position Swap Section - NEW */}
+      <div className="mb-4 border border-primary/20 bg-base-900/80 p-3">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-mono text-primary font-bold flex items-center">
+              <FaSync className="mr-2 text-sm" />
+              YOUR ROLE: {currentPlayerID === '0' ? 'ATTACKER' : 'DEFENDER'}
+            </h3>
+            <p className="text-xs text-base-content/60 font-mono mt-1">
+              {currentPlayerID === '0' 
+                ? '🔴 Red Team - Player 0 - Exploit & Attack' 
+                : '🔵 Blue Team - Player 1 - Defend & Fortify'}
+            </p>
+          </div>
+          
+          {/* Position swap controls */}
+          {match?.players.filter(p => p.name).length === 2 && !swapInProgress && (
+            <div>
+              {!swapRequested && !opponentRequestedSwap && (
+                <button
+                  onClick={() => {
+                    triggerClick();
+                    handleRequestPositionSwap();
+                  }}
+                  disabled={isReady}
+                  className={`px-3 py-1.5 font-mono text-xs flex items-center ${
+                    isReady
+                      ? 'bg-primary/10 border border-primary/20 text-primary/40 cursor-not-allowed'
+                      : 'bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 transition-colors duration-300'
+                  }`}
+                >
+                  <FaSync className="mr-1 text-xs" />
+                  <span>SWAP ROLES</span>
+                </button>
+              )}
+              
+              {swapRequested && !opponentRequestedSwap && (
+                <button
+                  onClick={() => {
+                    triggerClick();
+                    handleCancelPositionSwap();
+                  }}
+                  className="px-3 py-1.5 bg-yellow-900/20 border border-yellow-500/40 text-yellow-500 hover:bg-yellow-900/30 transition-colors duration-300 font-mono text-xs flex items-center animate-pulse"
+                >
+                  <FaClock className="mr-1 text-xs" />
+                  <span>CANCEL REQUEST</span>
+                </button>
+              )}
+              
+              {opponentRequestedSwap && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      triggerPositiveClick();
+                      handleAcceptPositionSwap();
+                    }}
+                    className="px-3 py-1.5 bg-green-900/30 border border-green-500/50 text-green-500 hover:bg-green-900/50 transition-colors duration-300 font-mono text-xs flex items-center animate-pulse"
+                  >
+                    <FaCheck className="mr-1 text-xs" />
+                    <span>ACCEPT SWAP</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      triggerClick();
+                      // Opponent can cancel on their end
+                    }}
+                    className="px-3 py-1.5 bg-red-900/20 border border-red-500/30 text-red-400 hover:bg-red-900/30 transition-colors duration-300 font-mono text-xs flex items-center"
+                  >
+                    <FaTimes className="mr-1 text-xs" />
+                    <span>DECLINE</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Swap status messages */}
+        {swapInProgress && (
+          <div className="bg-primary/20 border border-primary/50 text-primary p-2 animate-pulse">
+            <div className="flex items-center text-xs font-mono">
+              <FaSync className="animate-spin mr-2" />
+              <span>⚙️ Swapping positions... Please wait...</span>
+            </div>
+          </div>
+        )}
+        
+        {opponentRequestedSwap && !swapInProgress && (
+          <div className="bg-green-900/20 border border-green-500/40 text-green-400 p-2 animate-pulse">
+            <p className="text-xs font-mono">
+              ⚠️ Opponent wants to swap roles! You will become {currentPlayerID === '0' ? 'DEFENDER (Player 1)' : 'ATTACKER (Player 0)'}.
+            </p>
+          </div>
+        )}
+        
+        {swapRequested && !opponentRequestedSwap && !swapInProgress && (
+          <div className="bg-yellow-900/20 border border-yellow-500/40 text-yellow-500 p-2">
+            <p className="text-xs font-mono">
+              ⏳ Waiting for opponent to accept position swap...
+            </p>
+          </div>
+        )}
+        
+        {isReady && !swapRequested && !opponentRequestedSwap && (
+          <div className="bg-base-800/60 border border-base-content/20 text-base-content/60 p-2">
+            <p className="text-xs font-mono">
+              ℹ️ Unready yourself to request a role swap
+            </p>
+          </div>
+        )}
+      </div>
+      
       {/* Role assignment info - compact */}
       <div className="mb-4 border border-primary/20 bg-base-900/80 p-3">
         <div className="flex items-center mb-2">
@@ -528,7 +811,7 @@ const LobbyDetail: React.FC = () => {
         </div>
         
         <p className="text-base-content/80 font-mono text-xs mb-2">
-          Host → Attacker, Second player → Defender
+          Player 0 (Host) → Attacker, Player 1 → Defender
         </p>
         
         {/* Host transfer notification - compact */}

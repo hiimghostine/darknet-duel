@@ -378,7 +378,7 @@ const DashboardPage: React.FC = () => {
                         // Use the actual timestamp and add 8 hours for Asia/Manila timezone
                         const formatTimeWithTimezone = (timestamp: string): string => {
                           try {
-                            console.log('Original timestamp:', timestamp); // Diagnostic logging
+                            //console.log('Original timestamp:', timestamp); // Diagnostic logging
                             
                             // Parse the ISO timestamp from backend
                             const date = new Date(timestamp);
@@ -407,7 +407,7 @@ const DashboardPage: React.FC = () => {
                               result = `${days}d ago`;
                             }
                             
-                            console.log('Adjusted time:', result);
+                            //console.log('Adjusted time:', result);
                             return result;
                           } catch (error) {
                             console.error('Error adjusting timezone:', error);

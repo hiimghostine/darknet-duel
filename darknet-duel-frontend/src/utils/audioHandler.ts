@@ -1,5 +1,8 @@
 import { useAudioStore } from '../store/audio.store';
 
+// Debug flag from environment variable
+const DEBUG_AUDIO = import.meta.env.VITE_DEBUG_AUDIO === 'true';
+
 // Audio file imports
 import clickWav from '../assets/sfx/click.wav';
 import errorWav from '../assets/sfx/error.wav';
@@ -35,8 +38,10 @@ const BGM_FILES = {
   'the-drop': theDropOgg,
 } as const;
 
-console.log('🎵 BGM_FILES loaded:', Object.keys(BGM_FILES));
-console.log('🎵 BGM file paths:', BGM_FILES);
+if (DEBUG_AUDIO) {
+  console.log('🎵 BGM_FILES loaded:', Object.keys(BGM_FILES));
+  console.log('🎵 BGM file paths:', BGM_FILES);
+}
 
 export type SFXType = keyof typeof SFX_FILES;
 export type BGMType = keyof typeof BGM_FILES;
@@ -48,15 +53,17 @@ class AudioHandler {
   private fadeTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    console.log('🎵 AudioHandler initialized');
+    if (DEBUG_AUDIO) console.log('🎵 AudioHandler initialized');
     // Preload all audio files
     this.preloadAudio();
   }
 
   private preloadAudio() {
-    console.log('🎵 Preloading audio files...');
-    console.log('🎵 SFX files:', Object.keys(SFX_FILES));
-    console.log('🎵 BGM files:', Object.keys(BGM_FILES));
+    if (DEBUG_AUDIO) {
+      console.log('🎵 Preloading audio files...');
+      console.log('🎵 SFX files:', Object.keys(SFX_FILES));
+      console.log('🎵 BGM files:', Object.keys(BGM_FILES));
+    }
     
     // Preload SFX
     Object.values(SFX_FILES).forEach(src => {
@@ -75,17 +82,19 @@ class AudioHandler {
   playSFX(type: SFXType) {
     const { sfxEnabled, sfxVolume } = useAudioStore.getState();
     
-    console.log('🔊 playSFX called with type:', type);
-    console.log('🔊 SFX enabled:', sfxEnabled, 'volume:', sfxVolume);
+    if (DEBUG_AUDIO) {
+      console.log('🔊 playSFX called with type:', type);
+      console.log('🔊 SFX enabled:', sfxEnabled, 'volume:', sfxVolume);
+    }
     
     if (!sfxEnabled) {
-      console.log('🔊 SFX disabled, not playing');
+      if (DEBUG_AUDIO) console.log('🔊 SFX disabled, not playing');
       return;
     }
 
     const audio = new Audio(SFX_FILES[type]);
     audio.volume = sfxVolume / 100;
-    console.log('🔊 Playing SFX:', type, 'at volume:', sfxVolume / 100);
+    if (DEBUG_AUDIO) console.log('🔊 Playing SFX:', type, 'at volume:', sfxVolume / 100);
     audio.play().catch((error) => {
       console.error('🔊 Error playing SFX:', error);
     });
@@ -95,35 +104,39 @@ class AudioHandler {
   playBGM(type: BGMType) {
     const { bgmEnabled, bgmVolume } = useAudioStore.getState();
     
-    console.log('🎵 playBGM called with type:', type);
-    console.log('🎵 BGM enabled:', bgmEnabled, 'volume:', bgmVolume);
+    if (DEBUG_AUDIO) {
+      console.log('🎵 playBGM called with type:', type);
+      console.log('🎵 BGM enabled:', bgmEnabled, 'volume:', bgmVolume);
+    }
     
     if (!bgmEnabled) {
-      console.log('🎵 BGM disabled, stopping current BGM');
+      if (DEBUG_AUDIO) console.log('🎵 BGM disabled, stopping current BGM');
       this.stopBGM();
       return;
     }
 
     // If same BGM is already playing, don't restart
     if (this.currentBGM === type && this.bgmAudio && !this.bgmAudio.paused) {
-      console.log('🎵 Same BGM already playing:', type);
+      if (DEBUG_AUDIO) console.log('🎵 Same BGM already playing:', type);
       return;
     }
 
     // Stop current BGM
-    console.log('🎵 Stopping current BGM and starting new one:', type);
+    if (DEBUG_AUDIO) console.log('🎵 Stopping current BGM and starting new one:', type);
     this.stopBGM();
 
     // Create new BGM audio
-    console.log('🎵 Creating audio element for BGM:', type);
-    console.log('🎵 BGM file path:', BGM_FILES[type]);
+    if (DEBUG_AUDIO) {
+      console.log('🎵 Creating audio element for BGM:', type);
+      console.log('🎵 BGM file path:', BGM_FILES[type]);
+    }
     
     this.bgmAudio = new Audio(BGM_FILES[type]);
     this.bgmAudio.loop = true;
     this.bgmAudio.volume = bgmVolume / 100;
     this.currentBGM = type;
 
-    console.log('🎵 Playing BGM:', type, 'at volume:', bgmVolume / 100);
+    if (DEBUG_AUDIO) console.log('🎵 Playing BGM:', type, 'at volume:', bgmVolume / 100);
     this.bgmAudio.play().catch((error) => {
       console.error('🎵 Error playing BGM:', error);
       console.error('🎵 Error name:', error.name);
@@ -134,16 +147,18 @@ class AudioHandler {
           error.message.includes('autoplay') || 
           error.message.includes('user gesture') ||
           error.message.includes('interaction')) {
-        console.log('🎵 Autoplay blocked, triggering permission prompt');
+        if (DEBUG_AUDIO) console.log('🎵 Autoplay blocked, triggering permission prompt');
         // Dispatch custom event to trigger permission prompt
         window.dispatchEvent(new CustomEvent('audio-permission-needed'));
       }
     });
     
     // Add event listeners for debugging
-    this.bgmAudio.addEventListener('canplaythrough', () => {
-      console.log('🎵 BGM can play through:', type);
-    });
+    if (DEBUG_AUDIO) {
+      this.bgmAudio.addEventListener('canplaythrough', () => {
+        console.log('🎵 BGM can play through:', type);
+      });
+    }
     
     this.bgmAudio.addEventListener('error', (e) => {
       console.error('🎵 BGM error event:', e);
@@ -176,7 +191,7 @@ class AudioHandler {
   // Retry playing current BGM (useful after permission is granted)
   retryCurrentBGM() {
     if (this.currentBGM && this.bgmAudio) {
-      console.log('🎵 Retrying current BGM:', this.currentBGM);
+      if (DEBUG_AUDIO) console.log('🎵 Retrying current BGM:', this.currentBGM);
       this.bgmAudio.play().catch((error) => {
         console.error('🎵 Retry failed:', error);
       });
@@ -251,7 +266,7 @@ class AudioHandler {
 
 // Create singleton instance
 export const audioHandler = new AudioHandler();
-console.log('🎵 AudioHandler singleton created');
+if (DEBUG_AUDIO) console.log('🎵 AudioHandler singleton created');
 
 // Export convenience functions
 export const playSFX = (type: SFXType) => audioHandler.playSFX(type);

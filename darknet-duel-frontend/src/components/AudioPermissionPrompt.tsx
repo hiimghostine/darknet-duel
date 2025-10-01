@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAudioStore } from '../store/audio.store';
 import { audioHandler } from '../utils/audioHandler';
 
+// Debug flag from environment variable
+const DEBUG_AUDIO = import.meta.env.VITE_DEBUG_AUDIO === 'true';
+
 interface AudioPermissionPromptProps {
   isVisible: boolean;
   onEnable: () => void;
@@ -24,7 +27,7 @@ const AudioPermissionPrompt: React.FC<AudioPermissionPromptProps> = ({
         return;
       }
       
-      console.log('🎵 User interacted with page, but audio context not unlocked');
+      if (DEBUG_AUDIO) console.log('🎵 User interacted with page, but audio context not unlocked');
       // Don't automatically hide - let user explicitly enable audio
     };
 
@@ -40,7 +43,7 @@ const AudioPermissionPrompt: React.FC<AudioPermissionPromptProps> = ({
   }, [isVisible]);
 
   const handleEnableAudio = () => {
-    console.log('🎵 Attempting to unlock audio context...');
+    if (DEBUG_AUDIO) console.log('🎵 Attempting to unlock audio context...');
     
     // Try multiple methods to unlock audio context
     const unlockAudio = async () => {
@@ -49,10 +52,10 @@ const AudioPermissionPrompt: React.FC<AudioPermissionPromptProps> = ({
         const silentAudio = new Audio();
         silentAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
         await silentAudio.play();
-        console.log('🎵 Audio context unlocked successfully with silent audio');
+        if (DEBUG_AUDIO) console.log('🎵 Audio context unlocked successfully with silent audio');
         return true;
       } catch (error) {
-        console.log('🎵 Silent audio failed, trying alternative method...');
+        if (DEBUG_AUDIO) console.log('🎵 Silent audio failed, trying alternative method...');
         
         try {
           // Method 2: Create and play a simple tone
@@ -68,7 +71,7 @@ const AudioPermissionPrompt: React.FC<AudioPermissionPromptProps> = ({
           oscillator.start();
           oscillator.stop(audioContext.currentTime + 0.001);
           
-          console.log('🎵 Audio context unlocked successfully with oscillator');
+          if (DEBUG_AUDIO) console.log('🎵 Audio context unlocked successfully with oscillator');
           return true;
         } catch (error2) {
           console.error('🎵 All audio unlock methods failed:', error2);
@@ -79,10 +82,10 @@ const AudioPermissionPrompt: React.FC<AudioPermissionPromptProps> = ({
 
     unlockAudio().then((success) => {
       if (success) {
-        console.log('🎵 Audio context unlocked, enabling audio...');
+        if (DEBUG_AUDIO) console.log('🎵 Audio context unlocked, enabling audio...');
         onEnable();
       } else {
-        console.log('🎵 Audio unlock failed, but proceeding anyway...');
+        if (DEBUG_AUDIO) console.log('🎵 Audio unlock failed, but proceeding anyway...');
         onEnable();
       }
     });

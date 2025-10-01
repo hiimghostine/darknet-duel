@@ -255,6 +255,166 @@ if (server.app) {
       ctx.status = 500;
     }
   });
+  
+  // ============================================
+  // Custom endpoint for ATOMIC player position swap
+  // This swaps ALL data between player 0 and player 1
+  // ============================================
+  server.router.post('/games/:name/:id/swap-positions', parseJsonBody, async (ctx) => {
+    const { name, id } = ctx.params;
+    const { playerID, credentials } = ctx.request.body as { playerID: string; credentials: string };
+    
+    console.log(`🔄 POSITION SWAP request for match ${id} from player ${playerID}`);
+    
+    try {
+      // Fetch current match data with BOTH metadata and state
+      const matchData = await server.db.fetch(id, { metadata: true, state: true });
+      
+      if (!matchData || !matchData.metadata) {
+        ctx.status = 404;
+        ctx.body = { error: 'Match not found' };
+        return;
+      }
+      
+      const metadata = matchData.metadata;
+      
+      // Verify requesting player credentials
+      if (!metadata.players?.[playerID] || metadata.players[playerID].credentials !== credentials) {
+        ctx.status = 403;
+        ctx.body = { error: 'Invalid credentials' };
+        return;
+      }
+      
+      // Get both players
+      const player0 = metadata.players['0'];
+      const player1 = metadata.players['1'];
+      
+      if (!player0 || !player1 || !player0.name || !player1.name) {
+        ctx.status = 400;
+        ctx.body = { error: 'Both players must be present to swap positions' };
+        return;
+      }
+      
+      // Check if the OTHER player has requested the swap
+      const otherPlayerId = playerID === '0' ? '1' : '0';
+      const otherPlayer = metadata.players[otherPlayerId];
+      
+      console.log(`🔍 Swap validation:`);
+      console.log(`   - Requesting player: ${playerID}`);
+      console.log(`   - Requesting player swapAccepted: ${player0.id === parseInt(playerID) ? player0.data?.swapAccepted : player1.data?.swapAccepted}`);
+      console.log(`   - Other player: ${otherPlayerId}`);
+      console.log(`   - Other player swapRequested: ${otherPlayer.data?.swapRequested}`);
+      
+      // The accepting player calls this endpoint after setting swapAccepted=true
+      // We need to verify the OTHER player has swapRequested=true
+      if (!otherPlayer.data?.swapRequested) {
+        ctx.status = 400;
+        ctx.body = { error: 'Other player must request swap first' };
+        return;
+      }
+      
+      console.log(`✅ Both players agreed to swap. Swapping positions...`);
+      
+      // ============================================
+      // ATOMIC SWAP: Exchange ALL player data
+      // ============================================
+      
+      // Store player credentials - these will ALSO be swapped
+      const player0OldCredentials = player0.credentials;
+      const player1OldCredentials = player1.credentials;
+      
+      // Create swapped player objects
+      // Player 0 gets player 1's data AND credentials
+      // Player 1 gets player 0's data AND credentials
+      const swappedPlayer0 = {
+        id: 0,
+        name: player1.name,
+        credentials: player1OldCredentials, // ✅ Swap credentials with the player!
+        data: {
+          ...(player1.data || {}),
+          swapAccepted: false, // Clear swap flags
+          swapRequested: false,
+          isReady: false // Reset ready status after swap
+        },
+        isConnected: player1.isConnected
+      };
+      
+      const swappedPlayer1 = {
+        id: 1,
+        name: player0.name,
+        credentials: player0OldCredentials, // ✅ Swap credentials with the player!
+        data: {
+          ...(player0.data || {}),
+          swapAccepted: false, // Clear swap flags
+          swapRequested: false,
+          isReady: false // Reset ready status after swap
+        },
+        isConnected: player0.isConnected
+      };
+      
+      // Update metadata with swapped players
+      const updatedMetadata = {
+        ...metadata,
+        players: {
+          '0': swappedPlayer0,
+          '1': swappedPlayer1
+        },
+        updatedAt: Date.now()
+      };
+      
+      await server.db.setMetadata(id, updatedMetadata);
+      
+      // ============================================
+      // Update game state if it exists
+      // ============================================
+      if (matchData.state && matchData.state.G) {
+        const gameState = matchData.state.G;
+        
+        // Update playerUuidMap if it exists
+        if (gameState.playerUuidMap) {
+          const oldPlayer0Uuid = gameState.playerUuidMap['0'];
+          const oldPlayer1Uuid = gameState.playerUuidMap['1'];
+          
+          if (oldPlayer0Uuid && oldPlayer1Uuid) {
+            gameState.playerUuidMap = {
+              '0': oldPlayer1Uuid,
+              '1': oldPlayer0Uuid
+            };
+            console.log('✅ Updated playerUuidMap in game state');
+          }
+        }
+        
+        // Save updated game state
+        await server.db.setState(id, matchData.state);
+      }
+      
+      // ============================================
+      // Return swap confirmation
+      // ============================================
+      
+      const swapResult = {
+        success: true,
+        swapped: true,
+        // Tell each client what their NEW player ID is
+        newPlayerIdFor: {
+          [player0OldCredentials]: '1', // Player 0's connection is now player 1
+          [player1OldCredentials]: '0'  // Player 1's connection is now player 0
+        }
+      };
+      
+      console.log(`✅ Position swap complete for match ${id}`);
+      console.log(`   - ${swappedPlayer1.name} (was player 0) → now player 1 (DEFENDER)`);
+      console.log(`   - ${swappedPlayer0.name} (was player 1) → now player 0 (ATTACKER)`);
+      
+      ctx.status = 200;
+      ctx.body = swapResult;
+      
+    } catch (error) {
+      console.error('❌ Error swapping positions:', error);
+      ctx.status = 500;
+      ctx.body = { error: 'Failed to swap positions' };
+    }
+  });
 }
 
 // Enhanced CORS handling

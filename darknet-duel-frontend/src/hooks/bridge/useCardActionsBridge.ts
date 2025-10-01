@@ -438,6 +438,12 @@ export function useCardActionsBridge(props: BoardProps & {
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
+      // For wildcards that haven't matched any specific type, return empty array
+      // This happens when a wildcard has no valid targets for its allowed types
+      else if (card.type === 'wildcard' && effectiveCardType === 'wildcard') {
+        console.log(`⚠️ Wildcard ${card.name} with wildcardType ${card.wildcardType} has no valid targets for its allowed types`);
+        targets = [];
+      }
       // For all other card types, provide all infrastructure as targets
       else {
         targets = G.infrastructure
