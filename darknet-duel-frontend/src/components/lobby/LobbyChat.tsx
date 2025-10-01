@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
 import { useAudioManager } from '../../hooks/useAudioManager';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
-import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaHashtag, FaExchangeAlt } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
 import ReportModal from '../ReportModal';
 import ContextMenu from '../ContextMenu';
@@ -178,16 +178,21 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
     socketInstance.on('user_joined', (data: { userId: string; username: string }) => {
       console.log('👋 User joined:', data.username);
-      setConnectedUsers(prev => new Set([...prev, data.userId]));
+      // Presence will be synchronized by users_connected event; keep this for UI effects if needed
     });
 
     socketInstance.on('user_left', (data: { userId: string; username: string }) => {
       console.log('👋 User left:', data.username);
-      setConnectedUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(data.userId);
-        return newSet;
-      });
+      // Presence will be synchronized by users_connected event
+    });
+
+    // Unified presence updates from server
+    socketInstance.on('users_connected', (data: { count: number; users: string[] }) => {
+      try {
+        setConnectedUsers(new Set(data.users || []));
+      } catch {
+        // Fallback: do nothing if malformed
+      }
     });
 
     socketInstance.on('chat_error', (data: { message: string }) => {
@@ -368,7 +373,7 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
               </div>
               <div className="text-base-content text-sm flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
-                <span>{connectedUsers.size + 1} USER(S) CONNECTED • {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}</span>
+                <span>{connectedUsers.size} USER(S) CONNECTED • {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}</span>
               </div>
               {error && (
                 <div className="text-xs text-error mt-1">⚠️ TRANSMISSION ERROR: {error}</div>
