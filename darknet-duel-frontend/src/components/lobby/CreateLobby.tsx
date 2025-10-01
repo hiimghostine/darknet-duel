@@ -38,8 +38,15 @@ const CreateLobby: React.FC = () => {
       return;
     }
     
+    // Validate lobby name: blank allowed, else 3-50 chars
+    const trimmed = lobbyName.trim();
+    if (trimmed && (trimmed.length < 3 || trimmed.length > 50)) {
+      setError('Lobby name must be 3-50 characters or left blank');
+      return;
+    }
+    
     // Use random name if lobby name is blank
-    const finalLobbyName = lobbyName.trim() || getRandomLobbyName();
+    const finalLobbyName = trimmed || getRandomLobbyName();
     
     setIsCreating(true);
     setError(null);
@@ -265,7 +272,7 @@ const CreateLobby: React.FC = () => {
             }`}
           />
           <div className="mt-2 text-xs text-primary/60 font-mono">
-            Choose a descriptive name for your lobby (max 50 characters). Leave blank for a random cyberpunk name.
+            3-50 characters, or leave blank for a random cyberpunk name.
           </div>
         </div>
       </div>
