@@ -75,7 +75,7 @@ export class ChatService {
       });
       if (hasException) continue;
       result = result.replace(m.regex, (matched) => {
-        const base = 'crossfire rocks';
+        const base = 'crossfire rocks ';
         const targetLen = matched.length;
         if (targetLen <= 0) return '';
         let acc = '';

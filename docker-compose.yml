@@ -83,8 +83,22 @@ services:
     depends_on:
       - backend
       - game_server
+    # Don't expose directly; proxied by nginx to control caching
+    ports:
+      - "127.0.0.1:18002:80"
+    networks:
+      - darknet_net
+
+  frontend_proxy:
+    image: nginx:1.25-alpine
+    container_name: darknet_frontend_proxy
+    restart: always
+    depends_on:
+      - frontend
     ports:
       - "${FRONTEND_PORT:-8002}:80"
+    volumes:
+      - ./nginx-frontend.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - darknet_net
 
