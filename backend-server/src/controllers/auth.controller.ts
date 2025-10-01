@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { AuthService } from '../services/auth.service';
-import { validateEmail, validatePassword } from '../utils/validation';
+import { validateEmail, validatePassword, validateUsernameLength } from '../utils/validation';
 
 const authService = new AuthService();
 
@@ -82,10 +82,15 @@ export class AuthController {
         return res.status(400).json({ message: 'Invalid email format' });
       }
       
-      // Validate password strength
+      // Validate username length
+      if (!validateUsernameLength(username)) {
+        return res.status(400).json({ message: 'Username must be between 6 and 16 characters' });
+      }
+
+      // Validate password strength and length
       if (!validatePassword(password)) {
         return res.status(400).json({ 
-          message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+          message: 'Password must be 8-63 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
         });
       }
       
