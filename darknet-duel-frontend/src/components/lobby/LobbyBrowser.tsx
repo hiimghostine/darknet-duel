@@ -275,41 +275,41 @@ const LobbyBrowser: React.FC = () => {
 
   return (
     <>
-      {/* Decorative elements */}
-      <div className="relative z-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-1/3 h-1 bg-gradient-to-r from-primary to-transparent"></div>
-        <div className="absolute top-0 right-1/3 w-1/4 h-1 bg-gradient-to-l from-primary to-transparent"></div>
-        <div className="absolute top-20 left-10 opacity-5 text-8xl font-mono text-primary">101</div>
-        <div className="absolute bottom-20 right-10 opacity-5 text-8xl font-mono text-primary">010</div>
-      </div>
-
-      {/* Header */}
-      <header className="mb-8 border-b border-primary/20 pb-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 text-flicker">
-            ACTIVE_DARKNET_NODES
-          </h1>
+      {/* Compact Header */}
+      <header className="mb-3 pb-2 border-b border-primary/20">
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold font-mono text-primary text-flicker">
+              ACTIVE_NODES
+            </h1>
+            {loading && (
+              <div className="flex items-center gap-1 text-primary/70 text-xs font-mono">
+                <FaSync className="animate-spin text-xs" />
+                <span className="animate-pulse">Scanning...</span>
+              </div>
+            )}
+          </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button 
               onClick={() => {
                 triggerClick();
                 fetchMatches();
               }} 
-              className="flex items-center justify-center gap-2 bg-base-200/50 hover:bg-primary/20 text-primary border border-primary/30 py-2 px-4 transition-all duration-200"
+              className="flex items-center gap-1 bg-base-200/50 hover:bg-primary/20 text-primary border border-primary/30 py-1 px-2 text-xs transition-all duration-200"
               disabled={loading}
             >
-              <FaSync className={`${loading ? 'animate-spin' : ''}`} /> 
-              <span className="font-mono text-sm">SCAN_NETWORK</span>
+              <FaSync className={`${loading ? 'animate-spin' : ''} text-xs`} /> 
+              <span className="font-mono hidden sm:inline">SCAN</span>
             </button>
             
             <Link 
               to="/lobbies/create"
               onClick={triggerClick}
-              className="flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/50 py-2 px-4 transition-all duration-200"
+              className="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/50 py-1 px-2 text-xs transition-all duration-200"
             >
-              <FaPlus />
-              <span className="font-mono text-sm">CREATE_NODE</span>
+              <FaPlus className="text-xs" />
+              <span className="font-mono hidden sm:inline">CREATE</span>
             </Link>
           </div>
         </div>
@@ -317,189 +317,135 @@ const LobbyBrowser: React.FC = () => {
       
       {/* Error message */}
       {error && (
-        <div className="mb-6 p-4 border border-secondary/50 bg-secondary/10 text-secondary flex items-center gap-3">
-          <FaExclamationTriangle size={20} className="animate-pulse" />
+        <div className="mb-2 p-2 border border-secondary/50 bg-secondary/10 text-secondary flex items-center gap-2 text-xs">
+          <FaExclamationTriangle className="animate-pulse" />
           <p className="font-mono">{error}</p>
         </div>
       )}
       
-      {/* Private Lobby Join Section */}
-      <div className="mb-8 border border-primary/30 bg-base-800/50 backdrop-filter backdrop-blur-sm shadow-lg shadow-primary/10 p-6 relative">
-        <div className="absolute -top-2 -left-2 w-20 h-20 border-t-2 border-l-2 border-primary opacity-60"></div>
-        <div className="absolute -bottom-2 -right-2 w-20 h-20 border-b-2 border-r-2 border-primary opacity-60"></div>
-        
-        <h3 className="text-xl font-mono text-primary mb-4 glitch-text">JOIN PRIVATE LOBBY</h3>
-        
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={privateLobbysId}
-              onChange={(e) => setPrivateLobbyId(e.target.value)}
-              placeholder="Enter Lobby ID..."
-              className={`w-full px-4 py-3 border font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80 border-primary/30 text-primary' : 'bg-base-100/80 border-primary/40 text-primary'}`}
-              disabled={isJoiningPrivate}
-            />
-          </div>
+      {/* Compact Private Lobby Join Section */}
+      <div className="mb-3 border border-primary/30 bg-base-200/30 p-3">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <label className="font-mono text-xs text-primary whitespace-nowrap">PRIVATE ID:</label>
+          <input
+            type="text"
+            value={privateLobbysId}
+            onChange={(e) => setPrivateLobbyId(e.target.value)}
+            placeholder="Enter ID..."
+            className={`flex-1 px-2 py-1 border font-mono text-xs placeholder:text-primary/50 focus:border-primary focus:outline-none transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80 border-primary/30 text-primary' : 'bg-base-100/80 border-primary/40 text-primary'}`}
+            disabled={isJoiningPrivate}
+          />
           <button
             onClick={() => {
               triggerClick();
               handleJoinPrivateLobby();
             }}
             disabled={isJoiningPrivate || !privateLobbysId.trim()}
-            className={`px-6 py-3 font-mono text-sm border transition-all duration-200 ${
+            className={`px-3 py-1 font-mono text-xs border transition-all duration-200 whitespace-nowrap ${
               isJoiningPrivate || !privateLobbysId.trim()
                 ? 'bg-primary/10 border-primary/30 text-primary/50 cursor-not-allowed'
                 : 'bg-primary/20 border-primary text-primary hover:bg-primary/30'
             }`}
           >
-            {isJoiningPrivate ? (
-              <>
-                <span className="animate-pulse">⚙</span>
-                <span className="ml-2">CONNECTING...</span>
-              </>
-            ) : (
-              <>
-                <span>🔗</span>
-                <span className="ml-2">CONNECT</span>
-              </>
-            )}
+            {isJoiningPrivate ? 'CONNECTING...' : 'JOIN'}
           </button>
         </div>
-        
-        <div className="mt-3 text-xs text-primary/60 font-mono">
-          Private lobbies require the exact lobby ID to join. Get the ID from the lobby host.
-        </div>
       </div>
       
-      {/* Loading state */}
-      {loading && (
-        <div className="flex justify-center items-center py-20">
-          <div className="text-center">
-            <div className="inline-block">
-              <div className="w-16 h-16 border-4 border-t-primary border-r-primary/50 border-b-primary/30 border-l-primary/10 rounded-full animate-spin"></div>
-            </div>
-            <p className="mt-4 font-mono text-base-content/70 text-sm tracking-wider animate-pulse">SCANNING_NETWORK...</p>
+      {/* Scrollable container for lobby list */}
+      <div className="border border-primary/20 bg-base-200/5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+        {/* No matches found - only show when not loading initially */}
+        {matches.length === 0 && !loading && (
+          <div className="text-center py-8 border border-dashed border-primary/20 m-2">
+            <FaServer className="mx-auto text-2xl text-primary/30 mb-2" />
+            <h3 className="font-mono text-base-content/70 text-sm mb-1">NO_ACTIVE_NODES</h3>
+            <p className="text-base-content/50 text-xs">
+              Create a node to begin
+            </p>
           </div>
-        </div>
-      )}
-      
-      {/* No matches found */}
-      {!loading && matches.length === 0 && (
-        <div className="text-center py-20 border-2 border-dashed border-primary/20">
-          <FaServer className="mx-auto text-4xl text-primary/30 mb-4" />
-          <h3 className="font-mono text-base-content/70 text-lg mb-2">NO_ACTIVE_NODES_FOUND</h3>
-          <p className="text-base-content/50 text-sm max-w-md mx-auto">
-            No darknet nodes are currently active. Create a new node to initiate a connection.
-          </p>
-        </div>
-      )}
-      
-      {/* Match list */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {!loading && matches.map(match => {
-          const playerCount = getActivePlayerCount(match);
-          const isFull = playerCount >= 2;
-          // Check if this is a special game mode
-          const isSpecialGame = match.setupData?.gameMode !== 'standard';
-          
-          return (
-            <div key={match.matchID} className={`border ${isFull ? 'border-secondary/30' : 'border-primary/30'} bg-base-200/10 backdrop-blur-sm`}>
-              <div className="p-6 flex gap-6">
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <div className={`w-16 h-16 border-2 ${isFull ? 'border-secondary/50' : 'border-primary/50'} flex items-center justify-center rounded-full relative`}>
-                    <FaServer className={isFull ? 'text-secondary/70' : 'text-primary/70'} size={24} />
-                    <div className={`absolute top-0 right-0 w-3 h-3 rounded-full ${isFull ? 'bg-secondary' : 'bg-primary'} animate-pulse`}></div>
+        )}
+        
+        {/* Initial loading state - only show on first load */}
+        {matches.length === 0 && loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-center">
+              <div className="inline-block">
+                <div className="w-8 h-8 border-2 border-t-primary border-r-primary/50 border-b-primary/30 border-l-primary/10 rounded-full animate-spin"></div>
+              </div>
+              <p className="mt-2 font-mono text-base-content/70 text-xs tracking-wider animate-pulse">SCANNING...</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Match list - Single column, compact cards - show even while loading if we have matches */}
+        <div className="space-y-2 p-2">
+          {matches.map(match => {
+            const playerCount = getActivePlayerCount(match);
+            const isFull = playerCount >= 2;
+            const isSpecialGame = match.setupData?.gameMode !== 'standard';
+            
+            return (
+              <div key={match.matchID} className={`border ${isFull ? 'border-secondary/30' : 'border-primary/30'} bg-base-200/10 backdrop-blur-sm`}>
+                <div className="p-3 flex gap-3 items-center">
+                  {/* Status indicator */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={`w-8 h-8 border ${isFull ? 'border-secondary/50' : 'border-primary/50'} flex items-center justify-center rounded-full relative`}>
+                      <FaServer className={isFull ? 'text-secondary/70' : 'text-primary/70'} size={14} />
+                      <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${isFull ? 'bg-secondary' : 'bg-primary'} animate-pulse`}></div>
+                    </div>
                   </div>
-                  <div className="text-xs font-mono text-base-content/50 mt-1">
-                    {isFull ? (
-                      <span className="text-secondary">CONNECTION_IN_USE</span>
-                    ) : (
-                      <span className="text-primary">CONNECTION_ACTIVE</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col flex-1 gap-4">
-                  {/* Lobby Name and Status Badge Inline */}
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <h3 className="text-lg font-mono font-bold text-base-content truncate max-w-[70%]">
-                      {match.setupData?.lobbyName || 'Unnamed Lobby'}
-                    </h3>
-                    {match.setupData.state && (
-                      <div className={`px-2 py-1 text-xs font-mono rounded-md flex items-center ${getLobbyStateStyles(match.setupData.state)}`}
-                        style={{ minWidth: '80px', justifyContent: 'center' }}>
-                        {getLobbyStateIcon(match.setupData.state)}
-                        <span className="ml-1">{getLobbyStateLabel(match.setupData.state)}</span>
-                      </div>
-                    )}
-                  </div>
-                  {/* End Inline Header */}
                   
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <FaUserSecret className={isFull ? 'text-secondary/70' : 'text-primary/70'} />
-                      <span className="font-mono">{match.players[0]?.name || 'ANONYMOUS'}</span>
+                  {/* Lobby info - more horizontal layout */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h3 className="text-sm font-mono font-bold text-base-content truncate">
+                        {match.setupData?.lobbyName || 'Unnamed Lobby'}
+                      </h3>
+                      {match.setupData.state && (
+                        <div className={`px-1.5 py-0.5 text-xs font-mono flex items-center gap-1 ${getLobbyStateStyles(match.setupData.state)}`}>
+                          {getLobbyStateIcon(match.setupData.state)}
+                          <span className="hidden sm:inline text-xs">{getLobbyStateLabel(match.setupData.state)}</span>
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <FaNetworkWired className={isFull ? 'text-secondary/70' : 'text-primary/70'} />
-                      <span className="font-mono">{isSpecialGame ? 'CUSTOM MODE' : 'STANDARD MODE'}</span>
+                    <div className="flex items-center gap-3 text-xs font-mono text-base-content/70">
+                      <div className="flex items-center gap-1">
+                        <FaUserSecret className="text-xs" />
+                        <span className="truncate max-w-[100px]">{match.players[0]?.name || 'ANON'}</span>
+                      </div>
+                      <div className="hidden sm:flex items-center gap-1">
+                        <FaNetworkWired className="text-xs" />
+                        <span>{isSpecialGame ? 'CUSTOM' : 'STANDARD'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>{playerCount}/2</span>
+                      </div>
+                      <div className="hidden md:block text-base-content/50 text-xs">
+                        {match.matchID.substring(0, 8)}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex-1"></div>
-                  
-                  <div className="mt-4">
-                    <div className="w-full bg-base-300/50 h-1.5 mb-2">
-                      <div 
-                        className={`h-full ${isFull ? 'bg-secondary/70' : 'bg-primary/70'}`}
-                        style={{ width: `${(playerCount / 2) * 100}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-xs font-mono">
-                      <span>CAPACITY: {playerCount}/2</span>
-                      <span className="text-base-content/50">ID: {match.matchID.substring(0, 8)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <div className="p-0.5 bg-gradient-to-r from-secondary/30 via-secondary/20 to-secondary/30 w-full">
-                      <button 
-                        className={`w-full py-2 px-4 font-mono text-sm ${isLobbyJoinable(match) ? 'bg-secondary/20 text-secondary hover:bg-secondary/30' : 'bg-secondary/10 text-secondary/50 cursor-not-allowed'} border border-secondary/30 rounded`}
-                        onClick={() => {
-                          if (isLobbyJoinable(match)) {
-                            triggerClick();
-                            handleJoinMatch(match.matchID);
-                          }
-                        }}
-                        disabled={!isLobbyJoinable(match) || isJoining === match.matchID}
-                      >
-                        {isJoining === match.matchID ? (
-                          <>CONNECTING...</>
-                        ) : renderJoinButtonLabel(match)}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Join button */}
+                  <button 
+                    className={`px-4 py-2 font-mono text-xs whitespace-nowrap ${isLobbyJoinable(match) ? 'bg-secondary/20 text-secondary hover:bg-secondary/30 border-secondary/30' : 'bg-secondary/10 text-secondary/50 cursor-not-allowed border-secondary/20'} border transition-all duration-200`}
+                    onClick={() => {
+                      if (isLobbyJoinable(match)) {
+                        triggerClick();
+                        handleJoinMatch(match.matchID);
+                      }
+                    }}
+                    disabled={!isLobbyJoinable(match) || isJoining === match.matchID}
+                  >
+                    {isJoining === match.matchID ? 'CONNECTING...' : renderJoinButtonLabel(match)}
+                  </button>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    
-      {/* Empty state filler tiles */}
-      {/* Empty state */}
-      {!loading && matches.length > 0 && matches.length % 2 !== 0 && (
-        <div className="border border-primary/10 bg-base-200/10 backdrop-blur-sm p-6 flex items-center justify-center">
-          <div className="text-base-content/30 font-mono text-sm text-center">
-            <div className="border-2 border-dashed border-primary/20 w-12 h-12 hexagon mx-auto mb-4"></div>
-            <span className="text-flicker-subtle">VACANT_NODE_SLOT</span>
-          </div>
+            );
+          })}
         </div>
-      )}
-    
-      {/* End of content */}
+      </div>
     </>
   );
 };

@@ -1,25 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
 import LobbyDetail from '../components/lobby/LobbyDetail';
 import LobbyChat from '../components/lobby/LobbyChat';
 import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
-import { useAudioManager } from '../hooks/useAudioManager';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
 import { useThemeStore } from '../store/theme.store';
+import axios from 'axios';
+
+const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL || 'http://localhost:8001';
 
 const LobbyPage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { triggerClick, triggerSendMsg, triggerRecvMsg } = useAudioManager();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null); // null = checking, true = online, false = offline
   
+  // Check game server health
+  const checkServerHealth = async () => {
+    try {
+      const response = await axios.get(`${GAME_SERVER_URL}/health`, { timeout: 3000 });
+      setServerOnline(response.status === 200);
+    } catch (error) {
+      console.error('Game server health check failed:', error);
+      setServerOnline(false);
+    }
+  };
+
   // Loading logic - show loading on every page visit
   useEffect(() => {
     if (isAuthenticated) {
@@ -28,6 +40,19 @@ const LobbyPage: React.FC = () => {
       return () => clearTimeout(timer);
     } else {
       setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Check server health on mount and periodically
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Check immediately
+      checkServerHealth();
+      
+      // Then check every 10 seconds
+      const interval = setInterval(checkServerHealth, 10000);
+      
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
@@ -83,49 +108,60 @@ const LobbyPage: React.FC = () => {
           />
 
           <main className="container mx-auto p-4">
-            {/* Lobbies banner */}
-            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm mb-8">
-              <div className="bg-base-200 border border-primary/20 p-4 relative">
+            {/* Compact banner with corner accents */}
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm mb-4">
+              <div className="bg-base-200 border border-primary/20 px-4 py-2 relative">
                 {/* Corner accents */}
                 <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
                 <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
                 <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
                 <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
                 
-                <div className="font-mono">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-2xl font-bold mb-2 font-mono">
-                      DARKNET_LOBBIES
-                    </h2>
+                <div className="font-mono flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* Real server status indicator */}
+                    {serverOnline === null ? (
+                      <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" title="Checking server status..."></div>
+                    ) : serverOnline ? (
+                      <div className="w-2 h-2 rounded-full bg-green-500 pulse-glow" title="Game server online"></div>
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Game server offline"></div>
+                    )}
+                    <span className="text-sm text-primary font-bold">DARKNET_LOBBIES</span>
+                    <span className="text-xs text-base-content/60">
+                      • {user?.username?.toUpperCase() || 'USER'} AUTHENTICATED
+                      {serverOnline !== null && (
+                        <span className={serverOnline ? 'text-green-500' : 'text-red-500'}>
+                          {' '}• SERVER {serverOnline ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                      )}
+                    </span>
                   </div>
-                  <div className="text-base-content text-sm flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 pulse-glow"></div>
-                    <span>SECURE CONNECTION ESTABLISHED • {user?.username?.toUpperCase() || 'USER'} AUTHENTICATED</span>
-                  </div>
-                  <div className="text-xs text-primary mt-3">⚠️ ENCRYPTED COMMUNICATION ACTIVE • PROCEED WITH CAUTION</div>
+                  <div className="text-xs text-primary/60 font-mono">⚠️ ENCRYPTED</div>
                 </div>
               </div>
             </div>
           
-          {/* Content section */}
-          <div className="space-y-6">
-            {/* Main content area */}
-            <div>
-              <Routes>
-                <Route path="/" element={
-                  <>
+            {/* Content section - Use grid layout for side-by-side */}
+            <Routes>
+              <Route path="/" element={
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Main lobby browser - takes 2 columns */}
+                  <div className="lg:col-span-2">
                     <LobbyBrowser />
-                    {/* IRC-style chat at bottom - only for main lobby browser */}
-                    <div className="mt-8">
+                  </div>
+                  
+                  {/* Chat sidebar - takes 1 column, sticky on desktop */}
+                  <div className="lg:col-span-1">
+                    <div className="lg:sticky lg:top-4">
                       <LobbyChat chatId="global-lobby" className="" />
                     </div>
-                  </>
-                } />
-                <Route path="/create" element={<CreateLobby />} />
-                <Route path="/:matchID" element={<LobbyDetail />} />
-              </Routes>
-            </div>
-          </div>
+                  </div>
+                </div>
+              } />
+              <Route path="/create" element={<CreateLobby />} />
+              <Route path="/:matchID" element={<LobbyDetail />} />
+            </Routes>
         </main>
         </div>
       </div>
