@@ -77,6 +77,11 @@ export class AuthController {
         return res.status(400).json({ message: 'Email, username, and password are required' });
       }
       
+      // Enforce email maximum length per spec
+      if (typeof email !== 'string' || email.length > 254) {
+        return res.status(400).json({ message: 'Email must be 254 characters or fewer' });
+      }
+
       // Validate email format
       if (!validateEmail(email)) {
         return res.status(400).json({ message: 'Invalid email format' });
