@@ -251,6 +251,14 @@ export class HeartbeatManager {
           ...match.state,
           G: updatedG
         });
+
+        // Immediately remove the abandoned match from the lobby
+        try {
+          await this.server.db.wipe(matchID);
+          console.log(`Abandoned match ${matchID} removed immediately`);
+        } catch (wipeError) {
+          console.error(`Failed to remove abandoned match ${matchID}:`, wipeError);
+        }
       }
     } catch (error) {
       console.error(`Error checking disconnection forfeit for match ${matchID}:`, error);
