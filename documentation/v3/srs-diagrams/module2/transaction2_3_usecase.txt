@@ -1,0 +1,15 @@
+Use Case: Real-Time Lobby Updates
+
+Description: Ensures that players receive immediate updates when lobbies are created, joined, left, or modified. The system pushes lobby state changes to all connected clients in real time, keeping the lobby browser and details up to date.
+
+Actors: Player
+
+Preconditions: Player is authenticated and on the lobby browser or lobby detail page.
+
+Main Flow:
+1. Player is viewing the lobby browser or a specific lobby.
+2. System detects a change in lobby state (creation, join, leave, update).
+3. System pushes the updated lobby state to all connected clients.
+4. Player's UI updates to reflect the latest lobby information.
+
+Postconditions: Player always sees the current state of all lobbies without needing to refresh. 

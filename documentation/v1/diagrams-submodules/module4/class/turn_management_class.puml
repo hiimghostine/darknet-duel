@@ -1,0 +1,156 @@
+@startuml
+
+title Turn Management - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "useTurnManagement" as useTurnManagement <<Custom Hook>> {
+        + useState: currentPlayerId, setCurrentPlayerId, isUserTurn, setIsUserTurn, turnNumber, setTurnNumber, turnPhase, setTurnPhase, timeRemaining, setTimeRemaining
+        + useRef: timerIntervalId
+        + useContext: GameStateContext
+        + useEffect()
+        + useCallback: initialize, updateTurn, startTimer, stopTimer
+        + return: { currentPlayerId, isUserTurn, turnNumber, turnPhase, timeRemaining, updateTurn, startTimer, stopTimer }
+    }
+    
+    class "TurnIndicator" as TurnIndicator <<Function Component>> {
+        + props: gameId
+        + useTurnManagement(): turnState
+        + render(): JSX
+    }
+    
+    class "ActionPointDisplay" as ActionPointDisplay <<Function Component>> {
+        + props: gameId
+        + useState: totalActionPoints, setTotalActionPoints, remainingActionPoints, setRemainingActionPoints, actionHistory, setActionHistory
+        + useContext: GameStateContext
+        + useEffect()
+        + updateActionPoints(current, total)
+        + recordActionUse(actionType, cost)
+        + reset()
+        + render(): JSX
+    }
+    
+    class "TurnPhaseIndicator" as TurnPhaseIndicator <<Function Component>> {
+        + props: currentPhase, phases
+        + useEffect()
+        + getNextPhase()
+        + render(): JSX
+    }
+    
+    class "EndTurnButton" as EndTurnButton <<Function Component>> {
+        + props: enabled, onEndTurn
+        + useState: confirming, setConfirming
+        + handleClick()
+        + confirmEndTurn()
+        + cancelEndTurn()
+        + render(): JSX
+    }
+    
+    class "TurnProvider" as TurnProvider <<Function Component>> {
+        + props: children, gameId
+        + useTurnManagement(): turnState
+        + useWebSocket(): webSocket
+        + useState: actionPoints, setActionPoints
+        + useEffect()
+        + handleEndTurn()
+        + value: { currentPlayerId, isUserTurn, turnNumber, turnPhase, timeRemaining, actionPoints, endTurn }
+        + render(): JSX
+    }
+    
+    class "TurnContext" as TurnContext <<React Context>> {
+        + defaultValue: { currentPlayerId, isUserTurn, turnNumber, turnPhase, timeRemaining, actionPoints, endTurn }
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class TurnManagementController {
+        - turnService: TurnManagementService
+        - gameStateService: GameStateService
+        + getCurrentTurnInfo(gameId): ResponseEntity<TurnInfoDTO>
+        + endTurn(gameId, playerId): ResponseEntity<TurnInfoDTO>
+        + getActionPoints(gameId, playerId): ResponseEntity<ActionPointsDTO>
+        + useActionPoints(gameId, playerId, amount): ResponseEntity<ActionPointsDTO>
+    }
+    
+    class TurnManagementService {
+        - gameRepository: GameRepository
+        - playerSessionRepository: PlayerSessionRepository
+        - turnRepository: TurnRepository
+        - messageService: WebSocketMessageService
+        + initializeTurnForGame(gameId): TurnInfo
+        + getCurrentTurn(gameId): TurnInfo
+        + endPlayerTurn(gameId, playerId): TurnInfo
+        + calculateNextPlayer(gameId, currentPlayerId): String
+        + getActionPoints(gameId, playerId): ActionPoints
+        + consumeActionPoints(gameId, playerId, amount): ActionPoints
+        + resetActionPointsForNewTurn(gameId, playerId): void
+    }
+    
+    class TurnInfo {
+        - id: Long
+        - gameId: String
+        - turnNumber: Integer
+        - currentPlayerId: String
+        - phase: TurnPhase
+        - startTime: LocalDateTime
+        - maxTurnDuration: Integer
+        - status: TurnStatus
+    }
+    
+    class ActionPoints {
+        - id: Long
+        - gameId: String
+        - playerId: String
+        - turnNumber: Integer
+        - totalPoints: Integer
+        - remainingPoints: Integer
+        - lastUpdated: LocalDateTime
+    }
+    
+    class TurnInfoDTO {
+        + gameId: String
+        + turnNumber: Integer
+        + currentPlayerId: String
+        + phase: String
+        + startTime: LocalDateTime
+        + timeRemaining: Integer
+        + actionPoints: Integer
+    }
+    
+    class ActionPointsDTO {
+        + gameId: String
+        + playerId: String
+        + turnNumber: Integer
+        + totalPoints: Integer
+        + remainingPoints: Integer
+    }
+    
+    enum TurnPhase {
+        DRAW
+        MAIN
+        ATTACK
+        END
+    }
+    
+    enum TurnStatus {
+        ACTIVE
+        COMPLETED
+        TIMED_OUT
+    }
+}
+
+' Frontend relationships
+TurnIndicator ..> useTurnManagement : uses
+TurnProvider ..> useTurnManagement : uses
+TurnProvider ..> TurnContext : provides
+ActionPointDisplay ..> TurnContext : consumes
+TurnIndicator ..> TurnContext : consumes
+EndTurnButton ..> TurnContext : consumes
+
+' Backend relationships
+TurnManagementController --> TurnManagementService : uses
+TurnManagementService --> TurnRepository : uses
+TurnManagementService --> PlayerSessionRepository : uses
+TurnManagementService --> GameRepository : uses
+TurnManagementService --> WebSocketMessageService : uses
+
+@enduml

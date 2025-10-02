@@ -1,0 +1,153 @@
+@startuml
+
+title Turn Management - Sequence Diagram
+
+actor "Player 1" as Player1
+actor "Player 2" as Player2
+participant "Client (Player 1)" as Client1
+participant "Client (Player 2)" as Client2
+participant "TurnIndicator" as TurnIndicator
+participant "ActionPointDisplay" as APDisplay
+participant "EndTurnButton" as EndTurnBtn
+participant "GameSocketHandler" as SocketHandler
+participant "TurnManager" as TurnManager
+participant "ActionPointService" as APService
+participant "PhaseController" as PhaseController
+participant "TurnTimeoutManager" as TimeoutManager
+participant "GameRepository" as GameRepo
+database "Database" as DB
+
+' Game start
+Player1 -> Client1: Start Game
+Client1 -> SocketHandler: Request start game
+activate SocketHandler
+SocketHandler -> TurnManager: startGame(gameId)
+activate TurnManager
+
+TurnManager -> GameRepo: findById(gameId)
+GameRepo -> DB: SELECT * FROM games
+DB --> GameRepo: Game data
+GameRepo --> TurnManager: Game entity
+
+TurnManager -> TurnManager: determineFirstPlayer()
+TurnManager -> TurnManager: startTurn(gameId)
+
+' Start first turn
+TurnManager -> PhaseController: setPhase(gameId, DRAW_PHASE)
+activate PhaseController
+PhaseController -> GameRepo: updateGamePhase(gameId, DRAW_PHASE)
+PhaseController --> TurnManager: Phase updated
+deactivate PhaseController
+
+TurnManager -> APService: resetActionPoints(gameId)
+activate APService
+APService -> GameRepo: updateActionPoints(gameId, MAX_POINTS)
+APService --> TurnManager: Action points reset
+deactivate APService
+
+TurnManager -> TimeoutManager: startTimer(gameId)
+activate TimeoutManager
+TimeoutManager -> TimeoutManager: scheduleTimeout(gameId)
+TimeoutManager --> TurnManager: Timer started
+deactivate TimeoutManager
+
+TurnManager -> SocketHandler: TurnInfo object with currentPlayerId, phase, etc.
+deactivate TurnManager
+SocketHandler -> Client1: TURN_START message
+SocketHandler -> Client2: TURN_START message
+deactivate SocketHandler
+
+' Update UI for Player 1 (active player)
+Client1 -> TurnIndicator: updateTurn(turnInfo)
+activate TurnIndicator
+TurnIndicator -> TurnIndicator: setIsUserTurn(true)
+TurnIndicator -> TurnIndicator: startTimer(timeLimit)
+TurnIndicator --> Client1: Update turn display
+deactivate TurnIndicator
+
+Client1 -> APDisplay: updateActionPoints(MAX_POINTS, MAX_POINTS)
+Client1 -> EndTurnBtn: setEnabled(true)
+
+' Update UI for Player 2 (waiting player)
+Client2 -> TurnIndicator: updateTurn(turnInfo)
+activate TurnIndicator
+TurnIndicator -> TurnIndicator: setIsUserTurn(false)
+TurnIndicator --> Client2: Update turn display (opponent's turn)
+deactivate TurnIndicator
+Client2 -> EndTurnBtn: setEnabled(false)
+
+' Turn progress through phases
+Player1 -> Client1: Draw cards
+Client1 -> PhaseController: moveToNextPhase(gameId)
+activate PhaseController
+PhaseController -> PhaseController: setPhase(gameId, ACTION_PHASE)
+PhaseController -> GameRepo: updateGamePhase(gameId, ACTION_PHASE)
+PhaseController -> SocketHandler: Phase changed notification
+SocketHandler -> Client1: PHASE_CHANGED message
+SocketHandler -> Client2: PHASE_CHANGED message
+Client1 -> TurnIndicator: updatePhase(ACTION_PHASE)
+Client2 -> TurnIndicator: updatePhase(ACTION_PHASE)
+deactivate PhaseController
+
+' Player performs actions
+Player1 -> Client1: Play card (costs action points)
+Client1 -> APService: useActionPoints(gameId, cost)
+activate APService
+APService -> APService: checkSufficient(gameId, cost)
+APService -> GameRepo: decrementActionPoints(gameId, cost)
+APService -> Client1: Action successful
+Client1 -> APDisplay: updateActionPoints(remaining, MAX_POINTS)
+Client1 -> APDisplay: recordActionUse("PlayCard", cost)
+deactivate APService
+
+' End turn
+Player1 -> EndTurnBtn: Click "End Turn"
+activate EndTurnBtn
+EndTurnBtn -> EndTurnBtn: handleClick()
+EndTurnBtn -> EndTurnBtn: confirmEndTurn()
+EndTurnBtn -> Client1: endTurn()
+deactivate EndTurnBtn
+
+Client1 -> SocketHandler: TURN_END message
+activate SocketHandler
+SocketHandler -> TurnManager: endTurn(gameId)
+activate TurnManager
+
+TurnManager -> PhaseController: setPhase(gameId, END_PHASE)
+PhaseController -> GameRepo: updateGamePhase(gameId, END_PHASE)
+
+TurnManager -> PhaseController: executePhaseActions(gameId, END_PHASE)
+PhaseController -> PhaseController: performEndOfTurnEffects()
+
+TurnManager -> TimeoutManager: cancelTimer(gameId)
+TurnManager -> TurnManager: recordTurn(gameId, playerId, startTime, new Date())
+TurnManager -> TurnManager: determineNextPlayer(gameId)
+TurnManager -> GameRepo: updateCurrentPlayer(gameId, nextPlayerId)
+
+TurnManager -> TurnManager: startTurn(gameId)
+deactivate TurnManager
+SocketHandler -> Client1: TURN_END message
+SocketHandler -> Client2: TURN_START message
+deactivate SocketHandler
+
+' Update UI for next turn
+Client1 -> TurnIndicator: updateTurn(turnInfo)
+Client1 -> TurnIndicator: setIsUserTurn(false)
+Client1 -> EndTurnBtn: setEnabled(false)
+
+Client2 -> TurnIndicator: updateTurn(turnInfo)
+Client2 -> TurnIndicator: setIsUserTurn(true)
+Client2 -> TurnIndicator: startTimer(timeLimit)
+Client2 -> APDisplay: updateActionPoints(MAX_POINTS, MAX_POINTS)
+Client2 -> EndTurnBtn: setEnabled(true)
+
+' Automatic turn end due to timeout
+note over Client2, TurnManager: Player 2 takes too long
+TimeoutManager -> TimeoutManager: timeout triggered
+TimeoutManager -> TurnManager: forceEndTurn(gameId)
+activate TurnManager
+TurnManager -> GameRepo: logTimeoutEvent(gameId, playerId)
+TurnManager -> TurnManager: endTurn(gameId)
+deactivate TurnManager
+
+@enduml

@@ -1,0 +1,23 @@
+@startuml
+' Sequence Diagram for Real-Time State Synchronization (Transaction 3.3)
+
+actor Player
+participant GameClient as GC
+participant boardgameioServer as Server
+participant BalatroGameBoard as BG
+
+Player -> GC: Open game
+GC -> Server: Socket.IO connect
+Server -> GC: Connection established
+GC -> BG: renderGameBoard()
+
+loop Real-time updates
+  Server -> GC: sendStateUpdate()
+  GC -> BG: updateUI(state)
+end
+
+alt Game End
+  Server -> GC: sendFinalState()
+  GC -> BG: showGameOver()
+end
+@enduml 

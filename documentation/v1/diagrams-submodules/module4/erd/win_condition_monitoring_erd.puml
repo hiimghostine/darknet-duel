@@ -1,0 +1,106 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Win Condition Monitoring - Entity Relationship Diagram
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    red_team_points INT not_null
+    blue_team_points INT not_null
+    total_rounds INT not_null
+    start_time TIMESTAMP not_null
+    end_time TIMESTAMP
+    win_condition_id BIGINT
+    winner_team ENUM('RED_TEAM', 'BLUE_TEAM')
+}
+
+table(game_results) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(winner_id) BIGINT not_null
+    foreign_key(loser_id) BIGINT not_null
+    win_condition ENUM('SECURITY_THRESHOLD', 'TOTAL_DOMINATION', 'INFRASTRUCTURE_CONTROL', 'TIME_LIMIT_REACHED', 'OPPONENT_DISCONNECTED', 'OPPONENT_SURRENDERED') not_null
+    final_red_team_points INT not_null
+    final_blue_team_points INT not_null
+    total_rounds INT not_null
+    game_start_time TIMESTAMP not_null
+    game_end_time TIMESTAMP not_null
+}
+
+table(win_conditions) {
+    primary_key(id) BIGINT
+    condition_type ENUM('SECURITY_THRESHOLD', 'TOTAL_DOMINATION', 'INFRASTRUCTURE_CONTROL', 'TIME_LIMIT_REACHED', 'OPPONENT_DISCONNECTED', 'OPPONENT_SURRENDERED') not_null
+    name VARCHAR(100) not_null
+    description TEXT not_null
+    threshold_value INT
+    enabled BOOLEAN not_null
+}
+
+table(game_win_conditions) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(win_condition_id) BIGINT not_null
+    threshold_value INT
+    enabled BOOLEAN not_null
+}
+
+table(win_condition_progress) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(win_condition_id) BIGINT not_null
+    red_team_progress FLOAT not_null
+    blue_team_progress FLOAT not_null
+    timestamp TIMESTAMP not_null
+    turn_number INT not_null
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    security_points INT not_null
+}
+
+table(game_statistics) {
+    primary_key(id) BIGINT
+    foreign_key(game_result_id) BIGINT not_null
+    cards_played_count INT not_null
+    rounds_played INT not_null
+    game_duration_seconds INT not_null
+    red_team_max_points INT not_null
+    blue_team_max_points INT not_null
+    largest_point_swing INT not_null
+    comeback_occurred BOOLEAN not_null
+    additional_stats JSON
+}
+
+table(player_rewards) {
+    primary_key(id) BIGINT
+    foreign_key(game_result_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    experience_gained INT not_null
+    currency_gained INT not_null
+    rating_change INT not_null
+    performance_bonus INT
+    achievement_unlocked VARCHAR(100)
+    timestamp TIMESTAMP not_null
+}
+
+' Relationships
+games ||--o| game_results : "produces"
+games ||--o{ game_win_conditions : "uses"
+games ||--o{ win_condition_progress : "tracks"
+games ||--o{ players : "has"
+win_conditions ||--o{ game_win_conditions : "applied in"
+win_conditions ||--o{ win_condition_progress : "measured for"
+game_results ||--|| game_statistics : "includes"
+game_results ||--o{ player_rewards : "grants"
+players }o--o{ player_rewards : "receives"
+
+@enduml

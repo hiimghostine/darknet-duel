@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAudioManager } from '../../hooks/useAudioManager';
-import { showToast } from '../../store/toast.store';
+// Toasts are centralized in the auth store; avoid direct toast calls here
 
 interface RegisterFormProps {
   onToggleForm: () => void;
@@ -12,10 +12,13 @@ interface RegisterFormProps {
 
 // Define registration schema with Zod for validation
 const RegisterSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
+  username: z.string()
+    .min(6, 'Username must be at least 6 characters')
+    .max(16, 'Username must be at most 16 characters'),
   email: z.string().email('Invalid email format'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
+    .max(63, 'Password must be at most 63 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number')
@@ -72,12 +75,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       triggerNotification();
       setSuccessMessage('Registration successful! Redirecting to your dashboard...');
       
-      // Show success toast
-      showToast.success(
-        'Registration Successful',
-        'Account created successfully! You are now logged in.',
-        5000
-      );
+      // Success toast handled by auth store
       
       // Redirect will be handled by the parent component
     } catch (error: any) {
@@ -87,13 +85,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
       
-      // Show error toast notification with backend message
-      const errorMessage = error.message || 'Registration failed. Please try again.';
-      showToast.error(
-        'Registration Failed',
-        errorMessage,
-        8000
-      );
+      // Error toast handled by auth store
       
       console.error('Registration error:', error);
     }
@@ -142,6 +134,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
                 <span className="text-xs font-mono">ID</span>
               </div>
             </div>
+            <div className="text-xs text-primary/70 mt-1 font-mono">6-16 characters</div>
             {errors.username && (
               <div className="text-error text-xs mt-1 font-mono">{errors.username.message}</div>
             )}
@@ -184,6 +177,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
                 <span className="text-xs font-mono">SEC</span>
               </div>
             </div>
+            <div className="text-xs text-primary/70 mt-1 font-mono">8-63 chars, 1 upper, 1 lower, 1 number, 1 special</div>
             {errors.password && (
               <div className="text-error text-xs mt-1 font-mono">{errors.password.message}</div>
             )}

@@ -1,0 +1,186 @@
+@startuml
+
+title Match History Storage - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "MatchHistoryPage" as MatchHistoryPage <<Function Component>> {
+        + useState: selectedMatch, setSelectedMatch
+        + useParams: userId
+        + useNavigate: navigate
+        + useContext: AuthContext
+        + render(): JSX
+    }
+    
+    class "MatchHistoryBrowser" as MatchHistoryBrowser <<Function Component>> {
+        + props: userId, onSelectMatch
+        + useState: matches, setMatches
+        + useState: loading, setLoading
+        + useEffect
+        + useMatchFilters: filterState
+        + fetchMatches()
+        + handleFilter()
+        + renderMatchList()
+        + render(): JSX
+    }
+    
+    class "MatchDetailView" as MatchDetailView <<Function Component>> {
+        + props: matchId, onClose
+        + useState: matchDetails, setMatchDetails
+        + useState: loading, setLoading
+        + useEffect
+        + fetchMatchDetails()
+        + renderMatchActions()
+        + renderGameStats()
+        + renderPlayerInfo()
+        + render(): JSX
+    }
+    
+    class "useMatchFilters" as useMatchFilters <<Custom Hook>> {
+        + useState: filters, setFilters 
+        + useState: sortBy, setSortBy
+        + resetFilters()
+        + updateFilter()
+        + applySort()
+        + return: filterState
+    }
+    
+    class "useMatchHistory" as useMatchHistory <<Custom Hook>> {
+        + useState: matches, setMatches
+        + useState: loading, setLoading
+        + useState: error, setError
+        + useContext: ApiContext
+        + useCallback: fetchMatches
+        + useCallback: fetchMatchDetails
+        + useCallback: deleteMatch
+        + useCallback: exportMatchData
+        + return: { matches, loading, error, fetchMatches, fetchMatchDetails, deleteMatch, exportMatchData  }
+    }
+    
+    class "ExportDialog" as ExportDialog <<Function Component>> {
+        + props: matchId, onClose
+        + useState: format, setFormat
+        + useState: exporting, setExporting
+        + useMatchHistory: { exportMatchData }
+        + handleExport()
+        + render(): JSX
+    }
+    
+    class "MatchFilterBar" as MatchFilterBar <<Function Component>> {
+        + props: filters, onFilterChange, onSortChange
+        + useState: expanded, setExpanded
+        + toggleExpanded()
+        + handleFilterChange()
+        + handleSortChange()
+        + render(): JSX
+    }
+    
+    class "MatchHistoryContext" as MatchHistoryContext <<React Context>> {
+        + defaultValue: { matches: [], loading: false, fetchMatches: () => {} }
+    }
+    
+    class "MatchHistoryProvider" as MatchHistoryProvider <<Function Component>> {
+        + props: { children }
+        + useMatchHistory(): matchHistoryState
+        + value: { ...matchHistoryState }
+        + render(): JSX
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class MatchHistoryController {
+        - matchHistoryService: MatchHistoryService
+        - matchExportService: MatchExportService
+        +getMatchHistory(userId: long): ResponseEntity<List<MatchDTO>>
+        +getMatchDetails(matchId: long): ResponseEntity<MatchDetailsDTO>
+        +deleteMatch(matchId: long): ResponseEntity<Void>
+        +exportMatch(matchId: long, format: ExportFormat): ResponseEntity<Resource>
+    }
+    
+    class MatchHistoryService {
+        - matchRepository: MatchRepository
+        - userRepository: UserRepository
+        - gameStateRepository: GameStateRepository
+        +getMatchesByUser(userId: long): List<Match>
+        +getMatchDetails(matchId: long): MatchDetails
+        +deleteMatch(matchId: long): void
+        +saveMatch(matchData: MatchData): Match
+    }
+    
+    class MatchExportService {
+        - matchHistoryService: MatchHistoryService
+        - formatters: Map<ExportFormat, MatchFormatter>
+        +exportMatch(matchId: long, format: ExportFormat): Resource
+        +registerFormatter(format: ExportFormat, formatter: MatchFormatter): void
+    }
+    
+    interface MatchFormatter {
+        +format(match: MatchDetails): Resource
+    }
+    
+    class JSONFormatter {
+        +format(match: MatchDetails): Resource
+    }
+    
+    class CSVFormatter {
+        +format(match: MatchDetails): Resource
+    }
+    
+    class PDFFormatter {
+        +format(match: MatchDetails): Resource
+    }
+    
+    class MatchRepository {
+        +findByUserId(userId: long): List<Match>
+        +findById(id: long): Optional<Match>
+        +save(match: Match): Match
+        +delete(match: Match): void
+    }
+    
+    class Match {
+        - id: long
+        - gameId: long
+        -player1Id: long
+        -player2Id: long
+        - winner: long
+        - startTime: Date
+        - endTime: Date
+        - gameVersion: String
+        - turns: int
+        - moves: List<Move>
+    }
+    
+    class MatchDetails {
+        - match: Match
+        -player1: User
+        -player2: User
+        - gameState: GameState
+        - cardActions: List<CardAction>
+        - securityPointChanges: List<SecurityPointChange>
+    }
+    
+    enum ExportFormat {
+        JSON
+        CSV
+        PDF
+    }
+}
+
+MatchHistoryPage --> MatchHistoryBrowser : uses
+MatchHistoryPage --> MatchDetailView : uses
+MatchHistoryPage ..> MatchHistoryContext : consumes
+MatchHistoryBrowser --> MatchFilterBar : uses
+MatchHistoryBrowser ..> useMatchFilters : uses
+MatchDetailView --> ExportDialog : uses
+MatchHistoryProvider ..> useMatchHistory : uses
+MatchHistoryProvider ..> MatchHistoryContext : provides
+useMatchHistory ..> MatchHistoryController : API calls
+MatchHistoryController --> MatchHistoryService : uses
+MatchHistoryController --> MatchExportService : uses
+MatchExportService --> MatchFormatter : uses
+JSONFormatter ..|> MatchFormatter : implements
+CSVFormatter ..|> MatchFormatter : implements
+PDFFormatter ..|> MatchFormatter : implements
+MatchHistoryService --> MatchRepository : uses
+MatchRepository --> Match : manages
+
+@enduml

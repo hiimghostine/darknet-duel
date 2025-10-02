@@ -1,0 +1,82 @@
+@startuml
+' Class Diagram for Player Performance Statistics (ELO, Win/Loss, Charts) (Transaction 5.2)
+
+package "Frontend" {
+  class ProfilePage {
+    +displayStats()
+    +showELO()
+    +showWinLoss()
+    +showCharts()
+  }
+  class StatsChart {
+    +renderELOChart()
+    +renderWinLossChart()
+  }
+  class MatchHistory {
+    +showRecentMatches()
+    +showResults()
+  }
+  class GameStatus {
+    +showELOChange()
+    +showStatsUpdate()
+  }
+  class WinnerLobby {
+    +showStatsAfterMatch()
+  }
+  class api_ts {
+    +fetchStats()
+    +fetchHistory()
+    +updateStats()
+  }
+  class stats_service_ts {
+    +getStats()
+    +getHistory()
+    +updateELO()
+  }
+}
+
+package "Game Server" {
+  class boardgameioServer {
+    +WebSocketEndpoint
+    +notifyStatsUpdate()
+  }
+  class serverAuth {
+    +sendGameResults()
+    +recordGameHistory()
+    +updatePlayerRatings()
+  }
+}
+
+package "Backend Server" {
+  class BackendServer {
+    +RESTAPI
+    +/api/stats/:userId
+    +/api/history/:userId
+    +/api/game-results
+    +/api/players/ratings
+  }
+  class Database {
+    +PlayerStats
+    +MatchHistory
+    +ELORatings
+  }
+}
+
+ProfilePage --> StatsChart : uses
+ProfilePage --> MatchHistory : uses
+ProfilePage --> api_ts : uses
+ProfilePage --> stats_service_ts : uses
+GameStatus --> ProfilePage : updates
+WinnerLobby --> ProfilePage : updates
+api_ts --> boardgameioServer : WebSocket (boardgame.io protocol)
+stats_service_ts --> BackendServer : REST API
+boardgameioServer --> serverAuth : uses
+serverAuth --> BackendServer : REST API
+BackendServer --> Database : stores
+
+' Explicitly show the WebSocket and REST API connections bridging frontend, game server, and backend server
+ProfilePage <--> boardgameioServer : WebSocket (boardgame.io protocol)
+ProfilePage <--> BackendServer : REST API
+boardgameioServer <--> BackendServer : REST API
+
+@enduml 

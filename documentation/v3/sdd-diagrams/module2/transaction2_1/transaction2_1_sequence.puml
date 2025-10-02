@@ -1,0 +1,32 @@
+@startuml
+' Sequence Diagram for Lobby Browser (Transaction 2.1)
+
+actor User
+participant LobbyBrowser as LB
+participant LobbyService as FS
+participant AuthStore as AS
+participant "API /games/darknet-duel" as API
+participant BoardgameIOServer as BGS
+participant LobbyDatabase as DB
+
+User -> LB: Open lobby browser
+LB -> FS: getMatches()
+FS -> API: GET /games/darknet-duel
+API -> BGS: listMatches()
+BGS -> DB: listMatches()
+DB --> BGS: Match list
+BGS --> API: Match list
+API --> FS: Match list
+FS --> LB: Match list
+LB -> User: Display lobbies
+User -> LB: Click join lobby
+LB -> FS: joinMatch(matchID, ...)
+FS -> API: POST /games/darknet-duel/:matchID/join
+API -> BGS: joinMatch()
+BGS -> DB: Update match metadata
+DB --> BGS: Updated match
+BGS --> API: Join result
+API --> FS: Join result
+FS --> LB: Join result
+LB -> User: Navigate to lobby/game
+@enduml 

@@ -1,0 +1,156 @@
+@startuml
+
+title Card Action Processing - Sequence Diagram
+
+actor "Player" as Player
+participant "CardComponent" as CardComp
+participant "CardActionHandler" as ActionHandler
+participant "CardEffectAnimator" as Animator
+participant "CardTooltip" as Tooltip
+participant "WebSocketService" as WebSocket
+participant "GameSocketHandler" as SocketHandler
+participant "CardController" as CardCtrl
+participant "CardEffectService" as EffectService
+participant "GameStateService" as StateService
+participant "InfrastructureService" as InfraService
+database "Database" as DB
+
+' Card examination
+Player -> CardComp: Hover over card
+activate CardComp
+CardComp -> Tooltip: show(card, position)
+activate Tooltip
+Tooltip -> Tooltip: render()
+Tooltip --> Player: Display card details
+deactivate Tooltip
+deactivate CardComp
+
+' Card selection
+Player -> CardComp: Click card
+activate CardComp
+CardComp -> ActionHandler: selectCard(cardId)
+activate ActionHandler
+ActionHandler -> ActionHandler: validateCardPlayability()
+ActionHandler -> WebSocket: getValidTargets(cardId)
+WebSocket -> SocketHandler: VALID_TARGETS_REQUEST message
+activate SocketHandler
+SocketHandler -> CardCtrl: getValidTargetsForCard(gameId, playerId, cardId)
+activate CardCtrl
+CardCtrl -> EffectService: getValidTargets(gameId, playerId, cardId)
+activate EffectService
+EffectService -> StateService: getGameState(gameId)
+StateService -> DB: SELECT * FROM games WHERE id = ?
+DB --> StateService: Game state
+StateService --> EffectService: GameState
+EffectService -> EffectService: determineTargetableEntities()
+EffectService --> CardCtrl: List of valid target IDs
+deactivate EffectService
+CardCtrl --> SocketHandler: Valid targets
+deactivate CardCtrl
+SocketHandler --> WebSocket: VALID_TARGETS_RESPONSE message
+deactivate SocketHandler
+WebSocket --> ActionHandler: Array of valid target IDs
+ActionHandler --> CardComp: Card selected, valid targets available
+deactivate ActionHandler
+CardComp -> CardComp: setSelected(true)
+CardComp -> CardComp: highlightValidTargets()
+CardComp --> Player: Card highlighted as selected
+deactivate CardComp
+
+' Show valid targets
+ActionHandler -> ActionHandler: highlightTargets(true)
+note right: Highlight valid targets on the game board
+
+' Playing the card
+Player -> Player: Select a target
+Player -> CardComp: Click target
+activate CardComp
+CardComp -> ActionHandler: playCard(targetId)
+activate ActionHandler
+ActionHandler -> WebSocket: sendMessage(PLAY_CARD, {cardId, targetId})
+activate WebSocket
+WebSocket -> SocketHandler: PLAY_CARD message
+activate SocketHandler
+
+' Server-side processing
+SocketHandler -> CardCtrl: handlePlayCard(session, message)
+activate CardCtrl
+CardCtrl -> StateService: validatePlayerTurn(gameId, playerId)
+StateService --> CardCtrl: Valid turn
+CardCtrl -> StateService: useActionPoints(gameId, card.cost)
+StateService -> DB: UPDATE game_state SET action_points = action_points - ?
+DB --> StateService: Update confirmation
+StateService --> CardCtrl: Action points used
+
+' Apply card effect
+CardCtrl -> EffectService: applyCardEffect(gameId, cardId, playerId, targetId)
+activate EffectService
+EffectService -> DB: SELECT * FROM cards WHERE id = ?
+DB --> EffectService: Card data
+EffectService -> EffectService: processCardEffect()
+
+alt Effect targets infrastructure
+    EffectService -> InfraService: updateInfrastructureState(targetId, effect)
+    activate InfraService
+    InfraService -> DB: UPDATE infrastructure SET state = ?, security_points = ?
+    DB --> InfraService: Update confirmation
+    InfraService --> EffectService: Infrastructure updated
+    deactivate InfraService
+else Effect targets player
+    EffectService -> StateService: updatePlayerState(playerId, effect)
+    StateService -> DB: UPDATE player_state SET attribute = ?
+    DB --> StateService: Update confirmation
+    StateService --> EffectService: Player state updated
+end
+
+EffectService -> EffectService: createEffectResult()
+EffectService --> CardCtrl: EffectResult object
+deactivate EffectService
+
+' Notify clients
+CardCtrl -> SocketHandler: broadcastToGame(gameId, CARD_PLAYED message)
+CardCtrl -> SocketHandler: broadcastToGame(gameId, CARD_EFFECT_APPLIED message)
+CardCtrl -> StateService: getUpdatedGameState(gameId)
+StateService -> DB: SELECT * FROM games WHERE id = ?
+DB --> StateService: Updated game state
+StateService --> CardCtrl: Updated GameState
+CardCtrl -> SocketHandler: broadcastToGame(gameId, GAME_STATE_UPDATE message)
+deactivate CardCtrl
+SocketHandler -> WebSocket: CARD_PLAYED message
+SocketHandler -> WebSocket: CARD_EFFECT_APPLIED message
+SocketHandler -> WebSocket: GAME_STATE_UPDATE message
+deactivate SocketHandler
+
+' Client-side animation
+WebSocket -> ActionHandler: onCardPlayed(cardId, targetId)
+deactivate WebSocket
+ActionHandler -> Animator: animateCardPlay(cardId, targetId)
+activate Animator
+Animator -> Animator: prepareAnimation()
+Animator -> Animator: executeAnimation()
+Animator --> ActionHandler: Animation complete
+deactivate Animator
+ActionHandler -> ActionHandler: deselectCard()
+ActionHandler -> ActionHandler: highlightTargets(false)
+ActionHandler --> CardComp: Card play complete
+deactivate ActionHandler
+CardComp -> CardComp: setSelected(false)
+CardComp -> CardComp: updateGameState()
+CardComp --> Player: Visual feedback of card play completion
+deactivate CardComp
+
+' Effect animation
+WebSocket -> Animator: animateCardEffect(effectType, sourceId, targetIds)
+activate Animator
+Animator -> Animator: createEffectAnimation()
+Animator -> Animator: executeAnimation()
+Animator --> Player: Visual effect animation
+deactivate Animator
+
+' Update game state with new information
+WebSocket -> ActionHandler: updateGameState(newState)
+activate ActionHandler
+ActionHandler -> ActionHandler: processGameStateUpdate()
+deactivate ActionHandler
+
+@enduml

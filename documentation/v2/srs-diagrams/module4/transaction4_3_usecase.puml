@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Logic System" {
+  usecase "Enforce Action Points (AP)" as UC4_3A
+  usecase "Enforce Hand Size Limit" as UC4_3B
+  usecase "Check Win Conditions" as UC4_3C
+}
+Player --> UC4_3A
+Player --> UC4_3B
+Player --> UC4_3C
+@enduml 

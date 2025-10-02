@@ -1,0 +1,75 @@
+@startuml
+title User Registration - Sequence Diagram
+
+actor "User" as User
+participant "RegistrationForm" as Form
+participant "RegistrationValidator" as Validator
+participant "UserController" as Controller
+participant "UserService" as Service
+participant "PasswordEncoder" as Encoder
+participant "UserRepository" as Repo
+database "Database" as DB
+
+User -> Form: Fill registration form
+activate Form
+Form -> Form: handleInputChange()
+User -> Form: Submit form
+Form -> Validator: validateForm()
+activate Validator
+Validator -> Validator: validateUsername()
+Validator -> Validator: validateEmail()
+Validator -> Validator: validatePassword()
+Validator -> Validator: validatePasswordConfirmation()
+Validator --> Form: Validation result
+deactivate Validator
+
+alt Validation Failed
+    Form -> Form: displayErrors()
+    Form --> User: Show validation errors
+else Validation Passed
+    Form -> Controller: POST /api/users/register (UserDTO)
+    activate Controller
+    Controller -> Service: registerUser(UserDTO)
+    activate Service
+    
+    Service -> Service: validateUserData()
+    
+    Service -> Repo: findByUsername()
+    activate Repo
+    Repo --> Service: Optional<User>
+    deactivate Repo
+    
+    Service -> Repo: findByEmail()
+    activate Repo
+    Repo --> Service: Optional<User>
+    deactivate Repo
+    
+    alt Username/Email exists
+        Service --> Controller: UserAlreadyExistsException
+        Controller --> Form: 409 Conflict
+        Form --> User: Display "User already exists" error
+    else Username/Email available
+        Service -> Encoder: encode(password)
+        activate Encoder
+        Encoder --> Service: encodedPassword
+        deactivate Encoder
+        
+        Service -> Service: create User object
+        Service -> Repo: save(User)
+        activate Repo
+        Repo -> DB: INSERT User
+        DB --> Repo: Success
+        Repo --> Service: Saved User
+        deactivate Repo
+        
+        Service --> Controller: Created User
+        deactivate Service
+        Controller --> Form: 201 Created with User data
+        deactivate Controller
+        Form --> User: Show registration success
+    end
+end
+
+deactivate Form
+
+@enduml

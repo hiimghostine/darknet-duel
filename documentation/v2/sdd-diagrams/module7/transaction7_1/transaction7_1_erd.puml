@@ -1,0 +1,34 @@
+@startuml
+' ERD for User Search, Ban, and Moderation (Transaction 7.1)
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+table(accounts) {
+  primary_key(id) VARCHAR(36)
+  email VARCHAR(100) unique
+  username VARCHAR(50) unique
+  type ENUM('user','mod','admin')
+  isActive BOOLEAN not_null
+  inactiveReason VARCHAR(255)
+  creds INT not_null
+  crypts INT not_null
+  createdAt DATETIME
+  updatedAt DATETIME
+}
+
+table(logs) {
+  primary_key(id) VARCHAR(36)
+  actionType ENUM('ban','unban','update','warn')
+  adminId VARCHAR(36)
+  targetUserId VARCHAR(36)
+  username VARCHAR(50)
+  reason VARCHAR(255)
+  timestamp DATETIME
+}
+
+accounts ||--o{ logs : "id=adminId"
+accounts ||--o{ logs : "id=targetUserId"
+@enduml 

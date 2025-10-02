@@ -1,0 +1,19 @@
+@startuml
+skinparam shadowing true
+start
+:Detect first-time login;
+if (firstTimeComplete == false) then (yes)
+  :Render lore video UI;
+  :Play video;
+  if (User skips?) then (yes)
+    :Confirm skip;
+  else (no)
+    :Wait for completion;
+  endif
+  :Mark first-time complete;
+  :Proceed to tutorial;
+else (no)
+  :Continue to main app;
+endif
+stop
+@enduml

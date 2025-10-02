@@ -26,8 +26,8 @@
     /* Path Mapping for shared types */
     "baseUrl": ".",
     "paths": {
-      "shared-types": ["../shared-types"],
-      "shared-types/*": ["../shared-types/*"]
+      "shared-types": ["../shared-types", "./shared-types"],
+      "shared-types/*": ["../shared-types/*", "./shared-types/*"]
     }
   },
   "include": ["src"]

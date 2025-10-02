@@ -78,6 +78,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Auto-login after successful registration
       await get().login({ email: data.email, password: data.password });
+      // Show success toast after successful registration and login
+      showToast.success(
+        'Registration Successful',
+        'Account created successfully! You are now logged in.',
+        5000
+      );
     } catch (error: any) {
       const errorData = error.response?.data;
       const status = error.response?.status;

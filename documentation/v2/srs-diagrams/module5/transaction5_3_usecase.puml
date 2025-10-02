@@ -1,0 +1,11 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Statistics System" {
+  usecase "Store Match History" as UC5_3A
+  usecase "Browse Match History" as UC5_3B
+  usecase "View Match Details" as UC5_3C
+}
+Player --> UC5_3B
+Player --> UC5_3C
+@enduml 

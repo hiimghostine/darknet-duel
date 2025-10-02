@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Statistics System" {
+  usecase "View ELO Rating" as UC5_2A
+  usecase "View Win/Loss Record" as UC5_2B
+  usecase "View Performance Charts" as UC5_2C
+}
+Player --> UC5_2A
+Player --> UC5_2B
+Player --> UC5_2C
+@enduml 

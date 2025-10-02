@@ -1,0 +1,15 @@
+Use Case: Real-Time State Synchronization
+
+Description: Ensures that all players receive immediate updates to the game state whenever an action occurs. The system uses WebSockets (Socket.IO) and boardgame.io to broadcast state changes to all connected clients in real time.
+
+Actors: Player
+
+Preconditions: Game session is active and players are connected to the game server.
+
+Main Flow:
+1. Player performs an action (e.g., plays a card, ends turn).
+2. System updates the game state on the server.
+3. System broadcasts the updated state to all connected clients in real time.
+4. Clients update their UI to reflect the new state.
+
+Postconditions: All players see the current, synchronized game state instantly after any action. 

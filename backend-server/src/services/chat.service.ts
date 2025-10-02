@@ -1,6 +1,8 @@
 import { AppDataSource } from '../utils/database';
 import { LobbyChat } from '../entities/lobby-chat.entity';
 import { Account } from '../entities/account.entity';
+import enList from '../../files/filter/en.json';
+import tlcbList from '../../files/filter/tl_cb.json';
 
 export interface ChatMessage {
   id: string;
@@ -27,6 +29,62 @@ export interface SendMessageData {
 export class ChatService {
   private lobbyRepository = AppDataSource.getRepository(LobbyChat);
   private accountRepository = AppDataSource.getRepository(Account);
+  private profanityMatchers: { id: string; regex: RegExp; allowPartial: boolean; exceptions?: string[] }[];
+
+  constructor() {
+    // Build regexes from profanity list
+    const combined = ([] as any[]).concat(enList as any[], tlcbList as any[]);
+    this.profanityMatchers = combined.map((item) => {
+      const parts = String(item.match || '').split('|').map(p => p.trim()).filter(Boolean);
+      const escapedParts = parts.map((p) => {
+        const raw = p;
+        let pattern = '';
+        for (let i = 0; i < raw.length; i++) {
+          const ch = raw[i];
+          if (ch === '*') {
+            pattern += '+';
+          } else {
+            if ('\\^$.|?+()[]{}'.includes(ch)) {
+              pattern += '\\' + ch;
+            } else {
+              pattern += ch;
+            }
+          }
+        }
+        return pattern;
+      });
+      const allowPartial = (item as any).allow_partial !== false;
+      const boundary = allowPartial ? '' : '\\b';
+      const regex = new RegExp(`${boundary}(?:${escapedParts.join('|')})${boundary}`, 'gi');
+      return { id: (item as any).id, regex, allowPartial, exceptions: (item as any).exceptions };
+    });
+  }
+
+  private filterProfanity(input: string): string {
+    if (!input) return input;
+    let result = input;
+    for (const m of this.profanityMatchers) {
+      const hasException = (m.exceptions || []).some((ex) => {
+        const exPattern = ex.replace('*', '.{0,100}?');
+        try {
+          const exRegex = new RegExp(exPattern, 'i');
+          return exRegex.test(result);
+        } catch {
+          return false;
+        }
+      });
+      if (hasException) continue;
+      result = result.replace(m.regex, (matched) => {
+        const base = 'crossfire rocks ';
+        const targetLen = matched.length;
+        if (targetLen <= 0) return '';
+        let acc = '';
+        while (acc.length < targetLen) acc += base;
+        return acc.slice(0, targetLen);
+      });
+    }
+    return result;
+  }
 
   /**
    * Send a new chat message
@@ -43,10 +101,13 @@ export class ChatService {
       ...data.metadata
     };
 
+    // Apply profanity filter to content
+    const filteredContent = this.filterProfanity(data.messageContent);
+
     const chatMessage = this.lobbyRepository.create({
       chatId: data.chatId,
       senderUuid: data.senderUuid,
-      messageContent: data.messageContent,
+      messageContent: filteredContent,
       messageType: data.messageType || 'user',
       metadata
     });

@@ -1,0 +1,14 @@
+@startuml
+start
+:Admin/moderator searches for user account;
+:Admin/moderator selects modification (username, email, password);
+:System validates new information;
+if (Valid and no conflict?) then (yes)
+  :System updates user account;
+  :System logs modification;
+  :System notifies user of change;
+else (no)
+  :Show error (invalid or duplicate);
+endif
+stop
+@enduml 

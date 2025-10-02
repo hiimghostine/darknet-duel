@@ -1,0 +1,175 @@
+@startuml
+
+title Win Condition Monitoring - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "Scoreboard" as Scoreboard <<Function Component>> {
+        + props: gameId
+        + useState: redTeamPoints, setRedTeamPoints, blueTeamPoints, setBlueTeamPoints, lastUpdate, setLastUpdate
+        + useContext: GameStateContext
+        + useEffect()
+        + highlightLeader()
+        + animateScoreChange(team, oldValue, newValue)
+        + render(): JSX
+    }
+    
+    class "useWinConditions" as useWinConditions <<Custom Hook>> {
+        + useState: winConditions, setWinConditions, progressData, setProgressData, winner, setWinner
+        + useContext: GameStateContext
+        + useEffect()
+        + useCallback: initialize, updateProgress, checkForWin, getProgressPercentage
+        + return: { winConditions, progressData, winner, initialize, updateProgress, checkForWin, getProgressPercentage }
+    }
+    
+    class "WinConditionTracker" as WinConditionTracker <<Function Component>> {
+        + props: gameId
+        + useWinConditions(): winConditionsState
+        + useEffect()
+        + render(): JSX
+    }
+    
+    class "GameEndDialog" as GameEndDialog <<Function Component>> {
+        + props: winner, winCondition, statistics, rewards, visible, onClose, onBackToLobby, onViewReplay
+        + renderStatistics()
+        + renderRewards()
+        + handleBackToLobby()
+        + handleViewReplay()
+        + render(): JSX
+    }
+    
+    class "WinConditionProvider" as WinConditionProvider <<Function Component>> {
+        + props: children, gameId
+        + useWinConditions(): winConditionsState
+        + useState: dialogVisible, setDialogVisible, dialogData, setDialogData
+        + useEffect()
+        + handleWinDetected()
+        + handleDialogClose()
+        + value: { winConditions, progressData, winner, getProgressPercentage }
+        + render(): JSX
+    }
+    
+    class "WinConditionContext" as WinConditionContext <<React Context>> {
+        + defaultValue: { winConditions, progressData, winner, getProgressPercentage }
+    }
+    
+    class "WinCondition" as WinCondition {
+        + id: string
+        + name: string
+        + description: string
+        + iconUrl: string
+        + type: WinConditionType
+        + requiredValue: number
+        + teamSpecific: boolean
+    }
+    
+    enum "WinConditionType" as WinConditionType {
+        POINTS_THRESHOLD
+        INFRASTRUCTURE_CONTROL
+        CARD_COLLECTION
+        TIME_SURVIVAL
+        OPPONENT_ELIMINATION
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class WinConditionController {
+        - winConditionService: WinConditionService
+        - gameStateService: GameStateService
+        + getWinConditionsForGame(gameId): ResponseEntity<List<WinConditionDTO>>
+        + checkWinConditions(gameId): ResponseEntity<WinCheckResultDTO>
+        + updateProgress(gameId, progress): ResponseEntity<WinConditionProgressDTO>
+    }
+    
+    class WinConditionService {
+        - gameRepository: GameRepository
+        - winConditionRepository: WinConditionRepository
+        - progressRepository: WinConditionProgressRepository
+        - messageService: WebSocketMessageService
+        + getGameWinConditions(gameId): List<WinCondition>
+        + evaluateWinConditions(gameId): WinCheckResult
+        + updateWinConditionProgress(gameId, conditionId, progress): WinConditionProgress
+        + calculatePointsProgress(gameId): Map<String, Integer>
+        + calculateInfrastructureControlProgress(gameId): Map<String, Integer>
+        + calculateCardCollectionProgress(gameId): Map<String, Integer>
+        + notifyProgressUpdate(gameId, conditionId): void
+        + notifyWinDetected(gameId, winner, condition): void
+    }
+    
+    class WinCondition {
+        - id: Long
+        - gameId: String
+        - type: WinConditionType
+        - name: String
+        - description: String
+        - requiredValue: Integer
+        - teamSpecific: Boolean
+        - iconUrl: String
+    }
+    
+    class WinConditionProgress {
+        - id: Long
+        - winConditionId: Long
+        - gameId: String
+        - teamId: String
+        - currentValue: Integer
+        - lastUpdated: LocalDateTime
+    }
+    
+    class WinCheckResult {
+        - gameId: String
+        - isGameOver: Boolean
+        - winningTeamId: String
+        - winConditionId: Long
+        - timestamp: LocalDateTime
+    }
+    
+    class WinConditionDTO {
+        + id: Long
+        + type: String
+        + name: String
+        + description: String
+        + requiredValue: Integer
+        + teamSpecific: Boolean
+        + iconUrl: String
+    }
+    
+    class WinConditionProgressDTO {
+        + conditionId: Long
+        + teamId: String
+        + currentValue: Integer
+        + requiredValue: Integer
+        + percentage: Double
+    }
+    
+    class WinCheckResultDTO {
+        + gameOver: Boolean
+        + winningTeam: String
+        + winCondition: WinConditionDTO
+        + gameStatistics: GameStatisticsDTO
+    }
+    
+    enum WinConditionType {
+        POINTS_THRESHOLD
+        INFRASTRUCTURE_CONTROL
+        CARD_COLLECTION
+        TIME_SURVIVAL
+        OPPONENT_ELIMINATION
+    }
+}
+
+' Frontend relationships
+Scoreboard ..> GameStateContext : consumes
+WinConditionTracker ..> useWinConditions : uses
+WinConditionProvider ..> useWinConditions : uses
+WinConditionProvider ..> WinConditionContext : provides
+WinConditionProvider ..> GameEndDialog : renders
+useWinConditions ..> GameStateContext : consumes
+
+' Backend relationships
+WinConditionController --> WinConditionService : uses
+WinConditionService --> GameRepository : uses
+WinConditionService --> WinConditionRepository : uses
+WinConditionService --> WinConditionProgressRepository : uses
+WinConditionService --> WebSocketMessageService : uses
+
+@enduml

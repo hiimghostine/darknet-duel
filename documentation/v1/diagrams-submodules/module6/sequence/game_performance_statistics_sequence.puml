@@ -1,0 +1,229 @@
+@startuml
+
+title Game Performance Statistics - Sequence Diagram
+
+actor "Player" as Player
+participant "StatisticsDashboard" as Dashboard
+participant "StatFilterControls" as Filters
+participant "PerformanceGraph" as Graph
+participant "StatSummaryCards" as SummaryCards
+participant "ApiService" as ApiService
+participant "HistoryController" as HistoryCtrl
+participant "AnalyticsService" as Analytics
+participant "StatCalculationService" as StatCalc
+participant "StatisticsRepository" as StatsRepo
+participant "GameResultRepository" as ResultRepo
+database "Database" as DB
+
+' Player opens statistics dashboard
+Player -> Dashboard: Navigate to statistics page
+activate Dashboard
+Dashboard -> Dashboard: initialize(userId)
+Dashboard -> ApiService: getPlayerStatistics(userId)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/players/{userId}/statistics
+activate HistoryCtrl
+HistoryCtrl -> Analytics: calculatePlayerStatistics(userId)
+activate Analytics
+
+' Check if statistics are cached
+Analytics -> StatsRepo: findByUserId(userId)
+StatsRepo -> DB: SELECT * FROM player_statistics WHERE user_id = ?
+DB --> StatsRepo: Statistics data (if exists)
+
+alt Statistics need calculation/recalculation
+    ' Gather necessary data
+    Analytics -> ResultRepo: findByUserId(userId)
+    ResultRepo -> DB: SELECT * FROM game_results WHERE winner_id = ? OR loser_id = ?
+    DB --> ResultRepo: Game results
+    ResultRepo --> Analytics: List<GameResult>
+    
+    Analytics -> DB: SELECT * FROM cards_played WHERE player_id = ?
+    DB --> Analytics: Cards played data
+    
+    Analytics -> DB: SELECT * FROM infrastructure_state_changes WHERE player_id = ?
+    DB --> Analytics: Infrastructure control data
+    
+    ' Calculate individual statistics
+    Analytics -> StatCalc: calculateWinRate(gamesPlayed, gamesWon)
+    activate StatCalc
+    StatCalc --> Analytics: Win rate
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: calculateAttackSuccessRate(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT * FROM card_played_logs WHERE player_id = ? AND card_type = 'ATTACK'
+    DB --> StatCalc: Attack cards played
+    StatCalc -> StatCalc: computeSuccessRate()
+    StatCalc --> Analytics: Attack success rate
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: calculateDefenseSuccessRate(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT * FROM card_played_logs WHERE player_id = ? AND card_type = 'DEFENSE'
+    DB --> StatCalc: Defense cards played
+    StatCalc -> StatCalc: computeSuccessRate()
+    StatCalc --> Analytics: Defense success rate
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: identifyFavoriteCards(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT card_id, COUNT(*) FROM cards_played WHERE player_id = ? GROUP BY card_id ORDER BY COUNT(*) DESC
+    DB --> StatCalc: Card play counts
+    StatCalc -> StatCalc: createCardCountObjects()
+    StatCalc --> Analytics: Favorite cards
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: calculatePointsPerGame(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT AVG(points_scored) FROM player_game_stats WHERE player_id = ?
+    DB --> StatCalc: Average points
+    StatCalc --> Analytics: Points per game
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: calculatePointsPerTurn(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT SUM(points_scored)/SUM(turns_played) FROM player_game_stats WHERE player_id = ?
+    DB --> StatCalc: Points per turn
+    StatCalc --> Analytics: Points per turn
+    deactivate StatCalc
+    
+    Analytics -> StatCalc: calculateInfrastructureCaptureRate(userId)
+    activate StatCalc
+    StatCalc -> DB: SELECT * FROM infrastructure_capture_logs WHERE player_id = ?
+    DB --> StatCalc: Infrastructure captures
+    StatCalc -> StatCalc: computeCaptureRate()
+    StatCalc --> Analytics: Infrastructure capture rate
+    deactivate StatCalc
+    
+    Analytics -> Analytics: generateEffectivenessRating(userId)
+    Analytics -> Analytics: determinePreferredRole(userId)
+    
+    ' Create performance trend data
+    Analytics -> Analytics: getPerformanceTrend(userId, WEEKLY)
+    
+    ' Create statistics object
+    Analytics -> Analytics: assemblePlayerStatistics()
+    
+    ' Save calculated statistics
+    Analytics -> StatsRepo: save(playerStatistics)
+    StatsRepo -> DB: INSERT INTO player_statistics VALUES (...)
+    DB --> StatsRepo: Insert confirmation
+    StatsRepo --> Analytics: Saved PlayerStatistics
+end
+
+' Convert to DTO
+Analytics -> Analytics: createPlayerStatisticsDTO(playerStatistics)
+Analytics --> HistoryCtrl: PlayerStatisticsDTO
+deactivate Analytics
+
+HistoryCtrl --> ApiService: PlayerStatisticsDTO JSON
+deactivate HistoryCtrl
+ApiService --> Dashboard: PlayerStatisticsDTO object
+deactivate ApiService
+
+' Update UI components
+Dashboard -> SummaryCards: setStatistics(playerStats)
+activate SummaryCards
+SummaryCards -> SummaryCards: processStatistics()
+SummaryCards -> SummaryCards: highlightNotableStats()
+SummaryCards --> Dashboard: Summary cards updated
+deactivate SummaryCards
+
+Dashboard -> Graph: setData(playerStats.performanceHistory)
+activate Graph
+Graph -> Graph: processDataForVisualization()
+Graph -> Graph: renderGraph()
+Graph --> Dashboard: Graph updated
+deactivate Graph
+
+Dashboard -> Filters: setAvailableFilters()
+activate Filters
+Filters -> Filters: populateFilterOptions()
+Filters --> Dashboard: Filters ready
+deactivate Filters
+
+Dashboard --> Player: Display complete statistics dashboard
+deactivate Dashboard
+
+' Player interacts with filters
+Player -> Filters: Select "LAST_MONTH" timeframe
+activate Filters
+Filters -> Filters: onTimeframeChanged(LAST_MONTH)
+Filters -> Dashboard: setTimeframe(LAST_MONTH)
+deactivate Filters
+activate Dashboard
+
+' Fetch timeframe-specific data
+Dashboard -> ApiService: getTimeframedStats(userId, LAST_MONTH)
+activate ApiService
+ApiService -> HistoryCtrl: GET /api/history/players/{userId}/statistics?timeframe=LAST_MONTH
+activate HistoryCtrl
+HistoryCtrl -> Analytics: getStatisticsForTimeframe(userId, startDate, endDate)
+activate Analytics
+
+' Get timeframe-specific data from cache or calculate
+Analytics -> StatsRepo: findByUserIdAndTimeframeBetween(userId, startDate, endDate)
+StatsRepo -> DB: SELECT * FROM player_statistics WHERE user_id = ? AND timeframe_start >= ? AND timeframe_end <= ?
+DB --> StatsRepo: Timeframed statistics
+
+alt Need to calculate for timeframe
+    ' Similar calculation process as before, but with date filters
+    Analytics -> Analytics: calculateTimeframedStatistics(userId, startDate, endDate)
+    Analytics -> StatsRepo: save(timeframedStatistics)
+    StatsRepo -> DB: INSERT INTO player_statistics VALUES (...)
+    DB --> StatsRepo: Insert confirmation
+    StatsRepo --> Analytics: Saved statistics
+end
+
+Analytics -> Analytics: createPlayerStatisticsDTO(statistics)
+Analytics --> HistoryCtrl: Timeframed PlayerStatisticsDTO
+deactivate Analytics
+HistoryCtrl --> ApiService: PlayerStatisticsDTO JSON
+deactivate HistoryCtrl
+ApiService --> Dashboard: Updated PlayerStatisticsDTO
+deactivate ApiService
+
+' Update UI with timeframed data
+Dashboard -> SummaryCards: setStatistics(timeframedStats)
+Dashboard -> Graph: setData(timeframedStats.performanceHistory)
+Dashboard --> Player: Updated statistics view
+deactivate Dashboard
+
+' Player selects a specific stat category
+Player -> Filters: Select "CARDS" category
+activate Filters
+Filters -> Filters: onCategoryChanged(CARDS)
+Filters -> Dashboard: setStatCategory(CARDS)
+deactivate Filters
+activate Dashboard
+
+' Change graph type based on category
+Dashboard -> Dashboard: updateDisplayForCategory(CARDS)
+Dashboard -> Graph: setGraphType(PIE)
+activate Graph
+Graph -> Graph: switchToGraphType(PIE)
+Graph -> Graph: reformatDataForPieChart()
+Graph -> Graph: renderPieChart()
+Graph --> Dashboard: Updated graph
+deactivate Graph
+
+Dashboard -> SummaryCards: highlightCardStats()
+activate SummaryCards
+SummaryCards -> SummaryCards: filterForCardMetrics()
+SummaryCards --> Dashboard: Updated summary
+deactivate SummaryCards
+
+Dashboard --> Player: Card-focused statistics view
+deactivate Dashboard
+
+' Player exports statistics
+Player -> Dashboard: exportStatistics("PDF")
+activate Dashboard
+Dashboard -> Dashboard: formatStatisticsForExport()
+Dashboard -> Dashboard: generatePDFReport()
+Dashboard -> Dashboard: triggerDownload()
+Dashboard --> Player: Statistics PDF download
+deactivate Dashboard
+
+@enduml

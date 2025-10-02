@@ -21,6 +21,7 @@ import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
+import AppFooter from '../components/AppFooter';
 import coverPhoto from '../assets/Cover Photo.png';
 
 const HomePage: React.FC = () => {
@@ -531,32 +532,7 @@ const HomePage: React.FC = () => {
       </motion.section>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 bg-base-200/80 backdrop-blur-sm border-t border-primary/10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo" className="h-8" />
-              <span className="font-mono text-sm text-base-content/70">
-                DARKNET_DUEL v0.0.1
-              </span>
-            </div>
-            <div className="text-xs text-base-content/50 font-mono">
-              SYSTEM ACCESSED: {new Date().toLocaleDateString()} • ALL_RIGHTS_RESERVED
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      <style>{`
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient {
-          animation: gradient 6s ease infinite;
-        }
-      `}</style>
+      <AppFooter />
     </div>
   );
 };

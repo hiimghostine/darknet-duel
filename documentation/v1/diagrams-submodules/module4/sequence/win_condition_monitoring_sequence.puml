@@ -1,0 +1,154 @@
+@startuml
+
+title Win Condition Monitoring - Sequence Diagram
+
+actor "Player 1" as Player1
+actor "Player 2" as Player2
+participant "Client (Player 1)" as Client1
+participant "Client (Player 2)" as Client2
+participant "ScoreboardComponent" as Scoreboard
+participant "WinConditionTracker" as WinTracker
+participant "GameEndDialog" as EndDialog
+participant "GameSocketHandler" as SocketHandler
+participant "TurnManager" as TurnManager
+participant "WinConditionService" as WinService
+participant "ScoreCalculator" as ScoreCalc
+participant "GameEndHandler" as EndHandler
+participant "GameRepository" as GameRepo
+database "Database" as DB
+
+' Game in progress
+note over Client1, DB: Game in progress
+
+' After a player action that affects scores
+Player1 -> Client1: Play attack card
+Client1 -> SocketHandler: PLAY_CARD message
+activate SocketHandler
+SocketHandler -> TurnManager: processCardPlay(gameId, playerId, cardId, targetId)
+activate TurnManager
+TurnManager -> TurnManager: Apply card effects
+TurnManager -> ScoreCalc: updateGameScores(gameId)
+activate ScoreCalc
+
+ScoreCalc -> GameRepo: getGameById(gameId)
+GameRepo -> DB: SELECT * FROM games WHERE id = ?
+DB --> GameRepo: Game data
+GameRepo --> ScoreCalc: Game entity
+
+ScoreCalc -> ScoreCalc: calculateTeamSecurityPoints(gameId, RED_TEAM)
+ScoreCalc -> ScoreCalc: calculateTeamSecurityPoints(gameId, BLUE_TEAM)
+ScoreCalc -> GameRepo: updateScores(gameId, redScore, blueScore)
+GameRepo -> DB: UPDATE games SET red_team_points = ?, blue_team_points = ?
+DB --> GameRepo: Update confirmation
+deactivate ScoreCalc
+
+' Broadcast score update to clients
+TurnManager -> SocketHandler: Updated game state with new scores
+SocketHandler -> Client1: GAME_STATE_UPDATE message
+SocketHandler -> Client2: GAME_STATE_UPDATE message
+deactivate TurnManager
+
+' Check win conditions after state update
+SocketHandler -> WinService: checkWinConditions(gameId)
+activate WinService
+
+WinService -> GameRepo: getGameById(gameId)
+GameRepo -> DB: SELECT * FROM games
+DB --> GameRepo: Game data
+GameRepo --> WinService: Game entity
+
+WinService -> WinService: getActiveWinConditions(gameId)
+WinService -> ScoreCalc: calculateTeamSecurityPoints(gameId, RED_TEAM)
+activate ScoreCalc
+ScoreCalc --> WinService: Red team points
+deactivate ScoreCalc
+WinService -> ScoreCalc: calculateTeamSecurityPoints(gameId, BLUE_TEAM)
+activate ScoreCalc
+ScoreCalc --> WinService: Blue team points
+deactivate ScoreCalc
+
+' Check each win condition
+loop For each win condition
+    WinService -> WinService: condition.isMet(game, scoreCalculator)
+end
+
+alt Win condition met
+    WinService -> WinService: determineWinner(gameId, condition)
+    WinService -> EndHandler: endGame(gameId, winnerId, loserId, condition)
+    activate EndHandler
+    
+    EndHandler -> GameRepo: updateGameStatus(gameId, COMPLETED)
+    GameRepo -> DB: UPDATE games SET status = 'COMPLETED'
+    
+    EndHandler -> ScoreCalc: calculateFinalStatistics(gameId)
+    ScoreCalc -> GameRepo: getGameHistoricalData(gameId)
+    GameRepo -> DB: SELECT * FROM game_actions WHERE game_id = ?
+    DB --> GameRepo: Game action history
+    GameRepo --> ScoreCalc: Action history
+    ScoreCalc --> EndHandler: GameStatistics object
+    
+    EndHandler -> EndHandler: createGameResult(gameId, winnerId, statistics)
+    EndHandler -> GameRepo: saveGameResult(result)
+    GameRepo -> DB: INSERT INTO game_results
+    DB --> GameRepo: Save confirmation
+    
+    EndHandler -> EndHandler: distributeRewards(result)
+    EndHandler -> EndHandler: archiveGame(gameId)
+    EndHandler --> WinService: GameResult object
+    deactivate EndHandler
+    
+    WinService -> SocketHandler: GameResult object
+    WinService --> SocketHandler: Win detected (condition, winner)
+    deactivate WinService
+    
+    SocketHandler -> Client1: GAME_END message (with result)
+    SocketHandler -> Client2: GAME_END message (with result)
+    deactivate SocketHandler
+    
+    ' Update UI for both players
+    Client1 -> WinTracker: updateProgress(gameState)
+    activate WinTracker
+    WinTracker -> WinTracker: checkForWin()
+    WinTracker -> EndDialog: show(winner, condition, statistics)
+    activate EndDialog
+    EndDialog -> EndDialog: displayGameEnd(details)
+    EndDialog --> Player1: Show game end dialog
+    deactivate EndDialog
+    deactivate WinTracker
+    
+    Client2 -> WinTracker: updateProgress(gameState)
+    activate WinTracker
+    WinTracker -> WinTracker: checkForWin()
+    WinTracker -> EndDialog: show(winner, condition, statistics)
+    activate EndDialog
+    EndDialog -> EndDialog: displayGameEnd(details)
+    EndDialog --> Player2: Show game end dialog
+    deactivate EndDialog
+    deactivate WinTracker
+    
+else No win condition met yet
+    WinService -> WinService: calculateWinConditionProgress(gameId)
+    WinService --> SocketHandler: Progress updates
+    deactivate WinService
+    
+    SocketHandler -> Client1: WIN_CONDITION_PROGRESS message
+    SocketHandler -> Client2: WIN_CONDITION_PROGRESS message
+    deactivate SocketHandler
+    
+    ' Update UI with progress
+    Client1 -> Scoreboard: updateScores(redPoints, bluePoints)
+    activate Scoreboard
+    Scoreboard -> Scoreboard: highlightLeader()
+    Scoreboard -> Scoreboard: animateScoreChange()
+    deactivate Scoreboard
+    
+    Client1 -> WinTracker: updateProgress(progressData)
+    activate WinTracker
+    WinTracker -> WinTracker: updateProgressBars()
+    deactivate WinTracker
+    
+    Client2 -> Scoreboard: updateScores(redPoints, bluePoints)
+    Client2 -> WinTracker: updateProgress(progressData)
+end
+
+@enduml

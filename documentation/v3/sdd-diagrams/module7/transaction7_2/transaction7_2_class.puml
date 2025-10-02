@@ -1,0 +1,76 @@
+@startuml
+' Class Diagram for Report Management (Submit, Review, Resolve) (Transaction 7.2)
+
+package "Frontend" {
+  class ReportModal {
+    +submitReport()
+  }
+  class ReportManagementPage {
+    +reviewReports()
+    +updateStatus()
+    +deleteReport()
+    +banUser()
+  }
+  class reportService {
+    +createReport()
+    +getReports()
+    +getReportById()
+    +updateReportStatus()
+    +deleteReport()
+    +getReportStats()
+  }
+  class adminService {
+    +banUser()
+  }
+  class useAuthStore {
+    +user
+    +type
+  }
+}
+
+package "Backend Server" {
+  class ReportController {
+    +POST /api/reports
+    +GET /api/admin/reports
+    +GET /api/admin/reports/{id}
+    +PUT /api/admin/reports/{id}/status
+    +DELETE /api/admin/reports/{id}
+    +GET /api/admin/reports/stats
+  }
+  class ReportService {
+    +createReport()
+    +getReports()
+    +getReportById()
+    +updateReportStatus()
+    +deleteReport()
+    +getReportStats()
+  }
+  class ReportEntity {
+    +id
+    +reporterId
+    +reporteeId
+    +reason
+    +content
+    +reportType
+    +status
+    +createdAt
+    +updatedAt
+  }
+  class LogService {
+    +logReportStatusChange()
+  }
+}
+
+' Relationships
+ReportModal --> reportService : uses
+ReportManagementPage --> reportService : uses
+ReportManagementPage --> adminService : uses
+ReportManagementPage --> useAuthStore : uses
+
+reportService --> ReportController : REST API (reports)
+adminService --> ReportController : REST API (ban from report)
+ReportController --> ReportService : delegates
+ReportService --> ReportEntity : manages
+ReportService --> LogService : logs actions
+
+@enduml 

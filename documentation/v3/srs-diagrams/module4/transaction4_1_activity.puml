@@ -1,0 +1,13 @@
+@startuml
+start
+:Player selects card to play;
+:System checks if card can be played;
+if (Card requires target?) then (yes)
+  :Player selects target(s);
+  :System validates target(s);
+endif
+:System resolves card effect(s);
+:System updates game state;
+:System notifies all players;
+stop
+@enduml 

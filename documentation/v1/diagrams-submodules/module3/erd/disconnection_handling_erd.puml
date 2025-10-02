@@ -1,0 +1,77 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Disconnection Handling - Entity Relationship Diagram
+
+table(player_sessions) {
+    primary_key(session_id) VARCHAR(255)
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(game_id) BIGINT not_null
+    connection_status ENUM('CONNECTED', 'DISCONNECTED', 'RECONNECTING') not_null
+    last_heartbeat TIMESTAMP not_null
+    disconnection_time TIMESTAMP
+    reconnection_attempts INT not_null
+    ip_address VARCHAR(45)
+    user_agent VARCHAR(255)
+    created_at TIMESTAMP not_null
+}
+
+table(game_pauses) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    pause_reason ENUM('PLAYER_DISCONNECTED', 'PLAYER_REQUESTED', 'SYSTEM_MAINTENANCE', 'ERROR') not_null
+    foreign_key(triggered_by_user_id) BIGINT
+    pause_start TIMESTAMP not_null
+    pause_end TIMESTAMP
+    max_pause_duration_seconds INT not_null
+    auto_resume BOOLEAN not_null
+}
+
+table(connection_events) {
+    primary_key(id) BIGINT
+    foreign_key(session_id) VARCHAR(255) not_null
+    event_type ENUM('CONNECT', 'DISCONNECT', 'HEARTBEAT', 'RECONNECT_ATTEMPT', 'RECONNECT_SUCCESS', 'RECONNECT_FAILURE', 'TIMEOUT') not_null
+    timestamp TIMESTAMP not_null
+    connection_quality FLOAT
+    latency_ms INT
+    details TEXT
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED', 'ABORTED') not_null
+    foreign_key(current_player_id) BIGINT
+    current_phase ENUM('SETUP', 'PLAYING', 'GAME_OVER')
+    paused BOOLEAN not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    status ENUM('ONLINE', 'OFFLINE', 'IN_GAME', 'AWAY') not_null
+}
+
+table(disconnection_penalties) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(game_id) BIGINT not_null
+    penalty_type ENUM('WARNING', 'TIMEOUT', 'FORFEIT', 'REPUTATION_LOSS') not_null
+    applied_at TIMESTAMP not_null
+    duration_minutes INT
+    reason TEXT not_null
+}
+
+' Relationships
+player_sessions }o--|| users : "belongs to"
+player_sessions }o--|| games : "connected to"
+connection_events }o--|| player_sessions : "recorded for"
+game_pauses }o--|| games : "pauses"
+game_pauses }o--o| users : "triggered by"
+disconnection_penalties }o--|| users : "applied to"
+disconnection_penalties }o--|| games : "in game"
+
+@enduml

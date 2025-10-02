@@ -1,0 +1,17 @@
+Use Case: User Modification (Modify Username, Email, Password)
+
+Description: Allows admins and moderators to modify user account details, including username, email, and password, for support or security reasons. The system enforces access control and logs all modifications.
+
+Actors: Admin, Moderator
+
+Preconditions: Admin or moderator is authenticated and has appropriate privileges.
+
+Main Flow:
+1. Admin/moderator searches for and selects a user account.
+2. Admin/moderator chooses to modify username, email, or password.
+3. System validates the new information and checks for conflicts (e.g., duplicate email).
+4. System updates the user account with the new information.
+5. System logs the modification for audit purposes.
+6. System notifies the user of the change (if applicable).
+
+Postconditions: User account details are updated and all modifications are logged for future reference. 

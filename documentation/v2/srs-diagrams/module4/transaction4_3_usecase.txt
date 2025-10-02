@@ -1,0 +1,16 @@
+Use Case: Game Rules Enforcement (AP, Hand Size, Win Conditions)
+
+Description: Ensures that all game rules are enforced, including action point (AP) allocation, hand size limits, and win/loss conditions. The system validates player actions and ends the game when win conditions are met.
+
+Actors: Player
+
+Preconditions: Game session is active and players are taking turns.
+
+Main Flow:
+1. System allocates AP to players at the start of their turn.
+2. System checks hand size after each action and enforces limits.
+3. System validates all player actions against game rules.
+4. System checks for win/loss conditions after each turn or action.
+5. If win condition is met, system ends the game and declares the winner.
+
+Postconditions: All game rules are enforced and the game ends correctly when win/loss conditions are met. 

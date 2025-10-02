@@ -1,0 +1,18 @@
+Use Case: Create/Join/Leave Lobbies
+
+Description: Allows a player to create a new game lobby, join an existing lobby, or leave a lobby. The system manages lobby creation, player entry/exit, and updates the lobby state for all participants in real time.
+
+Actors: Player
+
+Preconditions: Player is authenticated and on the lobby browser or lobby detail page.
+
+Main Flow:
+1. Player chooses to create a new lobby.
+2. System prompts for lobby settings (e.g., game mode, max players).
+3. System creates the lobby and adds the player as host.
+4. Player (or another player) selects a lobby to join.
+5. System adds the player to the selected lobby.
+6. Player may choose to leave the lobby at any time.
+7. System removes the player from the lobby and updates the lobby state.
+
+Postconditions: Player is in the desired lobby or has left the lobby; lobby state is updated for all participants. 

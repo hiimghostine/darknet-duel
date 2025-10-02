@@ -1,0 +1,20 @@
+@startuml
+start
+:Enter username, email, password;
+:Validate input data;
+if (Input valid?) then (yes)
+  :Check for existing account;
+  if (Account exists?) then (yes)
+    :Show error message;
+    stop
+  else (no)
+    :Hash password;
+    :Create user record;
+    :Show success message;
+    stop
+  endif
+else (no)
+  :Show validation error;
+  stop
+endif
+@enduml 

@@ -1,0 +1,9 @@
+@startuml
+start
+:System stores match history after each game;
+:Player navigates to match history page;
+:System retrieves match history from backend;
+:Player browses matches and selects one;
+:System displays match details;
+stop
+@enduml 

@@ -1,0 +1,104 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Infrastructure State Tracking - Entity Relationship Diagram
+
+table(infrastructure) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    state ENUM('SECURE', 'VULNERABLE', 'COMPROMISED', 'FORTIFIED') not_null
+    foreign_key(controlling_player_id) BIGINT not_null
+    security_points INT not_null
+    applied_exploits JSON
+    applied_defenses JSON
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP not_null
+}
+
+table(infrastructure_effects) {
+    primary_key(id) BIGINT
+    foreign_key(infrastructure_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    effect_type VARCHAR(50) not_null
+    value INT not_null
+    duration INT
+    applied_at TIMESTAMP not_null
+    expires_at TIMESTAMP
+    is_active BOOLEAN not_null
+}
+
+table(state_transition_logs) {
+    primary_key(id) BIGINT
+    foreign_key(infrastructure_id) BIGINT not_null
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(card_id) BIGINT
+    from_state ENUM('SECURE', 'VULNERABLE', 'COMPROMISED', 'FORTIFIED') not_null
+    to_state ENUM('SECURE', 'VULNERABLE', 'COMPROMISED', 'FORTIFIED') not_null
+    from_controller_id BIGINT not_null
+    to_controller_id BIGINT not_null
+    security_points_change INT not_null
+    transition_time TIMESTAMP not_null
+    turn_number INT not_null
+}
+
+table(security_point_history) {
+    primary_key(id) BIGINT
+    foreign_key(infrastructure_id) BIGINT not_null
+    previous_value INT not_null
+    new_value INT not_null
+    change_amount INT not_null
+    foreign_key(caused_by_effect_id) BIGINT
+    foreign_key(caused_by_card_id) BIGINT
+    foreign_key(caused_by_player_id) BIGINT
+    recorded_at TIMESTAMP not_null
+    turn_number INT not_null
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    red_team_player_id BIGINT not_null
+    blue_team_player_id BIGINT not_null
+    current_turn INT not_null
+    start_time TIMESTAMP
+    end_time TIMESTAMP
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    status ENUM('WAITING', 'ACTIVE', 'DISCONNECTED') not_null
+}
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+    category ENUM('NETWORK', 'SOCIAL', 'MALWARE', 'WEB') not_null
+}
+
+' Relationships
+infrastructure }o--|| games : "belongs to"
+infrastructure }o--|| cards : "based on"
+infrastructure }o--|| players : "controlled by"
+infrastructure ||--o{ infrastructure_effects : "has"
+infrastructure ||--o{ state_transition_logs : "recorded in"
+infrastructure ||--o{ security_point_history : "tracked in"
+infrastructure_effects }o--|| cards : "caused by"
+state_transition_logs }o--|| games : "part of"
+state_transition_logs }o--|| players : "triggered by"
+state_transition_logs }o--|| cards : "caused by"
+security_point_history }o--o| infrastructure_effects : "caused by"
+security_point_history }o--o| cards : "affected by"
+security_point_history }o--o| players : "initiated by"
+games ||--o{ players : "has"
+
+@enduml

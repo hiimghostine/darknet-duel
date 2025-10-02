@@ -1,0 +1,111 @@
+@startuml
+title User Profile Management - Sequence Diagram
+
+actor "User" as User
+participant "ProfilePage" as Page
+participant "AvatarSelector" as AvatarComp
+participant "ProfileController" as Controller
+participant "ProfileService" as Service
+participant "ProfileRepository" as Repo
+participant "FileStorageService" as FileService
+database "Database" as DB
+database "FileSystem" as FS
+
+' Load profile
+User -> Page: Visit profile page
+activate Page
+Page -> Controller: GET /api/profiles/{userId}
+activate Controller
+Controller -> Service: getProfileByUserId(userId)
+activate Service
+Service -> Repo: findByUserId(userId)
+activate Repo
+Repo -> DB: SELECT * FROM user_profiles
+DB --> Repo: Profile data
+Repo --> Service: Optional<UserProfile>
+deactivate Repo
+Service --> Controller: ProfileDTO
+deactivate Service
+Controller --> Page: 200 OK with profile data
+deactivate Controller
+Page --> User: Display profile information
+deactivate Page
+
+' Edit profile
+User -> Page: Click "Edit Profile"
+activate Page
+Page -> Page: toggleEditMode()
+Page --> User: Show editable form
+User -> Page: Update profile fields
+Page -> Page: handleInputChange()
+User -> Page: Click "Save Profile"
+Page -> Page: validateForm()
+
+alt Validation Failed
+    Page -> Page: displayErrors()
+    Page --> User: Show validation errors
+else Validation Passed
+    Page -> Controller: PUT /api/profiles/{userId}
+    activate Controller
+    Controller -> Service: updateProfile(ProfileDTO)
+    activate Service
+    Service -> Service: validateProfileData()
+    Service -> Repo: findByUserId(userId)
+    activate Repo
+    Repo -> DB: SELECT * FROM user_profiles
+    DB --> Repo: Profile data
+    Repo --> Service: Optional<UserProfile>
+    deactivate Repo
+    Service -> Repo: save(updatedProfile)
+    activate Repo
+    Repo -> DB: UPDATE user_profiles
+    DB --> Repo: Success
+    Repo --> Service: Updated UserProfile
+    deactivate Repo
+    Service --> Controller: Updated ProfileDTO
+    deactivate Service
+    Controller --> Page: 200 OK with updated profile
+    deactivate Controller
+    Page -> Page: toggleEditMode()
+    Page --> User: Show updated profile
+end
+deactivate Page
+
+' Upload avatar
+User -> AvatarComp: Select image file
+activate AvatarComp
+AvatarComp -> AvatarComp: handleFileSelect()
+AvatarComp -> AvatarComp: displayPreview()
+AvatarComp --> User: Show image preview
+User -> AvatarComp: Confirm upload
+AvatarComp -> Controller: POST /api/profiles/{userId}/avatar
+activate Controller
+Controller -> Service: uploadAvatar(userId, file)
+activate Service
+Service -> FileService: storeFile(file)
+activate FileService
+FileService -> FileService: validateFile()
+FileService -> FS: Save file
+FS --> FileService: File path
+FileService --> Service: File URL
+deactivate FileService
+Service -> Repo: findByUserId(userId)
+activate Repo
+Repo -> DB: SELECT * FROM user_profiles
+DB --> Repo: Profile data
+Repo --> Service: Optional<UserProfile>
+deactivate Repo
+Service -> Repo: save(profileWithNewAvatar)
+activate Repo
+Repo -> DB: UPDATE user_profiles
+DB --> Repo: Success
+Repo --> Service: Updated UserProfile
+deactivate Repo
+Service --> Controller: Avatar URL
+deactivate Service
+Controller --> AvatarComp: 200 OK with avatar URL
+deactivate Controller
+AvatarComp --> User: Show success message
+deactivate AvatarComp
+
+@enduml

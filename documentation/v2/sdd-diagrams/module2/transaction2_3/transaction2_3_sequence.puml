@@ -1,0 +1,34 @@
+@startuml
+' Sequence Diagram for Real-Time Lobby Updates (Transaction 2.3)
+
+actor User
+participant LobbyBrowser as LB
+participant LobbyService as FS
+participant AuthStore as AS
+participant "API /games/darknet-duel" as API
+participant BoardgameIOServer as BGS
+participant LobbyDatabase as DB
+
+User -> LB: Open lobby browser
+LB -> FS: pollUpdates()
+loop Every 5 seconds
+  FS -> API: GET /games/darknet-duel
+  API -> BGS: listMatches()
+  BGS -> DB: listMatches()
+  DB --> BGS: Match list
+  BGS --> API: Match list
+  API --> FS: Match list
+  FS --> LB: Match list
+  LB -> User: Update UI
+end
+User -> LB: View lobby details
+LB -> FS: getMatch(matchID)
+FS -> API: GET /games/darknet-duel/:matchID
+API -> BGS: fetchMatch()
+BGS -> DB: fetchMatch()
+DB --> BGS: Match data
+BGS --> API: Match data
+API --> FS: Match data
+FS --> LB: Match data
+LB -> User: Update lobby view
+@enduml 

@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth.store';
 import { useAudioManager } from '../../hooks/useAudioManager';
 import type { LobbyChatMessage } from 'shared-types/chat.types';
-import { FaPaperPlane, FaUsers, FaComments, FaHashtag, FaExchangeAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaHashtag, FaExchangeAlt } from 'react-icons/fa';
 import UserProfilePopup from '../UserProfilePopup';
 import ReportModal from '../ReportModal';
 import ContextMenu from '../ContextMenu';
@@ -178,16 +178,21 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
     socketInstance.on('user_joined', (data: { userId: string; username: string }) => {
       console.log('👋 User joined:', data.username);
-      setConnectedUsers(prev => new Set([...prev, data.userId]));
+      // Presence will be synchronized by users_connected event; keep this for UI effects if needed
     });
 
     socketInstance.on('user_left', (data: { userId: string; username: string }) => {
       console.log('👋 User left:', data.username);
-      setConnectedUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(data.userId);
-        return newSet;
-      });
+      // Presence will be synchronized by users_connected event
+    });
+
+    // Unified presence updates from server
+    socketInstance.on('users_connected', (data: { count: number; users: string[] }) => {
+      try {
+        setConnectedUsers(new Set(data.users || []));
+      } catch {
+        // Fallback: do nothing if malformed
+      }
     });
 
     socketInstance.on('chat_error', (data: { message: string }) => {
@@ -333,25 +338,52 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   #{channelInfo.name.toUpperCase()}
                 </h3>
                 
-                {/* Channel switcher - compact */}
-                {showChannelSwitcher && lobbyId && channels.length > 1 && (
-                  <div className="flex items-center gap-1 ml-2">
-                    {channels.map(channel => (
-                      <button
-                        key={channel.id}
-                        onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
-                        className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
-                          currentChannel === channel.id
-                            ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
-                        }`}
-                      >
-                        <FaHashtag className="text-xs" />
-                        <span className="text-xs">{channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+{/* Footer Status Bar */}
+<div className="flex items-center justify-between text-xs text-base-content/70 w-full px-2">
+  {/* Left side: Channel switcher */}
+  {showChannelSwitcher && lobbyId && channels.length > 1 && (
+    <div className="flex items-center gap-1">
+      {channels.map(channel => (
+        <button
+          key={channel.id}
+          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
+          className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
+            currentChannel === channel.id
+              ? 'bg-primary/20 text-primary border border-primary/40'
+              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
+          }`}
+        >
+          <FaHashtag className="text-xs" />
+          <span className="text-xs">
+            {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
+          </span>
+        </button>
+      ))}
+    </div>
+  )}
+
+  {/* Right side: Time + Connection status */}
+  <div className="flex items-center gap-4">
+    {/* Time */}
+    <div>
+      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </div>
+
+    {/* Connection status */}
+    <div className="flex items-center gap-2 text-sm">
+      <div
+        className={`w-2 h-2 rounded-full ${
+          isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'
+        }`}
+      ></div>
+      <span>
+        {connectedUsers.size} USER(S) CONNECTED •{' '}
+        {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}
+      </span>
+    </div>
+  </div>
+</div>
+
               </div>
             </div>
             <div className="text-base-content text-xs flex items-center gap-2">

@@ -1,0 +1,20 @@
+@startuml
+start
+:Enter email/username and password;
+:Validate credentials;
+if (Credentials valid?) then (yes)
+  :Check account status;
+  if (Account active?) then (yes)
+    :Issue JWT;
+    :Start session;
+    :Redirect to dashboard;
+    stop
+  else (no)
+    :Show account status error;
+    stop
+  endif
+else (no)
+  :Show login error;
+  stop
+endif
+@enduml 

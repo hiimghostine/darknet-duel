@@ -1,0 +1,112 @@
+@startuml
+
+title Game State Visualization - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "GameBoard" as GameBoard {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "PlayerHand" as PlayerHand {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "GameStateProvider" as GameStateProvider {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "CardComponent" as CardComponent {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "InfrastructureComponent" as InfrastructureComponent {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "GameStatusComponent" as GameStatusComponent {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useGameState" as useGameState {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+    class "useAnimation" as useAnimation {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+    class "useLayoutConfig" as useLayoutConfig {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class GameStateController {
+        -attributes
+        + methods()
+    }
+
+    class ViewModelService {
+        -attributes
+        + methods()
+    }
+
+    class GameStateRequestMessage {
+        -attributes
+        + methods()
+    }
+
+    class GameStateUpdateMessage {
+        -attributes
+        + methods()
+    }
+
+    class PlayerViewModel {
+        -attributes
+        + methods()
+    }
+
+}
+
+GameBoard --> PlayerHand
+GameBoard --> InfrastructureComponent
+GameStateProvider --> GameStateContext
+GameBoard --> useLayoutConfig
+PlayerHand --> CardComponent
+GameBoard --> GameStatusComponent
+useGameState --> WebSocketContext
+useGameState --> useAnimation
+GameStateController --> ViewModelService
+GameStateController --> MessageBroker
+GameStateUpdateMessage --> UpdateType
+GameBoard ..> GameStateController : API calls
+
+@enduml

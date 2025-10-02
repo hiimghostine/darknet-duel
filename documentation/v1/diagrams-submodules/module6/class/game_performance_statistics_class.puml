@@ -1,0 +1,95 @@
+@startuml
+
+title Game Performance Statistics - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "StatisticsDashboard" as StatisticsDashboard {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "PerformanceGraph" as PerformanceGraph {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "StatFilterControls" as StatFilterControls {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "StatSummaryCards" as StatSummaryCards {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "StatisticsProvider" as StatisticsProvider {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useStatisticsAPI" as useStatisticsAPI {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class HistoryController {
+        -attributes
+        + methods()
+    }
+
+    class AnalyticsService {
+        -attributes
+        + methods()
+    }
+
+    class StatCalculationService {
+        -attributes
+        + methods()
+    }
+
+    class StatisticsRepository {
+        -attributes
+        + methods()
+    }
+
+    class PlayerStatistics {
+        -attributes
+        + methods()
+    }
+
+    class CardStatistics {
+        -attributes
+        + methods()
+    }
+
+    class CardCount {
+        -attributes
+        + methods()
+    }
+
+    class CardEffectiveness {
+        -attributes
+        + methods()
+    }
+
+}
+
+StatisticsDashboard ..> HistoryController : API calls
+
+@enduml

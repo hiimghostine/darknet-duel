@@ -1,0 +1,43 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title User Login - Entity Relationship Diagram
+
+table(users) {
+    primary_key(id) BIGINT
+    unique(username) VARCHAR(50) not_null
+    unique(email) VARCHAR(100) not_null
+    password_hash VARCHAR(255) not_null
+    last_login_date TIMESTAMP
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED') not_null
+}
+
+table(auth_tokens) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    token VARCHAR(255) not_null
+    refresh_token VARCHAR(255)
+    issued_at TIMESTAMP not_null
+    expires_at TIMESTAMP not_null
+    revoked BOOLEAN not_null
+    device_info VARCHAR(255)
+    ip_address VARCHAR(45)
+}
+
+table(login_attempts) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT
+    ip_address VARCHAR(45) not_null
+    success BOOLEAN not_null
+    attempt_time TIMESTAMP not_null
+    user_agent VARCHAR(255)
+}
+
+users ||--o{ auth_tokens : "has"
+users ||--o{ login_attempts : "has"
+
+@enduml

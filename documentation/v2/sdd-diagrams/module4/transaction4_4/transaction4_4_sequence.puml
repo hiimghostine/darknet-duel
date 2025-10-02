@@ -1,0 +1,33 @@
+@startuml
+' Sequence Diagram for Game State Visualization (Transaction 4.4)
+
+actor Player
+participant BalatroGameBoard as Board
+participant GameBoardLayout as Layout
+participant InfrastructureArea as InfraArea
+participant PlayerHand as Hand
+participant PendingChoicesOverlay as Overlay
+participant boardgameioServer as Server
+participant playerView as PlayerView
+participant gameState_ts as GameState
+
+Player -> Server: request game state
+Server -> PlayerView: createPlayerView(G, ctx, playerID)
+PlayerView -> GameState: filterGameStateForPlayer()
+PlayerView -> Server: return filtered game state
+Server -> Board: send filtered game state
+Board -> Layout: organizeAreas()
+Layout -> InfraArea: displayInfrastructureCards()
+Layout -> Hand: renderHand()
+Board -> Overlay: showOverlays(pending choices)
+Board -> PowerBar: displayScores()
+Board -> PlayerInfo: displayAP(), displayHandSize()
+Board -> GameStatus: displayPhase(), displayWinLoss()
+alt Real-time update
+  Server -> Board: send updated game state
+  Board -> Layout: updateAreas()
+  Layout -> InfraArea: updateInfrastructureCards()
+  Layout -> Hand: updateHand()
+  Board -> Overlay: updateOverlays()
+end
+@enduml 

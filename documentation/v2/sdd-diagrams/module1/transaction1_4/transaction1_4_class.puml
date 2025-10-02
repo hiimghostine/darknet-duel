@@ -1,0 +1,83 @@
+@startuml
+' Class Diagram for Role-Based Access (Transaction 1.4)
+
+package "Frontend" {
+  class UserTypeTag {
+    +render()
+  }
+  class AdminPage {
+    +render()
+    +promoteUser()
+    +demoteUser()
+    +banUser()
+  }
+  class UserManagement {
+    +render()
+    +filterByRole()
+    +assignRole()
+  }
+  class BanUserModal {
+    +open()
+    +close()
+    +submit()
+  }
+  class AuthStore {
+    +user: User
+    +isAuthenticated: boolean
+    +role: string
+    +login()
+    +logout()
+  }
+  class ProtectedRoute {
+    +render()
+    +checkRole()
+  }
+}
+
+package "Backend" {
+  class AdminAuthMiddleware {
+    +handle(req, res, next)
+  }
+  class ModeratorAuthMiddleware {
+    +handle(req, res, next)
+  }
+  class AuthMiddleware {
+    +handle(req, res, next)
+  }
+  class AdminController {
+    +getUsers()
+    +getUserById()
+    +updateUser()
+    +banUser()
+    +unbanUser()
+    +getStats()
+  }
+  class Account {
+    +id: string
+    +email: string
+    +username: string
+    +type: AccountType
+    +... (other fields)
+  }
+  enum AccountType {
+    user
+    mod
+    admin
+  }
+}
+
+AdminPage --> UserManagement : uses
+AdminPage --> BanUserModal : uses
+UserManagement --> UserTypeTag : uses
+AuthStore --> ProtectedRoute : uses
+ProtectedRoute --> AuthStore : checks role
+AdminPage --> AuthStore : checks role
+UserManagement --> AuthStore : checks role
+BanUserModal --> AuthStore : checks role
+
+AdminController --> AdminAuthMiddleware : uses
+AdminController --> ModeratorAuthMiddleware : uses
+AdminController --> Account : manages
+Account --> AccountType : has
+
+@enduml 

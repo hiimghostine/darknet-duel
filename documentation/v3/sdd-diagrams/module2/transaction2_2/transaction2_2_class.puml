@@ -1,0 +1,65 @@
+@startuml
+' Class Diagram for Create/Join/Leave Lobbies (Transaction 2.2)
+
+package "Frontend" {
+  class CreateLobby {
+    +render()
+    +handleCreateLobby()
+  }
+  class LobbyBrowser {
+    +render()
+    +handleJoinMatch()
+    +handleJoinPrivateLobby()
+  }
+  class LobbyChat {
+    +render()
+    +sendMessage()
+    +receiveMessage()
+  }
+  class LobbyService {
+    +createMatch()
+    +joinMatch()
+    +leaveMatch()
+    +joinPrivateLobby()
+    +getMatch()
+    +updateReadyStatus()
+    +startMatch()
+  }
+  class AuthStore {
+    +user: User
+    +isAuthenticated: boolean
+  }
+}
+
+package "Backend" {
+  class BoardgameIOServer {
+    +createMatch()
+    +joinMatch()
+    +leaveMatch()
+    +fetchMatch()
+    +customEndpoints()
+  }
+  class LobbyCleanupService {
+    +start()
+    +setCleanupInterval()
+    +setAbandonedGameTTL()
+    +setInactiveGameTTL()
+    +cleanupAbandonedGames()
+  }
+  class LobbyDatabase {
+    +listMatches()
+    +fetchMatch()
+    +wipe()
+    +storeMetadata()
+  }
+}
+
+CreateLobby --> LobbyService : uses
+LobbyBrowser --> LobbyService : uses
+LobbyChat --> LobbyService : uses
+LobbyService --> BoardgameIOServer : calls API
+LobbyService --> AuthStore : uses user info
+BoardgameIOServer --> LobbyDatabase : persists/queries
+BoardgameIOServer --> LobbyCleanupService : manages cleanup
+
+@enduml 

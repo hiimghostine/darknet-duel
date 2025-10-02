@@ -1,0 +1,38 @@
+@startuml
+' Sequence Diagram for Infrastructure State Tracking (Transaction 4.2)
+
+actor Player
+participant BalatroGameBoard as Board
+participant InfrastructureArea as Area
+participant InfrastructureCardDisplay as CardDisplay
+participant boardgameioServer as Server
+participant infrastructureCardLoader as Loader
+participant exploitEffect as Exploit
+participant attackEffect as Attack
+participant fortifyEffect as Fortify
+participant reactionEffect as Reaction
+participant cardEffectsRouter as Effects
+participant temporaryEffectsManager as TempEffects
+
+Player -> Board: Start game
+Board -> Server: request game state
+Server -> Loader: createInfrastructureCards()
+Loader -> Server: return infrastructure cards (all secure)
+Server -> Board: send initial game state
+Board -> Area: displayInfrastructureCards()
+Area -> CardDisplay: renderCard()
+
+alt Card played that affects infrastructure
+  Board -> Server: playCard/throwCard(cardId, infraId)
+  Server -> Effects: processInfrastructureStateChange()
+  Effects -> Exploit: applyExploit() (if exploit)
+  Effects -> Attack: applyAttack() (if attack)
+  Effects -> Fortify: applyFortify() (if fortify)
+  Effects -> Reaction: applyReaction() (if reaction)
+  Effects -> TempEffects: processPersistentEffects()
+  Effects -> Server: update game state
+  Server -> Board: send updated game state
+  Board -> Area: updateInfrastructureCards()
+  Area -> CardDisplay: updateCardState()
+end
+@enduml 

@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Game Logic System" {
+  usecase "View Infrastructure State" as UC4_2A
+  usecase "Change Infrastructure State" as UC4_2B
+}
+Player --> UC4_2A
+Player --> UC4_2B
+@enduml 

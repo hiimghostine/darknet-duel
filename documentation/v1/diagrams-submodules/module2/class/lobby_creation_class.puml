@@ -1,0 +1,155 @@
+@startuml
+
+title Lobby Creation - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "CreateLobbyPage" as CreateLobbyPage <<Function Component>> {
+        + useState: isLoading, setIsLoading, error, setError, isSuccess, setIsSuccess, newLobbyId, setNewLobbyId
+        + useNavigate(): navigate
+        + useContext: AuthContext
+        + handleLobbyCreated(lobbyId)
+        + handleError(error)
+        + render(): JSX
+    }
+    
+    class "LobbyCreationForm" as LobbyCreationForm <<Function Component>> {
+        + props: onSubmit, isLoading, error
+        + useState: lobbyData, setLobbyData, errors, setErrors, isPrivate, setIsPrivate
+        + useCallback(): generatePrivateCode
+        + handleInputChange(e)
+        + validateForm()
+        + handleSubmit(e)
+        + render(): JSX
+    }
+    
+    class "LobbySettings" as LobbySettings <<Function Component>> {
+        + props: settings, onChange, errors
+        + useState: localSettings, setLocalSettings
+        + useEffect()
+        + handleChange(setting, value)
+        + togglePrivate()
+        + setPlayerLimit(limit)
+        + setGameMode(mode)
+        + render(): JSX
+    }
+    
+    class "GameModeSelector" as GameModeSelector <<Function Component>> {
+        + props: selectedMode, onChange, disabled
+        + useState: modes, setModes, isLoading, setIsLoading
+        + useEffect()
+        + fetchGameModes()
+        + handleSelectionChange(e)
+        + render(): JSX
+    }
+    
+    class "useLobby" as useLobby <<Custom Hook>> {
+        + useState: lobbies, setLobbies, currentLobby, setCurrentLobby, isLoading, setIsLoading, error, setError
+        + useCallback: createLobby, fetchLobbies, fetchLobbyById, updateLobby, deleteLobby
+        + return: { lobbies, currentLobby, isLoading, error, createLobby, fetchLobbies, fetchLobbyById, updateLobby, deleteLobby }
+    }
+    
+    class "LobbyApiService" as LobbyApiService <<Utility>> {
+        + createLobby(lobbyData)
+        + getLobbies(filters)
+        + getLobbyById(id)
+        + updateLobby(id, data)
+        + deleteLobby(id)
+        + getGameModes()
+    }
+}
+
+package "Backend Components (Spring Boot)" {
+    class LobbyController {
+        - lobbyService: LobbyService
+        - userService: UserService
+        + createLobby(LobbyDTO): ResponseEntity<LobbyDTO>
+        + getLobbies(Map<String, String>): ResponseEntity<List<LobbyDTO>>
+        + getLobbyById(Long): ResponseEntity<LobbyDTO>
+        + updateLobby(Long, LobbyDTO): ResponseEntity<LobbyDTO>
+        + deleteLobby(Long): ResponseEntity<Void>
+        + getGameModes(): ResponseEntity<List<GameModeDTO>>
+    }
+    
+    class LobbyService {
+        - lobbyRepository: LobbyRepository
+        - userRepository: UserRepository
+        - gameModeRepository: GameModeRepository
+        + createLobby(LobbyDTO, Long): Lobby
+        + findAllLobbies(Map<String, String>): List<Lobby>
+        + findLobbyById(Long): Lobby
+        + updateLobby(Long, LobbyDTO): Lobby
+        + deleteLobby(Long): void
+        + validateLobbyOwnership(Long, Long): boolean
+        + findGameModes(): List<GameMode>
+    }
+    
+    class Lobby {
+        - id: Long
+        - name: String
+        - description: String
+        - ownerId: Long
+        - isPrivate: Boolean
+        - privateCode: String
+        - maxPlayers: Integer
+        - gameMode: GameMode
+        - status: LobbyStatus
+        - createdAt: Timestamp
+        - updatedAt: Timestamp
+    }
+    
+    class LobbyDTO {
+        + id: Long
+        + name: String
+        + description: String
+        + ownerId: Long
+        + ownerUsername: String
+        + isPrivate: Boolean
+        + privateCode: String
+        + maxPlayers: Integer
+        + currentPlayers: Integer
+        + gameMode: GameModeDTO
+        + status: String
+        + createdAt: Timestamp
+    }
+    
+    class GameMode {
+        - id: Long
+        - name: String
+        - description: String
+        - maxPlayers: Integer
+        - defaultDeckSize: Integer
+        - specialRules: Map<String, String>
+    }
+    
+    class GameModeDTO {
+        + id: Long
+        + name: String
+        + description: String
+        + maxPlayers: Integer
+        + defaultDeckSize: Integer
+        + specialRules: Map<String, String>
+    }
+    
+    enum LobbyStatus {
+        OPEN
+        IN_GAME
+        CLOSED
+    }
+}
+
+' Frontend relationships
+CreateLobbyPage --> LobbyCreationForm : uses
+LobbyCreationForm --> LobbySettings : uses
+LobbySettings --> GameModeSelector : uses
+CreateLobbyPage ..> useLobby : uses
+useLobby ..> LobbyApiService : uses
+
+' Backend relationships
+LobbyController --> LobbyService : uses
+LobbyService --> LobbyRepository : uses
+LobbyService --> UserRepository : uses
+LobbyService --> GameModeRepository : uses
+LobbyRepository --> Lobby : manages
+GameModeRepository --> GameMode : manages
+
+@enduml

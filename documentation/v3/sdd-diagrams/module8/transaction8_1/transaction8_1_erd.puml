@@ -1,0 +1,66 @@
+@startuml
+' Entity-Relationship Diagram for Lore Video Playback (Transaction 8.1)
+
+entity "accounts" as Account {
+  * id : uuid <<PK>>
+  * email : string <<UQ>>
+  * username : string <<UQ>>
+  * password : string
+  * type : enum (user, mod, admin)
+  * isActive : boolean
+  * inactiveReason : text
+  * lastLogin : datetime
+  * gamesPlayed : int
+  * gamesWon : int
+  * gamesLost : int
+  * rating : int
+  * bio : string
+  * avatar : blob
+  * avatarMimeType : string
+  * creds : int
+  * crypts : int
+  * decoration : string
+  * firstTimeComplete : boolean
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "user_preferences" as UserPreferences {
+  * id : uuid <<PK>>
+  * userId : uuid <<FK>>
+  * firstTimeComplete : boolean
+  * tutorialVersion : string
+  * videoWatched : boolean
+  * tutorialCompleted : boolean
+  * lastTutorialStep : int
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "lore_videos" as LoreVideo {
+  * id : uuid <<PK>>
+  * title : string
+  * videoUrl : string
+  * duration : int
+  * isActive : boolean
+  * version : string
+  * createdAt : datetime
+  * updatedAt : datetime
+}
+
+entity "video_watch_history" as VideoWatchHistory {
+  * id : uuid <<PK>>
+  * userId : uuid <<FK>>
+  * videoId : uuid <<FK>>
+  * watchedAt : datetime
+  * completed : boolean
+  * skipped : boolean
+  * watchDuration : int
+  * createdAt : datetime
+}
+
+Account ||--o{ UserPreferences : has
+Account ||--o{ VideoWatchHistory : watches
+LoreVideo ||--o{ VideoWatchHistory : tracked_in
+
+@enduml

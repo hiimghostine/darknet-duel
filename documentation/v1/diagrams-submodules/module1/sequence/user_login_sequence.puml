@@ -1,0 +1,94 @@
+@startuml
+title User Login - Sequence Diagram
+
+actor "User" as User
+participant "LoginForm" as Form
+participant "AuthContext" as Context
+participant "AuthController" as Controller
+participant "AuthService" as Service
+participant "UserRepository" as Repo
+participant "PasswordEncoder" as Encoder
+participant "JWTProvider" as JWT
+database "Database" as DB
+
+User -> Form: Enter credentials
+activate Form
+User -> Form: Click login button
+Form -> Form: validateForm()
+
+alt Validation Failed
+    Form -> Form: displayErrors()
+    Form --> User: Show validation errors
+else Validation Passed
+    Form -> Controller: POST /api/auth/login
+    activate Controller
+    Controller -> Service: authenticateUser(LoginRequest)
+    activate Service
+    
+    Service -> Repo: findByUsername(username)
+    activate Repo
+    Repo -> DB: SELECT * FROM users
+    DB --> Repo: User data
+    Repo --> Service: Optional<User>
+    deactivate Repo
+    
+    alt User not found
+        Service -> Repo: findByEmail(username)
+        activate Repo
+        Repo -> DB: SELECT * FROM users
+        DB --> Repo: User data
+        Repo --> Service: Optional<User>
+        deactivate Repo
+    end
+    
+    alt User not found
+        Service --> Controller: AuthenticationException
+        Controller --> Form: 401 Unauthorized
+        Form --> User: "Invalid credentials" message
+    else User found
+        Service -> Encoder: matches(rawPassword, encodedPassword)
+        activate Encoder
+        Encoder --> Service: boolean result
+        deactivate Encoder
+        
+        alt Password incorrect
+            Service --> Controller: AuthenticationException
+            Controller --> Form: 401 Unauthorized
+            Form --> User: "Invalid credentials" message
+        else Password correct
+            Service -> JWT: generateToken(user)
+            activate JWT
+            JWT --> Service: JWT token
+            deactivate JWT
+            
+            Service -> JWT: generateRefreshToken(user)
+            activate JWT
+            JWT --> Service: refresh token
+            deactivate JWT
+            
+            Service -> Repo: save(user with updated lastLoginDate)
+            activate Repo
+            Repo -> DB: UPDATE users
+            DB --> Repo: Success
+            Repo --> Service: Updated User
+            deactivate Repo
+            
+            Service --> Controller: AuthResponse
+            deactivate Service
+            Controller --> Form: 200 OK with auth data
+            deactivate Controller
+            
+            Form -> Context: login(token, user)
+            activate Context
+            Context -> Context: Update authentication state
+            Context --> Form: Success
+            deactivate Context
+            
+            Form --> User: Redirect to dashboard
+        end
+    end
+end
+
+deactivate Form
+
+@enduml

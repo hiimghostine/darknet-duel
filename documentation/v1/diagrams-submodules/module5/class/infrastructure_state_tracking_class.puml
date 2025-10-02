@@ -1,0 +1,88 @@
+@startuml
+
+title Infrastructure State Tracking - Class Diagram
+
+package "Frontend Components (React.js)" {
+    class "InfrastructureComponent" as InfrastructureComponent {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "InfrastructureStateTracker" as InfrastructureStateTracker {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "InfrastructureDetailsPanel" as InfrastructureDetailsPanel {
+        +props
+        +state
+        + useEffect()
+        + render()
+    }
+
+    class "useInfrastructureState" as useInfrastructureState {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+    class "useStateAnimation" as useStateAnimation {
+        +state
+        + useEffect()
+        + useCallback()
+        + return()
+    }
+
+}
+
+package "Backend Components (Spring Boot)" {
+    class InfrastructureController {
+        -attributes
+        + methods()
+    }
+
+    class StateManager {
+        -attributes
+        + methods()
+    }
+
+    class InfrastructureRepository {
+        -attributes
+        + methods()
+    }
+
+    class Infrastructure {
+        -attributes
+        + methods()
+    }
+
+    class StateChangeResult {
+        -attributes
+        + methods()
+    }
+
+    class StateChangeMessage {
+        -attributes
+        + methods()
+    }
+
+    class EffectService {
+        -attributes
+        + methods()
+    }
+
+    class Effect {
+        -attributes
+        + methods()
+    }
+
+}
+
+InfrastructureComponent ..> InfrastructureController : API calls
+
+@enduml

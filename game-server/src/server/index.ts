@@ -54,6 +54,33 @@ if (server.db) {
 // ✅ Set up lobby hooks to capture real user data
 // This captures player data when they join lobbies
 server.router.use(async (ctx, next) => {
+  // Intercept lobby creation to validate lobbyName length (blank allowed) AFTER creation
+  // This avoids consuming the request stream (which boardgame.io also reads)
+  if (ctx.request.path.includes('/games/darknet-duel/') &&
+      ctx.request.path.endsWith('/create') &&
+      ctx.request.method === 'POST') {
+    await next();
+    try {
+      const created: any = ctx.body;
+      const matchID: string | undefined = created?.matchID;
+      if (matchID && server.db) {
+        const match = await server.db.fetch(matchID, { metadata: true });
+        const setupData = (match as any)?.setupData || {};
+        const lobbyNameRaw = (setupData.lobbyName ?? '').toString();
+        const trimmed = lobbyNameRaw.trim();
+        if (trimmed && (trimmed.length < 3 || trimmed.length > 50)) {
+          // Invalid name: wipe the match and return error
+          await server.db.wipe(matchID);
+          ctx.status = 400;
+          ctx.body = { error: 'Lobby name must be 3-50 characters or left blank' };
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error validating lobby after creation:', e);
+    }
+    return; // We've already called next() above
+  }
   // Intercept lobby join requests to capture real user data
   if (ctx.request.path.includes('/games/darknet-duel/') && 
       ctx.request.path.includes('/join') && 
@@ -205,9 +232,9 @@ if (server.app) {
                   if (updatedPlayers[playerID]) {
                     console.log(`Found player ${playerID} in match data`);  
                     
-                    // Update the player data
+                    // Update and sanitize the player data to free the slot
                     updatedPlayers[playerID] = {
-                      ...updatedPlayers[playerID],
+                      id: updatedPlayers[playerID].id,
                       left: true,
                       isConnected: false
                     };
@@ -225,6 +252,24 @@ if (server.app) {
                     await server.db.setMetadata(id, updatedMetadata);
                     
                     console.log(`Successfully removed player ${playerID} from match ${id}`);
+
+                    // If lobby has no connected players after this update, remove it immediately
+                    try {
+                      const latest = await server.db.fetch(id, { metadata: true });
+                      const latestPlayers: Record<string, any> = latest?.metadata?.players || {};
+                      const anyPresent = Object.keys(latestPlayers).length > 0;
+                      // Consider a player connected unless explicitly marked left or isConnected === false
+                      const hasConnected = Object.values(latestPlayers).some((p: any) => p && p.left !== true && p.isConnected !== false);
+                      // Only remove if ALL players are explicitly left or disconnected
+                      const allLeftOrDisconnected = anyPresent && Object.values(latestPlayers).every((p: any) => p && (p.left === true || p.isConnected === false));
+
+                      if (!hasConnected && allLeftOrDisconnected) {
+                        console.log(`No connected players remain in match ${id}. Removing lobby immediately.`);
+                        await server.db.wipe(id);
+                      }
+                    } catch (wipeErr) {
+                      console.error(`Failed to immediately remove empty lobby ${id}:`, wipeErr);
+                    }
                   } else {
                     console.log(`Player ${playerID} not found in match ${id} players list`);
                   }
@@ -926,9 +971,8 @@ const lobbyCleanupService = new LobbyCleanupService(server);
 // Configure the cleanup service to run frequently (every 10 seconds)
 lobbyCleanupService.setCleanupInterval(10000); // 10 seconds
 
-// Set a 30-second grace period for abandoned games
-// This allows players to see that a game was abandoned before it disappears
-lobbyCleanupService.setAbandonedGameTTL(30000); // 30 seconds grace period
+// Remove abandoned games immediately (no grace period)
+lobbyCleanupService.setAbandonedGameTTL(0);
 
 // Set a 5-minute TTL for inactive games (games with no connected players)
 // This ensures lobbies don't accumulate indefinitely
@@ -1037,9 +1081,12 @@ const startGameOverMonitoring = () => {
             await handleGameEnd(matchID, fullMatchData || matchData);
             
             // Immediately remove the completed game (winner or abandoned)
-            // if (lobbyCleanupService) {
-            //   await lobbyCleanupService.removeCompletedGame(matchID);
-            // }
+            try {
+              await server.db.wipe(matchID);
+              console.log(`✅ Removed completed/abandoned game ${matchID} immediately after processing`);
+            } catch (wipeErr) {
+              console.error(`❌ Failed to remove completed game ${matchID}:`, wipeErr);
+            }
             
             // Mark the game as processed
             processedGames.add(matchID);

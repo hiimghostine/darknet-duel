@@ -1,0 +1,20 @@
+@startuml
+start
+:Player is connected to game server;
+if (Player disconnects?) then (yes)
+  :System detects disconnection;
+  :Preserve player game state;
+  :Mark player as disconnected;
+  if (Player reconnects?) then (yes)
+    :Restore player session and game state;
+    :Player resumes play;
+    stop
+  else (no)
+    :Wait for reconnection or end game if timeout;
+    stop
+  endif
+else (no)
+  :Continue gameplay;
+  stop
+endif
+@enduml 

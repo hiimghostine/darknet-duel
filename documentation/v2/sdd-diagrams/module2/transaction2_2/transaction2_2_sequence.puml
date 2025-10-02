@@ -1,0 +1,41 @@
+@startuml
+' Sequence Diagram for Create/Join/Leave Lobbies (Transaction 2.2)
+
+actor User
+participant CreateLobby as CL
+participant LobbyBrowser as LB
+participant LobbyService as FS
+participant AuthStore as AS
+participant "API /games/darknet-duel" as API
+participant BoardgameIOServer as BGS
+participant LobbyDatabase as DB
+
+User -> CL: Fill create lobby form
+CL -> FS: createMatch(settings)
+FS -> API: POST /games/darknet-duel
+API -> BGS: createMatch()
+BGS -> DB: Store match
+DB --> BGS: Match created
+BGS --> API: Match ID
+API --> FS: Match ID
+FS -> CL: Match ID
+CL -> FS: joinMatch(matchID, ...)
+FS -> API: POST /games/darknet-duel/:matchID/join
+API -> BGS: joinMatch()
+BGS -> DB: Update match metadata
+DB --> BGS: Updated match
+BGS --> API: Join result
+API --> FS: Join result
+FS --> CL: Join result
+CL -> User: Navigate to lobby
+User -> LB: Join/Leave lobby
+LB -> FS: joinMatch()/leaveMatch()
+FS -> API: POST /games/darknet-duel/:matchID/join or /leave
+API -> BGS: joinMatch()/leaveMatch()
+BGS -> DB: Update match metadata
+DB --> BGS: Updated match
+BGS --> API: Result
+API --> FS: Result
+FS --> LB: Result
+LB -> User: Update UI
+@enduml 

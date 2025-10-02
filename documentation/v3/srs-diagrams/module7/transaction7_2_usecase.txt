@@ -1,0 +1,17 @@
+Use Case: Report Management (Submit, Review, Resolve)
+
+Description: Allows players to submit reports about inappropriate behavior or issues, and allows admins/moderators to review and resolve these reports. The system tracks report status and notifies relevant parties of updates.
+
+Actors: Player, Admin, Moderator
+
+Preconditions: Player is authenticated; admin/moderator has appropriate privileges.
+
+Main Flow:
+1. Player submits a report describing the issue or inappropriate behavior.
+2. System records the report and assigns it a status (e.g., open).
+3. Admin/moderator reviews the submitted report.
+4. Admin/moderator takes action (e.g., warn, ban, dismiss) and resolves the report.
+5. System updates the report status and logs the resolution.
+6. System notifies the reporting player and the reported user (if applicable) of the outcome.
+
+Postconditions: Reports are tracked, reviewed, and resolved; all actions are logged and relevant parties are notified. 

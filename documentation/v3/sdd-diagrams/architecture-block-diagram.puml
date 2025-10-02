@@ -1,0 +1,92 @@
+@startuml
+' Darknet Duel System Architecture Block Diagram (Top-Down)
+' Use skinparam for clarity and aesthetics
+skinparam rectangle {
+  BackgroundColor #e4e7eb
+  BorderColor #00fff7
+  FontColor #000000
+  FontSize 16
+  FontName "Fira Mono"
+}
+skinparam shadowing true
+skinparam defaultTextAlignment center
+' skinparam ArrowColorrgb(0, 0, 0)
+' skinparam ArrowFontColorrgb(0, 0, 0)
+skinparam ArrowFontSize 14
+skinparam linetype ortho
+
+' Top-level: User
+actor "Player / Admin / Moderator\n(Web Browser)" as User #f8f8f2
+
+' Frontend
+rectangle "Frontend\n(React, TypeScript)" as FE {
+  rectangle "UI Components\n(React, Tailwind CSS, DaisyUI)" as UI
+  rectangle "State Management\n(zustand)" as State
+  rectangle "Routing\n(react-router-dom)" as Routing
+  rectangle "Networking\n(axios, socket.io-client)" as Net
+  rectangle "Forms & Validation\n(react-hook-form, zod)" as Forms
+  rectangle "Game Client\n(boardgame.io client)" as GameClient
+  rectangle "Admin/Mod Tools" as AdminTools
+}
+
+' Backend Server
+rectangle "Backend Server\n(Node.js, Express, TypeORM, MySQL)" as BE {
+  rectangle "REST API\n(Express, JWT, Multer, Helmet, CORS, Rate Limiter)" as REST
+  rectangle "WebSocket Chat\n(Socket.IO)" as Chat
+  rectangle "Database ORM\n(TypeORM)" as ORM
+  rectangle "Database\n(MySQL)" as DB
+  rectangle "Swagger UI\n(OpenAPI 3.0)" as Swagger
+  rectangle "Audit Logging\n(LogService, AuditLog)" as Audit
+  rectangle "Admin/Mod Logic" as AdminLogic
+  rectangle "Store & Currency\n(Creds, Crypts)" as Store
+  rectangle "File Uploads\n(Multer)" as Uploads
+}
+
+' Game Server
+rectangle "Game Server\n(Node.js, boardgame.io, Koa)" as GS {
+  rectangle "Game Logic\n(boardgame.io)" as Logic
+  rectangle "Lobby & Matchmaking" as Lobby
+  rectangle "Game State Sync\n(Socket.IO)" as Sync
+  rectangle "API Endpoints\n(Koa)" as KoaAPI
+  rectangle "Backend Sync\n(Axios)" as BackendSync
+}
+
+' Connections
+User --> FE : HTTPS
+FE --> REST : REST API (HTTPS)
+FE --> Chat : WebSocket (Socket.IO)
+FE --> GameClient : boardgame.io Client
+FE --> Sync : WebSocket (Socket.IO)
+FE --> KoaAPI : Card Data API (Koa)
+FE --> AdminTools : Admin/Mod UI
+
+REST --> ORM : DB Access
+ORM --> DB : SQL
+REST --> Swagger : API Docs
+REST --> Audit : Admin Actions Logs
+REST --> AdminLogic : Admin/Mod Endpoints
+REST --> Store : Store/Shop API
+REST --> Uploads : File Uploads
+Chat --> REST : User Auth
+
+GameClient --> Logic : Game Moves
+Sync --> Logic : Real-Time State
+Lobby --> Logic : Player Join/Leave
+KoaAPI --> Logic : Card Data
+BackendSync --> REST : Game Results, Ratings
+
+' Backend <-> Game Server
+Logic --> BackendSync : Game End
+BackendSync --> REST : POST /game-result
+
+' Admin/Mod
+AdminTools --> AdminLogic : Admin/Mod API
+AdminLogic --> DB : User, Logs, Reports
+
+' Notes for clarity
+note top of FE : React 19, Vite, TypeScript\nTailwind CSS, DaisyUI,\nframer-motion, react-icons
+note right of BE : Express.js, JWT,\nTypeORM, MySQL,\nSocket.IO, Multer, Swagger
+note right of GS : boardgame.io,\nKoa, Socket.IO,\nAxios, dotenv
+note bottom of DB : MySQL 8.x
+
+@enduml 

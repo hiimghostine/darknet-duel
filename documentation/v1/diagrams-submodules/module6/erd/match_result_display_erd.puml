@@ -1,0 +1,106 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Match Result Display - Entity Relationship Diagram
+
+table(game_results) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(winner_id) BIGINT not_null
+    foreign_key(loser_id) BIGINT not_null
+    win_condition ENUM('SECURITY_THRESHOLD', 'INFRASTRUCTURE_CONTROL', 'OPPONENT_SURRENDER', 'TIMEOUT', 'DISCONNECTION') not_null
+    final_red_team_points INT not_null
+    final_blue_team_points INT not_null
+    total_rounds INT not_null
+    game_start_time TIMESTAMP not_null
+    game_end_time TIMESTAMP not_null
+    result_generated_at TIMESTAMP not_null
+}
+
+table(detailed_game_results) {
+    primary_key(id) BIGINT
+    foreign_key(game_result_id) BIGINT not_null
+    key_events JSON
+    foreign_key(mvp_card_id) BIGINT
+    turn_by_turn_scores JSON not_null
+    game_length INT not_null
+    infra_control_history JSON
+    highest_points_turn INT
+    most_contested_infrastructure VARCHAR(100)
+}
+
+table(game_events) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    event_type ENUM('INFRASTRUCTURE_CAPTURED', 'INFRASTRUCTURE_FORTIFIED', 'MAJOR_ATTACK', 'MAJOR_DEFENSE', 'GAME_WINNING_MOVE') not_null
+    turn_number INT not_null
+    foreign_key(player_id) BIGINT not_null
+    description TEXT not_null
+    affected_entities JSON
+    points INT
+    timestamp TIMESTAMP not_null
+    is_key_event BOOLEAN not_null
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    red_team_player_id BIGINT not_null
+    blue_team_player_id BIGINT not_null
+    current_turn INT not_null
+    start_time TIMESTAMP
+    end_time TIMESTAMP
+}
+
+table(players) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    team ENUM('RED_TEAM', 'BLUE_TEAM') not_null
+    final_score INT
+    cards_played INT
+    actions_taken INT
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    email VARCHAR(100) not_null
+    display_name VARCHAR(100)
+}
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+    image_url VARCHAR(255)
+}
+
+table(player_feedback) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(user_id) BIGINT not_null
+    rating INT not_null
+    comment TEXT
+    categories JSON
+    submitted_at TIMESTAMP not_null
+}
+
+' Relationships
+game_results }o--|| games : "for"
+game_results }o--|| users : "winner"
+game_results }o--|| users : "loser" 
+detailed_game_results }|--|| game_results : "extends"
+detailed_game_results }o--o| cards : "mvp card"
+games ||--o{ players : "has"
+players }o--|| users : "represents"
+game_events }o--|| games : "occurs in"
+game_events }o--|| players : "performed by"
+player_feedback }o--|| games : "about"
+player_feedback }o--|| users : "from"
+
+@enduml

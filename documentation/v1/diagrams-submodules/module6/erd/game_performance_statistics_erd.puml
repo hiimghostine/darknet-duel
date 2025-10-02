@@ -1,0 +1,136 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title Game Performance Statistics - Entity Relationship Diagram
+
+table(player_statistics) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    games_played INT not_null
+    games_won INT not_null
+    win_rate FLOAT not_null
+    average_game_length INT not_null
+    favorite_cards JSON
+    effectiveness_rating FLOAT not_null
+    cards_played_stats JSON not_null
+    preferred_role ENUM('ATTACKER', 'DEFENDER', 'BALANCED') not_null
+    attack_success_rate FLOAT
+    defense_success_rate FLOAT
+    points_per_game FLOAT not_null
+    points_per_turn FLOAT not_null
+    infrastructure_capture_rate FLOAT
+    timeframe_start TIMESTAMP
+    timeframe_end TIMESTAMP
+    last_calculated TIMESTAMP not_null
+}
+
+table(card_statistics) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    card_counts JSON not_null
+    card_effectiveness JSON not_null
+    most_effective_cards JSON
+    least_effective_cards JSON
+    card_type_distribution JSON not_null
+    most_played_card_categories JSON
+    last_calculated TIMESTAMP not_null
+}
+
+table(performance_data_points) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    date DATE not_null
+    win_rate FLOAT not_null
+    effectiveness_rating FLOAT not_null
+    games_played INT not_null
+    points_scored INT not_null
+    period_type ENUM('DAILY', 'WEEKLY', 'MONTHLY') not_null
+}
+
+table(player_game_stats) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    points_scored INT not_null
+    turns_played INT not_null
+    cards_played INT not_null
+    attacks_launched INT not_null
+    defenses_deployed INT not_null
+    infrastructures_captured INT
+    infrastructures_lost INT
+    average_points_per_turn FLOAT
+}
+
+table(card_effectiveness_metrics) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    times_played INT not_null
+    times_successful INT not_null
+    success_rate FLOAT not_null
+    average_points_generated FLOAT
+    effectiveness_score FLOAT not_null
+    last_calculated TIMESTAMP not_null
+}
+
+table(user_ranking_stats) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    ranking_score INT not_null
+    global_rank INT
+    percentile FLOAT
+    rank_history JSON
+    updated_at TIMESTAMP not_null
+}
+
+table(users) {
+    primary_key(id) BIGINT
+    username VARCHAR(50) not_null
+    display_name VARCHAR(100)
+    registration_date TIMESTAMP not_null
+}
+
+table(games) {
+    primary_key(id) BIGINT
+    status ENUM('WAITING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED') not_null
+    created_at TIMESTAMP not_null
+    ended_at TIMESTAMP
+}
+
+table(cards) {
+    primary_key(id) BIGINT
+    name VARCHAR(50) not_null
+    type ENUM('EXPLOIT', 'ATTACK', 'DEFENSE', 'RESPONSE', 'INFRASTRUCTURE') not_null
+}
+
+table(card_played_logs) {
+    primary_key(id) BIGINT
+    foreign_key(game_id) BIGINT not_null
+    foreign_key(player_id) BIGINT not_null
+    foreign_key(card_id) BIGINT not_null
+    turn_number INT not_null
+    was_successful BOOLEAN not_null
+    points_generated INT
+    target_type VARCHAR(50)
+    foreign_key(target_id) BIGINT
+    played_at TIMESTAMP not_null
+}
+
+' Relationships
+player_statistics }o--|| users : "belongs to"
+card_statistics }o--|| users : "belongs to"
+performance_data_points }o--|| users : "tracks"
+player_game_stats }o--|| games : "for game"
+player_game_stats }o--|| users : "for player"
+card_effectiveness_metrics }o--|| users : "calculated for"
+card_effectiveness_metrics }o--|| cards : "measures"
+user_ranking_stats }o--|| users : "ranks"
+card_played_logs }o--|| games : "recorded in"
+card_played_logs }o--|| users : "by player"
+card_played_logs }o--|| cards : "card used"
+
+@enduml

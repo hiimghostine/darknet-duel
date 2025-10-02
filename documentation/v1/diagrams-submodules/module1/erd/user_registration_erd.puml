@@ -1,0 +1,33 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:blue>x</color>
+
+title User Registration - Entity Relationship Diagram
+
+table(users) {
+    primary_key(id) BIGINT
+    unique(username) VARCHAR(50) not_null
+    unique(email) VARCHAR(100) not_null
+    password_hash VARCHAR(255) not_null
+    registration_date TIMESTAMP not_null
+    last_login_date TIMESTAMP
+    status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED') not_null
+    created_at TIMESTAMP not_null
+    updated_at TIMESTAMP
+}
+
+table(registration_verification) {
+    primary_key(id) BIGINT
+    foreign_key(user_id) BIGINT not_null
+    verification_token VARCHAR(255) not_null
+    expiry_date TIMESTAMP not_null
+    verified BOOLEAN not_null
+    created_at TIMESTAMP not_null
+}
+
+users ||--o{ registration_verification : "has"
+
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+start
+:Player initiates top-up and selects amount;
+:System redirects to payment provider or shows payment modal;
+:Player completes payment;
+:System verifies payment with provider;
+if (Payment successful?) then (yes)
+  :System credits currency to player account;
+  :Notify player of success;
+else (no)
+  :Notify player of payment failure;
+endif
+stop
+@enduml 

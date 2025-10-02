@@ -1,0 +1,50 @@
+@startuml
+' Sequence Diagram for Turn-Based Gameplay, AP Allocation, Card Play, and Targeting (Transaction 3.2)
+
+actor Player
+participant BalatroGameBoard as BG
+participant PlayerHand as PH
+participant GameControls as GC
+participant useCardActions as CA
+participant useTurnActions as TA
+participant "API/Game Server" as API
+participant gamePhases as GP
+participant turnManager as TM
+
+Player -> BG: Sees turn indicator, AP
+BG -> TA: handleEndTurn()
+TA -> API: endTurn
+API -> GP: onEnd
+GP -> TM: handleTurnEnd()
+TM -> GP: Next turn
+GP -> TM: handleTurnStart()
+TM -> API: AP allocated, card drawn
+API -> BG: Updated game state
+BG -> PH: Render hand, highlight playable cards
+Player -> PH: Selects card
+PH -> CA: playCard(card)
+CA -> API: playCard/throwCard
+API -> GP: playCardMove/throwCardMove
+GP -> API: Update game state
+API -> BG: Updated game state
+alt Card requires target
+  BG -> CA: selectCardToThrow(card)
+  CA -> BG: Prompt for target
+  Player -> BG: Selects target
+  BG -> CA: handleTargeting(target)
+  CA -> API: throwCard(card, target)
+  API -> GP: throwCardMove
+  GP -> API: Update game state
+  API -> BG: Updated game state
+end
+alt Reaction phase
+  API -> BG: Show reaction phase
+  Player -> BG: Opponent plays reaction card or passes
+  BG -> CA: playCard/skipReaction
+  CA -> API: playCard/skipReaction
+  API -> GP: reactionStageMoves
+  GP -> API: Update game state
+  API -> BG: Updated game state
+end
+BG -> GC: Show end turn/cycle card/surrender
+@enduml 

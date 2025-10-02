@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Admin/Moderator" as AdminMod
+rectangle "Admin & Moderation System" {
+  usecase "Modify Username" as UC7_4A
+  usecase "Modify Email" as UC7_4B
+  usecase "Modify Password" as UC7_4C
+}
+AdminMod --> UC7_4A
+AdminMod --> UC7_4B
+AdminMod --> UC7_4C
+@enduml 

@@ -1,0 +1,12 @@
+@startuml
+left to right direction
+actor "Player" as Player
+rectangle "Store & Currency System" {
+  usecase "View Currency Balance" as UC6_1A
+  usecase "Earn Currency by Playing" as UC6_1B
+  usecase "Spend Currency" as UC6_1C
+}
+Player --> UC6_1A
+Player --> UC6_1B
+Player --> UC6_1C
+@enduml 

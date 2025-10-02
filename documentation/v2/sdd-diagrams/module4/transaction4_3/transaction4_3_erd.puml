@@ -1,0 +1,53 @@
+@startuml
+' Entity-Relationship Diagram for Game Rules Enforcement (AP, Hand Size, Win Conditions) (Transaction 4.3)
+
+entity "players" as Player {
+  * id : string <<PK>>
+  * name : string
+  * role : enum (attacker, defender)
+  * actionPoints : int
+  * hand : Card[]
+  * deck : Card[]
+  * discard : Card[]
+  * freeCardCyclesUsed : int
+}
+
+entity "cards" as Card {
+  * id : string <<PK>>
+  * name : string
+  * type : string
+  * cost : int
+  * description : string
+}
+
+entity "game_state" as GameState {
+  * id : string <<PK>>
+  * attacker : Player
+  * defender : Player
+  * currentTurn : string
+  * turnNumber : int
+  * currentRound : int
+  * gamePhase : string
+  * winner : string
+  * actions : GameAction[]
+  * attackerScore : int
+  * defenderScore : int
+  * gameConfig : object
+}
+
+entity "game_config" as GameConfig {
+  * initialResources : int
+  * maxTurns : int
+  * startingHandSize : int
+  * maxHandSize : int
+  * attackerActionPointsPerTurn : int
+  * defenderActionPointsPerTurn : int
+  * maxActionPoints : int
+  * cardsDrawnPerTurn : int
+}
+
+GameState ||--|| GameConfig : uses
+GameState ||--o{ Player : has
+Player ||--o{ Card : has
+GameState ||--o{ Card : tracks
+@enduml 

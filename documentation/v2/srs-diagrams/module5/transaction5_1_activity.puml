@@ -1,0 +1,9 @@
+@startuml
+start
+:Game ends;
+:System determines winner and win condition;
+:System stores match result in backend;
+:System displays match result and win condition to players;
+:Players view result;
+stop
+@enduml 

@@ -1,0 +1,15 @@
+Use Case: Game State Visualization (Frontend)
+
+Description: Allows players to view the current game state, including cards in play, player hands, infrastructure states, and ongoing effects, through the frontend UI. The system provides real-time updates and visual feedback (e.g., animations, highlights) for all game actions.
+
+Actors: Player
+
+Preconditions: Game session is active and player is connected to the frontend UI.
+
+Main Flow:
+1. System receives updated game state from the server.
+2. Frontend UI updates to reflect the current game state (cards, infrastructure, effects).
+3. Frontend displays visual feedback for actions (e.g., animations, highlights).
+4. Player views the updated game state and effects in real time.
+
+Postconditions: Player has an accurate, real-time visual representation of the game state and actions. 

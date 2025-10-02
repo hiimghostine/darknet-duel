@@ -1,0 +1,44 @@
+@startuml
+' Class Diagram for Game State Persistence and Recovery (Transaction 3.5)
+
+package "Frontend" {
+  class GameClient {
+    +connectToServer()
+    +receiveGameState()
+    +handleReconnection()
+    +renderGameBoard()
+  }
+  class useGameConnection {
+    +attemptReconnect()
+    +receiveGameState()
+  }
+  class LobbyDetail {
+    +handleGameRemoval()
+  }
+}
+
+package "Backend (Game Server)" {
+  class boardgameioServer {
+    +persistGameState()
+    +serveGameStateOnReconnect()
+    +removeCompletedOrAbandonedGame()
+  }
+  class LobbyCleanupService {
+    +removeAbandonedGame()
+    +removeCompletedGame()
+  }
+  class DarknetDuel {
+    +setup()
+    +phases
+    +moves
+  }
+}
+
+GameClient --> useGameConnection : uses
+GameClient --> boardgameioServer : Socket.IO/WebSocket
+useGameConnection --> boardgameioServer : uses
+LobbyDetail --> boardgameioServer : uses
+boardgameioServer --> LobbyCleanupService : uses
+boardgameioServer --> DarknetDuel : runs
+
+@enduml 
