@@ -121,6 +121,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     heartbeatStatus.opponentStatus,
     isActive || false,
     Date.now(), // lastActivityTime - using current time as placeholder
+    heartbeatStatus.hasInitialized,
     {} // config - using defaults
   );
   

@@ -554,7 +554,8 @@ const GameClient: React.FC = () => {
         />
       )}
       {error && <GameError message={error || 'Unknown error'} />}
-      {connectionError && <GameError message="Connection Error" details={connectionError} />}
+      {/* Removed old connection error display - using modern DisconnectionAlert in BalatroGameBoard instead */}
+      {/* {connectionError && <GameError message="Connection Error" details={connectionError} />} */}
       {clientComponent}
     </div>
   );

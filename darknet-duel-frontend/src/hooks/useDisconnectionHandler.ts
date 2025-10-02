@@ -30,6 +30,7 @@ export function useDisconnectionHandler(
   opponentStatus: ConnectionStatus,
   isActive: boolean,
   lastActivityTime: number,
+  hasInitialized: boolean,
   config: Partial<DisconnectionConfig> = {}
 ) {
   const finalConfig = { ...DEFAULT_DISCONNECTION_CONFIG, ...config };
@@ -45,6 +46,9 @@ export function useDisconnectionHandler(
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track if opponent has ever been connected (to distinguish "never connected" from "disconnected")
+  const opponentWasConnectedRef = useRef<boolean>(false);
   
   /**
    * Start countdown timer
@@ -125,17 +129,31 @@ export function useDisconnectionHandler(
   
   // Monitor opponent connection status
   useEffect(() => {
-    if (!opponentStatus.isConnected && !disconnectionState.isOpponentDisconnected) {
-      // Opponent just disconnected
+    // Only trigger disconnection alerts after initial connection is established
+    if (!hasInitialized) return;
+    
+    // Track if opponent has ever been connected
+    if (opponentStatus.isConnected) {
+      opponentWasConnectedRef.current = true;
+    }
+    
+    // Only show disconnection alert if opponent WAS connected before (not just "never connected")
+    if (!opponentStatus.isConnected && !disconnectionState.isOpponentDisconnected && opponentWasConnectedRef.current) {
+      // Opponent just disconnected (was connected before)
+      console.log('Opponent disconnected - starting countdown');
       startCountdown(finalConfig.opponentDisconnectTimeout, true);
     } else if (opponentStatus.isConnected && disconnectionState.isOpponentDisconnected) {
       // Opponent reconnected
+      console.log('Opponent reconnected - stopping countdown');
       stopCountdown();
     }
-  }, [opponentStatus.isConnected, disconnectionState.isOpponentDisconnected, startCountdown, stopCountdown, finalConfig.opponentDisconnectTimeout]);
+  }, [hasInitialized, opponentStatus.isConnected, disconnectionState.isOpponentDisconnected, startCountdown, stopCountdown, finalConfig.opponentDisconnectTimeout]);
   
   // Monitor client connection status
   useEffect(() => {
+    // Only trigger disconnection alerts after initial connection is established
+    if (!hasInitialized) return;
+    
     if (!connectionStatus.isConnected && !disconnectionState.isClientDisconnected) {
       // Client just disconnected
       startCountdown(finalConfig.clientReconnectWindow, false);
@@ -143,7 +161,7 @@ export function useDisconnectionHandler(
       // Client reconnected
       stopCountdown();
     }
-  }, [connectionStatus.isConnected, disconnectionState.isClientDisconnected, startCountdown, stopCountdown, finalConfig.clientReconnectWindow]);
+  }, [hasInitialized, connectionStatus.isConnected, disconnectionState.isClientDisconnected, startCountdown, stopCountdown, finalConfig.clientReconnectWindow]);
   
   // Monitor inactivity timeout
   useEffect(() => {
