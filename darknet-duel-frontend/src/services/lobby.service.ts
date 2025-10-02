@@ -43,6 +43,10 @@ export interface GameMatch {
     data?: {
       isReady?: boolean;
       gameStarted?: boolean;
+      swapRequested?: boolean;   // ✅ NEW: Player wants to swap positions
+      swapAccepted?: boolean;    // ✅ NEW: Player accepted opponent's swap request
+      realUserId?: string;
+      realUsername?: string;
     };
     // boardgame.io automatically adds these fields for presence tracking
     isConnected?: boolean; 
@@ -357,6 +361,123 @@ export const lobbyService = {
       return true;
     } catch (error) {
       console.error('Failed to start match:', error);
+      return false;
+    }
+  },
+  
+  // ============================================
+  // POSITION SWAP METHODS
+  // ============================================
+  
+  // Request position swap with opponent
+  requestPositionSwap: async (matchID: string): Promise<boolean> => {
+    try {
+      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
+      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      
+      if (!playerID || !credentials) return false;
+      
+      const currentMatch = await lobbyService.getMatch(matchID);
+      const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
+      const existingData = currentPlayer?.data || {};
+      
+      console.log('🔄 Requesting position swap...');
+      
+      await lobbyClient.updatePlayer('darknet-duel', matchID, {
+        playerID,
+        credentials,
+        data: { 
+          ...existingData, 
+          swapRequested: true,
+          swapAccepted: false
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to request position swap:', error);
+      return false;
+    }
+  },
+  
+  // Accept and execute position swap
+  acceptPositionSwap: async (matchID: string): Promise<{success: boolean, newPlayerID?: string}> => {
+    try {
+      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
+      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      
+      if (!playerID || !credentials) return { success: false };
+      
+      // First, mark that we accept the swap
+      const currentMatch = await lobbyService.getMatch(matchID);
+      const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
+      const existingData = currentPlayer?.data || {};
+      
+      console.log('✅ Accepting position swap...');
+      
+      await lobbyClient.updatePlayer('darknet-duel', matchID, {
+        playerID,
+        credentials,
+        data: { 
+          ...existingData, 
+          swapAccepted: true
+        }
+      });
+      
+      // Wait a moment for the update to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Now call the atomic swap endpoint
+      const response = await axios.post(
+        `${GAME_SERVER_URL}/games/darknet-duel/${matchID}/swap-positions`,
+        { playerID, credentials },
+        { timeout: 10000 }
+      );
+      
+      if (response.data.success && response.data.swapped) {
+        // Get our new player ID
+        const newPlayerID = response.data.newPlayerIdFor[credentials];
+        
+        console.log(`🎉 Position swap successful! Old ID: ${playerID}, New ID: ${newPlayerID}`);
+        
+        // Update localStorage with new player ID
+        localStorage.setItem(`match_${matchID}_playerID`, newPlayerID);
+        
+        return { success: true, newPlayerID };
+      }
+      
+      return { success: false };
+    } catch (error) {
+      console.error('Failed to accept position swap:', error);
+      return { success: false };
+    }
+  },
+  
+  // Cancel swap request
+  cancelPositionSwap: async (matchID: string): Promise<boolean> => {
+    try {
+      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
+      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      
+      if (!playerID || !credentials) return false;
+      
+      const currentMatch = await lobbyService.getMatch(matchID);
+      const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
+      const existingData = currentPlayer?.data || {};
+      
+      await lobbyClient.updatePlayer('darknet-duel', matchID, {
+        playerID,
+        credentials,
+        data: { 
+          ...existingData, 
+          swapRequested: false,
+          swapAccepted: false
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to cancel position swap:', error);
       return false;
     }
   }

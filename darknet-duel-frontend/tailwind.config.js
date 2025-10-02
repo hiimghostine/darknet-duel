@@ -13,6 +13,15 @@ export default {
         'cyber-dark': '#121212',
         'cyber-light': '#F5F7FA',
       },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2s infinite',
+      },
     },
   },
   darkMode: 'class',

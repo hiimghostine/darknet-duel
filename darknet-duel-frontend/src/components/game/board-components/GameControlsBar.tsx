@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, Sword, GraduationCap, Brain } from 'lucide-react';
+import { ArrowLeft, Shield, Sword, GraduationCap, Brain, Moon, Sun, LogOut, FastForward } from 'lucide-react';
 
 // Import types
 import type { GameState } from '../../../types/game.types';
@@ -87,12 +87,16 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
 
   return (
     <header className={`
-      flex justify-between items-center p-4 border-b backdrop-blur-sm z-10
+      flex justify-between items-center px-6 py-3 border-b backdrop-blur-md z-10 relative
       ${isAttacker 
-        ? 'bg-red-900/80 border-red-700/30' 
-        : 'bg-blue-900/80 border-blue-700/30'
+        ? 'bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border-red-500/30' 
+        : 'bg-gradient-to-r from-blue-950/90 via-blue-900/80 to-blue-950/90 border-blue-500/30'
       }
     `}>
+      {/* Cyberpunk corner accents */}
+      <div className={`absolute top-0 left-0 w-16 h-0.5 ${isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'}`} />
+      <div className={`absolute top-0 right-0 w-16 h-0.5 ${isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'}`} />
+      
       {/* Left side - Game title or tutorial info */}
       <div className="flex items-center gap-4">
         {tutorialInfo ? (
@@ -102,36 +106,51 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
                 triggerClick();
                 tutorialInfo.onExit();
               }}
-              className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+              className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content transition-all hover:scale-105"
             >
               <ArrowLeft className="w-4 h-4" />
-              Exit Tutorial
+              <span className="hidden sm:inline">Exit Tutorial</span>
             </button>
             
-            <div className="divider divider-horizontal"></div>
+            <div className="w-px h-8 bg-base-content/20" />
             
             <div className="flex items-center gap-3">
-              {getScriptIcon(tutorialInfo.scriptName.toLowerCase().replace(/\s+/g, '_'))}
+              <div className={`p-2 rounded-lg ${isAttacker ? 'bg-red-500/20' : 'bg-blue-500/20'}`}>
+                {getScriptIcon(tutorialInfo.scriptName.toLowerCase().replace(/\s+/g, '_'))}
+              </div>
               <div>
-                <h1 className="text-lg font-bold text-base-content">
+                <h1 className="text-base font-bold text-base-content font-mono">
                   {tutorialInfo.scriptName}
                 </h1>
-                <p className="text-sm text-base-content/70">
-                  Playing as: {tutorialInfo.role === 'attacker' ? 'Red Team (Attacker)' : 'Blue Team (Defender)'}
+                <p className="text-xs text-base-content/60 flex items-center gap-1.5">
+                  {tutorialInfo.role === 'attacker' ? <Sword className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                  {tutorialInfo.role === 'attacker' ? 'Red Team' : 'Blue Team'}
                 </p>
               </div>
             </div>
           </>
         ) : (
-          <h1 className={`
-            text-xl font-bold font-mono uppercase tracking-wide
-            ${isAttacker 
-              ? 'text-red-300 bg-clip-text text-transparent bg-gradient-to-r from-red-300 to-red-500' 
-              : 'text-blue-300 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500'
-            }
-          `}>
-            DARKNET_DUEL
-          </h1>
+          <div className="flex items-center gap-3">
+            <div className={`
+              w-10 h-10 rounded-lg flex items-center justify-center
+              ${isAttacker 
+                ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border border-red-500/30' 
+                : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30'
+              }
+            `}>
+              {isAttacker ? <Sword className="w-5 h-5 text-red-300" /> : <Shield className="w-5 h-5 text-blue-300" />}
+            </div>
+            <h1 className={`
+              text-xl font-bold font-mono uppercase tracking-widest
+              bg-clip-text text-transparent bg-gradient-to-r
+              ${isAttacker 
+                ? 'from-red-300 via-red-400 to-red-500' 
+                : 'from-blue-300 via-blue-400 to-blue-500'
+              }
+            `}>
+              DARKNET<span className="text-base-content/40 mx-1">//</span>DUEL
+            </h1>
+          </div>
         )}
       </div>
 
@@ -139,63 +158,73 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
       <div className="flex items-center gap-2">
         {tutorialInfo && (
           <>
-            <div className="badge badge-info">
-              Step {tutorialInfo.stepIndex + 1} of {tutorialInfo.totalSteps}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-base-200/50 border border-base-content/10">
+              <GraduationCap className="w-4 h-4 text-info" />
+              <span className="text-xs font-mono font-bold">
+                {tutorialInfo.stepIndex + 1}/{tutorialInfo.totalSteps}
+              </span>
+              <span className="text-xs text-base-content/50">
+                ({Math.round(((tutorialInfo.stepIndex + 1) / tutorialInfo.totalSteps) * 100)}%)
+              </span>
             </div>
-            <div className="badge badge-success">
-              {Math.round(((tutorialInfo.stepIndex + 1) / tutorialInfo.totalSteps) * 100)}%
-            </div>
-            <div className="divider divider-horizontal"></div>
+            <div className="w-px h-8 bg-base-content/20" />
           </>
         )}
         
         <button 
           className={`
-            btn btn-sm font-mono font-bold uppercase transition-all duration-200
-            ${isAttacker 
-              ? 'bg-red-800/80 border-red-600/50 text-red-100 hover:bg-red-700/90 hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30' 
-              : 'bg-blue-800/80 border-blue-600/50 text-blue-100 hover:bg-blue-700/90 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/30'
+            btn btn-sm gap-2 font-mono font-bold uppercase transition-all duration-200
+            ${isInReactionMode 
+              ? 'bg-accent/20 border-accent/50 text-accent hover:bg-accent/30 hover:border-accent' 
+              : isAttacker 
+                ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500' 
+                : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30 hover:border-blue-500'
             }
+            ${(!isActive || isProcessingMove) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
           `}
           onClick={() => {
-            triggerClick(); // Play click sound on button press
+            triggerClick();
             isInReactionMode ? handleSkipReaction() : handleEndTurn();
           }}
           disabled={!isActive || isProcessingMove}
         >
-          {isInReactionMode ? (
-            isTimerActive ? `PASS (${timeRemaining}s)` : 'PASS'
-          ) : 'END_TURN'}
+          <FastForward className="w-4 h-4" />
+          <span className="hidden sm:inline">
+            {isInReactionMode ? (isTimerActive ? `PASS (${timeRemaining}s)` : 'PASS') : 'END TURN'}
+          </span>
+          <span className="sm:hidden">
+            {isInReactionMode ? (isTimerActive ? `${timeRemaining}s` : 'PASS') : 'END'}
+          </span>
         </button>
         
         <button
           className={`
-            btn btn-sm font-mono font-bold uppercase transition-all duration-200
-            ${isAttacker
-              ? 'bg-red-900/80 border-red-700/50 text-red-200 hover:bg-red-800/90 hover:border-red-600 hover:shadow-lg hover:shadow-red-600/30'
-              : 'bg-blue-900/80 border-blue-700/50 text-blue-200 hover:bg-blue-800/90 hover:border-blue-600 hover:shadow-lg hover:shadow-blue-600/30'
-            }
+            btn btn-sm gap-2 font-mono font-bold uppercase transition-all duration-200
+            bg-error/20 border-error/50 text-error hover:bg-error/30 hover:border-error
+            ${(!isActive || isProcessingMove) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
           `}
           onClick={() => {
-            triggerClick(); // Play click sound on button press
+            triggerClick();
             surrender();
           }}
           disabled={!isActive || isProcessingMove}
           title={!isActive ? "Surrender is only available during your turn" : "Surrender the game"}
         >
-          SURRENDER
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">FORFEIT</span>
         </button>
+        
+        <div className="w-px h-8 bg-base-content/20" />
         
         <button
           onClick={() => {
-            triggerClick(); // Play click sound on button press
+            triggerClick();
             toggleTheme();
           }}
-          className={`btn btn-sm font-mono font-bold uppercase transition-all duration-200 bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk`}
+          className="btn btn-sm btn-ghost gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all hover:scale-105"
           aria-label="Toggle Theme"
-          style={{ marginLeft: '0.5rem' }}
         >
-          {theme === 'cyberpunk' ? '🌙' : '☀️'}
+          {theme === 'cyberpunk' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </div>
     </header>

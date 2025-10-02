@@ -327,63 +327,78 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   return (
     <div className={`${className}`}>
-      {/* Chat banner with same styling as lobbies banner */}
-      <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
-        <div className="bg-base-200 border border-primary/20 relative">
-          {/* Corner accents */}
-          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
-          <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
-          <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
-          
-          {/* IRC-style header with cyberpunk styling */}
-          <div className="p-4 pb-2">
-            <div className="font-mono">
-              <div className="flex items-baseline justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold font-mono">
-                    #{channelInfo.name.toUpperCase()}
-                  </h3>
-                  
-                  {/* Channel switcher */}
-                  {showChannelSwitcher && lobbyId && channels.length > 1 && (
-                    <div className="flex items-center gap-1 ml-3">
-                      <FaExchangeAlt className="text-primary/60 text-xs" />
-                      {channels.map(channel => (
-                        <button
-                          key={channel.id}
-                          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
-                          className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
-                            currentChannel === channel.id
-                              ? 'bg-primary/20 text-primary border border-primary/40'
-                              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10'
-                          }`}
-                        >
-                          <FaHashtag className="inline mr-1" />
-                          {channel.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      {/* Compact Chat banner */}
+      <div className="bg-base-200 border border-primary/20">
+        {/* IRC-style header - compact */}
+        <div className="p-2 border-b border-primary/20">
+          <div className="font-mono">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold font-mono text-primary">
+                  #{channelInfo.name.toUpperCase()}
+                </h3>
                 
-                <div className="text-xs text-base-content/70">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-              <div className="text-base-content text-sm flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
-                <span>{connectedUsers.size} USER(S) CONNECTED • {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}</span>
-              </div>
-              {error && (
-                <div className="text-xs text-error mt-1">⚠️ TRANSMISSION ERROR: {error}</div>
-              )}
-            </div>
-          </div>
+{/* Footer Status Bar */}
+<div className="flex items-center justify-between text-xs text-base-content/70 w-full px-2">
+  {/* Left side: Channel switcher */}
+  {showChannelSwitcher && lobbyId && channels.length > 1 && (
+    <div className="flex items-center gap-1">
+      {channels.map(channel => (
+        <button
+          key={channel.id}
+          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
+          className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
+            currentChannel === channel.id
+              ? 'bg-primary/20 text-primary border border-primary/40'
+              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
+          }`}
+        >
+          <FaHashtag className="text-xs" />
+          <span className="text-xs">
+            {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
+          </span>
+        </button>
+      ))}
+    </div>
+  )}
 
-          {/* IRC-style message area with cyberpunk styling */}
-          <div className="px-4 pb-4">
-            <div ref={messageContainerRef} className="bg-base-300/50 border border-primary/30 p-3 font-mono text-sm h-48 overflow-y-auto">
+  {/* Right side: Time + Connection status */}
+  <div className="flex items-center gap-4">
+    {/* Time */}
+    <div>
+      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </div>
+
+    {/* Connection status */}
+    <div className="flex items-center gap-2 text-sm">
+      <div
+        className={`w-2 h-2 rounded-full ${
+          isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'
+        }`}
+      ></div>
+      <span>
+        {connectedUsers.size} USER(S) CONNECTED •{' '}
+        {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}
+      </span>
+    </div>
+  </div>
+</div>
+
+              </div>
+            </div>
+            <div className="text-base-content text-xs flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
+              <span>{connectedUsers.size} USERS • {isConnected ? 'SECURE' : 'OFFLINE'}</span>
+            </div>
+            {error && (
+              <div className="text-xs text-error mt-1">⚠️ {error}</div>
+            )}
+          </div>
+        </div>
+
+        {/* IRC-style message area - compact */}
+        <div className="p-2">
+          <div ref={messageContainerRef} className="bg-base-300/50 border border-primary/30 p-2 font-mono text-xs h-40 lg:h-48 overflow-y-auto">
               {messages.length === 0 ? (
                 <div className="text-base-content/50 text-xs space-y-1">
                   <div className="text-primary">*** NEURAL LINK ESTABLISHED TO #DARKNET_LOBBY</div>
@@ -427,48 +442,41 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* IRC-style input with cyberpunk styling */}
-            <div className={`mt-3 border border-primary/30 relative rounded-md transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80' : 'bg-base-100/80'}`}>
-              {/* Corner accents for input */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/50"></div>
-              <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/50"></div>
-              <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary/50"></div>
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/50"></div>
-              
-              <div className="flex items-center p-2">
-                <span className="text-primary font-mono text-sm mr-2 text-flicker">&gt;</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    setIsTyping(e.target.value.length > 0);
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder="ENTER_TRANSMISSION..."
-                  disabled={!isConnected}
-                  maxLength={500}
-                  className={`flex-1 border-none outline-none text-base-content text-sm font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'text-base-content' : 'text-base-content'} `}
-                />
-                {newMessage.length > 450 && (
-                  <span className="text-warning text-xs ml-2 font-mono">
-                    {500 - newMessage.length}
-                  </span>
-                )}
-              </div>
-              
-              {/* Status line with cyberpunk styling */}
-              <div className="px-2 pb-2 text-xs text-base-content/50 font-mono">
-                <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1">
-                    <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
-                    {isTyping ? 'TRANSMITTING...' : 'STANDBY'}
-                  </span>
-                  <span>
-                    ENTER→SEND • {newMessage.length}/500 CHARS
-                  </span>
-                </div>
+          {/* IRC-style input - compact */}
+          <div className={`mt-2 border border-primary/30 transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80' : 'bg-base-100/80'}`}>
+            <div className="flex items-center p-1.5">
+              <span className="text-primary font-mono text-xs mr-1.5 text-flicker">&gt;</span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  setIsTyping(e.target.value.length > 0);
+                }}
+                onKeyPress={handleKeyPress}
+                placeholder="TYPE MESSAGE..."
+                disabled={!isConnected}
+                maxLength={500}
+                className={`flex-1 border-none outline-none text-base-content text-xs font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200`}
+              />
+              {newMessage.length > 450 && (
+                <span className="text-warning text-xs ml-1 font-mono">
+                  {500 - newMessage.length}
+                </span>
+              )}
+            </div>
+            
+            {/* Status line - compact */}
+            <div className="px-1.5 pb-1 text-xs text-base-content/50 font-mono border-t border-primary/20">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1">
+                  <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
+                  <span className="text-xs">{isTyping ? 'TYPING' : 'READY'}</span>
+                </span>
+                <span className="text-xs">
+                  {newMessage.length}/500
+                </span>
               </div>
             </div>
           </div>

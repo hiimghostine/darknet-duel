@@ -1,6 +1,12 @@
 import React, { useMemo, useState } from 'react';
+import { 
+  Globe, Database, Monitor, User as UserIcon, Wrench, 
+  CheckCircle, AlertTriangle, Flame, ShieldCheck, Lock,
+  Target, Eye, Zap
+} from 'lucide-react';
 import type { GameState, InfrastructureCard } from '../../../types/game.types';
 import TemporaryEffectsDisplay from './TemporaryEffectsDisplay';
+import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
 
 export interface InfrastructureGridProps {
   G: GameState;
@@ -24,12 +30,63 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   // Track which card is being hovered for magnification
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   
+  // Get responsive scaling configuration
+  const scaling = useResponsiveGameScaling();
+  
   // Get optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({
     cards: G?.infrastructure || [],
     length: G?.infrastructure?.length || 0,
     states: G?.infrastructure?.map(infra => ({ id: infra.id, state: infra.state })) || []
   }), [G?.infrastructure]);
+  
+  // Calculate infrastructure card dimensions (slightly larger than player cards)
+  const infraWidth = scaling.breakpoint === 'lg' || scaling.breakpoint === 'xl' || scaling.breakpoint === '2xl'
+    ? scaling.cardWidthLg * 1.6
+    : scaling.cardWidth * 1.7;
+  const infraHeight = scaling.breakpoint === 'lg' || scaling.breakpoint === 'xl' || scaling.breakpoint === '2xl'
+    ? scaling.cardHeightLg * 1.4
+    : scaling.cardHeight * 1.4;
+  
+  // Expanded infrastructure card dimensions
+  const expandedInfraWidth = scaling.expandedCardWidth * 0.75;
+  const expandedInfraHeight = scaling.expandedCardHeight * 0.7;
+
+  // Helper function to get infrastructure type icon
+  const getInfraTypeIcon = (type: string) => {
+    switch (type) {
+      case 'network':
+        return <Globe className="w-5 h-5" />;
+      case 'data':
+        return <Database className="w-5 h-5" />;
+      case 'web':
+        return <Monitor className="w-5 h-5" />;
+      case 'user':
+        return <UserIcon className="w-5 h-5" />;
+      case 'critical':
+        return <Wrench className="w-5 h-5" />;
+      default:
+        return <Target className="w-5 h-5" />;
+    }
+  };
+
+  // Helper function to get infrastructure state icon
+  const getInfraStateIcon = (state: string) => {
+    switch (state) {
+      case 'secure':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'vulnerable':
+        return <AlertTriangle className="w-4 h-4" />;
+      case 'compromised':
+        return <Flame className="w-4 h-4" />;
+      case 'fortified':
+        return <Lock className="w-4 h-4" />;
+      case 'shielded':
+        return <ShieldCheck className="w-4 h-4" />;
+      default:
+        return <CheckCircle className="w-4 h-4" />;
+    }
+  };
 
   // Helper function to get infrastructure state classes
   const getInfraStateClasses = (state: string) => {
@@ -66,7 +123,10 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   }
   
   return (
-    <div className="relative flex flex-wrap gap-3 justify-center items-center max-w-full">
+    <div 
+      className="relative flex flex-wrap justify-center items-center max-w-full"
+      style={{ gap: `${scaling.cardGap}px` }}
+    >
       {infrastructure.map((infra, index) => {
         const isTargetable = targetMode && validTargets.includes(infra.id);
         const isSelected = targetMode && targetedInfraId === infra.id;
@@ -90,9 +150,9 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
             key={infra.id}
             data-infra-id={infra.id}
             className={`
-              group relative lg:w-52 lg:h-64 w-48 h-56 border-2 rounded-xl lg:p-4 p-3
+              group relative border-2 rounded-xl
               flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
-              font-mono lg:text-base text-sm overflow-visible
+              font-mono overflow-visible
               ${getInfraStateClasses(infra.state).replace(' animate-pulse', '')}
               ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40' : ''}
               ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
@@ -100,6 +160,12 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               ${!targetMode ? 'hover:z-[9999] hover:shadow-2xl transform-gpu' : ''}
               ${hasMonitoringEffects ? 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100' : ''}
             `}
+            style={{
+              width: `${infraWidth}px`,
+              height: `${infraHeight}px`,
+              padding: `${scaling.containerPadding}px`,
+              fontSize: scaling.breakpoint === 'lg' || scaling.breakpoint === 'xl' || scaling.breakpoint === '2xl' ? '16px' : '14px'
+            }}
             onClick={() => {
               if (targetMode && isTargetable) {
                 onInfrastructureTarget(infra.id);
@@ -113,15 +179,20 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
             <div className={`group-hover:opacity-0 group-hover:invisible transition-all duration-300 flex flex-col justify-between h-full text-center p-1 ${(infra.state === 'vulnerable' || infra.state === 'compromised') ? 'animate-pulse' : ''}`}>
               {/* Top section - ID and Type Icon */}
               <div className="flex items-center justify-between w-full mb-1">
-                <div className="lg:text-xs text-[10px] bg-base-300 text-base-content rounded px-1.5 py-1 font-semibold">
+                <div className="lg:text-xs text-[10px] bg-base-300 text-base-content rounded px-1.5 py-1 font-semibold font-mono">
                   {infra.id}
                 </div>
-                <div className="lg:text-3xl text-2xl">
-                  {infra.type === 'network' ? '🌐' :
-                   infra.type === 'data' ? '💾' :
-                   infra.type === 'web' ? '🖥️' :
-                   infra.type === 'user' ? '👤' :
-                   infra.type === 'critical' ? '🔧' : '⚙️'}
+                <div className={`
+                  lg:w-10 lg:h-10 w-8 h-8 rounded-lg flex items-center justify-center
+                  ${infra.state === 'secure' ? 'bg-success/20 text-success border border-success/30' :
+                    infra.state === 'vulnerable' ? 'bg-warning/20 text-warning border border-warning/30' :
+                    infra.state === 'compromised' ? 'bg-error/20 text-error border border-error/30' :
+                    infra.state === 'fortified' ? 'bg-info/20 text-info border border-info/30' :
+                    infra.state === 'shielded' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                    'bg-base-300/50 text-base-content/50 border border-base-content/20'
+                  }
+                `}>
+                  {getInfraTypeIcon(infra.type)}
                 </div>
               </div>
               
@@ -164,47 +235,60 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                 
                 {/* State indicator */}
                 <div className={`
-                  lg:text-[10px] text-[9px] font-bold px-2 py-1 rounded uppercase text-center text-base-content
-                  ${infra.state === 'compromised' ? 'bg-red-600' :
-                    infra.state === 'fortified' ? 'bg-blue-600' :
-                    infra.state === 'vulnerable' ? 'bg-amber-600' :
-                    infra.state === 'shielded' ? 'bg-purple-600' :
-                    'bg-green-600'}
+                  flex items-center justify-center gap-1.5 lg:text-[10px] text-[9px] font-bold px-2 py-1.5 rounded-lg uppercase text-center
+                  ${infra.state === 'compromised' ? 'bg-error/90 text-error-content border border-error' :
+                    infra.state === 'fortified' ? 'bg-info/90 text-info-content border border-info' :
+                    infra.state === 'vulnerable' ? 'bg-warning/90 text-warning-content border border-warning' :
+                    infra.state === 'shielded' ? 'bg-purple-600/90 text-purple-100 border border-purple-500' :
+                    'bg-success/90 text-success-content border border-success'}
                 `}>
-                  {infra.state}
+                  <div className="lg:w-3 lg:h-3 w-2.5 h-2.5">
+                    {getInfraStateIcon(infra.state)}
+                  </div>
+                  <span>{infra.state}</span>
                 </div>
               </div>
             </div>
 
             {/* Expanded Infrastructure Card View (on hover) - Scaled for readability */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-lg border-2 border-base-content/20 z-[99999] shadow-2xl w-48 h-64 p-3 flex flex-col pointer-events-none transform scale-125 origin-center">
+            <div 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-lg border-2 border-base-content/20 z-[99999] shadow-2xl flex flex-col pointer-events-none transform scale-125 origin-center"
+              style={{
+                width: `${expandedInfraWidth}px`,
+                height: `${expandedInfraHeight}px`,
+                padding: `${scaling.containerPadding}px`
+              }}
+            >
               {/* Infrastructure Card Header */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <div className={`
-                    w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-base-content
-                    ${infra.state === 'compromised' ? 'bg-red-600' :
-                      infra.state === 'fortified' ? 'bg-blue-600' :
-                      infra.state === 'vulnerable' ? 'bg-amber-600' :
-                      infra.state === 'shielded' ? 'bg-purple-600' :
-                      'bg-green-600'}
+                    w-6 h-6 rounded-lg flex items-center justify-center
+                    ${infra.state === 'compromised' ? 'bg-error/90 text-error-content border border-error' :
+                      infra.state === 'fortified' ? 'bg-info/90 text-info-content border border-info' :
+                      infra.state === 'vulnerable' ? 'bg-warning/90 text-warning-content border border-warning' :
+                      infra.state === 'shielded' ? 'bg-purple-600/90 text-purple-100 border border-purple-500' :
+                      'bg-success/90 text-success-content border border-success'}
                   `}>
-                    {infra.state === 'compromised' ? '💥' :
-                     infra.state === 'fortified' ? '🛡️' :
-                     infra.state === 'vulnerable' ? '⚠️' :
-                     infra.state === 'shielded' ? '🔒' :
-                     '✅'}
+                    <div className="w-3.5 h-3.5">
+                      {getInfraStateIcon(infra.state)}
+                    </div>
                   </div>
-                  <div className="text-xs bg-base-300 text-base-content rounded px-1.5 py-0.5 font-semibold uppercase">
+                  <div className="text-xs bg-base-300 text-base-content rounded px-1.5 py-0.5 font-semibold font-mono uppercase">
                     {infra.id}
                   </div>
                 </div>
-                <div className="text-lg">
-                  {infra.type === 'network' ? '🌐' :
-                   infra.type === 'data' ? '💾' :
-                   infra.type === 'web' ? '🖥️' :
-                   infra.type === 'user' ? '👤' :
-                   infra.type === 'critical' ? '🔧' : '⚙️'}
+                <div className={`
+                  w-8 h-8 rounded-lg flex items-center justify-center
+                  ${infra.state === 'secure' ? 'bg-success/20 text-success border border-success/30' :
+                    infra.state === 'vulnerable' ? 'bg-warning/20 text-warning border border-warning/30' :
+                    infra.state === 'compromised' ? 'bg-error/20 text-error border border-error/30' :
+                    infra.state === 'fortified' ? 'bg-info/20 text-info border border-info/30' :
+                    infra.state === 'shielded' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                    'bg-base-300/50 text-base-content/50 border border-base-content/20'
+                  }
+                `}>
+                  {getInfraTypeIcon(infra.type)}
                 </div>
               </div>
 
@@ -331,15 +415,17 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
           >
             {/* Monitoring Indicator */}
             {hasMonitoringEffects && (
-              <div className="lg:text-xs text-[10px] bg-warning text-base-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-warning/50 cursor-help pointer-events-auto">
-                🎯 MONITORED
+              <div className="lg:text-xs text-[10px] bg-warning/90 text-warning-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-warning cursor-help pointer-events-auto flex items-center gap-1.5">
+                <Eye className="w-3 h-3" />
+                <span className="hidden lg:inline">MONITORED</span>
               </div>
             )}
             
             {/* Active Effects Indicator */}
             {hasActiveEffects && (
-              <div className="lg:text-xs text-[10px] bg-info text-base-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-info/50 cursor-help pointer-events-auto">
-                ⚡ AFFECTED
+              <div className="lg:text-xs text-[10px] bg-info/90 text-info-content rounded-full px-3 py-1.5 font-bold uppercase animate-pulse shadow-lg border border-info cursor-help pointer-events-auto flex items-center gap-1.5">
+                <Zap className="w-3 h-3" />
+                <span className="hidden lg:inline">AFFECTED</span>
               </div>
             )}
             

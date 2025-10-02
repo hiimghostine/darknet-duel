@@ -45,6 +45,9 @@ export function useHeartbeat(
     reconnectAttempts: 0
   });
   
+  // Track if we've initialized the connection (prevents false disconnection alerts on load)
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,6 +79,11 @@ export function useHeartbeat(
         const data = await response.json();
         const latency = Date.now() - startTime;
         
+        // Mark as initialized on first successful heartbeat
+        if (!hasInitialized) {
+          setHasInitialized(true);
+        }
+        
         setConnectionStatus(prev => ({
           ...prev,
           isConnected: true,
@@ -98,13 +106,19 @@ export function useHeartbeat(
       }
     } catch (error) {
       console.warn('Heartbeat failed:', error);
+      
+      // Mark as initialized even on failure (after first attempt)
+      if (!hasInitialized) {
+        setHasInitialized(true);
+      }
+      
       setConnectionStatus(prev => ({
         ...prev,
         isConnected: false,
         reconnectAttempts: prev.reconnectAttempts + 1
       }));
     }
-  }, [matchID, playerID, GAME_SERVER_URL]);
+  }, [matchID, playerID, GAME_SERVER_URL, hasInitialized]);
   
   /**
    * Start heartbeat monitoring
@@ -183,6 +197,7 @@ export function useHeartbeat(
     sendHeartbeat,
     startHeartbeat,
     stopHeartbeat,
+    hasInitialized,
     isReconnecting: connectionStatus.reconnectAttempts > 0 && connectionStatus.reconnectAttempts < finalConfig.maxReconnectAttempts,
     hasFailedToReconnect: connectionStatus.reconnectAttempts >= finalConfig.maxReconnectAttempts
   };

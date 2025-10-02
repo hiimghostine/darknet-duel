@@ -108,58 +108,47 @@ const CreateLobby: React.FC = () => {
 
   return (
     <>
-      {/* Decorative elements for this specific page */}
-      <div className="relative z-0 pointer-events-none">
-        <div className="absolute top-10 left-0 w-1/3 h-1 bg-gradient-to-r from-primary to-transparent"></div>
-        <div className="absolute bottom-10 right-0 w-1/4 h-1 bg-gradient-to-l from-primary to-transparent"></div>
-        <div className="absolute top-40 right-10 opacity-5 text-7xl font-mono text-primary">01</div>
-        <div className="absolute bottom-20 left-20 opacity-5 text-8xl font-mono text-primary">10</div>
-      </div>
+      <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm">
+        <div className="bg-base-200 border border-primary/20 p-4 relative">
+          {/* Corner accents */}
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+          <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+          <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
       
-      <div className="border border-primary/30 rounded bg-base-800/50 backdrop-filter backdrop-blur-sm shadow-lg shadow-primary/10 p-6 relative">
-      {/* Decorative elements */}
-      <div className="absolute -top-2 -left-2 w-20 h-20 border-t-2 border-l-2 border-primary opacity-60"></div>
-      <div className="absolute -bottom-2 -right-2 w-20 h-20 border-b-2 border-r-2 border-primary opacity-60"></div>
-      
-      <h2 className="text-3xl font-mono text-primary mb-6 glitch-text">CREATE NEW LOBBY</h2>
+      <h2 className="text-xl font-mono text-primary mb-4 font-bold">CREATE NEW LOBBY</h2>
       
       {error && (
-        <div className="mb-6 border border-error/50 bg-error/20 text-error px-4 py-3 rounded-md flex items-center">
+        <div className="mb-3 border border-error/50 bg-error/20 text-error px-3 py-2 flex items-center text-xs">
           <FaExclamationTriangle className="mr-2 animate-pulse" />
-          <p className="font-mono text-sm">{error}</p>
+          <p className="font-mono">{error}</p>
         </div>
       )}
       
-      <div className="mb-8">
-        <div className="flex items-center mb-3">
-          <FaNetworkWired className="text-primary mr-2" />
-          <h3 className="text-xl font-mono text-primary">OPERATION MODE</h3>
+      <div className="mb-4">
+        <div className="flex items-center mb-2">
+          <FaNetworkWired className="text-primary mr-2 text-sm" />
+          <h3 className="text-sm font-mono text-primary font-bold">OPERATION MODE</h3>
         </div>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-2"></div>
         
-        <div className="grid md:grid-cols-2 gap-3 mt-4">
+        <div className="grid md:grid-cols-2 gap-2">
           <button 
             type="button"
             onClick={() => {
               triggerClick();
               setSelectedMode('standard');
             }}
-            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+            className={`p-2 border font-mono group relative overflow-hidden transition-all duration-300 ${
               selectedMode === 'standard' 
-                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-1 ring-primary/50' 
                 : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
             }`}
           >
             <div className={`absolute inset-0 transition-opacity duration-300 ${
               selectedMode === 'standard' ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
             }`}></div>
-            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
-              selectedMode === 'standard' ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
-              selectedMode === 'standard' ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <span className="text-base font-bold block relative z-10">STANDARD</span>
+            <span className="text-sm font-bold block relative z-10">STANDARD</span>
             <span className={`text-xs relative z-10 ${
               selectedMode === 'standard' ? 'text-primary/90' : 'text-primary/70'
             }`}>[ {selectedMode === 'standard' ? 'SELECTED' : 'AVAILABLE'} ]</span>
@@ -168,56 +157,48 @@ const CreateLobby: React.FC = () => {
           <button 
             type="button"
             onClick={() => setSelectedMode('blitz')}
-            className={`p-4 border font-mono rounded relative transition-all duration-300 ${
+            className={`p-2 border font-mono relative transition-all duration-300 ${
               selectedMode === 'blitz'
-                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-2 ring-base-content/30'
+                ? 'border-base-content/50 bg-base-content/10 text-base-content shadow-lg shadow-base-content/25 ring-1 ring-base-content/30'
                 : 'border-base-content/30 bg-base-900/60 text-base-content/60 opacity-60 cursor-not-allowed'
             }`}
             disabled
           >
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-base-content/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-base-content/50"></div>
-            <span className="text-base font-bold block relative z-10">BLITZ</span>
+            <span className="text-sm font-bold block relative z-10">BLITZ</span>
             <span className="text-xs relative z-10">[ COMING SOON ]</span>
           </button>
         </div>
       </div>
       
       {/* Privacy Settings */}
-      <div className="mb-8">
-        <div className="flex items-center mb-3">
-          <FaShieldAlt className="text-primary mr-2" />
-          <h3 className="text-xl font-mono text-primary">LOBBY PRIVACY</h3>
+      <div className="mb-4">
+        <div className="flex items-center mb-2">
+          <FaShieldAlt className="text-primary mr-2 text-sm" />
+          <h3 className="text-sm font-mono text-primary font-bold">LOBBY PRIVACY</h3>
         </div>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-2"></div>
         
-        <div className="grid md:grid-cols-2 gap-3 mt-4">
+        <div className="grid md:grid-cols-2 gap-2">
           <button 
             type="button"
             onClick={() => {
               triggerClick();
               setIsPrivate(false);
             }}
-            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+            className={`p-2 border font-mono group relative overflow-hidden transition-all duration-300 ${
               !isPrivate 
-                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-1 ring-primary/50' 
                 : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
             }`}
           >
             <div className={`absolute inset-0 transition-opacity duration-300 ${
               !isPrivate ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
             }`}></div>
-            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
-              !isPrivate ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
-              !isPrivate ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <span className="text-base font-bold block relative z-10">PUBLIC</span>
+            <span className="text-sm font-bold block relative z-10">PUBLIC</span>
             <span className={`text-xs relative z-10 ${
               !isPrivate ? 'text-primary/90' : 'text-primary/70'
             }`}>[ {!isPrivate ? 'SELECTED' : 'AVAILABLE'} ]</span>
-            <div className="text-xs mt-2 text-primary/60 relative z-10">Visible in lobby browser</div>
+            <div className="text-xs mt-1 text-primary/60 relative z-10">Visible in browser</div>
           </button>
           
           <button 
@@ -226,46 +207,40 @@ const CreateLobby: React.FC = () => {
               triggerClick();
               setIsPrivate(true);
             }}
-            className={`p-4 border font-mono rounded group relative overflow-hidden transition-all duration-300 ${
+            className={`p-2 border font-mono group relative overflow-hidden transition-all duration-300 ${
               isPrivate 
-                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                ? 'border-primary bg-primary/20 text-primary shadow-lg shadow-primary/25 ring-1 ring-primary/50' 
                 : 'border-primary bg-base-900/80 hover:bg-primary/20 text-primary'
             }`}
           >
             <div className={`absolute inset-0 transition-opacity duration-300 ${
               isPrivate ? 'bg-primary/20 opacity-100' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
             }`}></div>
-            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l transition-colors duration-300 ${
-              isPrivate ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r transition-colors duration-300 ${
-              isPrivate ? 'border-primary/80' : 'border-primary'
-            }`}></div>
-            <span className="text-base font-bold block relative z-10">PRIVATE</span>
+            <span className="text-sm font-bold block relative z-10">PRIVATE</span>
             <span className={`text-xs relative z-10 ${
               isPrivate ? 'text-primary/90' : 'text-primary/70'
             }`}>[ {isPrivate ? 'SELECTED' : 'AVAILABLE'} ]</span>
-            <div className="text-xs mt-2 text-primary/60 relative z-10">Join by ID only</div>
+            <div className="text-xs mt-1 text-primary/60 relative z-10">Join by ID only</div>
           </button>
         </div>
       </div>
       
       {/* Lobby Name */}
-      <div className="mb-8">
-        <div className="flex items-center mb-3">
-          <FaTag className="text-primary mr-2" />
-          <h3 className="text-xl font-mono text-primary">LOBBY IDENTIFICATION</h3>
+      <div className="mb-4">
+        <div className="flex items-center mb-2">
+          <FaTag className="text-primary mr-2 text-sm" />
+          <h3 className="text-sm font-mono text-primary font-bold">LOBBY IDENTIFICATION</h3>
         </div>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-2"></div>
         
-        <div className="mt-4">
+        <div>
           <input
             type="text"
             value={lobbyName}
             onChange={(e) => setLobbyName(e.target.value)}
             placeholder="Enter lobby name..."
             maxLength={50}
-            className={`w-full px-4 py-3 border font-mono placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200 ${
+            className={`w-full px-3 py-2 border font-mono text-sm placeholder:text-primary/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-colors duration-200 ${
               theme === 'cyberpunk-dark' 
                 ? 'bg-base-900/80 border-primary/30 text-primary' 
                 : 'bg-base-100/80 border-primary/40 text-primary'
@@ -277,60 +252,58 @@ const CreateLobby: React.FC = () => {
         </div>
       </div>
       
-      <div className="mb-8">
-        <div className="flex items-center mb-3">
-          <FaUserSecret className="text-primary mr-2" />
-          <h3 className="text-xl font-mono text-primary">OPERATIVE ROLES</h3>
+      <div className="mb-4">
+        <div className="flex items-center mb-2">
+          <FaUserSecret className="text-primary mr-2 text-sm" />
+          <h3 className="text-sm font-mono text-primary font-bold">OPERATIVE ROLES</h3>
         </div>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-4"></div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent mb-2"></div>
         
-        <p className="text-base-content/80 font-mono text-sm mb-4">In Darknet Duel, the host will be assigned the Attacker role, while the second player will be the Defender:</p>
+        <p className="text-base-content/80 font-mono text-xs mb-2">Host gets Attacker, second player gets Defender:</p>
         
-        <div className="grid md:grid-cols-2 gap-6 mb-4">
-          <div className="border border-accent/50 bg-base-900/80 p-4 rounded-lg relative overflow-hidden group hover:shadow-accent/20 hover:shadow-md transition-all duration-300">
+        <div className="grid md:grid-cols-2 gap-2 mb-2">
+          <div className="border border-accent/50 bg-base-900/80 p-2 relative overflow-hidden">
             <div className="absolute inset-0 bg-accent/5"></div>
-            <div className="absolute top-0 right-0 w-16 h-16 -mt-8 -mr-8 bg-accent/10 rounded-full blur-xl"></div>
             <div className="relative z-10">
-              <div className="flex items-center mb-3">
-                <FaUserSecret className="text-accent text-xl mr-2" />
-                <div className="text-xl font-mono text-accent">ATTACKER</div>
+              <div className="flex items-center mb-1">
+                <FaUserSecret className="text-accent text-sm mr-1" />
+                <div className="text-sm font-mono text-accent font-bold">ATTACKER</div>
               </div>
-              <div className="text-sm text-base-content/80 font-mono">Exploit vulnerabilities and breach network defenses to extract classified data</div>
+              <div className="text-xs text-base-content/80 font-mono">Exploit vulnerabilities to extract data</div>
             </div>
           </div>
           
-          <div className="border border-secondary/50 bg-base-900/80 p-4 rounded-lg relative overflow-hidden group hover:shadow-secondary/20 hover:shadow-md transition-all duration-300">
+          <div className="border border-secondary/50 bg-base-900/80 p-2 relative overflow-hidden">
             <div className="absolute inset-0 bg-secondary/5"></div>
-            <div className="absolute top-0 right-0 w-16 h-16 -mt-8 -mr-8 bg-secondary/10 rounded-full blur-xl"></div>
             <div className="relative z-10">
-              <div className="flex items-center mb-3">
-                <FaShieldAlt className="text-secondary text-xl mr-2" />
-                <div className="text-xl font-mono text-secondary">DEFENDER</div>
+              <div className="flex items-center mb-1">
+                <FaShieldAlt className="text-secondary text-sm mr-1" />
+                <div className="text-sm font-mono text-secondary font-bold">DEFENDER</div>
               </div>
-              <div className="text-sm text-base-content/80 font-mono">Fortify systems with firewalls and deploy countermeasures to protect valuable assets</div>
+              <div className="text-xs text-base-content/80 font-mono">Fortify systems and protect assets</div>
             </div>
           </div>
         </div>
         
-        <p className="text-base-content/70 font-mono text-xs italic">Your operative role will be assigned when the secure connection is established.</p>
+        <p className="text-base-content/70 font-mono text-xs italic">Role assigned upon connection.</p>
       </div>
       
-      <div className="flex justify-between items-center pt-4 border-t border-primary/20">
+      <div className="flex justify-between items-center pt-3 border-t border-primary/20">
         <button 
           type="button" 
-          className="px-6 py-2 bg-base-200/10 border border-base-content/30 text-base-content hover:text-error hover:border-error hover:bg-error/10 transition-colors duration-200 rounded font-mono text-sm flex items-center" 
+          className="px-4 py-1.5 bg-base-200/10 border border-base-content/30 text-base-content hover:text-error hover:border-error hover:bg-error/10 transition-colors duration-200 font-mono text-xs flex items-center" 
           onClick={() => {
             triggerClick();
             handleCancel();
           }}
         >
-          <span className="mr-2">✕</span>
-          ABORT OPERATION
+          <span className="mr-1">✕</span>
+          ABORT
         </button>
         
         <button 
           type="button" 
-          className={`px-6 py-2 border rounded font-mono text-sm flex items-center ${isCreating || !user ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
+          className={`px-4 py-1.5 border font-mono text-xs flex items-center ${isCreating || !user ? 'bg-base-700/50 border-primary/30 text-primary/50 cursor-not-allowed' : 'bg-primary/20 border-primary text-primary hover:bg-primary/30 transition-colors duration-200'}`}
           onClick={() => {
             triggerClick();
             handleCreateLobby();
@@ -339,18 +312,19 @@ const CreateLobby: React.FC = () => {
         >
           {isCreating ? (
             <>
-              <span className="animate-pulse mr-2">⚙</span>
+              <span className="animate-pulse mr-1">⚙</span>
               <span>INITIALIZING...</span>
             </>
           ) : (
             <>
-              <span className="mr-2">⚡</span>
+              <span className="mr-1">⚡</span>
               <span>DEPLOY LOBBY</span>
             </>
           )}
         </button>
       </div>
-    </div>
+        </div>
+      </div>
     </>
   );
 };
