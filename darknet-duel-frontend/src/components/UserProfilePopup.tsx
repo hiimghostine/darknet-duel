@@ -11,6 +11,8 @@ interface UserProfilePopupProps {
   isVisible: boolean;
   position: { x: number; y: number };
   onClose: () => void;
+  useModal?: boolean; // If true, opens full profile in modal instead of navigating
+  onOpenFullProfile?: () => void; // Callback to open full profile modal
 }
 
 const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
@@ -18,7 +20,9 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
   username,
   isVisible,
   position,
-  onClose
+  onClose,
+  useModal = false,
+  onOpenFullProfile
 }) => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState<Partial<AccountData> | null>(null);
@@ -99,7 +103,7 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
   const getPopupStyle = () => {
     const style: React.CSSProperties = {
       position: 'fixed',
-      zIndex: 1000,
+      zIndex: 9999,
     };
 
     // Check if popup would go off-screen and adjust
@@ -146,7 +150,13 @@ const UserProfilePopup: React.FC<UserProfilePopupProps> = ({
   };
 
   const handleViewFullProfile = () => {
-    navigate(`/profile/${userId}`);
+    if (useModal && onOpenFullProfile) {
+      // In-game mode: open modal
+      onOpenFullProfile();
+    } else {
+      // Normal mode: navigate to profile page
+      navigate(`/profile/${userId}`);
+    }
     onClose();
   };
 

@@ -6,6 +6,7 @@ import type { GameComponentProps } from './types';
 
 // Import hooks
 import { useAudioManager } from '../../../hooks/useAudioManager';
+import { useThemeStore } from '../../../store/theme.store';
 
 // Define props interface extending GameComponentProps
 export interface GameStatusOverlaysProps extends GameComponentProps {
@@ -36,15 +37,30 @@ const GameStatusOverlays: React.FC<GameStatusOverlaysProps> = ({
 }) => {
   // Audio manager for sound effects
   const { triggerClick } = useAudioManager();
+  
+  // Get theme for conditional styling
+  const { theme } = useThemeStore();
 
   return (
     <>
       {/* Target mode notification - top-right corner */}
       {targetMode && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div className="bg-gradient-to-br from-warning/20 to-orange-500/10 backdrop-blur-md border-2 border-warning/50 rounded-xl p-4 shadow-2xl max-w-sm">
+          <div className={`
+            bg-gradient-to-br backdrop-blur-md border-2 rounded-xl p-4 shadow-2xl max-w-sm
+            ${theme === 'cyberpunk'
+              ? 'from-warning/40 to-orange-500/30 border-warning/70'
+              : 'from-warning/20 to-orange-500/10 border-warning/50'
+            }
+          `}>
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-warning/20 border border-warning/30">
+              <div className={`
+                p-2 rounded-lg border
+                ${theme === 'cyberpunk'
+                  ? 'bg-warning/30 border-warning/50'
+                  : 'bg-warning/20 border-warning/30'
+                }
+              `}>
                 <Target className="w-5 h-5 text-warning" />
               </div>
               <div className="flex-1">
@@ -76,9 +92,21 @@ const GameStatusOverlays: React.FC<GameStatusOverlaysProps> = ({
       {/* Reaction mode notification - top-center */}
       {isInReactionMode && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slide-in-down">
-          <div className="bg-gradient-to-br from-accent/20 to-cyan-500/10 backdrop-blur-md border-2 border-accent/50 rounded-xl p-4 shadow-2xl relative overflow-hidden">
+          <div className={`
+            bg-gradient-to-br backdrop-blur-md border-2 rounded-xl p-4 shadow-2xl relative overflow-hidden
+            ${theme === 'cyberpunk'
+              ? 'from-accent/40 to-cyan-500/30 border-accent/70'
+              : 'from-accent/20 to-cyan-500/10 border-accent/50'
+            }
+          `}>
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-accent/20 border border-accent/30 animate-pulse">
+              <div className={`
+                p-2 rounded-lg border animate-pulse
+                ${theme === 'cyberpunk'
+                  ? 'bg-accent/30 border-accent/50'
+                  : 'bg-accent/20 border-accent/30'
+                }
+              `}>
                 <Zap className="w-5 h-5 text-accent" />
               </div>
               <div>
@@ -118,8 +146,16 @@ const GameStatusOverlays: React.FC<GameStatusOverlaysProps> = ({
 
       {/* Processing overlay */}
       {isProcessingMove && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-base-200/95 to-base-300/95 border-2 border-primary/30 rounded-xl p-8 shadow-2xl">
+        <div className={`fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 ${
+          theme === 'cyberpunk' ? 'bg-black/40' : 'bg-black/60'
+        }`}>
+          <div className={`
+            bg-gradient-to-br border-2 rounded-xl p-8 shadow-2xl
+            ${theme === 'cyberpunk'
+              ? 'from-base-200/98 to-base-300/98 border-primary/60'
+              : 'from-base-200/95 to-base-300/95 border-primary/30'
+            }
+          `}>
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />
               <span className="font-mono text-primary font-bold text-lg tracking-wider">

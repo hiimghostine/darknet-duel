@@ -7,6 +7,7 @@ import {
 import type { GameState, InfrastructureCard } from '../../../types/game.types';
 import TemporaryEffectsDisplay from './TemporaryEffectsDisplay';
 import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
+import { useThemeStore } from '../../../store/theme.store';
 
 export interface InfrastructureGridProps {
   G: GameState;
@@ -32,6 +33,9 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   
   // Get responsive scaling configuration
   const scaling = useResponsiveGameScaling();
+  
+  // Get theme for conditional styling
+  const { theme } = useThemeStore();
   
   // Get optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({
@@ -90,21 +94,37 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
 
   // Helper function to get infrastructure state classes
   const getInfraStateClasses = (state: string) => {
+    const isLight = theme === 'cyberpunk';
+    
     switch (state) {
       case 'secure':
-        return 'bg-green-900/70 border-green-500 text-base-content shadow-green-500/30';
+        return isLight 
+          ? 'bg-green-100/90 border-green-600 text-green-900 shadow-green-600/50'
+          : 'bg-green-900/70 border-green-500 text-base-content shadow-green-500/30';
       case 'vulnerable':
-        return 'bg-amber-900/70 border-amber-500 text-base-content shadow-amber-500/40 animate-pulse';
+        return isLight
+          ? 'bg-amber-100/90 border-amber-600 text-amber-900 shadow-amber-600/60 animate-pulse'
+          : 'bg-amber-900/70 border-amber-500 text-base-content shadow-amber-500/40 animate-pulse';
       case 'compromised':
-        return 'bg-red-900/80 border-red-500 text-base-content shadow-red-500/50 animate-pulse';
+        return isLight
+          ? 'bg-red-100/90 border-red-600 text-red-900 shadow-red-600/70 animate-pulse'
+          : 'bg-red-900/80 border-red-500 text-base-content shadow-red-500/50 animate-pulse';
       case 'fortified':
-        return 'bg-blue-900/70 border-blue-500 text-base-content shadow-blue-500/40';
+        return isLight
+          ? 'bg-blue-100/90 border-blue-600 text-blue-900 shadow-blue-600/60'
+          : 'bg-blue-900/70 border-blue-500 text-base-content shadow-blue-500/40';
       case 'shielded':
-        return 'bg-purple-900/70 border-purple-500 text-base-content shadow-purple-500/40';
+        return isLight
+          ? 'bg-purple-100/90 border-purple-600 text-purple-900 shadow-purple-600/60'
+          : 'bg-purple-900/70 border-purple-500 text-base-content shadow-purple-500/40';
       default:
-        return isAttacker 
-          ? 'bg-red-900/60 border-red-600 text-base-content' 
-          : 'bg-blue-900/60 border-blue-600 text-base-content';
+        return isLight
+          ? isAttacker 
+            ? 'bg-red-50/90 border-red-600 text-red-900' 
+            : 'bg-blue-50/90 border-blue-600 text-blue-900'
+          : isAttacker 
+            ? 'bg-red-900/60 border-red-600 text-base-content' 
+            : 'bg-blue-900/60 border-blue-600 text-base-content';
     }
   };
 
@@ -154,11 +174,26 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
               font-mono overflow-visible
               ${getInfraStateClasses(infra.state).replace(' animate-pulse', '')}
-              ${isTargetable ? 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40' : ''}
-              ${isSelected ? 'border-accent shadow-xl shadow-accent/70 scale-110 z-50' : ''}
+              ${isTargetable 
+                ? theme === 'cyberpunk'
+                  ? 'border-warning shadow-lg shadow-warning/80 scale-105 animate-pulse z-40 ring-2 ring-warning/50'
+                  : 'border-warning shadow-lg shadow-warning/50 scale-105 animate-pulse z-40'
+                : ''
+              }
+              ${isSelected 
+                ? theme === 'cyberpunk'
+                  ? 'border-accent shadow-xl shadow-accent/90 scale-110 z-50 ring-2 ring-accent/60'
+                  : 'border-accent shadow-xl shadow-accent/70 scale-110 z-50'
+                : ''
+              }
               ${targetMode && !isTargetable ? 'opacity-50 cursor-not-allowed' : ''}
               ${!targetMode ? 'hover:z-[9999] hover:shadow-2xl transform-gpu' : ''}
-              ${hasMonitoringEffects ? 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100' : ''}
+              ${hasMonitoringEffects 
+                ? theme === 'cyberpunk'
+                  ? 'ring-2 ring-orange-600/70 ring-offset-2 ring-offset-base-100'
+                  : 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-base-100'
+                : ''
+              }
             `}
             style={{
               width: `${infraWidth}px`,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, Sword, GraduationCap, Brain, Moon, Sun, LogOut, FastForward } from 'lucide-react';
+import { ArrowLeft, Shield, Sword, GraduationCap, Brain, Moon, Sun, LogOut, FastForward, Clock } from 'lucide-react';
 
 // Import types
 import type { GameState } from '../../../types/game.types';
@@ -36,6 +36,11 @@ export interface GameControlsBarProps {
   isTimerActive: boolean;
   timeRemaining: number;
   
+  // Turn timer state from useAutoTurnTimer
+  isTurnTimerActive?: boolean;
+  turnTimeRemaining?: number;
+  isTurnTimerPaused?: boolean;
+  
   // Tutorial integration
   tutorialInfo?: {
     scriptName: string;
@@ -62,6 +67,9 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
   isInReactionMode,
   isTimerActive,
   timeRemaining,
+  isTurnTimerActive,
+  turnTimeRemaining,
+  isTurnTimerPaused,
   tutorialInfo
 }) => {
   // Theme support
@@ -88,14 +96,26 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
   return (
     <header className={`
       flex justify-between items-center px-6 py-3 border-b backdrop-blur-md z-10 relative
-      ${isAttacker 
-        ? 'bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border-red-500/30' 
-        : 'bg-gradient-to-r from-blue-950/90 via-blue-900/80 to-blue-950/90 border-blue-500/30'
+      ${theme === 'cyberpunk'
+        ? isAttacker
+          ? 'bg-gradient-to-r from-red-100/95 via-red-50/85 to-red-100/95 border-red-600/50'
+          : 'bg-gradient-to-r from-blue-100/95 via-blue-50/85 to-blue-100/95 border-blue-600/50'
+        : isAttacker 
+          ? 'bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border-red-500/30' 
+          : 'bg-gradient-to-r from-blue-950/90 via-blue-900/80 to-blue-950/90 border-blue-500/30'
       }
     `}>
       {/* Cyberpunk corner accents */}
-      <div className={`absolute top-0 left-0 w-16 h-0.5 ${isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'}`} />
-      <div className={`absolute top-0 right-0 w-16 h-0.5 ${isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'}`} />
+      <div className={`absolute top-0 left-0 w-16 h-0.5 ${
+        theme === 'cyberpunk'
+          ? isAttacker ? 'bg-red-600/70' : 'bg-blue-600/70'
+          : isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'
+      }`} />
+      <div className={`absolute top-0 right-0 w-16 h-0.5 ${
+        theme === 'cyberpunk'
+          ? isAttacker ? 'bg-red-600/70' : 'bg-blue-600/70'
+          : isAttacker ? 'bg-red-500/50' : 'bg-blue-500/50'
+      }`} />
       
       {/* Left side - Game title or tutorial info */}
       <div className="flex items-center gap-4">
@@ -171,14 +191,43 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
           </>
         )}
         
+        {/* Turn Timer Display - Only show when active turn (not in reaction mode) */}
+        {isTurnTimerActive && !isInReactionMode && turnTimeRemaining !== undefined && (
+          <>
+            <div className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-xs font-bold
+              ${theme === 'cyberpunk'
+                ? turnTimeRemaining <= 30
+                  ? 'bg-error/30 border-error/60 text-error-content'
+                  : 'bg-warning/30 border-warning/60 text-warning-content'
+                : turnTimeRemaining <= 30
+                  ? 'bg-error/20 border-error/50 text-error'
+                  : 'bg-warning/20 border-warning/50 text-warning'
+              }
+            `}>
+              <Clock className="w-4 h-4" />
+              <span>
+                {isTurnTimerPaused ? 'PAUSED' : `${Math.floor(turnTimeRemaining / 60)}:${(turnTimeRemaining % 60).toString().padStart(2, '0')}`}
+              </span>
+            </div>
+            <div className="w-px h-8 bg-base-content/20" />
+          </>
+        )}
+        
         <button 
           className={`
             btn btn-sm gap-2 font-mono font-bold uppercase transition-all duration-200
-            ${isInReactionMode 
-              ? 'bg-accent/20 border-accent/50 text-accent hover:bg-accent/30 hover:border-accent' 
-              : isAttacker 
-                ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500' 
-                : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30 hover:border-blue-500'
+            ${theme === 'cyberpunk'
+              ? isInReactionMode 
+                ? 'bg-accent/30 border-accent/70 text-accent-content hover:bg-accent/40 hover:border-accent shadow-md' 
+                : isAttacker 
+                  ? 'bg-red-200/60 border-red-600/60 text-red-900 hover:bg-red-300/70 hover:border-red-700 shadow-md' 
+                  : 'bg-blue-200/60 border-blue-600/60 text-blue-900 hover:bg-blue-300/70 hover:border-blue-700 shadow-md'
+              : isInReactionMode 
+                ? 'bg-accent/20 border-accent/50 text-accent hover:bg-accent/30 hover:border-accent' 
+                : isAttacker 
+                  ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30 hover:border-red-500' 
+                  : 'bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30 hover:border-blue-500'
             }
             ${(!isActive || isProcessingMove) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
           `}
@@ -200,7 +249,10 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
         <button
           className={`
             btn btn-sm gap-2 font-mono font-bold uppercase transition-all duration-200
-            bg-error/20 border-error/50 text-error hover:bg-error/30 hover:border-error
+            ${theme === 'cyberpunk'
+              ? 'bg-error/30 border-error/70 text-error-content hover:bg-error/40 hover:border-error shadow-md'
+              : 'bg-error/20 border-error/50 text-error hover:bg-error/30 hover:border-error'
+            }
             ${(!isActive || isProcessingMove) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
           `}
           onClick={() => {

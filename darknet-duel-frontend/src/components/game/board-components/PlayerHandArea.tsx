@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sword, Shield, Castle, Zap, Lock, Unlock, RefreshCw,
   User, Sparkles, X, Target as TargetIcon, AlertCircle
 } from 'lucide-react';
+import UserProfilePopup from '../../UserProfilePopup';
+import FullProfileModal from '../FullProfileModal';
+import accountService from '../../../services/account.service';
 
 // Import types
 import type { GameComponentProps } from './types';
@@ -12,6 +16,8 @@ import { isReactiveCardObject } from '../../../types/card.types';
 // Import hooks
 import { useAudioManager } from '../../../hooks/useAudioManager';
 import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
+import { useThemeStore } from '../../../store/theme.store';
+import type { ConnectionStatus } from '../../../hooks/useHeartbeat';
 
 // Define props interface extending GameComponentProps
 export interface PlayerHandAreaProps extends GameComponentProps {
@@ -30,6 +36,9 @@ export interface PlayerHandAreaProps extends GameComponentProps {
   cycleCard: (cardId: string) => void;
   selectCardToThrow: (card: any) => void;
   cancelTargeting: () => void;
+  
+  // Connection status
+  connectionStatus?: ConnectionStatus;
 }
 
 const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
@@ -45,13 +54,119 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
   playCard,
   cycleCard,
   selectCardToThrow,
-  cancelTargeting
+  cancelTargeting,
+  connectionStatus
 }) => {
   // Audio manager for sound effects
   const { triggerClick } = useAudioManager();
   
   // Get responsive scaling configuration
   const scaling = useResponsiveGameScaling();
+  
+  // Get theme for conditional styling
+  const { theme } = useThemeStore();
+  
+  // Profile popup state
+  const [profilePopup, setProfilePopup] = useState({
+    isVisible: false,
+    userId: '',
+    username: '',
+    position: { x: 0, y: 0 }
+  });
+
+  // Full profile modal state
+  const [fullProfileModal, setFullProfileModal] = useState({
+    isVisible: false,
+    userId: '',
+    username: ''
+  });
+
+  // Fetched username state
+  const [fetchedUsername, setFetchedUsername] = useState<string>('');
+
+  // Fetch username from account service
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUsername = async () => {
+      // Get real UUID from playerUuidMap
+      const realUuid = playerID && G?.playerUuidMap?.[playerID];
+      const userId = realUuid || (currentPlayerObj as any)?.uuid || (currentPlayerObj as any)?.realUserId || playerID;
+      
+      if (!userId || userId === '0' || userId === '1') {
+        // Development mode or no valid UUID
+        if (isMounted) setFetchedUsername(currentPlayerObj?.username || playerID || 'YOU');
+        return;
+      }
+
+      try {
+        const accountData = await accountService.getAccountByUuid(userId);
+        if (isMounted && accountData.username) {
+          setFetchedUsername(accountData.username);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch username:', err);
+        if (isMounted) setFetchedUsername(currentPlayerObj?.username || playerID || 'YOU');
+      }
+    };
+
+    fetchUsername();
+    return () => { isMounted = false; };
+  }, [playerID, G?.playerUuidMap, currentPlayerObj]);
+
+  // Helper functions for connection status
+  const formatLatency = (latency: number) => {
+    if (latency === 0) return '--';
+    return `${latency}ms`;
+  };
+
+  const getConnectionIcon = (isConnected: boolean, reconnectAttempts: number) => {
+    if (!isConnected && reconnectAttempts > 0) {
+      return '🔄'; // Reconnecting
+    }
+    return isConnected ? '🟢' : '🔴';
+  };
+
+  // Handle username click to show profile popup
+  const handleUsernameClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // ✅ Get real UUID from playerUuidMap (same logic as PlayerInfo)
+    const realUuid = playerID && G?.playerUuidMap?.[playerID];
+    const userId = realUuid || (currentPlayerObj as any)?.uuid || (currentPlayerObj as any)?.realUserId || playerID;
+    const username = fetchedUsername || currentPlayerObj?.username || playerID || 'YOU';
+    
+    if (!userId) return;
+    
+    // Skip for BoardGame.io IDs in development mode
+    if (userId === '0' || userId === '1') {
+      console.log('PlayerHandArea: Skipping profile popup for BoardGame.io ID:', userId);
+      return;
+    }
+
+    console.log('PlayerHandArea: Opening profile for UUID:', userId);
+    setProfilePopup({
+      isVisible: true,
+      userId,
+      username,
+      position: { x: event.clientX, y: event.clientY }
+    });
+  };
+
+  const closeProfilePopup = () => {
+    setProfilePopup(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const openFullProfileModal = () => {
+    setFullProfileModal({
+      isVisible: true,
+      userId: profilePopup.userId,
+      username: profilePopup.username
+    });
+  };
+
+  const closeFullProfileModal = () => {
+    setFullProfileModal(prev => ({ ...prev, isVisible: false }));
+  };
 
   // Helper function to get card type icon component
   const getCardTypeIcon = (cardType: string) => {
@@ -288,9 +403,10 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                 ${getPlayerCardClasses(cardType, isAttacker)}
                 ${borderColorClass} border-l-4
                 ${reactionModeClass}
-                ${isSelected ? 'border-warning shadow-lg shadow-warning/50 -translate-y-2 scale-105 z-30' : ''}
-                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu' : 'hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu'}
+                ${isSelected ? `border-warning ${theme === 'cyberpunk' ? 'shadow-lg shadow-warning/80 ring-2 ring-warning/60' : 'shadow-lg shadow-warning/50'} -translate-y-2 scale-105 z-30` : ''}
+                ${isPlayable ? `border-success ${theme === 'cyberpunk' ? 'shadow-md shadow-success/60 ring-1 ring-success/40' : 'shadow-md shadow-success/30'} hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu` : 'hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu'}
                 ${!isPlayable && !targetMode ? 'cursor-not-allowed' : ''}
+                ${theme === 'cyberpunk' ? 'border-opacity-80' : ''}
               `}
               onClick={(event) => {
                 if (!isPlayable) {
@@ -494,11 +610,20 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     <div 
       className={`
         flex justify-between items-center gap-4 rounded-lg relative border backdrop-blur-md shadow-lg overflow-visible
-        ${isAttacker 
-          ? 'bg-gradient-to-br from-red-950/40 to-red-900/20 border-red-500/30' 
-          : 'bg-gradient-to-br from-blue-950/40 to-blue-900/20 border-blue-500/30'
+        ${theme === 'cyberpunk' 
+          ? isAttacker
+            ? 'bg-gradient-to-br from-red-100/80 to-red-50/60 border-red-600/60'
+            : 'bg-gradient-to-br from-blue-100/80 to-blue-50/60 border-blue-600/60'
+          : isAttacker 
+            ? 'bg-gradient-to-br from-red-950/40 to-red-900/20 border-red-500/30' 
+            : 'bg-gradient-to-br from-blue-950/40 to-blue-900/20 border-blue-500/30'
         }
-        ${isActive ? 'ring-2 ring-current/50 shadow-xl shadow-current/20' : ''}
+        ${isActive 
+          ? theme === 'cyberpunk'
+            ? 'ring-2 ring-current/70 shadow-xl shadow-current/40'
+            : 'ring-2 ring-current/50 shadow-xl shadow-current/20'
+          : ''
+        }
         ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
       `}
       style={{
@@ -510,23 +635,47 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       <div className="flex items-center gap-3">
         <div className={`
           w-12 h-12 rounded-lg flex items-center justify-center
-          ${isAttacker 
-            ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border border-red-500/30' 
-            : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30'
+          ${theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-gradient-to-br from-red-200/70 to-red-300/50 border-2 border-red-600/60'
+              : 'bg-gradient-to-br from-blue-200/70 to-blue-300/50 border-2 border-blue-600/60'
+            : isAttacker 
+              ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border border-red-500/30' 
+              : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30'
           }
         `}>
-          {isAttacker ? <Sword className="w-6 h-6 text-red-300" /> : <Shield className="w-6 h-6 text-blue-300" />}
+          {isAttacker 
+            ? <Sword className={`w-6 h-6 ${theme === 'cyberpunk' ? 'text-red-700' : 'text-red-300'}`} /> 
+            : <Shield className={`w-6 h-6 ${theme === 'cyberpunk' ? 'text-blue-700' : 'text-blue-300'}`} />
+          }
         </div>
         
         <div>
           <div className="flex items-center gap-2">
             <User className="w-3.5 h-3.5 text-base-content/60" />
-            <span className="font-bold text-sm font-mono uppercase tracking-wide">
-              {currentPlayerObj?.username || playerID}
+            <span 
+              className="font-bold text-sm font-mono uppercase tracking-wide cursor-pointer hover:text-primary transition-colors"
+              onClick={handleUsernameClick}
+              title="View profile"
+            >
+              {fetchedUsername || currentPlayerObj?.username || playerID || 'YOU'}
             </span>
           </div>
-          <div className="text-xs text-base-content/60">
-            {isAttacker ? 'ATTACKER' : 'DEFENDER'}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-base-content/60">
+              {isAttacker ? 'ATTACKER' : 'DEFENDER'}
+            </span>
+            {connectionStatus && (
+              <>
+                <span className="text-base-content/40">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">{getConnectionIcon(connectionStatus.isConnected, connectionStatus.reconnectAttempts)}</span>
+                  <span className="text-base-content/70 font-mono">
+                    {formatLatency(connectionStatus.latency)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -559,14 +708,40 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
         
         <div className={`
           px-3 py-1.5 rounded-lg font-mono text-xs font-bold border
-          ${isAttacker 
-            ? 'bg-red-500/10 border-red-500/30 text-red-300' 
-            : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+          ${theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-red-200/60 border-red-600/60 text-red-900'
+              : 'bg-blue-200/60 border-blue-600/60 text-blue-900'
+            : isAttacker 
+              ? 'bg-red-500/10 border-red-500/30 text-red-300' 
+              : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
           }
         `}>
           {currentPlayerObj?.hand?.length || 0} CARDS
         </div>
       </div>
+      
+      {/* Profile Popup - Rendered via Portal to escape z-index stacking */}
+      {profilePopup.isVisible && createPortal(
+        <UserProfilePopup
+          userId={profilePopup.userId}
+          username={profilePopup.username}
+          isVisible={profilePopup.isVisible}
+          position={profilePopup.position}
+          onClose={closeProfilePopup}
+          useModal={true}
+          onOpenFullProfile={openFullProfileModal}
+        />,
+        document.body
+      )}
+
+      {/* Full Profile Modal */}
+      <FullProfileModal
+        userId={fullProfileModal.userId}
+        username={fullProfileModal.username}
+        isVisible={fullProfileModal.isVisible}
+        onClose={closeFullProfileModal}
+      />
     </div>
   );
 };

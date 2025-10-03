@@ -28,7 +28,6 @@ import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 import HandDisruptionUI from './board-components/HandDisruptionUI';
 import CardSelectionUI from './board-components/CardSelectionUI';
 import WinnerLobby from './board-components/WinnerLobby';
-import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 import DisconnectionAlert from './DisconnectionAlert';
 import InactivityWarning from './InactivityWarning';
 
@@ -53,6 +52,7 @@ import { useThemeStore } from '../../store/theme.store';
 
 // Import auto-reaction timer
 import { useAutoReactionTimer } from '../../hooks/useAutoReactionTimer';
+import { useAutoTurnTimer } from '../../hooks/useAutoTurnTimer';
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
@@ -188,6 +188,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     isActive,
     targetMode,
     onAutoSkip: handleSkipReaction
+  });
+
+  // Auto-turn timer hook (120 seconds)
+  const {
+    isTimerActive: isTurnTimerActive,
+    timeRemaining: turnTimeRemaining,
+    isPaused: isTurnTimerPaused
+  } = useAutoTurnTimer({
+    isActive,
+    isInReactionMode: Boolean(isInReactionMode),
+    targetMode,
+    onAutoEndTurn: handleEndTurn
   });
 
   // Track processing state - exclude animation state to prevent overlay during animations
@@ -607,6 +619,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         isProcessingMove={isProcessingMove}
         handleEndTurn={handleEndTurn}
         handleSkipReaction={handleSkipReaction}
+        isTurnTimerActive={isTurnTimerActive}
+        turnTimeRemaining={turnTimeRemaining}
+        isTurnTimerPaused={isTurnTimerPaused}
         cycleCard={cycleCard}
         surrender={surrender}
         isInReactionMode={Boolean(isInReactionMode)}
@@ -614,27 +629,26 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         timeRemaining={timeRemaining}
       />
 
-      {/* Connection Status Indicator */}
-      <ConnectionStatusIndicator
-        connectionStatus={heartbeatStatus.connectionStatus}
-        opponentStatus={heartbeatStatus.opponentStatus}
-        isAttacker={isAttacker}
-        playerName={currentPlayerObj?.name}
-        opponentName={opponent?.name}
-      />
-
-      {/* Enhanced status bar with turn indicator */}
-      <div className={`
-        px-4 py-3 border-b transition-all duration-500
-        ${isActive 
-          ? isAttacker
-            ? 'bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border-red-500/50' 
-            : 'bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-blue-600/20 border-blue-500/50'
-          : isAttacker
-            ? 'bg-red-900/50 border-red-800/30'
-            : 'bg-blue-900/50 border-blue-800/30'
-        }
-      `}>
+             {/* Enhanced status bar with turn indicator */}
+             <div className={`
+               px-4 py-3 border-b transition-all duration-500
+               ${theme === 'cyberpunk'
+                 ? isActive
+                   ? isAttacker
+                     ? 'bg-gradient-to-r from-red-200/60 via-red-100/40 to-red-200/60 border-red-600/60'
+                     : 'bg-gradient-to-r from-blue-200/60 via-blue-100/40 to-blue-200/60 border-blue-600/60'
+                   : isAttacker
+                     ? 'bg-red-100/40 border-red-500/40'
+                     : 'bg-blue-100/40 border-blue-500/40'
+                 : isActive 
+                   ? isAttacker
+                     ? 'bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border-red-500/50' 
+                     : 'bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-blue-600/20 border-blue-500/50'
+                   : isAttacker
+                     ? 'bg-red-900/50 border-red-800/30'
+                     : 'bg-blue-900/50 border-blue-800/30'
+               }
+             `}>
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           
           {/* Turn status in header */}
@@ -642,9 +656,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             <div className="flex items-center gap-2">
               <div className={`
                 badge gap-2 animate-pulse
-                ${isAttacker 
-                  ? 'badge-error bg-red-600 text-red-100 border-red-400' 
-                  : 'badge-info bg-blue-600 text-blue-100 border-blue-400'
+                ${theme === 'cyberpunk'
+                  ? isAttacker 
+                    ? 'badge-error bg-red-500 text-white border-red-600 shadow-md' 
+                    : 'badge-info bg-blue-500 text-white border-blue-600 shadow-md'
+                  : isAttacker 
+                    ? 'badge-error bg-red-600 text-red-100 border-red-400' 
+                    : 'badge-info bg-blue-600 text-blue-100 border-blue-400'
                 }
               `}>
                 <span className={`
@@ -660,9 +678,13 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             <div className="flex items-center gap-2">
               <div className={`
                 badge gap-2
-                ${isAttacker 
-                  ? 'badge-ghost bg-red-800/50 text-red-300 border-red-700' 
-                  : 'badge-ghost bg-blue-800/50 text-blue-300 border-blue-700'
+                ${theme === 'cyberpunk'
+                  ? isAttacker 
+                    ? 'badge-ghost bg-red-200/60 text-red-800 border-red-400' 
+                    : 'badge-ghost bg-blue-200/60 text-blue-800 border-blue-400'
+                  : isAttacker 
+                    ? 'badge-ghost bg-red-800/50 text-red-300 border-red-700' 
+                    : 'badge-ghost bg-blue-800/50 text-blue-300 border-blue-700'
                 }
               `}>
                 <span className="loading loading-dots loading-xs"></span>
@@ -678,7 +700,17 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       {/* Main game area */}
       <main className="flex-1 flex flex-col gap-4 p-4 w-full">
         {/* Opponent area */}
-        <div className={`${!isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}`}>
+        <div className={`${
+          !isActive 
+            ? theme === 'cyberpunk'
+              ? isAttacker
+                ? 'ring-2 ring-blue-600/70 shadow-lg shadow-blue-600/40'
+                : 'ring-2 ring-red-600/70 shadow-lg shadow-red-600/40'
+              : isAttacker
+                ? 'ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/20'
+                : 'ring-2 ring-red-500/50 shadow-lg shadow-red-500/20'
+            : ''
+        }`}>
           <OpponentHandArea
             opponent={opponent}
             isAttacker={isAttacker}
@@ -687,6 +719,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             playerID={playerID}
             isActive={isActive}
             moves={moves}
+            opponentStatus={heartbeatStatus.opponentStatus}
           />
         </div>
 
@@ -706,16 +739,40 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             sendChatMessage={sendChatMessage}
           />
 
-          {/* Center column - Infrastructure */}
-          <div className="flex-1 flex flex-col lg:order-2 order-1">
-            <div className="bg-base-200 border border-primary/30 rounded-xl p-6 relative flex-1 lg:min-h-80 min-h-60 flex flex-col items-center justify-center backdrop-blur-sm">
-              {/* Network grid label */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-base-200 text-primary px-4 py-1 border border-primary/30 rounded-full text-xs font-bold font-mono uppercase tracking-wider">
-                NETWORK_GRID
-              </div>
-              
-              {/* Corner bracket */}
-              <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                 {/* Center column - Infrastructure */}
+                 <div className="flex-1 flex flex-col lg:order-2 order-1">
+                   <div className={`
+                     border-2 rounded-xl p-6 relative flex-1 lg:min-h-80 min-h-60 flex flex-col items-center justify-center backdrop-blur-sm shadow-lg
+                     ${theme === 'cyberpunk'
+                       ? isAttacker
+                         ? 'bg-red-50/80 border-red-600/60'
+                         : 'bg-blue-50/80 border-blue-600/60'
+                       : isAttacker
+                         ? 'bg-red-950/30 border-red-500/30'
+                         : 'bg-blue-950/30 border-blue-500/30'
+                     }
+                   `}>
+                     {/* Network grid label */}
+                     <div className={`
+                       absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 border-2 rounded-full text-xs font-bold font-mono uppercase tracking-wider
+                       ${theme === 'cyberpunk'
+                         ? isAttacker
+                           ? 'bg-red-50 text-red-700 border-red-600/60 shadow-sm'
+                           : 'bg-blue-50 text-blue-700 border-blue-600/60 shadow-sm'
+                         : isAttacker
+                           ? 'bg-red-950/90 text-red-300 border-red-500/30'
+                           : 'bg-blue-950/90 text-blue-300 border-blue-500/30'
+                       }
+                     `}>
+                       NETWORK_GRID
+                     </div>
+                     
+                     {/* Corner bracket */}
+                     <div className={`absolute top-0 right-0 w-3 h-3 border-t border-r ${
+                       theme === 'cyberpunk'
+                         ? isAttacker ? 'border-red-600/60' : 'border-blue-600/60'
+                         : isAttacker ? 'border-red-500' : 'border-blue-500'
+                     }`}></div>
               
               <InfrastructureGrid
                 G={memoizedG}
@@ -746,6 +803,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           cycleCard={cycleCard}
           selectCardToThrow={selectCardToThrow}
           cancelTargeting={cancelTargeting}
+          connectionStatus={heartbeatStatus.connectionStatus}
         />
       </main>
 
