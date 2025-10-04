@@ -996,6 +996,13 @@ server.run(PORT, () => {
 // Define types for boardgame.io server match data
 type ServerMatchData = any; // Using any because boardgame.io's exact server types are complex
 
+// Processing state tracker to prevent race conditions
+interface ProcessingState {
+  matchID: string;
+  startedAt: number;
+  status: 'processing' | 'completed' | 'failed';
+}
+
 // Function to check all active games for completion and send results to backend
 const startGameOverMonitoring = () => {
   if (!server.db) {
@@ -1005,25 +1012,42 @@ const startGameOverMonitoring = () => {
   
   // Check every 3 seconds for completed games that need to be processed
   const MONITOR_INTERVAL = 3000; // 3 seconds
-  const processedGames = new Set<string>(); // Keep track of games we've already processed
+  const PROCESSING_TIMEOUT = 30000; // 30 seconds - mark as stale if processing takes longer
+  
+  // Track processing state with metadata (not just a Set)
+  const processingStates = new Map<string, ProcessingState>();
   
   const gameOverMonitoringInterval = setInterval(async () => {
     try {
+      // Clean up stale processing states (stuck for >30 seconds)
+      const now = Date.now();
+      for (const [matchID, state] of processingStates.entries()) {
+        if (state.status === 'processing' && (now - state.startedAt) > PROCESSING_TIMEOUT) {
+          console.warn(`⚠️ Game ${matchID} processing timed out after ${PROCESSING_TIMEOUT/1000}s - removing stale lock`);
+          processingStates.delete(matchID);
+        }
+      }
+      
       // Get list of all matches
       const matches = await server.db.listMatches();
       if (!matches || !matches.length) return;
       
-      console.log(`DEBUG: Checking ${matches.length} games for completion status...`);
+      console.log(`🔍 Checking ${matches.length} games for completion status...`);
       
       // For each match, check if it's in a game over state
       for (const matchID of matches) {
-        // Skip if we've already processed this game
-        if (processedGames.has(matchID)) {
-          console.log(`DEBUG: Skipping already processed game ${matchID}`);
-          continue;
+        // ✅ ATOMIC CHECK: Skip if already being processed or completed
+        const existingState = processingStates.get(matchID);
+        if (existingState) {
+          if (existingState.status === 'processing') {
+            console.log(`⏳ Game ${matchID} is currently being processed (started ${((now - existingState.startedAt)/1000).toFixed(1)}s ago) - skipping`);
+            continue;
+          } else if (existingState.status === 'completed') {
+            console.log(`✅ Game ${matchID} already processed successfully - skipping`);
+            continue;
+          }
+          // If status is 'failed', we'll retry (don't skip)
         }
-        
-        console.log(`DEBUG: Examining game ${matchID}...`);
         
         try {
           // Fetch the match with all data (using fetch with more specific options)
@@ -1031,19 +1055,16 @@ const startGameOverMonitoring = () => {
           
           // Validate match data
           if (!matchData) {
-            console.log(`DEBUG: No match data found for ${matchID}`);
             continue;
           }
           
           if (!matchData.state) {
-            console.log(`DEBUG: No state data found for match ${matchID}`);
             continue;
           }
           
           // Access game state
           const { state } = matchData;
           if (!state.G || !state.ctx) {
-            console.log(`DEBUG: Invalid state structure for ${matchID}`);
             continue;
           }
           
@@ -1051,15 +1072,7 @@ const startGameOverMonitoring = () => {
           const G = state.G;
           const ctx = state.ctx;
           
-          console.log(`DEBUG: Game state for ${matchID}:`);
-          console.log(`- Game Phase: ${ctx.phase || 'unknown'}`);
-          console.log(`- G.gamePhase: ${G.gamePhase || 'unknown'}`);
-          console.log(`- G.winner: ${G.winner || 'none'}`);
-          console.log(`- ctx.gameover: ${ctx.gameover ? JSON.stringify(ctx.gameover) : 'none'}`);
-          console.log(`- G.gameEnded: ${G.gameEnded ? 'true' : 'false'}`);
-          
           // Check if the game is in a completed state
-          // We check multiple indicators since different game end conditions might set different flags
           const isGameOver = (
             ctx.phase === 'gameOver' || 
             G.gamePhase === 'gameOver' ||
@@ -1068,39 +1081,67 @@ const startGameOverMonitoring = () => {
             G.gameEnded === true
           );
 
-          console.log(`DEBUG: Game ${matchID} completed: ${isGameOver ? 'YES' : 'NO'}`);
-
           if (isGameOver) {
             console.log(`🎮 GAME OVER DETECTED for ${matchID}!`);
             console.log(`👑 Winner: ${ctx.gameover?.winner || G.winner || 'unknown'}`);
             
-            // Fetch full match data including metadata for processing
-            const fullMatchData = await server.db.fetch(matchID, { state: true, metadata: true });
+            // ✅ ATOMIC LOCK: Mark as processing IMMEDIATELY before any async operations
+            processingStates.set(matchID, {
+              matchID,
+              startedAt: Date.now(),
+              status: 'processing'
+            });
             
-            // Process the game end
-            await handleGameEnd(matchID, fullMatchData || matchData);
+            console.log(`🔒 Locked game ${matchID} for processing`);
             
-            // Immediately remove the completed game (winner or abandoned)
             try {
-              await server.db.wipe(matchID);
-              console.log(`✅ Removed completed/abandoned game ${matchID} immediately after processing`);
-            } catch (wipeErr) {
-              console.error(`❌ Failed to remove completed game ${matchID}:`, wipeErr);
+              // Fetch full match data including metadata for processing
+              const fullMatchData = await server.db.fetch(matchID, { state: true, metadata: true });
+              
+              // Process the game end
+              await handleGameEnd(matchID, fullMatchData || matchData);
+              
+              // Mark as completed BEFORE wiping (in case wipe fails)
+              processingStates.set(matchID, {
+                matchID,
+                startedAt: processingStates.get(matchID)!.startedAt,
+                status: 'completed'
+              });
+              
+              // Immediately remove the completed game from database
+              try {
+                await server.db.wipe(matchID);
+                console.log(`✅ Removed completed/abandoned game ${matchID} from database`);
+              } catch (wipeErr) {
+                console.error(`❌ Failed to wipe game ${matchID}:`, wipeErr);
+                // Don't throw - game is still marked as completed in our tracking
+              }
+              
+              // Clean up from processing map after successful completion (with delay)
+              setTimeout(() => {
+                processingStates.delete(matchID);
+                console.log(`🧹 Cleaned up processing state for ${matchID}`);
+              }, 60000); // Keep for 1 minute to prevent immediate re-processing if wipe failed
+              
+            } catch (processingError) {
+              // Mark as failed so it can be retried
+              console.error(`❌ Failed to process game ${matchID}:`, processingError);
+              processingStates.set(matchID, {
+                matchID,
+                startedAt: processingStates.get(matchID)!.startedAt,
+                status: 'failed'
+              });
+              
+              // Clean up failed state after a delay to allow retry
+              setTimeout(() => {
+                processingStates.delete(matchID);
+                console.log(`🔄 Cleared failed state for ${matchID} - will retry on next check`);
+              }, 30000); // Retry after 30 seconds
             }
-            
-            // Mark the game as processed
-            processedGames.add(matchID);
-            console.log(`DEBUG: Marked game ${matchID} as processed`);
-            
-            // Set timeout to remove from processed set after some time
-            // This ensures we don't accumulate memory over time
-            setTimeout(() => {
-              processedGames.delete(matchID);
-              console.log(`DEBUG: Removed game ${matchID} from processed set`);
-            }, 60 * 60 * 1000); // 1 hour
           }
         } catch (error) {
-          console.error(`Error processing match ${matchID}:`, error);
+          console.error(`Error examining match ${matchID}:`, error);
+          // Don't mark as processing if we couldn't even examine it
         }
       }
     } catch (error) {
@@ -1108,18 +1149,8 @@ const startGameOverMonitoring = () => {
     }
   }, MONITOR_INTERVAL);
   
-  console.log(`🔍 Game monitoring started - checking for completed games every ${3000/1000} seconds`);
-  
-  // Immediate first check
-  setTimeout(async () => {
-    console.log('Running immediate first check for any completed games...');
-    try {
-      const matches = await server.db.listMatches();
-      console.log(`Found ${matches?.length || 0} games on initial check`);
-    } catch (error) {
-      console.error('Error in immediate game check:', error);
-    }
-  }, 1000);
+  console.log(`🔍 Game monitoring started - checking for completed games every ${MONITOR_INTERVAL/1000} seconds`);
+  console.log(`⏱️  Processing timeout set to ${PROCESSING_TIMEOUT/1000} seconds`);
 };
 
 // Export handlers for external use
