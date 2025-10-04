@@ -32,7 +32,7 @@ export function useAutoTurnTimer({
   // Start timer when it's the player's active turn (not in reaction mode)
   useEffect(() => {
     if (isActive && !isInReactionMode && !targetMode) {
-      console.log('🕒 Starting auto-turn timer (120s)');
+      console.log('🕒 Starting auto-turn timer (60s)');
       startTimer();
       hasAutoEndedRef.current = false;
     } else {

@@ -294,7 +294,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     
     return (
       <div 
-        className="flex flex-wrap justify-center max-w-5xl overflow-visible"
+        className="flex flex-wrap justify-start max-w-5xl overflow-visible -ml-32"
         style={{ gap: `${scaling.cardGap}px` }}
       >
         <AnimatePresence mode="popLayout">

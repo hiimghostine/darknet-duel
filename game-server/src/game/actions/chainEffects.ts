@@ -18,29 +18,43 @@ export interface ChainEffect {
  * @param gameState Current game state
  * @param sourceCard Card that triggered the chain effect
  * @param playerId Player who played the card
+ * @param chosenType The card type chosen for the wildcard (exploit or attack)
+ * @param targetInfraId The original infrastructure targeted by the card
  * @returns Updated game state with pending chain choice
  */
 export function handleChainVulnerability(
   gameState: GameState,
   sourceCard: Card,
-  playerId: string
+  playerId: string,
+  chosenType?: string,
+  targetInfraId?: string
 ): GameState {
   const availableTargets = gameState.infrastructure?.filter(
     infra => infra.state === 'secure'
   ) || [];
   
   if (availableTargets.length === 0) {
-    return gameState;
+    console.log(`🔗 Chain vulnerability: No secure infrastructure available, skipping chain effect`);
+    return {
+      ...gameState,
+      message: `${sourceCard.name} played, but no additional infrastructure available to target`
+    };
   }
   
-  // Add pending chain choice to game state
+  console.log(`🔗 Chain vulnerability: ${availableTargets.length} secure infrastructure available for targeting`);
+  
+  // Add pending chain choice to game state with original card info for reaction triggering
   return {
     ...gameState,
     pendingChainChoice: {
       type: 'chain_vulnerability',
       sourceCardId: sourceCard.id,
       playerId,
-      availableTargets: availableTargets.map(t => t.id)
+      availableTargets: availableTargets.map(t => t.id),
+      // Store original card info to trigger reactions after chain resolves
+      originalCard: sourceCard,
+      originalCardType: chosenType as any,
+      originalTargetId: targetInfraId
     }
   };
 }

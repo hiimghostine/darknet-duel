@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 /**
  * Store for managing auto turn timer state
- * Automatically ends turn after 120 seconds of inactivity
+ * Automatically ends turn after 60 seconds of inactivity
  */
 
 interface AutoTurnStore {
@@ -20,7 +20,7 @@ interface AutoTurnStore {
   reset: () => void;
 }
 
-const AUTO_END_TURN_DELAY = 120; // 120 seconds (2 minutes)
+const AUTO_END_TURN_DELAY = 60; // 60 seconds (1 minute)
 
 export const useAutoTurnStore = create<AutoTurnStore>((set) => ({
   // Initial state

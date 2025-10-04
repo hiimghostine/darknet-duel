@@ -175,8 +175,22 @@ export const actionStageMoves = {
     const { chooseChainTargetMove } = require('../../moves/chooseChainTarget');
     const updatedG = chooseChainTargetMove(G, ctx, playerID, targetId);
     
-    // Chain effect completed - let the normal game flow continue
-    // Don't force phase transitions here as it can corrupt the game state
+    // After chain choice is resolved, check if we need to transition to reaction phase
+    if (!updatedG.pendingChainChoice) {
+      console.log('🔗 Chain selection completed, checking for pending reactions');
+      
+      // If there are pending reactions, transition to reaction stage
+      if (updatedG.pendingReactions && updatedG.pendingReactions.length > 0) {
+        console.log('🔗 Pending reactions exist, transitioning to reaction phase');
+        // FIXED: Use boardgame.io player IDs for opponent lookup
+        const opponentID = playerID === '0' ? '1' : '0';
+        if (opponentID) {
+          events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+        }
+      } else {
+        console.log('🔗 No pending reactions, staying in action stage');
+      }
+    }
     
     return updatedG;
   },

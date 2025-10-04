@@ -466,7 +466,14 @@ export class WildcardResolver {
             console.log(`🔗 No secure infrastructure available, skipping chain vulnerability effect`);
             updatedGameState.message = `${card.name} played successfully, but no additional infrastructure available to target.`;
           } else {
-            updatedGameState = handleChainVulnerability(updatedGameState, card, context.playerID || '');
+            // Pass chosen type and target infrastructure for reaction triggering
+            updatedGameState = handleChainVulnerability(
+              updatedGameState, 
+              card, 
+              context.playerID || '',
+              context.chosenType,
+              context.targetInfrastructure?.id
+            );
             console.log(`🔗 Chain vulnerability handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
           }
           break;

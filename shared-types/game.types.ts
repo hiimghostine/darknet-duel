@@ -141,6 +141,10 @@ export interface ChainEffect {
   sourceCardId: string;
   playerId: string;
   availableTargets: string[];
+  // Store original card info for triggering reactions after chain resolves
+  originalCard?: Card;
+  originalCardType?: CardType;
+  originalTargetId?: string;
 }
 
 /**
