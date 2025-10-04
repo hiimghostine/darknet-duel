@@ -629,99 +629,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         timeRemaining={timeRemaining}
       />
 
-             {/* Enhanced status bar with turn indicator */}
-             <div className={`
-               px-4 py-3 border-b transition-all duration-500
-               ${theme === 'cyberpunk'
-                 ? isActive
-                   ? isAttacker
-                     ? 'bg-gradient-to-r from-red-200/60 via-red-100/40 to-red-200/60 border-red-600/60'
-                     : 'bg-gradient-to-r from-blue-200/60 via-blue-100/40 to-blue-200/60 border-blue-600/60'
-                   : isAttacker
-                     ? 'bg-red-100/40 border-red-500/40'
-                     : 'bg-blue-100/40 border-blue-500/40'
-                 : isActive 
-                   ? isAttacker
-                     ? 'bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border-red-500/50' 
-                     : 'bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-blue-600/20 border-blue-500/50'
-                   : isAttacker
-                     ? 'bg-red-900/50 border-red-800/30'
-                     : 'bg-blue-900/50 border-blue-800/30'
-               }
-             `}>
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          
-          {/* Turn status in header */}
-          {isActive && (
-            <div className="flex items-center gap-2">
-              <div className={`
-                badge gap-2 animate-pulse
-                ${theme === 'cyberpunk'
-                  ? isAttacker 
-                    ? 'badge-error bg-red-500 text-white border-red-600 shadow-md' 
-                    : 'badge-info bg-blue-500 text-white border-blue-600 shadow-md'
-                  : isAttacker 
-                    ? 'badge-error bg-red-600 text-red-100 border-red-400' 
-                    : 'badge-info bg-blue-600 text-blue-100 border-blue-400'
-                }
-              `}>
-                <span className={`
-                  w-2 h-2 rounded-full animate-ping
-                  ${isAttacker ? 'bg-red-100' : 'bg-blue-100'}
-                `}></span>
-                YOUR TURN - TAKE ACTION
-              </div>
-            </div>
-          )}
-          
-          {!isActive && (
-            <div className="flex items-center gap-2">
-              <div className={`
-                badge gap-2
-                ${theme === 'cyberpunk'
-                  ? isAttacker 
-                    ? 'badge-ghost bg-red-200/60 text-red-800 border-red-400' 
-                    : 'badge-ghost bg-blue-200/60 text-blue-800 border-blue-400'
-                  : isAttacker 
-                    ? 'badge-ghost bg-red-800/50 text-red-300 border-red-700' 
-                    : 'badge-ghost bg-blue-800/50 text-blue-300 border-blue-700'
-                }
-              `}>
-                <span className="loading loading-dots loading-xs"></span>
-                WAITING FOR OPPONENT
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-
-
       {/* Main game area */}
       <main className="flex-1 flex flex-col gap-4 p-4 w-full">
         {/* Opponent area */}
-        <div className={`${
-          !isActive 
-            ? theme === 'cyberpunk'
-              ? isAttacker
-                ? 'ring-2 ring-blue-600/70 shadow-lg shadow-blue-600/40'
-                : 'ring-2 ring-red-600/70 shadow-lg shadow-red-600/40'
-              : isAttacker
-                ? 'ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/20'
-                : 'ring-2 ring-red-500/50 shadow-lg shadow-red-500/20'
-            : ''
-        }`}>
-          <OpponentHandArea
-            opponent={opponent}
-            isAttacker={isAttacker}
-            G={memoizedG}
-            ctx={memoizedCtx}
-            playerID={playerID}
-            isActive={isActive}
-            moves={moves}
-            opponentStatus={heartbeatStatus.opponentStatus}
-          />
-        </div>
+        <OpponentHandArea
+          opponent={opponent}
+          isAttacker={isAttacker}
+          G={memoizedG}
+          ctx={memoizedCtx}
+          playerID={playerID}
+          isActive={isActive}
+          moves={moves}
+          opponentStatus={heartbeatStatus.opponentStatus}
+        />
 
         {/* Game content wrapper */}
         <div className="flex gap-4 flex-1 min-h-0 lg:flex-row flex-col">

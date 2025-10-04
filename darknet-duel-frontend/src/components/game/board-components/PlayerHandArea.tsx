@@ -620,8 +620,12 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
         }
         ${isActive 
           ? theme === 'cyberpunk'
-            ? 'ring-2 ring-current/70 shadow-xl shadow-current/40'
-            : 'ring-2 ring-current/50 shadow-xl shadow-current/20'
+            ? isAttacker
+              ? 'ring-4 ring-red-500/80 shadow-2xl shadow-red-500/60'
+              : 'ring-4 ring-blue-500/80 shadow-2xl shadow-blue-500/60'
+            : isAttacker
+              ? 'ring-4 ring-red-400/70 shadow-2xl shadow-red-400/50'
+              : 'ring-4 ring-blue-400/70 shadow-2xl shadow-blue-400/50'
           : ''
         }
         ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
@@ -632,9 +636,21 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       }}
     >
       {/* Player info */}
-      <div className="flex items-center gap-3">
+      <div className={`
+        flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-300
+        ${isActive
+          ? theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-red-500/20 ring-2 ring-red-500 shadow-lg shadow-red-500/50'
+              : 'bg-blue-500/20 ring-2 ring-blue-500 shadow-lg shadow-blue-500/50'
+            : isAttacker
+              ? 'bg-red-500/10 ring-2 ring-red-500/70 shadow-lg shadow-red-500/30'
+              : 'bg-blue-500/10 ring-2 ring-blue-500/70 shadow-lg shadow-blue-500/30'
+          : 'bg-transparent'
+        }
+      `}>
         <div className={`
-          w-12 h-12 rounded-lg flex items-center justify-center
+          w-14 h-14 rounded-lg flex items-center justify-center
           ${theme === 'cyberpunk'
             ? isAttacker
               ? 'bg-gradient-to-br from-red-200/70 to-red-300/50 border-2 border-red-600/60'
@@ -645,13 +661,29 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
           }
         `}>
           {isAttacker 
-            ? <Sword className={`w-6 h-6 ${theme === 'cyberpunk' ? 'text-red-700' : 'text-red-300'}`} /> 
-            : <Shield className={`w-6 h-6 ${theme === 'cyberpunk' ? 'text-blue-700' : 'text-blue-300'}`} />
+            ? <Sword className={`w-7 h-7 ${theme === 'cyberpunk' ? 'text-red-700' : 'text-red-300'}`} /> 
+            : <Shield className={`w-7 h-7 ${theme === 'cyberpunk' ? 'text-blue-700' : 'text-blue-300'}`} />
           }
         </div>
         
         <div>
           <div className="flex items-center gap-2">
+            {isActive && (
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.7, 1, 0.7]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className={`w-2.5 h-2.5 rounded-full ${
+                  isAttacker ? 'bg-red-500' : 'bg-blue-500'
+                }`}
+              />
+            )}
             <User className="w-3.5 h-3.5 text-base-content/60" />
             <span 
               className="font-bold text-sm font-mono uppercase tracking-wide cursor-pointer hover:text-primary transition-colors"
@@ -660,6 +692,21 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             >
               {fetchedUsername || currentPlayerObj?.username || playerID || 'YOU'}
             </span>
+            {isActive && (
+              <span className={`
+                px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider
+                ${theme === 'cyberpunk'
+                  ? isAttacker
+                    ? 'bg-red-500 text-white'
+                    : 'bg-blue-500 text-white'
+                  : isAttacker
+                    ? 'bg-red-600 text-red-100'
+                    : 'bg-blue-600 text-blue-100'
+                }
+              `}>
+                YOUR TURN
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-base-content/60">
@@ -682,7 +729,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       
       {/* Hand display - centered with overflow visible for card hover */}
       <div 
-        className="flex-1 flex justify-center overflow-visible"
+        className="flex-1 flex justify-center overflow-visible -ml-48"
         style={{ 
           paddingTop: `${scaling.containerPadding}px`,
           paddingBottom: `${scaling.containerPadding * 1.5}px`
