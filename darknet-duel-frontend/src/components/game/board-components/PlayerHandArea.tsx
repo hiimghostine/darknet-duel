@@ -729,7 +729,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
       
       {/* Hand display - centered with overflow visible for card hover */}
       <div 
-        className="flex-1 flex justify-center overflow-visible -ml-48"
+        className="flex-1 flex justify-center overflow-visible"
         style={{ 
           paddingTop: `${scaling.containerPadding}px`,
           paddingBottom: `${scaling.containerPadding * 1.5}px`
