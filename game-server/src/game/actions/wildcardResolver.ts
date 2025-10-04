@@ -345,30 +345,43 @@ export class WildcardResolver {
     if (card.id === 'D303' || card.id.startsWith('D303')) {
       console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
       
-      // Restore ALL compromised infrastructure to secure state
+      // Get the restore count from card metadata or default to 2
+      const restoreCount = (card as any).restoreCount || 2;
+      
+      // Restore up to 2 randomly selected compromised infrastructure to secure state
       if (updatedGameState.infrastructure) {
-        let restoredCount = 0;
-        updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
-          if (infra.state === 'compromised') {
-            restoredCount++;
-            console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
-            // Get original vulnerabilities from infrastructure definition
-            const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
-            return {
-              ...infra,
-              state: 'secure' as InfrastructureState,
-              vulnerabilities: originalVulns // Restore original vulnerabilities
-            };
-          }
-          return infra;
-        });
+        // Find all compromised infrastructure
+        const compromisedIndices = updatedGameState.infrastructure
+          .map((infra, index) => ({ infra, index }))
+          .filter(({ infra }) => infra.state === 'compromised');
         
-        if (restoredCount > 0) {
-          updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
-          console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
-        } else {
+        if (compromisedIndices.length === 0) {
           updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
           console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+        } else {
+          // Shuffle and select up to restoreCount random compromised infrastructure
+          const shuffled = [...compromisedIndices].sort(() => Math.random() - 0.5);
+          const toRestore = shuffled.slice(0, Math.min(restoreCount, compromisedIndices.length));
+          const restoreIds = new Set(toRestore.map(({ infra }) => infra.id));
+          
+          let restoredCount = 0;
+          updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+            if (infra.state === 'compromised' && restoreIds.has(infra.id)) {
+              restoredCount++;
+              console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+              // Get original vulnerabilities from infrastructure definition
+              const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
+              return {
+                ...infra,
+                state: 'secure' as InfrastructureState,
+                vulnerabilities: originalVulns // Restore original vulnerabilities
+              };
+            }
+            return infra;
+          });
+          
+          updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} randomly selected compromised infrastructure to secure state.`;
+          console.log(`✅ Mass restore completed: ${restoredCount} of ${compromisedIndices.length} compromised infrastructure restored`);
         }
       } else {
         console.log(`❌ Mass restore failed: No infrastructure array found`);
@@ -586,34 +599,50 @@ export class WildcardResolver {
           // Handle Emergency Response Team (D303) effect
           console.log(`🚨 Emergency Response Team (${card.id}) detected! Applying mass_restore effect`);
           
+          // Get the restore count from card metadata or default to 2
+          const restoreCount = (card as any).restoreCount || 2;
+          
           // DEBUG: Log current scores before mass restore
           console.log(`🔍 BEFORE mass_restore - Current scores: Attacker=${updatedGameState.attackerScore}, Defender=${updatedGameState.defenderScore}`);
           console.log(`🔍 BEFORE mass_restore - Infrastructure states:`, updatedGameState.infrastructure?.map(i => `${i.name}:${i.state}`));
           
-          // Restore ALL compromised infrastructure to secure state
+          // Restore up to restoreCount randomly selected compromised infrastructure to secure state
           if (updatedGameState.infrastructure) {
-            let restoredCount = 0;
-            updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
-              if (infra.state === 'compromised') {
-                restoredCount++;
-                console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
-                // Get original vulnerabilities from infrastructure definition
-                const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
-                return {
-                  ...infra,
-                  state: 'secure' as InfrastructureState,
-                  vulnerabilities: originalVulns // Restore original vulnerabilities
-                };
-              }
-              return infra;
-            });
+            // Find all compromised infrastructure
+            const compromisedIndices = updatedGameState.infrastructure
+              .map((infra, index) => ({ infra, index }))
+              .filter(({ infra }) => infra.state === 'compromised');
             
-            // DEBUG: Log infrastructure states after restoration
-            console.log(`🔍 AFTER restoration - Infrastructure states:`, updatedGameState.infrastructure.map(i => `${i.name}:${i.state}`));
-            
-            if (restoredCount > 0) {
-              updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} compromised infrastructure to secure state.`;
-              console.log(`✅ Mass restore completed: ${restoredCount} infrastructure restored`);
+            if (compromisedIndices.length === 0) {
+              updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
+              console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
+            } else {
+              // Shuffle and select up to restoreCount random compromised infrastructure
+              const shuffled = [...compromisedIndices].sort(() => Math.random() - 0.5);
+              const toRestore = shuffled.slice(0, Math.min(restoreCount, compromisedIndices.length));
+              const restoreIds = new Set(toRestore.map(({ infra }) => infra.id));
+              
+              let restoredCount = 0;
+              updatedGameState.infrastructure = updatedGameState.infrastructure.map(infra => {
+                if (infra.state === 'compromised' && restoreIds.has(infra.id)) {
+                  restoredCount++;
+                  console.log(`🔧 Restoring ${infra.name} from compromised to secure`);
+                  // Get original vulnerabilities from infrastructure definition
+                  const originalVulns = getOriginalInfrastructureVulnerabilities(infra.id);
+                  return {
+                    ...infra,
+                    state: 'secure' as InfrastructureState,
+                    vulnerabilities: originalVulns // Restore original vulnerabilities
+                  };
+                }
+                return infra;
+              });
+              
+              // DEBUG: Log infrastructure states after restoration
+              console.log(`🔍 AFTER restoration - Infrastructure states:`, updatedGameState.infrastructure.map(i => `${i.name}:${i.state}`));
+              
+              updatedGameState.message = `${card.name}: Emergency Response activated! Restored ${restoredCount} randomly selected compromised infrastructure to secure state.`;
+              console.log(`✅ Mass restore completed: ${restoredCount} of ${compromisedIndices.length} compromised infrastructure restored`);
               
               // Recalculate scores after mass restore
               console.log(`🔍 CALCULATING new scores...`);
@@ -625,9 +654,6 @@ export class WildcardResolver {
               
               console.log(`📊 Scores updated after mass restore - Attacker: ${attackerScore}, Defender: ${defenderScore}`);
               console.log(`🔍 FINAL game state scores - Attacker: ${updatedGameState.attackerScore}, Defender: ${updatedGameState.defenderScore}`);
-            } else {
-              updatedGameState.message = `${card.name}: Emergency Response ready, but no compromised infrastructure found.`;
-              console.log(`ℹ️ Mass restore completed: No compromised infrastructure to restore`);
             }
           } else {
             console.log(`❌ Mass restore failed: No infrastructure array found`);
