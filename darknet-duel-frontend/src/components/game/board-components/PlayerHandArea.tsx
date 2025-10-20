@@ -309,9 +309,11 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
           let isPlayable = false;
           
           // Debug logging for defender tutorial
-          if (card.name === 'Firewall') {
-            console.log('🎯 TUTORIAL: Firewall playability check:', {
+          if (card.name === 'Firewall' || card.name === 'DMZ Implementation' || card.name === 'Incident Response Team' ||
+              card.name === 'Phishing Defense' || card.type === 'fortify' || card.type === 'response' || card.type === 'reaction') {
+            console.log('🎯 TUTORIAL: Card playability check:', {
               cardName: card.name,
+              cardType: card.type,
               targetMode,
               isActive,
               ctxPhase: ctx.phase,
@@ -325,7 +327,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             
             // TEMPORARY FIX: Force defender cards to be playable in tutorial during specific steps
             const currentTutorialStep = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-            const isDefenderTutorialStep = ['shield_card', 'fortify_card', 'response_card'].includes(currentTutorialStep || '');
+            const isDefenderTutorialStep = ['shield_card', 'fortify_card', 'response_card', 'reaction_card'].includes(currentTutorialStep || '');
             
             if (!card.playable && currentStage === 'action' && isActive && isDefenderTutorialStep) {
               console.log(`🎯 TUTORIAL: Forcing ${card.name} to be playable for ${currentTutorialStep} step`);

@@ -56,38 +56,39 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
     if (isActive) {
       // Add data attributes to key game elements for tutorial targeting
       const addTutorialAttributes = () => {
-        // Infrastructure grid
-        const infraGrid = document.querySelector('.infrastructure-grid');
+        // Infrastructure grid - updated selector for new layout
+        const infraGrid = document.querySelector('[class*="flex-1 flex flex-col lg:order-2"]');
         if (infraGrid) {
-          infraGrid.classList.add('tutorial-target');
+          infraGrid.classList.add('tutorial-target', 'infrastructure-grid');
         }
 
-        // Player hand
-        const playerHand = document.querySelector('.player-hand');
+        // Player hand - the entire player hand area at the bottom
+        const playerHand = document.querySelector('[class*="flex justify-between items-center gap-4 rounded-lg"][class*="backdrop-blur-md"]');
         if (playerHand) {
-          playerHand.classList.add('tutorial-target');
+          playerHand.classList.add('tutorial-target', 'player-hand');
         }
 
-        // Action points display
+        // Action points display - updated to match GameInfoPanels structure
         const apDisplay = document.querySelector('[data-testid="action-points"]');
         if (apDisplay) {
           apDisplay.classList.add('tutorial-target', 'action-points-display');
         }
 
-        // Game info panel
-        const gameInfoPanel = document.querySelector('.game-info-panel');
+        // Game info panel - left side panel with game state
+        const gameInfoPanel = document.querySelector('[class*="flex flex-col gap-3 lg:w-64"][class*="lg:order-1"]');
         if (gameInfoPanel) {
-          gameInfoPanel.classList.add('tutorial-target');
+          gameInfoPanel.classList.add('tutorial-target', 'game-info-panel');
         }
 
-        // Tactical hand label
-        const tacticalHandLabel = document.querySelector('.tactical-hand-label');
-        if (tacticalHandLabel) {
-          tacticalHandLabel.classList.add('tutorial-target');
+        // End turn button - look for button in GameControlsBar by finding buttons with END_TURN text
+        const buttons = document.querySelectorAll('button');
+        let endTurnBtn = null;
+        for (const btn of buttons) {
+          if (btn.textContent?.includes('END_TURN') || btn.textContent?.includes('END TURN')) {
+            endTurnBtn = btn;
+            break;
+          }
         }
-
-        // End turn button
-        const endTurnBtn = document.querySelector('[data-testid="end-turn-button"]');
         if (endTurnBtn) {
           endTurnBtn.classList.add('tutorial-target', 'end-turn-button');
         }

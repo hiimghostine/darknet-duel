@@ -30,7 +30,7 @@ export const attackerBasicsTutorial: TutorialScript = {
       description: 'These 5 infrastructure cards represent the digital systems you\'re fighting over',
       instruction: 'Look at the infrastructure grid in the center. Each card starts in a "secure" state.',
       targetElement: '.infrastructure-grid',
-      position: 'top',
+      position: 'bottom',
       autoAdvance: false,
       skipable: true
     },
@@ -39,7 +39,7 @@ export const attackerBasicsTutorial: TutorialScript = {
       title: 'Action Points (AP)',
       description: 'Action Points determine how many actions you can take per turn',
       instruction: 'As an Attacker, you gain 2 AP per turn (max 10). Defenders gain 3 AP per turn.',
-      targetElement: '.game-info-panel',
+      targetElement: '[data-testid="action-points"]',
       position: 'right',
       autoAdvance: false,
       skipable: true
@@ -259,7 +259,7 @@ export const attackerBasicsTutorial: TutorialScript = {
       description: 'When you\'re done with your actions, end your turn',
       instruction: 'Click the "End Turn" button to pass control to your opponent.',
       targetElement: '.end-turn-button',
-      position: 'left',
+      position: 'bottom',
       action: {
         type: 'click',
         target: '.end-turn-button'
@@ -387,7 +387,7 @@ export const defenderTutorial: TutorialScript = {
       title: 'Understanding Fortify Cards',
       description: 'Fortify cards are the second layer of defense that strengthen already shielded infrastructure. They can only be applied to infrastructure that has been shielded first, creating a "fortified" state that provides enhanced protection against attacks. Think of shields as armor, and fortify as reinforcing that armor.',
       instruction: 'Click on the highlighted DMZ Implementation card to select it and enter target mode. This Network fortify card can strengthen infrastructure that already has Network shields. Once you\'ve selected the card, click "Next" to learn about fortify targeting.',
-      targetElement: '.player-hand .card:nth-child(2)',
+      targetElement: '.player-hand .card:first-child',
       position: 'right',
       validation: {
         type: 'custom',
@@ -439,8 +439,8 @@ export const defenderTutorial: TutorialScript = {
       id: 'response_card',
       title: 'Understanding Response Cards',
       description: 'Response cards are the defender\'s recovery mechanism - they can restore compromised infrastructure back to a secure state. Unlike shields and fortify cards that prevent attacks, response cards are used reactively to undo damage that has already been done. They are essential for recovering from successful attacker moves.',
-      instruction: 'Click on the highlighted Incident Response Team card to select it. This Network response card can restore compromised infrastructure with Network vulnerabilities back to secure state. Response cards are your "undo" button against attacker success.',
-      targetElement: '.player-hand .card:nth-child(4)',
+      instruction: 'Click on the highlighted Incident Response Team card to select it and enter target mode. This Network response card can restore compromised infrastructure with Network vulnerabilities back to secure state. Once you\'ve selected the card, click "Next" to learn about response targeting.',
+      targetElement: '.player-hand .card:first-child',
       position: 'right',
       validation: {
         type: 'custom',
@@ -455,11 +455,89 @@ export const defenderTutorial: TutorialScript = {
       preventTargetModeExit: true
     },
     {
-      id: 'reaction_cards',
-      title: 'Reaction Cards',
-      description: 'Reaction cards can be played during the opponent\'s turn',
-      instruction: 'Use reaction cards to counter attacker moves in real-time.',
-      position: 'center',
+      id: 'response_infrastructure',
+      title: 'Response Targeting & Compromised Infrastructure',
+      description: 'Excellent! The Incident Response Team card is now selected and ready to use. Notice that response cards can only target infrastructure that has been compromised by attackers. The game automatically filters valid targets - only compromised infrastructure with matching vulnerability vectors will be highlighted.',
+      instruction: 'Click on the compromised Main Database Cluster to restore it. Since this infrastructure is compromised and has Network vulnerabilities matching your Incident Response Team card, they are compatible. Using the response card will restore the infrastructure from "compromised" back to "secure" state.',
+      targetElement: '[data-infra-id="I005"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if target mode has been exited (response applied)
+          const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
+          const targetModeExited = !targetModeActive;
+          
+          if (targetModeExited) {
+            console.log('🎯 TUTORIAL: Target mode exited - response applied successfully!');
+            return true;
+          }
+          
+          // Secondary check: Look for secure state restoration
+          const mainDatabase = document.querySelector('[data-infra-id="I005"]');
+          if (mainDatabase) {
+            const hasSecureClass = mainDatabase.classList.contains('secure');
+            const hasSecureState = mainDatabase.getAttribute('data-state') === 'secure';
+            console.log('🎯 TUTORIAL: Response state check:', { hasSecureClass, hasSecureState });
+            return hasSecureClass || hasSecureState;
+          }
+          
+          return false;
+        }
+      },
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'reaction_card',
+      title: 'Understanding Reaction Cards',
+      description: 'Reaction cards are special defensive cards that can be played during the opponent\'s turn! When an attacker tries to exploit or attack your infrastructure, reaction cards let you respond instantly to protect it. Think of them as your "instant response" defense mechanism.',
+      instruction: 'Click on the highlighted Phishing Defense card to select it and enter target mode. This Social reaction card can protect infrastructure from Social-based exploits during the attacker\'s turn. Once you\'ve selected the card, click "Next" to learn about reaction targeting.',
+      targetElement: '.player-hand .card:first-child',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if user is in target mode (reaction card selected)
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'reaction_infrastructure',
+      title: 'Reaction Targeting & Vulnerable Infrastructure',
+      description: 'Perfect! The Phishing Defense card is now selected and ready to use. Reaction cards can protect vulnerable infrastructure - infrastructure that has been exploited but not yet fully compromised. They act as an emergency shield during the attacker\'s turn.',
+      instruction: 'Click on the vulnerable Corporate Website to protect it with your reaction card. This will shield the infrastructure and prevent it from being compromised, turning it back to secure state instantly.',
+      targetElement: '[data-infra-id="I003"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if target mode has been exited (reaction applied)
+          const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
+          const targetModeExited = !targetModeActive;
+          
+          if (targetModeExited) {
+            console.log('🎯 TUTORIAL: Target mode exited - reaction applied successfully!');
+            return true;
+          }
+          
+          // Secondary check: Look for secure state
+          const corporateWebsite = document.querySelector('[data-infra-id="I003"]');
+          if (corporateWebsite) {
+            const hasSecureClass = corporateWebsite.classList.contains('secure');
+            const hasSecureState = corporateWebsite.getAttribute('data-state') === 'secure';
+            console.log('🎯 TUTORIAL: Reaction state check:', { hasSecureClass, hasSecureState });
+            return hasSecureClass || hasSecureState;
+          }
+          
+          return false;
+        }
+      },
       autoAdvance: false,
       skipable: true
     },
@@ -467,10 +545,12 @@ export const defenderTutorial: TutorialScript = {
       id: 'defender_complete',
       title: 'Defender Tutorial Complete!',
       description: 'You\'re ready to defend the digital realm',
-      instruction: 'Remember: Shield → Fortify → Victory. Protect your infrastructure!',
+      instruction: 'Remember: Shield → Fortify → Reaction → Response. Protect your infrastructure!',
       position: 'center',
       autoAdvance: false,
-      skipable: false
+      skipable: false,
+      customButtonText: 'Finish Tutorial',
+      customButtonAction: 'exit_tutorial'
     }
   ]
 };

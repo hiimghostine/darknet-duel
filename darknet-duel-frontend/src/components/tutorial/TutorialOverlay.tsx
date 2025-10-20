@@ -35,29 +35,61 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       // Step-specific element selection
       switch (highlightTarget) {
         case '.infrastructure-grid':
-          element = document.querySelector('.infrastructure-grid');
+          // Target the infrastructure grid container - updated for new layout
+          element = document.querySelector('.tutorial-target.infrastructure-grid') ||
+                    document.querySelector('[class*="flex-1 flex flex-col lg:order-2"]');
           console.log('Step 3 - Infrastructure Grid:', element);
           break;
           
         case '.game-info-panel':
-          element = document.querySelector('.game-info-panel');
+          // Target the left game info panel - updated for new layout
+          element = document.querySelector('.tutorial-target.game-info-panel') ||
+                    document.querySelector('[class*="flex flex-col gap-3 lg:w-64"][class*="lg:order-1"]');
           console.log('Step 4 - Game Info Panel:', element);
           break;
           
         case '.player-hand':
-          // Target the entire player hand area container
-          element = document.querySelector('.player-hand');
+          // Target the entire player hand area container - updated for new layout
+          element = document.querySelector('.tutorial-target.player-hand') ||
+                    document.querySelector('[class*="flex justify-between items-center gap-4 rounded-lg"][class*="backdrop-blur-md"]');
           console.log('Step 5 - Player Hand Container:', element);
           break;
           
         case '.player-hand .card:first-child':
-          // Target the first card in the player hand
-          element = document.querySelector('.player-hand .card:first-child');
+          // Target the first card in the player hand - look for motion.div with data-card-id
+          element = document.querySelector('.player-hand [data-card-id]') ||
+                    document.querySelector('[data-card-id]');
           console.log('Step 6 - First Card in Hand:', element);
           if (!element) {
-            // Fallback: try to find the first card with data-card-id
-            element = document.querySelector('.player-hand [data-card-id]:first-child');
+            // Fallback: try to find any card-like element
+            element = document.querySelector('[class*="group relative border-2 rounded-xl"]');
             console.log('Step 6 - Fallback First Card:', element);
+          }
+          break;
+          
+        case '.player-hand .card:nth-child(2)':
+          // Target the second card in the player hand (for Fortify card in defender tutorial)
+          const allCards = document.querySelectorAll('.player-hand [data-card-id], [data-card-id]');
+          element = allCards[1] || null; // Get second card (index 1)
+          console.log('Step 5 (Defender) - Second Card in Hand (DMZ Implementation):', element);
+          if (!element) {
+            // Fallback: try alternative selector
+            const altCards = document.querySelectorAll('[class*="group relative border-2 rounded-xl"]');
+            element = altCards[1] || null;
+            console.log('Step 5 (Defender) - Fallback Second Card:', element);
+          }
+          break;
+          
+        case '.player-hand .card:nth-child(4)':
+          // Target the fourth card in the player hand (for Response card in defender tutorial)
+          const allCards4 = document.querySelectorAll('.player-hand [data-card-id], [data-card-id]');
+          element = allCards4[3] || null; // Get fourth card (index 3)
+          console.log('Step 7 (Defender) - Fourth Card in Hand (Incident Response Team):', element);
+          if (!element) {
+            // Fallback: try alternative selector
+            const altCards4 = document.querySelectorAll('[class*="group relative border-2 rounded-xl"]');
+            element = altCards4[3] || null;
+            console.log('Step 7 (Defender) - Fallback Fourth Card:', element);
           }
           break;
           
@@ -79,26 +111,28 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           
           if (!element) {
             // Fallback: just target the first infrastructure card
-            element = document.querySelector('[data-infra-id]');
+            element = document.querySelector('[data-infra-id]') ||
+                     document.querySelector('[class*="infrastructure"]');
             console.log('Step 7 - Fallback infrastructure card:', element);
           }
           break;
           
         case '.tactical-hand-label':
-          // Target specifically the TACTICAL_HAND label
-          element = document.querySelector('.tactical-hand-label');
-          console.log('Step 5 - Tactical Hand Label:', element);
-          if (!element) {
-            // Fallback: try to find any element with TACTICAL_HAND text
-            const allElements = document.querySelectorAll('*');
-            for (const el of allElements) {
-              if (el.textContent?.includes('TACTICAL_HAND')) {
-                element = el;
-                console.log('Step 5 - Found TACTICAL_HAND via text search:', element);
-                break;
-              }
-            }
-          }
+          // This selector is no longer used in the new layout
+          // Fallback to player hand container
+          element = document.querySelector('.tutorial-target.player-hand') ||
+                    document.querySelector('[class*="flex justify-between items-center gap-4 rounded-lg"]');
+          console.log('Step 5 - Tactical Hand Label (fallback to player hand):', element);
+          break;
+          
+        case '.end-turn-button':
+          // Target the end turn button in GameControlsBar
+          element = document.querySelector('.tutorial-target.end-turn-button') ||
+                    document.querySelector('button[class*="END_TURN"]') ||
+                    Array.from(document.querySelectorAll('button')).find(btn =>
+                      btn.textContent?.includes('END_TURN') || btn.textContent?.includes('END TURN')
+                    );
+          console.log('End Turn Button:', element);
           break;
           
         default:
