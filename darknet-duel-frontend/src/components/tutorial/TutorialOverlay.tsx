@@ -56,40 +56,72 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           break;
           
         case '.player-hand .card:first-child':
-          // Target the first card in the player hand - look for motion.div with data-card-id
-          element = document.querySelector('.player-hand [data-card-id]') ||
-                    document.querySelector('[data-card-id]');
-          console.log('Step 6 - First Card in Hand:', element);
+          // Target the Log4Shell card (A003) for exploit step - use data-card-id instead of position
+          element = document.querySelector('[data-card-id="A003"]');
+          console.log('Step 6 - Exploit Card (Log4Shell A003):', element);
           if (!element) {
-            // Fallback: try to find any card-like element
-            element = document.querySelector('[class*="group relative border-2 rounded-xl"]');
-            console.log('Step 6 - Fallback First Card:', element);
+            // Fallback: find first playable exploit card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50') &&
+                     !cardElement.classList.contains('cursor-not-allowed');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step 6 - Fallback First Playable Card:', element);
           }
           break;
           
         case '.player-hand .card:nth-child(2)':
-          // Target the second card in the player hand (for Fortify card in defender tutorial)
-          const allCards = document.querySelectorAll('.player-hand [data-card-id], [data-card-id]');
-          element = allCards[1] || null; // Get second card (index 1)
-          console.log('Step 5 (Defender) - Second Card in Hand (DMZ Implementation):', element);
+          // Target the Firewall card (D001) for shield step - use data-card-id instead of position
+          element = document.querySelector('[data-card-id="D001"]');
+          console.log('Step (Defender) - Shield Card (Firewall D001):', element);
           if (!element) {
-            // Fallback: try alternative selector
-            const altCards = document.querySelectorAll('[class*="group relative border-2 rounded-xl"]');
-            element = altCards[1] || null;
-            console.log('Step 5 (Defender) - Fallback Second Card:', element);
+            // Fallback: find first playable shield card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step (Defender) - Fallback Shield Card:', element);
           }
           break;
           
         case '.player-hand .card:nth-child(4)':
-          // Target the fourth card in the player hand (for Response card in defender tutorial)
-          const allCards4 = document.querySelectorAll('.player-hand [data-card-id], [data-card-id]');
-          element = allCards4[3] || null; // Get fourth card (index 3)
-          console.log('Step 7 (Defender) - Fourth Card in Hand (Incident Response Team):', element);
+          // Target the Incident Response Team card (D201) for response step - use data-card-id
+          element = document.querySelector('[data-card-id="D201"]');
+          console.log('Step (Defender) - Response Card (Incident Response Team D201):', element);
           if (!element) {
-            // Fallback: try alternative selector
-            const altCards4 = document.querySelectorAll('[class*="group relative border-2 rounded-xl"]');
-            element = altCards4[3] || null;
-            console.log('Step 7 (Defender) - Fallback Fourth Card:', element);
+            // Fallback: find first playable response card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step (Defender) - Fallback Response Card:', element);
+          }
+          break;
+          
+        // Card ID-based selectors - these will match regardless of hand sorting
+        case '[data-card-id="A003"]': // Log4Shell - Exploit card
+        case '[data-card-id="A101"]': // DDoS Attack - Attack card
+        case '[data-card-id="A205"]': // Social Engineer - Counter-attack card
+        case '[data-card-id="A002"]': // Packet Sniffer - First fortified exploit
+        case '[data-card-id="A001"]': // Port Scanner - Second fortified exploit
+        case '[data-card-id="D001"]': // Firewall - Shield card
+        case '[data-card-id="D101"]': // DMZ Implementation - Fortify card
+        case '[data-card-id="D201"]': // Incident Response Team - Response card
+        case '[data-card-id="D007"]': // Phishing Defense - Reaction card
+          element = document.querySelector(highlightTarget);
+          console.log(`Card ID selector ${highlightTarget}:`, element);
+          if (!element) {
+            // Fallback: find first playable card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50') &&
+                     !cardElement.classList.contains('cursor-not-allowed');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log(`Fallback for ${highlightTarget}:`, element);
           }
           break;
           

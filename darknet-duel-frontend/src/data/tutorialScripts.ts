@@ -59,7 +59,7 @@ export const attackerBasicsTutorial: TutorialScript = {
       title: 'Understanding Exploit Cards',
       description: 'This is an Exploit card - the foundation of any successful attack. Exploit cards create vulnerabilities in secure infrastructure by finding weaknesses in their defenses. Each exploit targets specific attack vectors like Network, Web, Social Engineering, or Malware.',
       instruction: 'Click on the highlighted Log4Shell card to select it and enter target mode. This Network exploit can make infrastructure vulnerable to Network-based attacks. Once you\'ve selected the card, click "Next" to learn about targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="A003"]',
       position: 'right',
       validation: {
         type: 'custom',
@@ -111,7 +111,7 @@ export const attackerBasicsTutorial: TutorialScript = {
       title: 'Understanding Attack Cards',
       description: 'Attack cards are used to compromise vulnerable infrastructure. They can only target infrastructure that has already been exploited and is in a vulnerable state. Each attack targets specific vectors and can fully compromise the target.',
       instruction: 'Click on the highlighted DDoS Attack card to select it and enter target mode. This Network attack can compromise vulnerable infrastructure with Network vulnerabilities. Once you\'ve selected the card, it will automatically advance to targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="A101"]',
       position: 'right',
       validation: {
         type: 'custom',
@@ -172,13 +172,13 @@ export const attackerBasicsTutorial: TutorialScript = {
       title: 'Understanding Reaction Phase',
       description: 'Now you\'ll learn about the Reaction Phase - a crucial mechanic for both players. When a player makes a move, the opponent gets a chance to react with special cards. The Corporate Website has been shielded and the game has entered reaction phase.',
       instruction: 'Click on the highlighted Social Engineer card to select it and enter target mode. This Counter-Attack card can be played in reaction mode to cancel shield effects on infrastructure. Once you\'ve selected the card, it will automatically advance to targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="A205"]',
       position: 'right',
       validation: {
         type: 'custom',
         condition: () => {
           // Check if Social Engineer card is selected (multiple ways to detect selection)
-          const socialEngineerCard = document.querySelector('.player-hand .card[data-card-id="A205"]');
+          const socialEngineerCard = document.querySelector('[data-card-id="A205"]');
           
           if (socialEngineerCard) {
             // Check for various selection states
@@ -243,6 +243,149 @@ export const attackerBasicsTutorial: TutorialScript = {
       autoAdvance: false,
       skipable: true,
       preventTargetModeExit: true
+    },
+    {
+      id: 'fortified_infrastructure_intro',
+      title: 'Understanding Fortified Infrastructure',
+      description: 'Fortified infrastructure is the defender\'s strongest protection - it combines both shield and fortify effects, making it extremely resistant to attacks. However, as an attacker, you can still break through this defense!',
+      instruction: 'The Main Database Cluster has been fortified by the defender. Notice the double-layer protection indicated by its fortified state. To strip away fortified defenses, you need a special technique.',
+      targetElement: '[data-infra-id="I005"]',
+      position: 'right',
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'fortified_strategy',
+      title: 'Breaking Fortified Defenses',
+      description: 'To break through fortified infrastructure, you must use TWO exploit cards instead of one. The first exploit weakens the fortifications (fortified → fortified_weaken), and the second exploit makes it vulnerable (fortified_weaken → vulnerable).',
+      instruction: 'This is a critical advanced technique: fortified infrastructure requires 2 exploit cards of matching attack vectors to make it vulnerable. After the second exploit, it becomes vulnerable and can be attacked normally. Let\'s practice this now.',
+      position: 'center',
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'first_fortified_exploit',
+      title: 'First Exploit Card',
+      description: 'You\'ll now play the first of two exploit cards against fortified infrastructure. This first exploit begins to weaken the defensive layers, changing the state from "fortified" to "fortified_weaken".',
+      instruction: 'Click on the highlighted Packet Sniffer card to select it. This Network exploit will start breaking down the fortified Main Database Cluster\'s defenses.',
+      targetElement: '[data-card-id="A002"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'target_fortified_first',
+      title: 'Target Fortified Infrastructure (1st Exploit)',
+      description: 'The first exploit card is selected. Now target the fortified Main Database Cluster to begin weakening its defenses.',
+      instruction: 'Click on the fortified Main Database Cluster. After this first exploit, the infrastructure will change from "fortified" to "fortified_weaken" state - partially weakened but still protected.',
+      targetElement: '[data-infra-id="I005"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          const mainDatabase = document.querySelector('[data-infra-id="I005"]');
+          if (!mainDatabase) {
+            console.log('🎯 TUTORIAL: Main Database element not found');
+            return false;
+          }
+          
+          const dataState = mainDatabase.getAttribute('data-state');
+          const textContent = mainDatabase.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking fortified_weaken state - data-state:', dataState, 'textContent:', textContent);
+          
+          return dataState === 'fortified_weaken' ||
+                 textContent.toLowerCase().includes('weakened') ||
+                 textContent.toLowerCase().includes('weaken');
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'fortified_to_weakened',
+      title: 'Fortifications Weakened',
+      description: 'Good! The first exploit successfully weakened the fortifications. The Main Database is now in a "fortified_weaken" state - partially compromised but still defended.',
+      instruction: 'One more exploit card will completely break through the defenses, making it vulnerable. Then you can attack it normally to compromise it. This demonstrates why fortified infrastructure is so powerful - it requires twice the effort to break through!',
+      position: 'center',
+      delay: 1000,
+      autoAdvance: false,
+      skipable: true
+    },
+    {
+      id: 'second_fortified_exploit',
+      title: 'Second Exploit Card',
+      description: 'Now you\'ll play the second exploit card to finish breaking through the defenses. This exploit will completely break through the fortifications, making the infrastructure vulnerable.',
+      instruction: 'Click on the highlighted Port Scanner card to select it. This will complete the process of breaking through the fortified defenses, making it vulnerable for attack.',
+      targetElement: '[data-card-id="A001"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
+          return !!mockBoard;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'target_fortified_second',
+      title: 'Target Weakened Infrastructure (2nd Exploit)',
+      description: 'The second exploit card is selected. Now target the weakened Main Database Cluster to completely break through its defenses.',
+      instruction: 'Click on the weakened Main Database Cluster. After this second exploit, the infrastructure will become vulnerable - ready for your attack!',
+      targetElement: '[data-infra-id="I005"]',
+      position: 'right',
+      validation: {
+        type: 'custom',
+        condition: () => {
+          // Check if Main Database has become vulnerable (fortified defenses broken)
+          const mainDatabase = document.querySelector('[data-infra-id="I005"]');
+          if (!mainDatabase) {
+            console.log('🎯 TUTORIAL: Main Database element not found');
+            return false;
+          }
+          
+          const dataState = mainDatabase.getAttribute('data-state');
+          const textContent = mainDatabase.textContent || '';
+          
+          console.log('🎯 TUTORIAL: Checking vulnerable state after 2nd exploit - data-state:', dataState, 'textContent:', textContent);
+          
+          // Must be in vulnerable state (not fortified_weaken anymore)
+          const isVulnerable = dataState === 'vulnerable' ||
+                              textContent.toLowerCase().includes('vulnerable') ||
+                              textContent.toLowerCase().includes('at risk');
+          
+          if (isVulnerable) {
+            console.log('🎯 TUTORIAL: Fortified defenses completely broken - infrastructure is now vulnerable!');
+          }
+          
+          return isVulnerable;
+        }
+      },
+      autoAdvance: false,
+      skipable: true,
+      preventTargetModeExit: true
+    },
+    {
+      id: 'fortified_defenses_removed',
+      title: 'Fortified Defenses Completely Broken!',
+      description: 'Excellent work! You\'ve successfully broken through fortified defenses using two exploit cards. The Main Database is now vulnerable and ready to be attacked.',
+      instruction: 'Remember the progression: Fortified → (1st Exploit) → Fortified_Weaken → (2nd Exploit) → Vulnerable. After breaking through fortifications with 2 exploits, you can then attack it normally to compromise it. This two-exploit technique is essential for overcoming the defender\'s strongest defenses!',
+      position: 'center',
+      delay: 1000,
+      autoAdvance: false,
+      skipable: true
     },
     {
       id: 'win_conditions',
@@ -314,7 +457,7 @@ export const defenderTutorial: TutorialScript = {
       title: 'Understanding Shield Cards',
       description: 'This is a Shield card - the foundation of any successful defense. Shield cards protect infrastructure from specific attack vectors by creating a defensive barrier. Each shield targets specific attack vectors like Network, Web, Social Engineering, or Malware.',
       instruction: 'Click on the highlighted Firewall card to select it and enter target mode. This Network shield can protect infrastructure from Network-based attacks. Once you\'ve selected the card, click "Next" to learn about targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="D001"]',
       position: 'right',
       validation: {
         type: 'custom',
@@ -387,7 +530,7 @@ export const defenderTutorial: TutorialScript = {
       title: 'Understanding Fortify Cards',
       description: 'Fortify cards are the second layer of defense that strengthen already shielded infrastructure. They can only be applied to infrastructure that has been shielded first, creating a "fortified" state that provides enhanced protection against attacks. Think of shields as armor, and fortify as reinforcing that armor.',
       instruction: 'Click on the highlighted DMZ Implementation card to select it and enter target mode. This Network fortify card can strengthen infrastructure that already has Network shields. Once you\'ve selected the card, click "Next" to learn about fortify targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="D101"]',
       position: 'right',
       validation: {
         type: 'custom',
@@ -440,7 +583,7 @@ export const defenderTutorial: TutorialScript = {
       title: 'Understanding Response Cards',
       description: 'Response cards are the defender\'s recovery mechanism - they can restore compromised infrastructure back to a secure state. Unlike shields and fortify cards that prevent attacks, response cards are used reactively to undo damage that has already been done. They are essential for recovering from successful attacker moves.',
       instruction: 'Click on the highlighted Incident Response Team card to select it and enter target mode. This Network response card can restore compromised infrastructure with Network vulnerabilities back to secure state. Once you\'ve selected the card, click "Next" to learn about response targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="D201"]',
       position: 'right',
       validation: {
         type: 'custom',
@@ -493,7 +636,7 @@ export const defenderTutorial: TutorialScript = {
       title: 'Understanding Reaction Cards',
       description: 'Reaction cards are special defensive cards that can be played during the opponent\'s turn! When an attacker tries to exploit or attack your infrastructure, reaction cards let you respond instantly to protect it. Think of them as your "instant response" defense mechanism.',
       instruction: 'Click on the highlighted Phishing Defense card to select it and enter target mode. This Social reaction card can protect infrastructure from Social-based exploits during the attacker\'s turn. Once you\'ve selected the card, click "Next" to learn about reaction targeting.',
-      targetElement: '.player-hand .card:first-child',
+      targetElement: '[data-card-id="D007"]',
       position: 'right',
       validation: {
         type: 'custom',

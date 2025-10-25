@@ -234,6 +234,27 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
         // Transitioning from step 12 to step 13 - enable targeting ONLY for shielded Corporate Website
         console.log('🎯 TUTORIAL: Enabling targeting for step 13 - Shielded Corporate Website only');
         setValidTargets(['I003']); // Only Corporate Website for tutorial
+      } else if (newStepId === 'fortified_infrastructure_intro') {
+        // Set Main Database Cluster (I005) to fortified state for fortified tutorial steps
+        console.log('🎯 TUTORIAL: Setting Main Database Cluster (I005) to fortified for fortified infrastructure intro');
+        mockGameStateProvider.setInfrastructureState('I005', 'fortified');
+        
+        // Refresh game state to show fortified infrastructure
+        const newGameState = mockGameStateProvider.generateMockGameState(isAttacker);
+        const newContext = mockGameStateProvider.generateMockContext(isAttacker);
+        setGameState(newGameState);
+        setContext(newContext);
+        console.log('🎯 TUTORIAL: Updated game state for fortified intro', {
+          infrastructureStates: newGameState.infrastructure?.map(i => ({ id: i.id, state: i.state }))
+        });
+      } else if (newStepId === 'target_fortified_first' && selectedCard && targetMode) {
+        // Enable targeting for first fortified exploit
+        console.log('🎯 TUTORIAL: Enabling targeting for first fortified exploit - Main Database Cluster only');
+        setValidTargets(['I005']); // Only Main Database Cluster for tutorial
+      } else if (newStepId === 'target_fortified_second' && selectedCard && targetMode) {
+        // Enable targeting for second fortified exploit
+        console.log('🎯 TUTORIAL: Enabling targeting for second fortified exploit - Main Database Cluster only');
+        setValidTargets(['I005']); // Only Main Database Cluster for tutorial
       }
     };
     
@@ -263,25 +284,54 @@ const MockGameBoard: React.FC<MockGameBoardProps> = ({
           playable = false;
           break;
         case 'attack_card':
-          // Step 9: Allow first card (now a DDoS Attack card) to be playable
-          playable = index === 0;
+          // Step 9: Allow DDoS Attack card to be playable (card with type 'attack')
+          playable = c.type === 'attack';
           break;
         case 'attack_vulnerable':
-          // Step 10: Keep first card playable during targeting
-          playable = index === 0;
+          // Step 10: Keep attack card playable during targeting
+          playable = c.type === 'attack';
           break;
         case 'infrastructure_compromised':
           // Step 11: After attack, DDoS card should be gone, so no cards playable yet
           playable = false;
           break;
         case 'reaction_phase':
-          // Step 12: Allow first card (now a Shield Breaker Counter-Attack card) to be playable
-          playable = index === 0;
+          // Step 12: Allow Social Engineer counter-attack card to be playable
+          playable = c.type === 'counter-attack' && c.id === 'A205';
           console.log('🎯 TUTORIAL: Step 12 - Card filtering:', { index, cardName: c.name, cardType: c.type, isReactive: c.isReactive, playable });
           break;
         case 'target_shielded':
-          // Step 13: Keep first card playable during targeting
-          playable = index === 0;
+          // Step 13: Keep counter-attack card playable during targeting
+          playable = c.type === 'counter-attack' && c.id === 'A205';
+          break;
+        case 'fortified_infrastructure_intro':
+        case 'fortified_strategy':
+          // Fortified intro steps: No cards playable yet
+          playable = false;
+          break;
+        case 'first_fortified_exploit':
+          // Allow Packet Sniffer (A002) to be playable for first fortified exploit
+          playable = c.type === 'exploit' && c.id === 'A002';
+          break;
+        case 'target_fortified_first':
+          // Keep Packet Sniffer playable during targeting
+          playable = c.type === 'exploit' && c.id === 'A002';
+          break;
+        case 'fortified_to_weakened':
+          // After first exploit, no cards playable yet
+          playable = false;
+          break;
+        case 'second_fortified_exploit':
+          // Allow Port Scanner (A001) to be playable for second fortified exploit
+          playable = c.type === 'exploit' && c.id === 'A001';
+          break;
+        case 'target_fortified_second':
+          // Keep Port Scanner playable during targeting
+          playable = c.type === 'exploit' && c.id === 'A001';
+          break;
+        case 'fortified_defenses_removed':
+          // After successfully removing fortified defenses, no cards playable
+          playable = false;
           break;
         case null:
         case undefined:
