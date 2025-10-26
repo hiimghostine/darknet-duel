@@ -1,4 +1,5 @@
 import type { TutorialScript } from '../types/tutorial.types';
+import { tutorialLog } from '../utils/tutorialLogger';
 
 export const attackerBasicsTutorial: TutorialScript = {
   id: 'attacker_basics',
@@ -138,14 +139,14 @@ export const attackerBasicsTutorial: TutorialScript = {
           // Check if Enterprise Firewall has been compromised (state changed to compromised)
           const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
           if (!enterpriseFirewall) {
-            console.log('🎯 TUTORIAL: Enterprise Firewall element not found');
+            tutorialLog('🎯 TUTORIAL: Enterprise Firewall element not found');
             return false;
           }
           
           const dataState = enterpriseFirewall.getAttribute('data-state');
           const textContent = enterpriseFirewall.textContent || '';
           
-          console.log('🎯 TUTORIAL: Checking compromised state - data-state:', dataState, 'textContent:', textContent);
+          tutorialLog('🎯 TUTORIAL: Checking compromised state - data-state:', dataState, 'textContent:', textContent);
           
           return dataState === 'compromised' ||
                  textContent.toLowerCase().includes('compromised') ||
@@ -177,36 +178,26 @@ export const attackerBasicsTutorial: TutorialScript = {
       validation: {
         type: 'custom',
         condition: () => {
-          // Check if Social Engineer card is selected (multiple ways to detect selection)
+          // Check ONLY if target mode is active - this means the user clicked the card
+          // Do NOT check CSS classes as they are applied for highlighting, not selection
+          const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
+          
+          if (!targetModeActive) {
+            return false;
+          }
+          
+          // Target mode is active, but verify it's because Social Engineer was clicked
+          // by checking if the card exists and we're in target mode
           const socialEngineerCard = document.querySelector('[data-card-id="A205"]');
           
-          if (socialEngineerCard) {
-            // Check for various selection states
-            const hasBorderSuccess = socialEngineerCard.classList.contains('border-success');
-            const hasSelectedClass = socialEngineerCard.classList.contains('selected');
-            const hasActiveClass = socialEngineerCard.classList.contains('active');
-            
-            console.log('🎯 TUTORIAL: Social Engineer card found, checking selection state:', {
-              hasBorderSuccess,
-              hasSelectedClass,
-              hasActiveClass,
-              classList: Array.from(socialEngineerCard.classList)
-            });
-            
-            if (hasBorderSuccess || hasSelectedClass || hasActiveClass) {
-              console.log('🎯 TUTORIAL: Social Engineer card selected, validation passed');
-              return true;
-            }
+          if (!socialEngineerCard) {
+            tutorialLog('🎯 TUTORIAL: Social Engineer card not found');
+            return false;
           }
           
-          // Also check if we're in target mode (alternative detection)
-          const mockBoard = document.querySelector('[data-tutorial-target-mode="true"]');
-          if (mockBoard) {
-            console.log('🎯 TUTORIAL: Target mode detected, validation passed');
-            return true;
-          }
-          
-          return false;
+          // If target mode is active AND the card exists, user clicked it
+          tutorialLog('🎯 TUTORIAL: Target mode active and Social Engineer card exists - validation passed');
+          return true;
         }
       },
       autoAdvance: false,
@@ -226,14 +217,14 @@ export const attackerBasicsTutorial: TutorialScript = {
           // Check if Corporate Website has been neutralized (state changed back to secure)
           const corporateWebsite = document.querySelector('[data-infra-id="I003"]');
           if (!corporateWebsite) {
-            console.log('🎯 TUTORIAL: Corporate Website element not found');
+            tutorialLog('🎯 TUTORIAL: Corporate Website element not found');
             return false;
           }
           
           const dataState = corporateWebsite.getAttribute('data-state');
           const textContent = corporateWebsite.textContent || '';
           
-          console.log('🎯 TUTORIAL: Checking secure state - data-state:', dataState, 'textContent:', textContent);
+          tutorialLog('🎯 TUTORIAL: Checking secure state - data-state:', dataState, 'textContent:', textContent);
           
           return dataState === 'secure' ||
                  textContent.toLowerCase().includes('secure') ||
@@ -293,14 +284,14 @@ export const attackerBasicsTutorial: TutorialScript = {
         condition: () => {
           const mainDatabase = document.querySelector('[data-infra-id="I005"]');
           if (!mainDatabase) {
-            console.log('🎯 TUTORIAL: Main Database element not found');
+            tutorialLog('🎯 TUTORIAL: Main Database element not found');
             return false;
           }
           
           const dataState = mainDatabase.getAttribute('data-state');
           const textContent = mainDatabase.textContent || '';
           
-          console.log('🎯 TUTORIAL: Checking fortified_weaken state - data-state:', dataState, 'textContent:', textContent);
+          tutorialLog('🎯 TUTORIAL: Checking fortified_weaken state - data-state:', dataState, 'textContent:', textContent);
           
           return dataState === 'fortified_weaken' ||
                  textContent.toLowerCase().includes('weakened') ||
@@ -352,14 +343,14 @@ export const attackerBasicsTutorial: TutorialScript = {
           // Check if Main Database has become vulnerable (fortified defenses broken)
           const mainDatabase = document.querySelector('[data-infra-id="I005"]');
           if (!mainDatabase) {
-            console.log('🎯 TUTORIAL: Main Database element not found');
+            tutorialLog('🎯 TUTORIAL: Main Database element not found');
             return false;
           }
           
           const dataState = mainDatabase.getAttribute('data-state');
           const textContent = mainDatabase.textContent || '';
           
-          console.log('🎯 TUTORIAL: Checking vulnerable state after 2nd exploit - data-state:', dataState, 'textContent:', textContent);
+          tutorialLog('🎯 TUTORIAL: Checking vulnerable state after 2nd exploit - data-state:', dataState, 'textContent:', textContent);
           
           // Must be in vulnerable state (not fortified_weaken anymore)
           const isVulnerable = dataState === 'vulnerable' ||
@@ -367,7 +358,7 @@ export const attackerBasicsTutorial: TutorialScript = {
                               textContent.toLowerCase().includes('at risk');
           
           if (isVulnerable) {
-            console.log('🎯 TUTORIAL: Fortified defenses completely broken - infrastructure is now vulnerable!');
+            tutorialLog('🎯 TUTORIAL: Fortified defenses completely broken - infrastructure is now vulnerable!');
           }
           
           return isVulnerable;
@@ -485,20 +476,20 @@ export const defenderTutorial: TutorialScript = {
           const targetModeActive = document.querySelector('[data-tutorial-target-mode="true"]');
           const targetModeExited = !targetModeActive;
           
-          console.log('🎯 TUTORIAL: Shield validation check:', {
+          tutorialLog('🎯 TUTORIAL: Shield validation check:', {
             targetModeActive: !!targetModeActive,
             targetModeExited
           });
           
           if (targetModeExited) {
-            console.log('🎯 TUTORIAL: Target mode exited - shield applied successfully!');
+            tutorialLog('🎯 TUTORIAL: Target mode exited - shield applied successfully!');
             return true;
           }
           
           // Secondary check: Look for DOM changes in the infrastructure
           const enterpriseFirewall = document.querySelector('[data-infra-id="I001"]');
           if (!enterpriseFirewall) {
-            console.log('🎯 TUTORIAL: Enterprise Firewall element not found');
+            tutorialLog('🎯 TUTORIAL: Enterprise Firewall element not found');
             return false;
           }
           
@@ -509,7 +500,7 @@ export const defenderTutorial: TutorialScript = {
           const hasShieldIcon = enterpriseFirewall.querySelector('[class*="shield"]');
           const hasProtectedState = enterpriseFirewall.getAttribute('data-state') === 'protected';
           
-          console.log('🎯 TUTORIAL: DOM shield state check:', {
+          tutorialLog('🎯 TUTORIAL: DOM shield state check:', {
             hasShieldedClass,
             hasShieldedState,
             hasProtectedState,
@@ -559,7 +550,7 @@ export const defenderTutorial: TutorialScript = {
           const targetModeExited = !targetModeActive;
           
           if (targetModeExited) {
-            console.log('🎯 TUTORIAL: Target mode exited - fortify applied successfully!');
+            tutorialLog('🎯 TUTORIAL: Target mode exited - fortify applied successfully!');
             return true;
           }
           
@@ -568,7 +559,7 @@ export const defenderTutorial: TutorialScript = {
           if (enterpriseFirewall) {
             const hasFortifiedClass = enterpriseFirewall.classList.contains('fortified');
             const hasFortifiedState = enterpriseFirewall.getAttribute('data-state') === 'fortified';
-            console.log('🎯 TUTORIAL: Fortify state check:', { hasFortifiedClass, hasFortifiedState });
+            tutorialLog('🎯 TUTORIAL: Fortify state check:', { hasFortifiedClass, hasFortifiedState });
             return hasFortifiedClass || hasFortifiedState;
           }
           
@@ -612,7 +603,7 @@ export const defenderTutorial: TutorialScript = {
           const targetModeExited = !targetModeActive;
           
           if (targetModeExited) {
-            console.log('🎯 TUTORIAL: Target mode exited - response applied successfully!');
+            tutorialLog('🎯 TUTORIAL: Target mode exited - response applied successfully!');
             return true;
           }
           
@@ -621,7 +612,7 @@ export const defenderTutorial: TutorialScript = {
           if (mainDatabase) {
             const hasSecureClass = mainDatabase.classList.contains('secure');
             const hasSecureState = mainDatabase.getAttribute('data-state') === 'secure';
-            console.log('🎯 TUTORIAL: Response state check:', { hasSecureClass, hasSecureState });
+            tutorialLog('🎯 TUTORIAL: Response state check:', { hasSecureClass, hasSecureState });
             return hasSecureClass || hasSecureState;
           }
           
@@ -665,7 +656,7 @@ export const defenderTutorial: TutorialScript = {
           const targetModeExited = !targetModeActive;
           
           if (targetModeExited) {
-            console.log('🎯 TUTORIAL: Target mode exited - reaction applied successfully!');
+            tutorialLog('🎯 TUTORIAL: Target mode exited - reaction applied successfully!');
             return true;
           }
           
@@ -674,7 +665,7 @@ export const defenderTutorial: TutorialScript = {
           if (corporateWebsite) {
             const hasSecureClass = corporateWebsite.classList.contains('secure');
             const hasSecureState = corporateWebsite.getAttribute('data-state') === 'secure';
-            console.log('🎯 TUTORIAL: Reaction state check:', { hasSecureClass, hasSecureState });
+            tutorialLog('🎯 TUTORIAL: Reaction state check:', { hasSecureClass, hasSecureState });
             return hasSecureClass || hasSecureState;
           }
           

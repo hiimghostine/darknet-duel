@@ -63,8 +63,8 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
       const realUuid = opponentId && G?.playerUuidMap?.[opponentId];
       const userId = realUuid || (opponent as any)?.uuid || (opponent as any)?.realUserId || opponentId;
       
-      if (!userId || userId === '0' || userId === '1') {
-        // Development mode or no valid UUID
+      if (!userId || userId === '0' || userId === '1' || userId === 'attacker' || userId === 'defender') {
+        // Development mode, tutorial mode, or no valid UUID
         if (isMounted) setFetchedUsername(opponent?.username || 'OPPONENT');
         return;
       }
@@ -109,9 +109,9 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
     
     if (!userId) return;
     
-    // Skip for BoardGame.io IDs in development mode
-    if (userId === '0' || userId === '1') {
-      console.log('OpponentHandArea: Skipping profile popup for BoardGame.io ID:', userId);
+    // Skip for BoardGame.io IDs and tutorial mock IDs
+    if (userId === '0' || userId === '1' || userId === 'attacker' || userId === 'defender') {
+      console.log('OpponentHandArea: Skipping profile popup for mock/tutorial ID:', userId);
       return;
     }
 

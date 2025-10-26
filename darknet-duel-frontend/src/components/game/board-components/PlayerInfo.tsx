@@ -25,13 +25,16 @@ const PlayerInfo: React.FC<PlayerInfoProps> = ({
       const userId = realUuid || (player as any)?.uuid || (player as any)?.realUserId || player?.id;
       if (!userId) return;
       
-      // Skip API calls for BoardGame.io IDs (development mode)
-      if (userId === '0' || userId === '1') {
-        console.log(`PlayerInfo: Skipping API call for BoardGame.io ID: ${userId}`);
+      // Skip API calls for BoardGame.io IDs and tutorial mock IDs
+      if (userId === '0' || userId === '1' || userId === 'attacker' || userId === 'defender') {
+        console.log(`PlayerInfo: Skipping API call for mock/development ID: ${userId}`);
         if (isMounted) {
           setAccount({
-            username: userId === '0' ? 'Player 0' : 'Player 1',
-            bio: 'Development mode player'
+            username: userId === '0' ? 'Player 0' :
+                     userId === '1' ? 'Player 1' :
+                     userId === 'attacker' ? 'Red Team' :
+                     'Blue Team',
+            bio: userId === 'attacker' || userId === 'defender' ? 'Tutorial player' : 'Development mode player'
           });
         }
         return;

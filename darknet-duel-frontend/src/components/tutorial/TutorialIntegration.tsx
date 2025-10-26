@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useTutorial } from '../../hooks/useTutorial';
 import TutorialOverlay from './TutorialOverlay';
 import type { GameState } from '../../types/game.types';
+import { tutorialLog } from '../../utils/tutorialLogger';
 
 interface TutorialIntegrationProps {
   gameState?: GameState;
@@ -36,7 +37,7 @@ const TutorialIntegration: React.FC<TutorialIntegrationProps> = ({
     if (!onExit) return;
 
     const handleTutorialCompleted = () => {
-      console.log('🎯 TUTORIAL: Tutorial completed event received, calling exit handler');
+      tutorialLog('🎯 TUTORIAL: Tutorial completed event received, calling exit handler');
       // Small delay to ensure tutorial completion is processed
       setTimeout(() => {
         onExit();

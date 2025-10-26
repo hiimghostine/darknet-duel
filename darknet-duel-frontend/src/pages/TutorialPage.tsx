@@ -9,6 +9,7 @@ import MockGameBoard from '../components/tutorial/MockGameBoard';
 import tutorialManager from '../services/tutorialManager';
 import { tutorialScripts } from '../data/tutorialScripts';
 import { mockGameStateProvider } from '../services/mockDataProvider';
+import { tutorialLog } from '../utils/tutorialLogger';
 
 // Import hooks
 import { useTutorial } from '../hooks/useTutorial';
@@ -42,7 +43,7 @@ const TutorialPage: React.FC = () => {
 
   // Handle tutorial start
   const handleStartTutorial = async (scriptId: string, role: 'attacker' | 'defender' = 'attacker') => {
-    console.log('🎯 Starting tutorial:', { scriptId, role });
+    tutorialLog('🎯 Starting tutorial:', { scriptId, role });
     
     // Reset mock game state
     mockGameStateProvider.reset();
@@ -62,7 +63,7 @@ const TutorialPage: React.FC = () => {
 
   // Handle tutorial exit
   const handleExitTutorial = () => {
-    console.log('🎯 Exiting tutorial');
+    tutorialLog('🎯 Exiting tutorial');
     cancelTutorial();
     setIsInTutorial(false);
     setSelectedScript(null);

@@ -1,4 +1,5 @@
 import type { GameState } from '../types/game.types';
+import { tutorialLog } from '../utils/tutorialLogger';
 
 // Mock card data based on actual game cards
 export const mockInfrastructureCards = [
@@ -373,7 +374,7 @@ export class MockGameStateProvider {
     
     // Debug: Check if defender cards have playable property set correctly
     if (!isAttacker) {
-      console.log('🎯 TUTORIAL: Defender hand cards playable status:', 
+      tutorialLog('🎯 TUTORIAL: Defender hand cards playable status:',
         defenderHand.map(card => ({ name: card.name, playable: card.playable }))
       );
     }
@@ -482,11 +483,11 @@ export class MockGameStateProvider {
     if (currentState === 'fortified') {
       // First exploit on fortified: fortified → fortified_weaken
       this.setInfrastructureState(infraId, 'fortified_weaken');
-      console.log('🎯 TUTORIAL: First exploit on fortified infrastructure - weakened to fortified_weaken');
+      tutorialLog('🎯 TUTORIAL: First exploit on fortified infrastructure - weakened to fortified_weaken');
     } else if (currentState === 'fortified_weaken') {
       // Second exploit on fortified_weaken: fortified_weaken → vulnerable
       this.setInfrastructureState(infraId, 'vulnerable');
-      console.log('🎯 TUTORIAL: Second exploit on weakened fortified infrastructure - now vulnerable');
+      tutorialLog('🎯 TUTORIAL: Second exploit on weakened fortified infrastructure - now vulnerable');
     } else {
       // Normal exploit: secure → vulnerable
       this.setInfrastructureState(infraId, 'vulnerable');
@@ -521,37 +522,37 @@ export class MockGameStateProvider {
 
   simulateResponse(infraId: string) {
     const currentState = this.infrastructureStates.get(infraId);
-    console.log('🎯 TUTORIAL: simulateResponse called for', infraId, 'current state:', currentState);
+    tutorialLog('🎯 TUTORIAL: simulateResponse called for', infraId, 'current state:', currentState);
     if (currentState === 'compromised') {
       this.setInfrastructureState(infraId, 'secure');
       this.setActionPoints('defender', this.defenderActionPoints - 1);
-      console.log('🎯 TUTORIAL: Infrastructure restored to secure state');
+      tutorialLog('🎯 TUTORIAL: Infrastructure restored to secure state');
     } else {
-      console.log('🎯 TUTORIAL: Infrastructure not compromised, cannot restore');
+      tutorialLog('🎯 TUTORIAL: Infrastructure not compromised, cannot restore');
     }
   }
 
   simulateCounterAttack(infraId: string) {
     const currentState = this.infrastructureStates.get(infraId);
-    console.log('🎯 TUTORIAL: simulateCounterAttack called for', infraId, 'current state:', currentState);
+    tutorialLog('🎯 TUTORIAL: simulateCounterAttack called for', infraId, 'current state:', currentState);
     if (currentState === 'shielded' || currentState === 'fortified') {
       this.setInfrastructureState(infraId, 'secure');
       this.setActionPoints('attacker', this.attackerActionPoints - 1);
-      console.log('🎯 TUTORIAL: Shield removed, infrastructure returned to secure state');
+      tutorialLog('🎯 TUTORIAL: Shield removed, infrastructure returned to secure state');
     } else {
-      console.log('🎯 TUTORIAL: Infrastructure not shielded/fortified, cannot remove shield');
+      tutorialLog('🎯 TUTORIAL: Infrastructure not shielded/fortified, cannot remove shield');
     }
   }
 
   simulateReaction(infraId: string) {
     const currentState = this.infrastructureStates.get(infraId);
-    console.log('🎯 TUTORIAL: simulateReaction called for', infraId, 'current state:', currentState);
+    tutorialLog('🎯 TUTORIAL: simulateReaction called for', infraId, 'current state:', currentState);
     if (currentState === 'vulnerable') {
       this.setInfrastructureState(infraId, 'secure');
       this.setActionPoints('defender', this.defenderActionPoints - 1);
-      console.log('🎯 TUTORIAL: Reaction card protected vulnerable infrastructure, returned to secure state');
+      tutorialLog('🎯 TUTORIAL: Reaction card protected vulnerable infrastructure, returned to secure state');
     } else {
-      console.log('🎯 TUTORIAL: Infrastructure not vulnerable, cannot apply reaction');
+      tutorialLog('🎯 TUTORIAL: Infrastructure not vulnerable, cannot apply reaction');
     }
   }
 
@@ -569,7 +570,7 @@ export class MockGameStateProvider {
   exitReactionPhase() {
     // Return to action mode
     this.currentStage = 'action';
-    console.log('🎯 TUTORIAL: Exited reaction phase, returned to action mode');
+    tutorialLog('🎯 TUTORIAL: Exited reaction phase, returned to action mode');
   }
 
   // Reset to initial state
@@ -585,10 +586,13 @@ export class MockGameStateProvider {
 
   private calculateScore(role: 'attacker' | 'defender', infrastructure: any[]) {
     if (role === 'attacker') {
+      // Attacker gets points for compromised infrastructure
       return infrastructure.filter(infra => infra.state === 'compromised').length;
     } else {
-      return infrastructure.filter(infra => 
-        infra.state === 'secure' || infra.state === 'shielded' || infra.state === 'fortified'
+      // Defender only gets points for shielded or fortified infrastructure
+      // Secure infrastructure is neutral (not yet claimed by either side)
+      return infrastructure.filter(infra =>
+        infra.state === 'shielded' || infra.state === 'fortified'
       ).length;
     }
   }

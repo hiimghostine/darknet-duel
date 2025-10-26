@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Play, 
-  Target, 
-  Clock, 
-  CheckCircle, 
-  Shield, 
+import {
+  BookOpen,
+  Play,
+  Target,
+  Clock,
+  CheckCircle,
+  Shield,
   Zap
 } from 'lucide-react';
 import type { TutorialScript } from '../../types/tutorial.types';
@@ -17,6 +17,7 @@ import CardEncyclopedia from './CardEncyclopedia';
 import MockGameBoard from './MockGameBoard';
 import { tutorialScripts } from '../../data/tutorialScripts';
 import { mockGameStateProvider } from '../../services/mockDataProvider';
+import { tutorialLog } from '../../utils/tutorialLogger';
 
 interface TutorialMenuProps {
   onClose?: () => void;
@@ -56,7 +57,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
     setSelectedScript(scriptId);
     
     // Handle tutorial execution directly in the modal
-    console.log('🎯 Starting tutorial:', { scriptId, role });
+    tutorialLog('🎯 Starting tutorial:', { scriptId, role });
     
     // Start the tutorial
     const success = await startTutorial(scriptId);
@@ -67,7 +68,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
 
   // Handle tutorial exit
   const handleExitTutorial = () => {
-    console.log('🎯 Exiting tutorial');
+    tutorialLog('🎯 Exiting tutorial');
     cancelTutorial();
     setIsInTutorial(false);
     setSelectedScript(null);
