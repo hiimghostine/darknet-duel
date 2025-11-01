@@ -62,6 +62,17 @@ const LobbyBrowser: React.FC = () => {
         return;
       }
 
+      // ✅ Check if the current user is already in this lobby
+      const isAlreadyInLobby = result.match.players.some(
+        player => player.data?.realUserId === user.id
+      );
+      
+      if (isAlreadyInLobby) {
+        setError('You cannot join your own lobby');
+        setIsJoiningPrivate(false);
+        return;
+      }
+
       // Find an empty slot
       let playerID = '0';
       for (let i = 0; i < result.match.players.length; i++) {
@@ -132,6 +143,17 @@ const LobbyBrowser: React.FC = () => {
       // Find the first available player slot
       const match = matches.find(m => m.matchID === matchID);
       if (!match) return;
+      
+      // ✅ Check if the current user is already in this lobby
+      const isAlreadyInLobby = match.players.some(
+        player => player.data?.realUserId === user.id
+      );
+      
+      if (isAlreadyInLobby) {
+        setError('You cannot join your own lobby');
+        setIsJoining(null);
+        return;
+      }
       
       // Find an empty slot
       let playerID = '0';
@@ -240,6 +262,14 @@ const LobbyBrowser: React.FC = () => {
   const isLobbyJoinable = (match: GameMatch): boolean => {
     // Can't join if we're already trying to join this match
     if (isJoining === match.matchID) return false;
+    
+    // ✅ Can't join if the current user is already in this lobby
+    if (user) {
+      const isAlreadyInLobby = match.players.some(
+        player => player.data?.realUserId === user.id
+      );
+      if (isAlreadyInLobby) return false;
+    }
     
     // Get match state
     const state = match.setupData.state || 'waiting';

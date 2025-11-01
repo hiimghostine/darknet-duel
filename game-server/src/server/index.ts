@@ -81,7 +81,7 @@ server.router.use(async (ctx, next) => {
     }
     return; // We've already called next() above
   }
-  // Intercept lobby join requests to capture real user data
+  // Intercept lobby join requests to validate and capture real user data
   if (ctx.request.path.includes('/games/darknet-duel/') && 
       ctx.request.path.includes('/join') && 
       ctx.request.method === 'POST') {
@@ -109,16 +109,61 @@ server.router.use(async (ctx, next) => {
           
           // Extract real user data from lobby metadata
           const realUserMap: Record<string, { id: string; name: string }> = {};
+          const userIdCounts: Record<string, number> = {};
           
           Object.entries(matchData.metadata.players).forEach(([playerId, playerMeta]: [string, any]) => {
             if (playerMeta && playerMeta.data && playerMeta.data.realUserId && playerMeta.data.realUsername) {
+              const userId = playerMeta.data.realUserId;
+              
+              // Track how many times each user ID appears
+              userIdCounts[userId] = (userIdCounts[userId] || 0) + 1;
+              
               realUserMap[playerId] = {
-                id: playerMeta.data.realUserId,
+                id: userId,
                 name: playerMeta.data.realUsername
               };
-              console.log(`✅ Found real user data for player ${playerId}: ${playerMeta.data.realUsername} (${playerMeta.data.realUserId})`);
+              console.log(`✅ Found real user data for player ${playerId}: ${playerMeta.data.realUsername} (${userId})`);
             }
           });
+          
+          // ✅ VALIDATION: Check if the same user joined twice
+          const duplicateUserIds = Object.entries(userIdCounts).filter(([_, count]) => count > 1);
+          if (duplicateUserIds.length > 0) {
+            console.log(`❌ Detected duplicate user in lobby ${matchID}:`, duplicateUserIds);
+            
+            // Find the player who just joined (the one with the highest player ID with this user ID)
+            const duplicateUserId = duplicateUserIds[0][0];
+            const playersWithDuplicateId = Object.entries(matchData.metadata.players)
+              .filter(([_, playerMeta]: [string, any]) => 
+                playerMeta?.data?.realUserId === duplicateUserId
+              )
+              .map(([playerId]) => playerId);
+            
+            if (playersWithDuplicateId.length > 1) {
+              // Remove the player with the higher ID (the one who just joined)
+              const playerToRemove = playersWithDuplicateId.sort().pop();
+              
+              if (playerToRemove) {
+                console.log(`🚫 Removing duplicate player ${playerToRemove} from lobby ${matchID}`);
+                
+                // Update metadata to remove the duplicate player
+                const updatedPlayers = { ...matchData.metadata.players };
+                delete updatedPlayers[playerToRemove];
+                
+                const updatedMetadata = {
+                  ...matchData.metadata,
+                  players: updatedPlayers
+                };
+                
+                await server.db.setMetadata(matchID, updatedMetadata);
+                
+                // Return error to the client
+                ctx.status = 403;
+                ctx.body = { error: 'You cannot join your own lobby' };
+                return;
+              }
+            }
+          }
           
           // If we have real user data and the game state exists, update the player objects
           if (Object.keys(realUserMap).length > 0 && matchData.state.G) {
