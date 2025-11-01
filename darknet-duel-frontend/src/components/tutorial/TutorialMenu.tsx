@@ -8,12 +8,13 @@ import {
   Clock,
   CheckCircle,
   Shield,
-  Zap
+  Globe
 } from 'lucide-react';
 import type { TutorialScript } from '../../types/tutorial.types';
 import { useTutorial } from '../../hooks/useTutorial';
 import VideoTutorial from './VideoTutorial';
 import CardEncyclopedia from './CardEncyclopedia';
+import RealWorldCybersecurity from './RealWorldCybersecurity';
 import MockGameBoard from './MockGameBoard';
 import { tutorialScripts } from '../../data/tutorialScripts';
 import { mockGameStateProvider } from '../../services/mockDataProvider';
@@ -26,6 +27,7 @@ interface TutorialMenuProps {
 const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
   const [showVideoTutorial, setShowVideoTutorial] = useState(false);
   const [showCardEncyclopedia, setShowCardEncyclopedia] = useState(false);
+  const [showRealWorldCybersecurity, setShowRealWorldCybersecurity] = useState(false);
   
   // Tutorial execution state
   const [isInTutorial, setIsInTutorial] = useState(false);
@@ -45,6 +47,12 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
   const handleStartInteractiveTutorial = async (scriptId: string) => {
     if (scriptId === 'card_encyclopedia') {
       setShowCardEncyclopedia(true);
+      return;
+    }
+    
+    // Show Real-World Cybersecurity modal
+    if (scriptId === 'real_world_cybersecurity') {
+      setShowRealWorldCybersecurity(true);
       return;
     }
     
@@ -81,8 +89,8 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
         return <Target className="text-primary" size={24} />;
       case 'defender_basics':
         return <Shield className="text-primary" size={24} />;
-      case 'advanced_mechanics':
-        return <Zap className="text-primary" size={24} />;
+      case 'real_world_cybersecurity':
+        return <Globe className="text-primary" size={24} />;
       default:
         return <BookOpen className="text-primary" size={24} />;
     }
@@ -400,6 +408,11 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
         {/* Card Encyclopedia Modal */}
         {showCardEncyclopedia && (
           <CardEncyclopedia onClose={() => setShowCardEncyclopedia(false)} />
+        )}
+        
+        {/* Real-World Cybersecurity Modal */}
+        {showRealWorldCybersecurity && (
+          <RealWorldCybersecurity onClose={() => setShowRealWorldCybersecurity(false)} />
         )}
     </motion.div>
   );

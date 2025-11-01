@@ -445,6 +445,19 @@ class TutorialManager {
     this.emitEvent('tutorial_cancelled', currentScript.id);
   }
 
+  // Public method to mark a tutorial as complete (for non-interactive tutorials like Card Encyclopedia)
+  markTutorialComplete(scriptId: string) {
+    tutorialLog('🎯 TUTORIAL: Manually marking tutorial as completed:', scriptId);
+    this.completions[scriptId] = true;
+    this.saveCompletions(this.completions);
+    tutorialLog('🎯 TUTORIAL: Current completions:', this.completions);
+    
+    // Dispatch event for components that need to react
+    window.dispatchEvent(new CustomEvent('tutorial-completed', { 
+      detail: { scriptId } 
+    }));
+  }
+
   private completeTutorial() {
     const { currentScript } = this.state;
     if (!currentScript) return;

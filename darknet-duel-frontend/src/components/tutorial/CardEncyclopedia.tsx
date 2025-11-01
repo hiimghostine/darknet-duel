@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -18,6 +18,7 @@ import {
   Filter,
   Eye
 } from 'lucide-react';
+import tutorialManager from '../../services/tutorialManager';
 
 // Import card data
 import attackerCards from '../cards/attacker.json';
@@ -51,6 +52,11 @@ const CardEncyclopedia: React.FC<CardEncyclopediaProps> = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [showAnnotations, setShowAnnotations] = useState(false);
+
+  // Mark Card Encyclopedia as complete when user opens it
+  useEffect(() => {
+    tutorialManager.markTutorialComplete('card_encyclopedia');
+  }, []);
 
   // Combine all cards with their source
   const allCards = [

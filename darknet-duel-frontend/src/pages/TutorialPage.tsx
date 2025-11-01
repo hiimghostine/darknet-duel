@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Play, BookOpen, Users, Zap, Brain, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Play, BookOpen, Users, Zap, Brain, GraduationCap, Globe } from 'lucide-react';
 
 // Import tutorial components
 import MockGameBoard from '../components/tutorial/MockGameBoard';
@@ -88,8 +88,8 @@ const TutorialPage: React.FC = () => {
         return <Zap className="w-6 h-6" />;
       case 'card_encyclopedia':
         return <BookOpen className="w-6 h-6" />;
-      case 'advanced_mechanics':
-        return <Brain className="w-6 h-6" />;
+      case 'real_world_cybersecurity':
+        return <Globe className="w-6 h-6" />;
       default:
         return <GraduationCap className="w-6 h-6" />;
     }

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { LobbyClient } from 'boardgame.io/client';
+import { getActiveMatch, setActiveMatch, clearActiveMatch, getMatchCredentials } from '../utils/lobbyStorage';
 
 // Helper function to get token from localStorage
 const getToken = (): string | null => {
@@ -220,9 +221,13 @@ export const lobbyService = {
       
       console.log('🎮 LOBBY SERVICE: Join result:', result);
 
-      // Store the player credentials locally
-      localStorage.setItem(`match_${matchID}_credentials`, result.playerCredentials);
-      localStorage.setItem(`match_${matchID}_playerID`, playerID);
+      // Store as active match (single entry, overwrites previous)
+      setActiveMatch({
+        matchID,
+        playerID,
+        credentials: result.playerCredentials,
+        timestamp: Date.now()
+      });
 
       return result;
     } catch (error) {
@@ -234,19 +239,17 @@ export const lobbyService = {
   // Leave a match
   leaveMatch: async (matchID: string): Promise<boolean> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials) return false;
+      if (!creds) return false;
       
       await lobbyClient.leaveMatch('darknet-duel', matchID, {
-        playerID,
-        credentials
+        playerID: creds.playerID,
+        credentials: creds.credentials
       });
       
-      // Clean up local storage
-      localStorage.removeItem(`match_${matchID}_playerID`);
-      localStorage.removeItem(`match_${matchID}_credentials`);
+      // Clear active match
+      clearActiveMatch();
       
       return true;
     } catch (error) {
@@ -258,10 +261,11 @@ export const lobbyService = {
   // Update player ready status
   updateReadyStatus: async (matchID: string, isReady: boolean): Promise<boolean> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials) return false;
+      if (!creds) return false;
+      
+      const { playerID, credentials } = creds;
       
       // ✅ FIX: Get current player data to preserve existing fields like realUserId
       const currentMatch = await lobbyService.getMatch(matchID);
@@ -337,10 +341,11 @@ export const lobbyService = {
   // Mark a game as started (host only)
   startMatch: async (matchID: string): Promise<boolean> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials || playerID !== '0') return false;
+      if (!creds || creds.playerID !== '0') return false;
+      
+      const { playerID, credentials } = creds;
       
       // ✅ FIX: Get current player data to preserve existing fields like realUserId
       const currentMatch = await lobbyService.getMatch(matchID);
@@ -372,10 +377,11 @@ export const lobbyService = {
   // Request position swap with opponent
   requestPositionSwap: async (matchID: string): Promise<boolean> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials) return false;
+      if (!creds) return false;
+      
+      const { playerID, credentials } = creds;
       
       const currentMatch = await lobbyService.getMatch(matchID);
       const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);
@@ -403,10 +409,11 @@ export const lobbyService = {
   // Accept and execute position swap
   acceptPositionSwap: async (matchID: string): Promise<{success: boolean, newPlayerID?: string}> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials) return { success: false };
+      if (!creds) return { success: false };
+      
+      const { playerID, credentials } = creds;
       
       // First, mark that we accept the swap
       const currentMatch = await lobbyService.getMatch(matchID);
@@ -440,8 +447,14 @@ export const lobbyService = {
         
         console.log(`🎉 Position swap successful! Old ID: ${playerID}, New ID: ${newPlayerID}`);
         
-        // Update localStorage with new player ID
-        localStorage.setItem(`match_${matchID}_playerID`, newPlayerID);
+        // Update active match with new player ID
+        const activeMatch = getActiveMatch();
+        if (activeMatch && activeMatch.matchID === matchID) {
+          setActiveMatch({
+            ...activeMatch,
+            playerID: newPlayerID
+          });
+        }
         
         return { success: true, newPlayerID };
       }
@@ -456,10 +469,11 @@ export const lobbyService = {
   // Cancel swap request
   cancelPositionSwap: async (matchID: string): Promise<boolean> => {
     try {
-      const playerID = localStorage.getItem(`match_${matchID}_playerID`);
-      const credentials = localStorage.getItem(`match_${matchID}_credentials`);
+      const creds = getMatchCredentials(matchID);
       
-      if (!playerID || !credentials) return false;
+      if (!creds) return false;
+      
+      const { playerID, credentials } = creds;
       
       const currentMatch = await lobbyService.getMatch(matchID);
       const currentPlayer = currentMatch?.players.find(p => p.id.toString() === playerID);

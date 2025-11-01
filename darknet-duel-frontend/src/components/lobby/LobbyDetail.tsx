@@ -10,6 +10,7 @@ import accountService from '../../services/account.service';
 import storeService from '../../services/store.service';
 import logo from '../../assets/logo.png';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { getMatchCredentials, getActiveMatch, setActiveMatch, clearActiveMatch } from '../../utils/lobbyStorage';
 
 const LobbyDetail: React.FC = () => {
   const { matchID = '' } = useParams();
@@ -78,8 +79,9 @@ const LobbyDetail: React.FC = () => {
         setMatch(matchDetails);
         
         // Check if user is in this match
-        const storedPlayerID = localStorage.getItem(`match_${matchID}_playerID`);
-        const storedCredentials = localStorage.getItem(`match_${matchID}_credentials`);
+        const creds = getMatchCredentials(matchID);
+        const storedPlayerID = creds?.playerID || null;
+        const storedCredentials = creds?.credentials || null;
         
         if (storedPlayerID && storedCredentials) {
           // Convert stored ID to number for consistent comparison
@@ -96,10 +98,16 @@ const LobbyDetail: React.FC = () => {
           
           if (actualPlayerSlot && actualPlayerSlot.id !== storedPlayerIdNum) {
             console.log(`🔄 SWAP DETECTED! Our credentials moved from slot ${storedPlayerIdNum} to slot ${actualPlayerSlot.id}`);
-            console.log(`   Updating localStorage with new player ID: ${actualPlayerSlot.id}`);
+            console.log(`   Updating activeMatch with new player ID: ${actualPlayerSlot.id}`);
             
-            // Update localStorage with our actual position
-            localStorage.setItem(`match_${matchID}_playerID`, actualPlayerSlot.id.toString());
+            // Update activeMatch with our actual position
+            const activeMatch = getActiveMatch();
+            if (activeMatch && activeMatch.matchID === matchID) {
+              setActiveMatch({
+                ...activeMatch,
+                playerID: actualPlayerSlot.id.toString()
+              });
+            }
             setCurrentPlayerID(actualPlayerSlot.id.toString());
             setIsHost(actualPlayerSlot.id === 0);
             
@@ -177,9 +185,8 @@ const LobbyDetail: React.FC = () => {
             // This prevents showing the notification on initial load
             console.log('Lobby not found - likely deleted due to inactivity');
             
-            // Clean up local storage
-            localStorage.removeItem(`match_${matchID}_playerID`);
-            localStorage.removeItem(`match_${matchID}_credentials`);
+            // Clean up active match
+            clearActiveMatch();
             
             // Play negative sound effect for lobby timeout
             triggerNegativeClick();

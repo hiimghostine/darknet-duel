@@ -84,6 +84,10 @@ export const useTutorial = () => {
     tutorialManager.resetProgress(scriptId);
   }, []);
 
+  const markTutorialComplete = useCallback((scriptId: string) => {
+    tutorialManager.markTutorialComplete(scriptId);
+  }, []);
+
   return {
     // State
     tutorialState,
@@ -105,6 +109,7 @@ export const useTutorial = () => {
     getAvailableScripts,
     isScriptCompleted,
     getScriptProgress,
-    resetProgress
+    resetProgress,
+    markTutorialComplete
   };
 };

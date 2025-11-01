@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getMatchCredentials, setActiveMatch, clearActiveMatch } from '../utils/lobbyStorage';
 
 /**
  * Hook for managing game credentials and player ID
@@ -14,13 +15,17 @@ export function useGameCredentials(matchID: string | undefined) {
   const loadStoredCredentials = useCallback(() => {
     if (!matchID) return { storedPlayerID: null, storedCredentials: null };
     
-    const storedPlayerID = localStorage.getItem(`match_${matchID}_playerID`);
-    const storedCredentials = localStorage.getItem(`match_${matchID}_credentials`);
+    const creds = getMatchCredentials(matchID);
     
-    setPlayerID(storedPlayerID);
-    setCredentials(storedCredentials);
+    if (creds) {
+      setPlayerID(creds.playerID);
+      setCredentials(creds.credentials);
+      return { storedPlayerID: creds.playerID, storedCredentials: creds.credentials };
+    }
     
-    return { storedPlayerID, storedCredentials };
+    setPlayerID(null);
+    setCredentials(null);
+    return { storedPlayerID: null, storedCredentials: null };
   }, [matchID]);
 
   /**
@@ -29,8 +34,12 @@ export function useGameCredentials(matchID: string | undefined) {
   const saveCredentials = useCallback((playerID: string, credentials: string) => {
     if (!matchID) return;
     
-    localStorage.setItem(`match_${matchID}_playerID`, playerID);
-    localStorage.setItem(`match_${matchID}_credentials`, credentials);
+    setActiveMatch({
+      matchID,
+      playerID,
+      credentials,
+      timestamp: Date.now()
+    });
     
     setPlayerID(playerID);
     setCredentials(credentials);
@@ -42,8 +51,7 @@ export function useGameCredentials(matchID: string | undefined) {
   const clearCredentials = useCallback(() => {
     if (!matchID) return;
     
-    localStorage.removeItem(`match_${matchID}_playerID`);
-    localStorage.removeItem(`match_${matchID}_credentials`);
+    clearActiveMatch();
     
     setPlayerID(null);
     setCredentials(null);
