@@ -79,15 +79,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="space-y-3">
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">EMAIL</span>
             </label>
             <div className="relative">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
                 {...register('email')}
                 disabled={isLoading}
               />
@@ -100,15 +100,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">PASSWORD</span>
             </label>
             <div className="relative">
               <input
                 type="password"
                 placeholder="Enter your password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
                 {...register('password')}
                 disabled={isLoading}
               />
@@ -121,7 +121,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control mt-4">
+          <div className="mt-4">
             <button 
               type="submit" 
               className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}

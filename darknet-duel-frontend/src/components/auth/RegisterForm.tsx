@@ -118,15 +118,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       {/* Registration form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 gap-3">
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">USERNAME</span>
             </label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="System login name"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.username ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.username ? 'border-error' : ''}`}
                 {...register('username')}
                 disabled={isLoading || !!successMessage}
               />
@@ -140,15 +140,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">EMAIL</span>
             </label>
             <div className="relative">
               <input
                 type="email"
                 placeholder="Your email address"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''}`}
                 {...register('email')}
                 disabled={isLoading || !!successMessage}
               />
@@ -161,15 +161,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">PASSWORD</span>
             </label>
             <div className="relative">
               <input
                 type="password"
                 placeholder="Create a secure password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''}`}
                 {...register('password')}
                 disabled={isLoading || !!successMessage}
               />
@@ -183,15 +183,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">CONFIRM PASSWORD</span>
             </label>
             <div className="relative">
               <input
                 type="password"
                 placeholder="Confirm your password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.confirmPassword ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.confirmPassword ? 'border-error' : ''}`}
                 {...register('confirmPassword')}
                 disabled={isLoading || !!successMessage}
               />
@@ -204,7 +204,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control mt-3">
+          <div className="mt-3">
             <button 
               type="submit" 
               className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''}`}
