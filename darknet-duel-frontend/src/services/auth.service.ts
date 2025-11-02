@@ -97,6 +97,14 @@ class AuthService {
     }
     return null;
   }
+
+  /**
+   * Verify current user's password (for sensitive operations)
+   */
+  async verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/verify-password', { password });
+    return response.data;
+  }
 }
 
 export default new AuthService();

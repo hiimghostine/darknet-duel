@@ -33,6 +33,11 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
       
+      // Don't auto-logout for password verification failures - let the component handle it
+      if (error.config?.url?.includes('/auth/verify-password')) {
+        return Promise.reject(error);
+      }
+      
       // Clear local storage and redirect to login for other 401 errors
       localStorage.removeItem('token');
       localStorage.removeItem('user');
