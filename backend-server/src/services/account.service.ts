@@ -188,10 +188,10 @@ export class AccountService {
         username: `inactive-${id}`,
         password: '0', // Invalid password hash
         isActive: false,
-        bio: null,
-        avatar: null,
-        avatarMimeType: null,
-        decoration: null,
+        bio: undefined, // Clear bio (TypeORM uses undefined to set nullable fields to null)
+        avatar: undefined, // Clear avatar (TypeORM uses undefined to set nullable fields to null)
+        avatarMimeType: undefined, // Clear avatar MIME type (TypeORM uses undefined to set nullable fields to null)
+        decoration: undefined, // Clear decoration (TypeORM uses undefined to set nullable fields to null)
         inactiveReason: 'Deleted user'
       }
     );
