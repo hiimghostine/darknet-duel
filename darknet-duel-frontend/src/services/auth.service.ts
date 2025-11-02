@@ -80,8 +80,8 @@ class AuthService {
       console.error('Logout API call failed:', error);
     } finally {
       // Always clear local storage
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     }
   }
   

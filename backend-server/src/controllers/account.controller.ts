@@ -567,8 +567,8 @@ export class AccountController {
 
   /**
    * @swagger
-   * /api/account/delete:
-   *   post:
+   * /api/account/me:
+   *   delete:
    *     tags: [Account Management]
    *     summary: Delete (anonymize) current user's account
    *     description: Anonymizes the authenticated user's account. Requires password confirmation.
