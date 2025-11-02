@@ -3,6 +3,7 @@ import { useAudioStore } from '../store/audio.store';
 import { audioHandler } from '../utils/audioHandler';
 import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
+import { Volume2, VolumeX, X } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -126,7 +127,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               theme === 'cyberpunk' ? 'text-primary hover:text-primary/70' : 'text-base-content hover:text-base-content/70'
             }`}
           >
-            ✕
+<X className="w-5 h-5" />
           </button>
         </div>
 
@@ -144,8 +145,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   onChange={handleBgmToggle}
                   className="swap-input"
                 />
-                <div className="swap-on">🔊</div>
-                <div className="swap-off">🔇</div>
+                <div className="swap-on p-2 rounded-lg bg-primary/20 text-primary"><Volume2 className="w-5 h-5" /></div>
+                <div className="swap-off p-2 rounded-lg bg-base-300 text-base-content/50"><VolumeX className="w-5 h-5" /></div>
               </label>
             </div>
             
@@ -180,8 +181,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   onChange={handleSfxToggle}
                   className="swap-input"
                 />
-                <div className="swap-on">🔊</div>
-                <div className="swap-off">🔇</div>
+                <div className="swap-on p-2 rounded-lg bg-secondary/20 text-secondary"><Volume2 className="w-5 h-5" /></div>
+                <div className="swap-off p-2 rounded-lg bg-base-300 text-base-content/50"><VolumeX className="w-5 h-5" /></div>
               </label>
             </div>
             

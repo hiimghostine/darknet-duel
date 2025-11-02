@@ -5,6 +5,7 @@ import { useSettingsStore } from '../store/settings.store';
 import { useAudioManager } from '../hooks/useAudioManager';
 import TutorialButton from './tutorial/TutorialButton';
 import logo from '../assets/logo.png';
+import { Home, Gamepad2, ShoppingBag, User, Shield, Volume2, Sun, Moon, LogOut } from 'lucide-react';
 
 interface AppBarProps {
   currentPage?: 'dashboard' | 'lobbies' | 'profile' | 'topup' | 'history' | 'store';
@@ -58,7 +59,7 @@ const AppBar: React.FC<AppBarProps> = ({
               }} 
               className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             >
-              <span className="mr-1">🏠</span> 
+<Home className="w-4 h-4 mr-1" /> 
               <span className="hidden sm:inline">DASHBOARD</span>
             </button>
           )}
@@ -71,7 +72,7 @@ const AppBar: React.FC<AppBarProps> = ({
               }} 
               className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             >
-              <span className="mr-1">🎮</span> 
+<Gamepad2 className="w-4 h-4 mr-1" /> 
               <span className="hidden sm:inline">LOBBY</span>
             </button>
           )}
@@ -83,7 +84,7 @@ const AppBar: React.FC<AppBarProps> = ({
             }} 
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
           >
-            <span className="mr-1">🛍️</span> 
+<ShoppingBag className="w-4 h-4 mr-1" /> 
             <span className="hidden sm:inline">STORE</span>
           </button>
           
@@ -101,7 +102,7 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Profile"
           >
-            <span className="mr-1">👤</span>
+<User className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline">PROFILE</span>
           </button>
           
@@ -113,7 +114,7 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
             aria-label="Top Up"
           >
-            <span className="mr-1 z-10 relative">💎</span>
+<span className="mr-1 z-10 relative">💎</span>
             <span className="hidden sm:inline text-flicker z-10 relative">TOP-UP</span>
             <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"></span>
           </button>
@@ -128,7 +129,7 @@ const AppBar: React.FC<AppBarProps> = ({
               className="btn btn-sm bg-error/20 border-error/50 hover:bg-error/30 text-error btn-cyberpunk"
               aria-label="Control Panel"
             >
-              <span className="mr-1">🛡️</span>
+<Shield className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">CONTROL</span>
             </button>
           )}
@@ -141,7 +142,7 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Audio Settings"
           >
-            <span className="mr-1">🔊</span>
+<Volume2 className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline">SETTINGS</span>
           </button>
           
@@ -153,7 +154,7 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Toggle Theme"
           >
-            {theme === 'cyberpunk' ? '🌙' : '☀️'}
+{theme === 'cyberpunk' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
           
           <button
@@ -164,7 +165,7 @@ const AppBar: React.FC<AppBarProps> = ({
             className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
             aria-label="Logout"
           >
-            <span className="mr-1">🚪</span>
+<LogOut className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline">EXIT</span>
           </button>
         </div>
