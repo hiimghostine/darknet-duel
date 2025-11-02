@@ -203,6 +203,20 @@ class AccountService {
   getApiBaseUrl(): string {
     return api.defaults.baseURL || '';
   }
+
+  /**
+   * Delete (anonymize) current user's account
+   * @param password - User's password for confirmation
+   */
+  async deleteAccount(password: string): Promise<void> {
+    const response = await api.delete<{ success: boolean; message: string }>('/account/me', {
+      data: { password }
+    });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to delete account');
+    }
+  }
 }
 
 export default new AccountService(); 

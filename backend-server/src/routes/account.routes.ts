@@ -17,6 +17,9 @@ router.get('/me', accountController.getMyAccount);
 // PUT /api/account/me - update own user's details (supports multipart/form-data)
 router.put('/me', avatarUpload, accountController.updateMyAccount);
 
+// DELETE /api/account/me - delete (anonymize) own user's account
+router.delete('/me', accountController.deleteMyAccount);
+
 // GET /api/account/search - search user by username
 router.get('/search', accountController.searchAccountByUsername);
 

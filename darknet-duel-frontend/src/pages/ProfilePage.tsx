@@ -10,6 +10,7 @@ import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import EditProfileModal from '../components/EditProfileModal';
 import ReportModal from '../components/ReportModal';
 import PurchaseHistoryModal from '../components/PurchaseHistoryModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
@@ -43,6 +44,7 @@ const ProfilePage: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showPurchaseHistoryModal, setShowPurchaseHistoryModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -298,7 +300,7 @@ const ProfilePage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-base-content/70 text-sm">
-                        ID: {(displayUser.id || '').slice(0, 8)}...
+                        ID: {(displayUser.id || '')}
                       </div>
                     </div>
 
@@ -460,7 +462,7 @@ const ProfilePage: React.FC = () => {
 
           {/* Purchase History Button - Only show on own profile */}
           {isOwnProfile && (
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 flex flex-col items-center gap-4">
               <button
                 onClick={() => {
                   triggerClick();
@@ -469,6 +471,16 @@ const ProfilePage: React.FC = () => {
                 className="btn btn-primary font-mono"
               >
                 VIEW_PURCHASE_HISTORY
+              </button>
+              
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setShowDeleteAccountModal(true);
+                }}
+                className="btn btn-error btn-outline font-mono"
+              >
+                DELETE_ACCOUNT
               </button>
             </div>
           )}
@@ -504,6 +516,12 @@ const ProfilePage: React.FC = () => {
       <PurchaseHistoryModal
         isOpen={showPurchaseHistoryModal}
         onClose={() => setShowPurchaseHistoryModal(false)}
+      />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { AccountService } from '../services/account.service';
 import { AuthService } from '../services/auth.service';
+import { SessionService } from '../services/session.service';
 import { validatePassword } from '../utils/validation';
 
 export class AccountController {
@@ -560,6 +561,105 @@ export class AccountController {
         success: false,
         message: 'Failed to search account',
         error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
+
+  /**
+   * @swagger
+   * /api/account/me:
+   *   delete:
+   *     tags: [Account Management]
+   *     summary: Delete (anonymize) current user's account
+   *     description: Anonymizes the authenticated user's account. Requires password confirmation.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - password
+   *             properties:
+   *               password:
+   *                 type: string
+   *                 description: User's current password for confirmation
+   *     responses:
+   *       200:
+   *         description: Account successfully anonymized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Account successfully deleted"
+   *       400:
+   *         description: Bad request - invalid password or missing password
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *       500:
+   *         description: Internal server error
+   */
+  deleteMyAccount = async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+      }
+
+      const { password } = req.body;
+
+      if (!password || typeof password !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required'
+        });
+      }
+
+      // Anonymize the account (will verify password inside)
+      await this.accountService.anonymizeAccount(userId, password);
+
+      // Invalidate all sessions for this user
+      const sessionService = new SessionService();
+      await sessionService.invalidateAllUserSessions(userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Account successfully deleted'
+      });
+    } catch (error) {
+      console.error('Delete account error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Invalid password') || errorMessage.includes('password')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid password'
+        });
+      }
+
+      if (errorMessage.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete account',
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       });
     }
   };
