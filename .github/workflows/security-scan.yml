@@ -203,6 +203,13 @@ jobs:
           echo "Swagger spec downloaded"
           PATH_COUNT=$(jq '.paths | length' swagger.json)
           echo "Number of paths in spec: $PATH_COUNT"
+          # Verify it's valid JSON
+          if ! jq empty swagger.json 2>/dev/null; then
+            echo "✅ swagger.json is valid JSON"
+          else
+            echo "❌ swagger.json is not valid JSON!"
+            exit 1
+          fi
 
       - name: ZAP API Scan - Backend
         if: steps.should_run.outputs.should_run == 'true'
@@ -210,7 +217,8 @@ jobs:
         with:
           target: 'http://localhost:20000'
           format: openapi
-          cmd_options: '-a -J -f openapi -d "${{ github.workspace }}/swagger.json"'
+          api_url: 'http://localhost:20000/api/swagger.json'
+          cmd_options: '-a -J'
           fail_action: false
 
       - name: Upload ZAP Scan Reports

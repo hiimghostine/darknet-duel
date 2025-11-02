@@ -209,8 +209,8 @@ class AccountService {
    * @param password - User's password for confirmation
    */
   async deleteAccount(password: string): Promise<void> {
-    const response = await api.delete<{ success: boolean; message: string }>('/account/me', {
-      data: { password }
+    const response = await api.post<{ success: boolean; message: string }>('/account/delete', {
+      password
     });
     
     if (!response.data.success) {
