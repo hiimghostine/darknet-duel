@@ -213,6 +213,15 @@ jobs:
           PATH_COUNT=$(jq '.paths | length' swagger.json)
           echo "✅ Valid JSON with $PATH_COUNT API paths"
 
+      - name: Fix workspace permissions for ZAP
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          # Ensure ZAP can write report files
+          chmod -R 777 "${{ github.workspace }}" || true
+          # Create report files with correct permissions
+          touch "${{ github.workspace }}/report_md.md" "${{ github.workspace }}/report_json.json" "${{ github.workspace }}/report_html.html" || true
+          chmod 666 "${{ github.workspace }}/report_md.md" "${{ github.workspace }}/report_json.json" "${{ github.workspace }}/report_html.html" || true
+
       - name: ZAP API Scan - Backend
         if: steps.should_run.outputs.should_run == 'true'
         uses: zaproxy/action-api-scan@v0.10.0
