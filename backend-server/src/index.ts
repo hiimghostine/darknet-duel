@@ -68,6 +68,34 @@ app.use(cors({
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-Server-API-Key', 'X-Source']
 }));
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     tags: [Health]
+ *     summary: API health check endpoint
+ *     description: Returns server status for monitoring and health checks. Used by CI/CD pipelines.
+ *     responses:
+ *       200:
+ *         description: Server is running normally
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "ok"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-11-02T06:00:00.000Z"
+ */
+// Health check endpoint for API
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 
