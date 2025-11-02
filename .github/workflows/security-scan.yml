@@ -46,6 +46,12 @@ jobs:
           PHPMYADMIN_PORT=20003
           EOF
 
+      - name: Print .env contents for diagnosis
+        run: |
+          echo "=== .env file contents ==="
+          cat .env
+          echo "=== End of .env file ==="
+
       - name: Build Docker images
         run: docker compose build
 
@@ -69,7 +75,13 @@ jobs:
             attempt=$((attempt+1))
           done
           echo "Backend failed to start"
+          echo "=== Backend logs ==="
           docker compose logs backend
+          echo "=== Database container logs ==="
+          docker compose logs db
+          echo "=== Database connection info from .env ==="
+          echo "DB_PASSWORD from .env:"
+          grep "DB_PASSWORD" .env || echo "DB_PASSWORD not found in .env"
           exit 1
 
       - name: Create test user and get authentication token

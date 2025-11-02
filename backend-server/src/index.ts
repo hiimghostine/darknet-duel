@@ -162,5 +162,11 @@ AppDataSource.initialize()
     });
   })
   .catch((error: Error) => {
-    console.error('Error connecting to database:', error);
+    console.error('❌ Error connecting to database:', error);
+    console.error('Database connection details:');
+    console.error(`  Host: ${process.env.DB_HOST || 'localhost'}`);
+    console.error(`  Port: ${process.env.DB_PORT || '3306'}`);
+    console.error(`  Username: ${process.env.DB_USERNAME || 'root'}`);
+    console.error(`  Password: ${process.env.DB_PASSWORD || 'example'}`);
+    console.error(`  Database: ${process.env.DB_NAME || 'darknet_duel'}`);
   });
