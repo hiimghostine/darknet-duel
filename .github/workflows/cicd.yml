@@ -22,7 +22,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'push: '))
+      (github.event_name == 'build' && startsWith(github.event.head_commit.message, 'build: '))
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'main') && fromJSON('["self-hosted","thunder-server"]') || (github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]')) }}
     environment: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_env == 'main' && 'prod' || 'dev')) || (github.ref_name == 'main' && 'prod' || 'dev') }}
     env:
