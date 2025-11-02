@@ -231,6 +231,55 @@ jobs:
           cmd_options: '-a -J -openapifile "${{ github.workspace }}/swagger.json"'
           fail_action: false
 
+      - name: Generate comprehensive markdown report with all severities
+        if: always() && steps.should_run.outputs.should_run == 'true'
+        run: |
+          if [ -f report_json.json ]; then
+            echo "Generating comprehensive markdown report with all severity levels..."
+            
+            # Generate markdown from JSON including all severities (High, Medium, Low, Informational, False Positive)
+            jq -r '
+              "# ZAP Scanning Report\n\nZAP by [Checkmarx](https://checkmarx.com/).\n\n" +
+              "## Summary of Alerts\n\n" +
+              "| Risk Level | Number of Alerts |\n" +
+              "| --- | --- |\n" +
+              "| High | " + ([.[] | select(.risk == "High")] | length | tostring) + " |\n" +
+              "| Medium | " + ([.[] | select(.risk == "Medium")] | length | tostring) + " |\n" +
+              "| Low | " + ([.[] | select(.risk == "Low")] | length | tostring) + " |\n" +
+              "| Informational | " + ([.[] | select(.risk == "Informational")] | length | tostring) + " |\n" +
+              "| False Positive | " + ([.[] | select(.risk == "False Positive")] | length | tostring) + " |\n\n" +
+              "## Alerts\n\n" +
+              "| Name | Risk Level | Number of Instances |\n" +
+              "| --- | --- | --- |\n" +
+              (group_by(.name) | .[] | 
+                "| " + .[0].name + " | " + .[0].risk + " | " + (length | tostring) + " |\n") +
+              "\n## Alert Detail\n\n" +
+              (group_by(.name) | .[] | 
+                "### [" + .[0].name + "](https://www.zaproxy.org/docs/alerts/" + (.[0].pluginId // "unknown") + "/)\n\n" +
+                "##### " + .[0].risk + "\n\n" +
+                "### Description\n\n" + (.[0].description // "No description available") + "\n\n" +
+                ((.[] | 
+                  "* URL: " + .url + "\n" +
+                  "  * Method: `" + (.method // "N/A") + "`\n" +
+                  "  * Parameter: `" + (.param // "N/A") + "`\n" +
+                  "  * Attack: `" + (.attack // "") + "`\n" +
+                  "  * Evidence: `" + (.evidence // "") + "`\n" +
+                  "  * Other Info: `" + (.other // "") + "`\n") | if length > 0 then . else "* No details available\n" end) +
+                "\nInstances: " + (length | tostring) + "\n\n" +
+                ((if .[0].solution then "### Solution\n\n" + .[0].solution + "\n\n" else "" end) +
+                (if .[0].reference then "### Reference\n\n" + .[0].reference + "\n\n" else "" end) +
+                (if .[0].cweid then "#### CWE Id: [" + .[0].cweid + "](https://cwe.mitre.org/data/definitions/" + .[0].cweid + ".html)\n\n" else "" end) +
+                (if .[0].wascid then "#### WASC Id: " + .[0].wascid + "\n\n" else "" end) +
+                (if .[0].sourceid then "#### Source ID: " + .[0].sourceid + "\n\n" else "" end)) +
+                "---\n\n"
+              )
+            ' report_json.json > report_md.md
+            
+            echo "✅ Comprehensive markdown report generated"
+          else
+            echo "⚠️ Warning: report_json.json not found, skipping markdown generation"
+          fi
+
       - name: Upload ZAP Scan Reports
         if: always()
         uses: actions/upload-artifact@v4
