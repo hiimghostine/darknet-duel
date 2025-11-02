@@ -53,8 +53,8 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
     : scaling.cardHeight * 1.4;
   
   // Expanded infrastructure card dimensions
-  const expandedInfraWidth = scaling.expandedCardWidth * 0.75;
-  const expandedInfraHeight = scaling.expandedCardHeight * 0.7;
+  const expandedInfraWidth = scaling.expandedCardWidth * 0.80;
+  const expandedInfraHeight = scaling.expandedCardHeight * 0.80;
 
   // Helper function to get infrastructure type icon
   const getInfraTypeIcon = (type: string) => {

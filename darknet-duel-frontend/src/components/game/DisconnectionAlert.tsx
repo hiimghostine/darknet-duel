@@ -76,13 +76,7 @@ const DisconnectionAlert: React.FC<DisconnectionAlertProps> = ({
                 </div>
               </div>
               
-              <div className="flex gap-2 justify-center">
-                <button 
-                  className="btn btn-warning btn-sm loading"
-                  disabled
-                >
-                  Reconnecting...
-                </button>
+              <div className="flex justify-center">
                 {onForfeit && (
                   <button 
                     className="btn btn-error btn-sm"
