@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import mysql from 'mysql2/promise';
 import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
@@ -173,28 +174,78 @@ app.get('/health', (req, res) => {
   res.status(200).send('Server is running');
 });
 
-// Initialize database connection
-AppDataSource.initialize()
-  .then(() => {
+// Initialize database connection and ensure tables exist
+async function initializeDatabase() {
+  const DB_HOST = process.env.DB_HOST || 'localhost';
+  const DB_PORT = process.env.DB_PORT || '3306';
+  const DB_USERNAME = process.env.DB_USERNAME || 'root';
+  const DB_PASSWORD = process.env.DB_PASSWORD || 'example';
+  const DB_NAME = process.env.DB_NAME || 'darknet_duel';
+
+  try {
+    // First, create the database if it doesn't exist
+    try {
+      const connection = await mysql.createConnection({
+        host: DB_HOST,
+        port: parseInt(DB_PORT),
+        user: DB_USERNAME,
+        password: DB_PASSWORD,
+      });
+
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``);
+      await connection.end();
+      console.log(`Database '${DB_NAME}' created or already exists`);
+    } catch (error) {
+      console.warn('Could not create database (may already exist):', error instanceof Error ? error.message : error);
+    }
+
+    // Initialize TypeORM connection
+    await AppDataSource.initialize();
     console.log('Database connection established successfully');
-    
+
+    // Check if tables exist by querying the accounts table
+    try {
+      const queryRunner = AppDataSource.createQueryRunner();
+      await queryRunner.query('SELECT 1 FROM accounts LIMIT 1');
+      await queryRunner.release();
+      console.log('Database tables already exist');
+    } catch (error) {
+      // Check if error is due to table not existing
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("doesn't exist") || 
+          errorMessage.includes("Unknown table") || 
+          (errorMessage.includes("Table") && errorMessage.includes("not found"))) {
+        // Tables don't exist, synchronize them
+        console.log('Database tables not found. Creating tables from entities...');
+        await AppDataSource.synchronize();
+        console.log('Database tables created successfully');
+      } else {
+        // Different error - might be permissions or connection issue
+        console.warn('Could not verify table existence, but continuing anyway:', errorMessage);
+      }
+    }
+
     // Initialize Socket.io chat service
     const chatSocketService = new ChatSocketService(httpServer);
     console.log('Chat Socket.io service initialized');
-    
+
     // Start the HTTP server (which includes both Express and Socket.io)
     httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on ${HOST}:${PORT}`);
       console.log(`Public URL: ${publicUrl}`);
       console.log(`Chat WebSocket available at: ${publicUrl}/socket.io`);
     });
-  })
-  .catch((error: Error) => {
+  } catch (error: Error | unknown) {
     console.error('❌ Error connecting to database:', error);
     console.error('Database connection details:');
-    console.error(`  Host: ${process.env.DB_HOST || 'localhost'}`);
-    console.error(`  Port: ${process.env.DB_PORT || '3306'}`);
-    console.error(`  Username: ${process.env.DB_USERNAME || 'root'}`);
-    console.error(`  Password: ${process.env.DB_PASSWORD || 'example'}`);
-    console.error(`  Database: ${process.env.DB_NAME || 'darknet_duel'}`);
-  });
+    console.error(`  Host: ${DB_HOST}`);
+    console.error(`  Port: ${DB_PORT}`);
+    console.error(`  Username: ${DB_USERNAME}`);
+    console.error(`  Password: ${DB_PASSWORD.substring(0, 3)}***`);
+    console.error(`  Database: ${DB_NAME}`);
+    process.exit(1);
+  }
+}
+
+// Start the server
+initializeDatabase();
