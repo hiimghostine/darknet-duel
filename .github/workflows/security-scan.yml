@@ -89,9 +89,11 @@ jobs:
       - name: Create test environment .env
         if: steps.should_run.outputs.should_run == 'true'
         run: |
+          # Generate a single password for both MySQL root and backend DB connection
+          DB_PASS=test_db_pass_$(openssl rand -hex 16)
           cat > .env <<EOF
-          MYSQL_ROOT_PASSWORD=test_root_pass_$(openssl rand -hex 16)
-          DB_PASSWORD=test_db_pass_$(openssl rand -hex 16)
+          MYSQL_ROOT_PASSWORD=${DB_PASS}
+          DB_PASSWORD=${DB_PASS}
           JWT_SECRET=test_jwt_secret_$(openssl rand -hex 16)
           SERVER_API_KEY=test_server_key_$(openssl rand -hex 16)
           XENDIT_API_KEY=test_xendit_key
