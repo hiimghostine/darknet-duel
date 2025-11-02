@@ -12,6 +12,12 @@ on:
 
 jobs:
   zap-api-scan:
+    # Only run if commit message starts with "scan: " or if manually triggered/scheduled
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'scan: ')) ||
+      (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, 'scan:') || contains(github.event.pull_request.body, 'scan:')))
     runs-on: ubuntu-latest
     name: ZAP API Security Scan
     
@@ -138,8 +144,7 @@ jobs:
         with:
           target: 'http://localhost:20000/api'
           format: openapi
-          api_spec: './swagger-filtered.json'
-          cmd_options: '-a -J'
+          cmd_options: '-a -J -f openapi -d ./swagger-filtered.json'
           fail_action: false
 
       - name: Upload ZAP Scan Reports

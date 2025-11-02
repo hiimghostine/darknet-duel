@@ -18,6 +18,11 @@ on:
 
 jobs:
   build-and-deploy:
+    # Only run if commit message starts with "push: " or if manually triggered/scheduled
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'push: '))
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'main') && fromJSON('["self-hosted","thunder-server"]') || (github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]')) }}
     environment: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_env == 'main' && 'prod' || 'dev')) || (github.ref_name == 'main' && 'prod' || 'dev') }}
     env:

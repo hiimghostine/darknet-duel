@@ -387,13 +387,13 @@ export class AuthController {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ message: 'Authentication required' });
       }
-
+      
       // Extract token from header
       const token = authHeader.split(' ')[1];
 
       // Invalidate the session
       await sessionService.invalidateSession(token);
-
+      
       return res.status(200).json({
         message: 'Logged out successfully'
       });
