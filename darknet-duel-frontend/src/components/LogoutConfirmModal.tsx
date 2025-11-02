@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, XOctagon } from 'lucide-react';
 import { useAudioManager } from '../hooks/useAudioManager';
 import { useThemeStore } from '../store/theme.store';
 
@@ -100,9 +100,7 @@ const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               <div className="relative">
                 <div className={`absolute inset-0 rounded-full bg-${accentColor}/20 filter blur-xl animate-pulse`}></div>
                 <div className={`relative w-16 h-16 border-2 border-${accentColor}/40 hexagon rotate-animation flex items-center justify-center`}>
-                  <div className={`text-3xl ${glitchEffect ? 'translate-x-0.5' : ''} transition-transform`}>
-                    🚪
-                  </div>
+                  <XOctagon className={`w-10 h-10 text-${accentColor} ${glitchEffect ? 'translate-x-0.5' : ''} transition-transform`} />
                 </div>
               </div>
             </div>

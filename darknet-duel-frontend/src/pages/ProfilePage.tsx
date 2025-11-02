@@ -12,6 +12,7 @@ import ReportModal from '../components/ReportModal';
 import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
+import { Edit, AlertTriangle, Sun, Moon, LogOut } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -185,7 +186,7 @@ const ProfilePage: React.FC = () => {
                     className="btn btn-sm bg-primary/20 border-primary/50 hover:border-primary text-primary btn-cyberpunk"
                     aria-label="Edit Profile"
                   >
-                    <span className="mr-1">✏️</span>
+<Edit className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">EDIT</span>
                   </button>
                 )}
@@ -199,7 +200,7 @@ const ProfilePage: React.FC = () => {
                     className="btn btn-sm bg-error/20 border-error/50 hover:border-error text-error btn-cyberpunk"
                     aria-label="Report User"
                   >
-                    <span className="mr-1">⚠️</span>
+<AlertTriangle className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">REPORT</span>
                   </button>
                 )}
@@ -212,7 +213,7 @@ const ProfilePage: React.FC = () => {
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Toggle theme"
                 >
-                  {theme === 'cyberpunk' ? '🌙' : '☀️'}
+{theme === 'cyberpunk' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 </button>
                 
                 <button 
@@ -222,7 +223,7 @@ const ProfilePage: React.FC = () => {
                   }} 
                   className="btn btn-sm btn-error"
                 >
-                  <span className="mr-1">🚪</span>
+<LogOut className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">LOGOUT</span>
                 </button>
               </div>
