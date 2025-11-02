@@ -195,11 +195,6 @@ jobs:
           echo "email=$EMAIL" >> $GITHUB_OUTPUT
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
           
-          # Create auth header file for ZAP (workspace is mounted at /zap/wrk/ in container)
-          echo "Authorization: Bearer $TOKEN" > "${{ github.workspace }}/auth-header.txt"
-          chmod 644 "${{ github.workspace }}/auth-header.txt"
-          echo "✅ Created auth header file for ZAP authentication"
-          
           # Verify token works by testing a protected endpoint
           echo "Verifying authentication token..."
           TEST_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -248,8 +243,7 @@ jobs:
         with:
           target: 'http://localhost:20000/swagger.json'
           format: openapi
-          cmd_options: '-a -J -openapifile /zap/wrk/swagger.json --auth-header-file /zap/wrk/auth-header.txt'
-          fail_action: false
+          cmd_options: '-a -T 60 --auth-header "Authorization: Bearer ${{ steps.auth.outputs.token }}"'
 
       - name: Generate comprehensive markdown report with all severities
         if: always() && steps.should_run.outputs.should_run == 'true'
