@@ -243,7 +243,10 @@ jobs:
         with:
           target: 'http://localhost:20000/swagger.json'
           format: openapi
-          cmd_options: '-a -T 60 --auth-header "Authorization: Bearer ${{ steps.auth.outputs.token }}"'
+          cmd_options: >
+            -a -T 60
+            -z "-config globalheader.header_name=Authorization
+                -config globalheader.header_value='Bearer ${{ steps.auth.outputs.token }}'"
 
       - name: Generate comprehensive markdown report with all severities
         if: always() && steps.should_run.outputs.should_run == 'true'
