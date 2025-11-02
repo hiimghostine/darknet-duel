@@ -1,0 +1,185 @@
+name: Security Scan - OWASP ZAP (API Only)
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  schedule:
+    # Run comprehensive scan weekly on Mondays at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  zap-api-scan:
+    runs-on: ubuntu-latest
+    name: ZAP API Security Scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create test environment .env
+        run: |
+          cat > .env <<EOF
+          MYSQL_ROOT_PASSWORD=test_root_pass_$(openssl rand -hex 16)
+          DB_PASSWORD=test_db_pass_$(openssl rand -hex 16)
+          JWT_SECRET=test_jwt_secret_$(openssl rand -hex 16)
+          SERVER_API_KEY=test_server_key_$(openssl rand -hex 16)
+          XENDIT_API_KEY=test_xendit_key
+          FRONTEND_URL=http://localhost:20006
+          BACKEND_URL=http://localhost:20000
+          GAME_URL=http://localhost:20001
+          FRONTEND_PORT=20006
+          BACKEND_PORT=20000
+          GAME_PORT=20001
+          DB_PORT=20002
+          PHPMYADMIN_PORT=20003
+          EOF
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start application stack
+        run: |
+          docker compose up -d
+          echo "Waiting for services to start..."
+          sleep 30
+
+      - name: Wait for backend health
+        run: |
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -f http://localhost:20000/api/health 2>/dev/null || curl -f http://localhost:20000/api 2>/dev/null; then
+              echo "Backend is ready!"
+              exit 0
+            fi
+            echo "Waiting for backend... attempt $((attempt+1))/$max_attempts"
+            sleep 2
+            attempt=$((attempt+1))
+          done
+          echo "Backend failed to start"
+          docker compose logs backend
+          exit 1
+
+      - name: Create test user and get authentication token
+        id: auth
+        run: |
+          # Register test user
+          echo "Registering test user for ZAP scanning..."
+          TIMESTAMP=$(date +%s)
+          EMAIL="zap-scanner-${TIMESTAMP}@darknetduel.com"
+          USERNAME="zapscanner${TIMESTAMP}"
+          PASSWORD="ZapTest123!@#"
+          
+          REGISTER_RESPONSE=$(curl -s -X POST http://localhost:20000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"email\": \"${EMAIL}\",
+              \"username\": \"${USERNAME}\",
+              \"password\": \"${PASSWORD}\"
+            }" || echo '{"success":false}')
+          
+          echo "Registration response: $REGISTER_RESPONSE"
+          
+          # Login to get token
+          echo "Logging in..."
+          LOGIN_RESPONSE=$(curl -s -X POST http://localhost:20000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"email\": \"${EMAIL}\",
+              \"password\": \"${PASSWORD}\"
+            }")
+          
+          echo "Login response (first 200 chars): ${LOGIN_RESPONSE:0:200}..."
+          
+          # Extract token (adjust based on your API response format)
+          TOKEN=$(echo "$LOGIN_RESPONSE" | grep -oP '"token"\s*:\s*"[^"]*' | cut -d'"' -f4 || echo "")
+          
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to get authentication token"
+            echo "Login response was: $LOGIN_RESPONSE"
+            exit 1
+          fi
+          
+          echo "Token obtained: ${TOKEN:0:20}..."
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "email=$EMAIL" >> $GITHUB_OUTPUT
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+
+      - name: Download and filter Swagger spec (exclude destructive endpoints)
+        run: |
+          # Download the swagger.json
+          curl -s http://localhost:20000/api/swagger.json -o swagger-original.json
+          
+          # Remove destructive endpoints using jq
+          # Exclude: DELETE /api/account/me, DELETE /api/admin/users/:id, POST /api/admin/users/:id/ban, POST /api/admin/users/:id/unban
+          jq '
+            # Remove DELETE /account/me
+            .paths."/api/account/me".delete = null |
+            # Remove DELETE /admin/users/{id}
+            .paths."/api/admin/users/{id}".delete = null |
+            # Remove POST /admin/users/{id}/ban
+            .paths."/api/admin/users/{id}/ban".post = null |
+            # Remove POST /admin/users/{id}/unban
+            .paths."/api/admin/users/{id}/unban".post = null |
+            # Clean up empty path objects
+            with_entries(select(.value != null))
+          ' swagger-original.json > swagger-filtered.json
+          
+          echo "Filtered Swagger spec created (excluded destructive endpoints)"
+
+      - name: ZAP API Scan - Backend (Filtered)
+        uses: zaproxy/action-api-scan@v0.10.0
+        with:
+          target: 'http://localhost:20000/api'
+          format: openapi
+          api_spec: './swagger-filtered.json'
+          cmd_options: '-a -J'
+          fail_action: false
+
+      - name: Upload ZAP Scan Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-reports-${{ github.run_number }}
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
+            swagger-filtered.json
+          retention-days: 30
+
+      - name: Check for High/Medium vulnerabilities
+        if: always()
+        run: |
+          if [ -f report_json.json ]; then
+            HIGH_COUNT=$(jq -r '[.[] | select(.risk == "High")] | length' report_json.json 2>/dev/null || echo "0")
+            MEDIUM_COUNT=$(jq -r '[.[] | select(.risk == "Medium")] | length' report_json.json 2>/dev/null || echo "0")
+            
+            echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "- High Severity: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- Medium Severity: $MEDIUM_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note:** Destructive endpoints (DELETE /api/account/me, DELETE /api/admin/users/:id, ban/unban) were excluded from scanning." >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$HIGH_COUNT" -gt 0 ] || [ "$MEDIUM_COUNT" -gt 0 ]; then
+              echo "❌ Security scan failed: Found $HIGH_COUNT High and $MEDIUM_COUNT Medium severity vulnerabilities"
+              echo "Please review the uploaded reports in the artifacts section"
+              exit 1
+            else
+              echo "✅ Security scan passed: No High or Medium severity vulnerabilities found"
+            fi
+          else
+            echo "⚠️ Warning: report_json.json not found"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v || true
+
