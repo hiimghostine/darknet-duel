@@ -61,6 +61,15 @@ export interface StatsResponse {
   error?: string;
 }
 
+export interface PurchaseHistoryItem {
+  id: string;
+  itemType: string;
+  itemId: string;
+  purchasePrice: number;
+  currency: string;
+  purchasedAt: string;
+}
+
 class InfoService {
   /**
    * Get complete profile information including recent activity and stats
@@ -119,6 +128,14 @@ class InfoService {
     }
     
     return response.data.data;
+  }
+
+  /**
+   * Get purchase history for the authenticated user
+   */
+  async getPurchaseHistory(): Promise<PurchaseHistoryItem[]> {
+    const response = await api.get<PurchaseHistoryItem[]>('/info/purchase-history');
+    return response.data;
   }
 }
 

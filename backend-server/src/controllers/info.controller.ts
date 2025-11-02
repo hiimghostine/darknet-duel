@@ -424,4 +424,79 @@ export class InfoController {
       });
     }
   };
+
+  /**
+   * @swagger
+   * /api/info/purchase-history:
+   *   get:
+   *     tags: [Profile & Info]
+   *     summary: Get user's purchase history
+   *     description: Retrieves the complete purchase history for the authenticated user
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Purchase history retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 type: object
+   *                 properties:
+   *                   id:
+   *                     type: string
+   *                     description: Purchase ID
+   *                   itemType:
+   *                     type: string
+   *                     description: Type of item purchased
+   *                   itemId:
+   *                     type: string
+   *                     description: ID of the purchased item
+   *                   purchasePrice:
+   *                     type: number
+   *                     description: Price paid for the item
+   *                   currency:
+   *                     type: string
+   *                     enum: [creds, crypts]
+   *                     description: Currency used for purchase
+   *                   purchasedAt:
+   *                     type: string
+   *                     format: date-time
+   *                     description: Date and time of purchase
+   *             example:
+   *               - id: "550e8400-e29b-41d4-a716-446655440000"
+   *                 itemType: "decoration"
+   *                 itemId: "decoration_01"
+   *                 purchasePrice: 100
+   *                 currency: "creds"
+   *                 purchasedAt: "2024-01-15T10:30:00Z"
+   *       401:
+   *         description: Unauthorized - authentication required
+   *       500:
+   *         description: Internal server error
+   */
+  getPurchaseHistory = async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+      }
+
+      const purchaseHistory = await this.infoService.getPurchaseHistory(userId);
+
+      return res.status(200).json(purchaseHistory);
+    } catch (error) {
+      console.error('Get purchase history error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch purchase history',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
 } 

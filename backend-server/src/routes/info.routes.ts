@@ -17,5 +17,6 @@ router.get('/profile/:userId', infoController.getProfileByUserId);
 // Individual endpoints for specific data
 router.get('/activity', infoController.getRecentActivity);
 router.get('/stats', infoController.getProfileStats);
+router.get('/purchase-history', infoController.getPurchaseHistory);
 
 export default router; 

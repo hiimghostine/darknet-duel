@@ -2,6 +2,7 @@ import { AppDataSource } from '../utils/database';
 import { GamePlayer } from '../entities/game-player.entity';
 import { GameResult } from '../entities/game-result.entity';
 import { Account } from '../entities/account.entity';
+import { Purchase } from '../entities/purchase.entity';
 
 export interface RecentActivityItem {
   type: 'WIN' | 'LOSS';
@@ -13,10 +14,20 @@ export interface RecentActivityItem {
   gameMode: string;
 }
 
+export interface PurchaseHistoryItem {
+  id: string;
+  itemType: string;
+  itemId: string;
+  purchasePrice: number;
+  currency: string;
+  purchasedAt: Date;
+}
+
 export class InfoService {
   private gamePlayerRepository = AppDataSource.getRepository(GamePlayer);
   private gameResultRepository = AppDataSource.getRepository(GameResult);
   private accountRepository = AppDataSource.getRepository(Account);
+  private purchaseRepository = AppDataSource.getRepository(Purchase);
 
   /**
    * Get recent activity for a user
@@ -159,6 +170,32 @@ export class InfoService {
     } catch (error) {
       console.error('Error fetching user by ID:', error);
       throw new Error('Failed to fetch user data');
+    }
+  }
+
+  /**
+   * Get purchase history for a user
+   * @param accountId - The user's account ID
+   * @returns Array of purchase history items
+   */
+  async getPurchaseHistory(accountId: string): Promise<PurchaseHistoryItem[]> {
+    try {
+      const purchases = await this.purchaseRepository.find({
+        where: { accountId },
+        order: { purchasedAt: 'DESC' }
+      });
+
+      return purchases.map(purchase => ({
+        id: purchase.id,
+        itemType: purchase.itemType,
+        itemId: purchase.itemId,
+        purchasePrice: purchase.purchasePrice,
+        currency: purchase.currency,
+        purchasedAt: purchase.purchasedAt
+      }));
+    } catch (error) {
+      console.error('Error fetching purchase history:', error);
+      throw new Error('Failed to fetch purchase history');
     }
   }
 } 

@@ -9,6 +9,7 @@ import LogoutScreen from '../components/LogoutScreen';
 import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import EditProfileModal from '../components/EditProfileModal';
 import ReportModal from '../components/ReportModal';
+import PurchaseHistoryModal from '../components/PurchaseHistoryModal';
 import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
@@ -41,6 +42,7 @@ const ProfilePage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showPurchaseHistoryModal, setShowPurchaseHistoryModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -455,6 +457,21 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Purchase History Button - Only show on own profile */}
+          {isOwnProfile && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setShowPurchaseHistoryModal(true);
+                }}
+                className="btn btn-primary font-mono"
+              >
+                VIEW_PURCHASE_HISTORY
+              </button>
+            </div>
+          )}
         </main>
       </div>
 
@@ -481,6 +498,12 @@ const ProfilePage: React.FC = () => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
+      />
+
+      {/* Purchase History Modal */}
+      <PurchaseHistoryModal
+        isOpen={showPurchaseHistoryModal}
+        onClose={() => setShowPurchaseHistoryModal(false)}
       />
     </div>
   );
