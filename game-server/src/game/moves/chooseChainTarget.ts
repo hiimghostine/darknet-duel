@@ -33,8 +33,12 @@ export const chooseChainTargetMove = (
     console.log(`🔗 Chain effect cancelled by player ${playerID}`);
     
     // Still need to trigger reactions for the original card play
+    // Attack/exploit cards trigger reactions from defenders
+    // Shield/fortify cards trigger reactions from attackers (counter-attacks)
     const shouldTriggerReaction = G.pendingChainChoice.originalCardType === 'exploit' || 
-                                  G.pendingChainChoice.originalCardType === 'attack';
+                                  G.pendingChainChoice.originalCardType === 'attack' ||
+                                  G.pendingChainChoice.originalCardType === 'shield' ||
+                                  G.pendingChainChoice.originalCardType === 'fortify';
     
     let pendingReactions = G.pendingReactions || [];
     if (shouldTriggerReaction && G.pendingChainChoice.originalCard) {
@@ -71,8 +75,12 @@ export const chooseChainTargetMove = (
   const updatedState = resolveChainEffect(G, targetInfrastructureId);
   
   // After chain resolves, trigger reactions for the original card play
+  // Attack/exploit cards trigger reactions from defenders
+  // Shield/fortify cards trigger reactions from attackers (counter-attacks)
   const shouldTriggerReaction = G.pendingChainChoice.originalCardType === 'exploit' || 
-                                G.pendingChainChoice.originalCardType === 'attack';
+                                G.pendingChainChoice.originalCardType === 'attack' ||
+                                G.pendingChainChoice.originalCardType === 'shield' ||
+                                G.pendingChainChoice.originalCardType === 'fortify';
   
   if (shouldTriggerReaction && G.pendingChainChoice.originalCard) {
     const isAttacker = playerID === G.attacker?.id;

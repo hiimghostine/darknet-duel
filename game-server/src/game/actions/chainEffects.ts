@@ -29,15 +29,43 @@ export function handleChainVulnerability(
   chosenType?: string,
   targetInfraId?: string
 ): GameState {
+  // Only secure infrastructure can be targeted through chain effects
+  // Exclude the originally targeted infrastructure (which is now vulnerable)
   const availableTargets = gameState.infrastructure?.filter(
-    infra => infra.state === 'secure'
+    infra => infra.state === 'secure' && infra.id !== targetInfraId
   ) || [];
   
+  // If no targets available, skip chain effect but still trigger reactions
   if (availableTargets.length === 0) {
-    console.log(`🔗 Chain vulnerability: No secure infrastructure available, skipping chain effect`);
+    console.log(`🔗 No additional secure infrastructure available for chain vulnerability effect`);
+    
+    // Check if we should trigger reactions for attack/exploit cards
+    const shouldTriggerReaction = chosenType === 'exploit' || chosenType === 'attack';
+    
+    if (shouldTriggerReaction && sourceCard) {
+      const isAttacker = playerId === gameState.attacker?.id;
+      const pendingReactions = [
+        ...(gameState.pendingReactions || []),
+        {
+          cardId: sourceCard.id,
+          card: sourceCard,
+          source: playerId,
+          target: isAttacker ? (gameState.defender?.id || '') : (gameState.attacker?.id || '')
+        }
+      ];
+      
+      console.log(`🔗 No chain targets available - triggering reaction for original ${chosenType} card`);
+      
+      return {
+        ...gameState,
+        pendingReactions,
+        message: `${sourceCard.name} played successfully, but no additional infrastructure available to target.`
+      };
+    }
+    
     return {
       ...gameState,
-      message: `${sourceCard.name} played, but no additional infrastructure available to target`
+      message: `${sourceCard.name} played successfully, but no additional infrastructure available to target.`
     };
   }
   
@@ -101,30 +129,69 @@ export function handleChainCompromise(
  * @param gameState Current game state
  * @param sourceCard Card that triggered the chain effect
  * @param playerId Player who played the card
+ * @param chosenType The card type chosen for the wildcard (shield or fortify)
+ * @param targetInfraId The original infrastructure targeted by the card
  * @returns Updated game state with pending chain choice
  */
 export function handleChainSecurity(
   gameState: GameState,
   sourceCard: Card,
-  playerId: string
+  playerId: string,
+  chosenType?: string,
+  targetInfraId?: string
 ): GameState {
   // Only secure infrastructure can be shielded through chain effects
+  // Exclude the originally targeted infrastructure (which is now shielded)
   const availableTargets = gameState.infrastructure?.filter(
-    infra => infra.state === 'secure'
+    infra => infra.state === 'secure' && infra.id !== targetInfraId
   ) || [];
   
+  // If no targets available, skip chain effect but still trigger reactions
   if (availableTargets.length === 0) {
-    return gameState;
+    console.log(`🔗 No additional secure infrastructure available for chain security effect`);
+    
+    // Check if we should trigger reactions for shield/fortify cards
+    const shouldTriggerReaction = chosenType === 'shield' || chosenType === 'fortify';
+    
+    if (shouldTriggerReaction && sourceCard) {
+      const isAttacker = playerId === gameState.attacker?.id;
+      const pendingReactions = [
+        ...(gameState.pendingReactions || []),
+        {
+          cardId: sourceCard.id,
+          card: sourceCard,
+          source: playerId,
+          target: isAttacker ? (gameState.defender?.id || '') : (gameState.attacker?.id || '')
+        }
+      ];
+      
+      console.log(`🔗 No chain targets available - triggering reaction for original ${chosenType} card`);
+      
+      return {
+        ...gameState,
+        pendingReactions,
+        message: `${sourceCard.name} played successfully, but no additional infrastructure available to shield.`
+      };
+    }
+    
+    return {
+      ...gameState,
+      message: `${sourceCard.name} played successfully, but no additional infrastructure available to shield.`
+    };
   }
   
-  // Add pending chain choice to game state
+  // Add pending chain choice to game state with original card info for reaction triggering
   return {
     ...gameState,
     pendingChainChoice: {
       type: 'chain_security',
       sourceCardId: sourceCard.id,
       playerId,
-      availableTargets: availableTargets.map(t => t.id)
+      availableTargets: availableTargets.map(t => t.id),
+      // Store original card info to trigger reactions after chain resolves
+      originalCard: sourceCard,
+      originalCardType: chosenType as any,
+      originalTargetId: targetInfraId
     }
   };
 }

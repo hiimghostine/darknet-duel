@@ -471,24 +471,16 @@ export class WildcardResolver {
           console.log(`🔗 Chain vulnerability effect triggered for ${card.name}`);
           const { handleChainVulnerability } = require('./chainEffects');
           
-          // Check if there are available targets before triggering
-          const secureInfrastructure = updatedGameState.infrastructure?.filter(infra => infra.state === 'secure') || [];
-          console.log(`🔗 Available secure infrastructure for chain vulnerability: ${secureInfrastructure.length}`);
-          
-          if (secureInfrastructure.length === 0) {
-            console.log(`🔗 No secure infrastructure available, skipping chain vulnerability effect`);
-            updatedGameState.message = `${card.name} played successfully, but no additional infrastructure available to target.`;
-          } else {
-            // Pass chosen type and target infrastructure for reaction triggering
-            updatedGameState = handleChainVulnerability(
-              updatedGameState, 
-              card, 
-              context.playerID || '',
-              context.chosenType,
-              context.targetInfrastructure?.id
-            );
-            console.log(`🔗 Chain vulnerability handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
-          }
+          // The handler will check for available targets and auto-skip if none exist
+          // It will also trigger reactions appropriately
+          updatedGameState = handleChainVulnerability(
+            updatedGameState, 
+            card, 
+            context.playerID || '',
+            context.chosenType,
+            context.targetInfrastructure?.id
+          );
+          console.log(`🔗 Chain vulnerability handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
           break;
         
         case 'chain_security':
@@ -496,17 +488,16 @@ export class WildcardResolver {
           console.log(`🔗 Chain security effect triggered for ${card.name}`);
           const { handleChainSecurity } = require('./chainEffects');
           
-          // Check if there are available targets before triggering
-          const secureInfrastructureForSecurity = updatedGameState.infrastructure?.filter(infra => infra.state === 'secure') || [];
-          console.log(`🔗 Available secure infrastructure for chain security: ${secureInfrastructureForSecurity.length}`);
-          
-          if (secureInfrastructureForSecurity.length === 0) {
-            console.log(`🔗 No secure infrastructure available, skipping chain security effect`);
-            updatedGameState.message = `${card.name} played successfully, but no additional infrastructure available to shield.`;
-          } else {
-            updatedGameState = handleChainSecurity(updatedGameState, card, context.playerID || '');
-            console.log(`🔗 Chain security handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
-          }
+          // The handler will check for available targets and auto-skip if none exist
+          // It will also trigger reactions appropriately
+          updatedGameState = handleChainSecurity(
+            updatedGameState, 
+            card, 
+            context.playerID || '',
+            context.chosenType,
+            context.targetInfrastructure?.id
+          );
+          console.log(`🔗 Chain security handler completed. PendingChainChoice: ${updatedGameState.pendingChainChoice ? 'YES' : 'NO'}`);
           break;
         
         case 'prevent_exploits':

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { BoardProps } from 'boardgame.io/react';
 import isEqual from 'lodash/isEqual';
@@ -98,6 +98,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   // Toast notifications
   const { addToast } = useToastStore();
+  
+  // Local state to track when choices have been made (for immediate UI feedback)
+  const [chainChoiceMade, setChainChoiceMade] = useState(false);
+  const [wildcardChoiceMade, setWildcardChoiceMade] = useState(false);
   
   // Use state buffer to prevent re-render flash during actions
   const { 
@@ -264,6 +268,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // NOTE: Timeout logic removed per user request - no automatic timeout for card selection
 
+  // Reset local choice flags when server state clears the pending choices
+  useEffect(() => {
+    if (!memoizedG.pendingChainChoice && chainChoiceMade) {
+      setChainChoiceMade(false);
+    }
+  }, [memoizedG.pendingChainChoice, chainChoiceMade]);
+  
+  useEffect(() => {
+    if (!memoizedG.pendingWildcardChoice && wildcardChoiceMade) {
+      setWildcardChoiceMade(false);
+    }
+  }, [memoizedG.pendingWildcardChoice, wildcardChoiceMade]);
+
   // ROBUST: Monitor pendingCardChoice state transitions for debugging
   useEffect(() => {
     if (memoizedG.pendingCardChoice) {
@@ -402,6 +419,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Choice handlers
   const handleChooseChainTarget = useCallback((targetId: string) => {
     if (moves.chooseChainTarget) {
+      // Immediately hide the modal for better UX
+      setChainChoiceMade(true);
       moves.chooseChainTarget(targetId);
     }
   }, [moves]);
@@ -410,6 +429,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     debugLog('🔗 CHAIN CANCEL: User cancelled chain effect');
     // Cancel by choosing an empty/invalid target that will be handled gracefully
     if (moves.chooseChainTarget) {
+      // Immediately hide the modal for better UX
+      setChainChoiceMade(true);
       // Pass empty string to signal cancellation
       moves.chooseChainTarget('');
     }
@@ -417,6 +438,8 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   const handleChooseWildcardType = useCallback((type: string) => {
     if (moves.chooseWildcardType) {
+      // Immediately hide the modal for better UX
+      setWildcardChoiceMade(true);
       moves.chooseWildcardType({ type });
     }
   }, [moves]);
@@ -750,7 +773,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       </main>
 
       {/* Overlay UIs for game choices */}
-      {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && (
+      {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && !wildcardChoiceMade && (
         <WildcardChoiceUI
           pendingChoice={memoizedG.pendingWildcardChoice}
           playerId={playerID || ''}
@@ -758,7 +781,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         />
       )}
       
-      {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && (
+      {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && !chainChoiceMade && (
         <ChainEffectUI
           pendingChainChoice={memoizedG.pendingChainChoice}
           infrastructureCards={optimizedInfrastructureData.cards}
