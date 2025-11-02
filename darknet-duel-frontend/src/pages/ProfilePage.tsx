@@ -6,6 +6,7 @@ import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import EditProfileModal from '../components/EditProfileModal';
 import ReportModal from '../components/ReportModal';
 import UserTypeTag from '../components/UserTypeTag';
@@ -17,7 +18,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { id: profileId } = useParams<{ id: string }>();
   const { theme, toggleTheme } = useThemeStore();
-  const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
+  const { triggerClick } = useAudioManager();
 
   // If no profile ID is provided, redirect to current user's profile
   useEffect(() => {
@@ -38,6 +39,7 @@ const ProfilePage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -82,6 +84,7 @@ const ProfilePage: React.FC = () => {
   }, [isOwnProfile, profileId]);
 
   const handleLogout = () => {
+    setShowLogoutModal(false);
     setShowLogoutScreen(true);
     setTimeout(() => {
       logout();
@@ -213,7 +216,10 @@ const ProfilePage: React.FC = () => {
                 </button>
                 
                 <button 
-                  onClick={handleLogout} 
+                  onClick={() => {
+                    triggerClick();
+                    setShowLogoutModal(true);
+                  }} 
                   className="btn btn-sm btn-error"
                 >
                   <span className="mr-1">🚪</span>
@@ -468,6 +474,13 @@ const ProfilePage: React.FC = () => {
           reportType="profile"
         />
       )}
+      
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };
