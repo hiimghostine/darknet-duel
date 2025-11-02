@@ -157,7 +157,7 @@ jobs:
           echo "Registering test user for ZAP scanning..."
           TIMESTAMP=$(date +%s)
           EMAIL="zap-scanner-${TIMESTAMP}@darknetduel.com"
-          USERNAME="zapscanner${TIMESTAMP}"
+          USERNAME="zapscanner="
           PASSWORD="ZapTest123!@#"
           
           REGISTER_RESPONSE=$(curl -s -X POST http://localhost:20000/api/auth/register \
