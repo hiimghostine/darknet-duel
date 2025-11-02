@@ -137,6 +137,18 @@ app.use('/api/logs', logRoutes);
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
+// Serve raw Swagger JSON spec
+app.get('/api/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(specs);
+});
+
+// Also serve at /swagger.json for convenience
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(specs);
+});
+
 // Redirect /docs to /api-docs for convenience
 app.get('/docs', (req, res) => {
   res.redirect('/api-docs');
