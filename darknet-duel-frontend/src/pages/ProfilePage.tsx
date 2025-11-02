@@ -87,8 +87,8 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     setShowLogoutModal(false);
     setShowLogoutScreen(true);
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth');
     }, 3000);
   };

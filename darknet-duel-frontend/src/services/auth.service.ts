@@ -71,9 +71,18 @@ class AuthService {
   /**
    * Logout the current user
    */
-  logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  async logout(): Promise<void> {
+    try {
+      // Call logout endpoint to invalidate session on server
+      await api.get('/auth/logout');
+    } catch (error) {
+      // Even if API call fails, clear local storage
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Always clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   }
   
   /**

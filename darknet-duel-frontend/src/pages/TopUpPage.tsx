@@ -64,8 +64,8 @@ const TopUpPage: React.FC = () => {
   const handleLogout = () => {
     setShowLogoutModal(false);
     setIsLoggingOut(true);
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth', { replace: true });
     }, 1500);
   };

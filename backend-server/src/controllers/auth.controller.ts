@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { AuthService } from '../services/auth.service';
+import { SessionService } from '../services/session.service';
 import { validateEmail, validatePassword, validateUsernameLength } from '../utils/validation';
 
 const authService = new AuthService();
+const sessionService = new SessionService();
 
 export class AuthController {
   
@@ -233,14 +234,20 @@ export class AuthController {
       // Log the login
       await authService.logUserLogin(user.id, user.username);
       
-      // Generate JWT token
-      const secret: Secret = process.env.JWT_SECRET || 'fallback_secret';
-      const expiryValue = process.env.JWT_EXPIRY || '7d';
-      const options: SignOptions = { expiresIn: expiryValue as any };
-      const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username, type: user.type },
-        secret,
-        options
+      // Invalidate all existing sessions for this user before creating a new one
+      await sessionService.invalidateAllUserSessions(user.id);
+      
+      // Create new session (token)
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || undefined;
+      const userAgent = req.headers['user-agent'] || undefined;
+      const expiresInMinutes = process.env.SESSION_EXPIRY_MINUTES 
+        ? parseInt(process.env.SESSION_EXPIRY_MINUTES) 
+        : 7 * 24 * 60; // Default: 7 days
+      const token = await sessionService.createSession(
+        user.id,
+        ipAddress,
+        userAgent,
+        expiresInMinutes
       );
       
       // Return user without password
@@ -332,6 +339,67 @@ export class AuthController {
     } catch (error) {
       console.error('Get profile error:', error);
       return res.status(500).json({ message: 'Server error getting profile' });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/auth/logout:
+   *   get:
+   *     tags: [Authentication]
+   *     summary: Logout current user
+   *     description: Invalidates the current user's session token
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Successfully logged out
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Logged out successfully"
+   *             example:
+   *               message: "Logged out successfully"
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *             example:
+   *               message: "Authentication required"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
+  // Logout user (invalidate session)
+  async logout(req: Request, res: Response) {
+    try {
+      // Get token from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Extract token from header
+      const token = authHeader.split(' ')[1];
+
+      // Invalidate the session
+      await sessionService.invalidateSession(token);
+
+      return res.status(200).json({
+        message: 'Logged out successfully'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      return res.status(500).json({ message: 'Server error during logout' });
     }
   }
 

@@ -72,8 +72,8 @@ const DashboardPage: React.FC = () => {
     setIsLoggingOut(true);
     
     // Delay actual logout to show the animation
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth');
     }, 3000);
   };
