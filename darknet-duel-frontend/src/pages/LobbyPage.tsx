@@ -8,6 +8,7 @@ import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import { useThemeStore } from '../store/theme.store';
 import axios from 'axios';
 
@@ -20,6 +21,7 @@ const LobbyPage: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
   const [serverOnline, setServerOnline] = useState<boolean | null>(null); // null = checking, true = online, false = offline
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   // Check game server health
   const checkServerHealth = async () => {
@@ -57,6 +59,7 @@ const LobbyPage: React.FC = () => {
   }, [isAuthenticated]);
 
   const handleLogout = () => {
+    setShowLogoutModal(false);
     setIsLoggingOut(true);
     setTimeout(() => {
       logout();
@@ -104,7 +107,7 @@ const LobbyPage: React.FC = () => {
             currentPage="lobbies"
             theme={theme}
             onThemeToggle={toggleTheme}
-            onLogout={handleLogout}
+            onLogout={() => setShowLogoutModal(true)}
           />
 
           <main className="container mx-auto p-4">
@@ -168,6 +171,13 @@ const LobbyPage: React.FC = () => {
       
       {/* Show logout screen */}
       {isLoggingOut && <LogoutScreen />}
+      
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };

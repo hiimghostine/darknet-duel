@@ -8,6 +8,7 @@ import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import AppFooter from '../components/AppFooter';
 import LogoutScreen from '../components/LogoutScreen';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import UserTypeTag from '../components/UserTypeTag';
 import TutorialButton from '../components/tutorial/TutorialButton';
 import infoService, { type RecentActivityItem, type ProfileStats } from '../services/info.service';
@@ -25,6 +26,7 @@ const DashboardPage: React.FC = () => {
   const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [userBio, setUserBio] = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +68,7 @@ const DashboardPage: React.FC = () => {
   
   // Handle logout process with animation
   const handleLogout = () => {
+    setShowLogoutModal(false);
     setIsLoggingOut(true);
     
     // Delay actual logout to show the animation
@@ -126,7 +129,7 @@ const DashboardPage: React.FC = () => {
           currentPage="dashboard"
           theme={theme}
           onThemeToggle={toggleTheme}
-          onLogout={handleLogout}
+          onLogout={() => setShowLogoutModal(true)}
         />
 
         <main className="container mx-auto p-4">
@@ -464,6 +467,13 @@ const DashboardPage: React.FC = () => {
       
       {/* Show specialized logout animation when logging out */}
       {isLoggingOut && <LogoutScreen text="TERMINATING SESSION" />}
+      
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };
