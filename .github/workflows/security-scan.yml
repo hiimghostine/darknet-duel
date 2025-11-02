@@ -195,47 +195,22 @@ jobs:
           echo "email=$EMAIL" >> $GITHUB_OUTPUT
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
 
-      - name: Download and filter Swagger spec (exclude destructive endpoints)
+      - name: Download Swagger spec
         if: steps.should_run.outputs.should_run == 'true'
         run: |
           # Download the swagger.json
-          curl -s http://localhost:20000/api/swagger.json -o swagger-original.json
-          
-          # Remove destructive endpoints using jq
-          # Exclude: DELETE /api/account/me, DELETE /api/admin/users/:id, POST /api/admin/users/:id/ban, POST /api/admin/users/:id/unban
-          jq '
-            # Remove DELETE method from /api/account/me
-            .paths."/api/account/me" |= del(.delete) |
-            # Remove DELETE method from /api/admin/users/{id}
-            .paths."/api/admin/users/{id}" |= del(.delete) |
-            # Remove entire /api/admin/users/{id}/ban path
-            .paths |= del(."/api/admin/users/{id}/ban") |
-            # Remove entire /api/admin/users/{id}/unban path
-            .paths |= del(."/api/admin/users/{id}/unban")
-          ' swagger-original.json > swagger-filtered.json
-          
-          echo "Filtered Swagger spec created (excluded destructive endpoints)"
+          curl -s http://localhost:20000/api/swagger.json -o swagger.json
+          echo "Swagger spec downloaded"
+          PATH_COUNT=$(jq '.paths | length' swagger.json)
+          echo "Number of paths in spec: $PATH_COUNT"
 
-      - name: Verify Swagger file before scan
-        if: steps.should_run.outputs.should_run == 'true'
-        run: |
-          echo "Checking swagger-filtered.json..."
-          if [ ! -f swagger-filtered.json ]; then
-            echo "❌ swagger-filtered.json not found!"
-            exit 1
-          fi
-          echo "✅ File exists, checking content..."
-          PATH_COUNT=$(jq '.paths | length' swagger-filtered.json)
-          echo "Number of paths in filtered spec: $PATH_COUNT"
-          jq '.paths | keys' swagger-filtered.json | head -20
-
-      - name: ZAP API Scan - Backend (Filtered)
+      - name: ZAP API Scan - Backend
         if: steps.should_run.outputs.should_run == 'true'
         uses: zaproxy/action-api-scan@v0.10.0
         with:
           target: 'http://localhost:20000'
           format: openapi
-          cmd_options: '-a -J -f openapi -d "${{ github.workspace }}/swagger-filtered.json"'
+          cmd_options: '-a -J -f openapi -d "${{ github.workspace }}/swagger.json"'
           fail_action: false
 
       - name: Upload ZAP Scan Reports
@@ -247,7 +222,7 @@ jobs:
             report_html.html
             report_json.json
             report_md.md
-            swagger-filtered.json
+            swagger.json
           retention-days: 30
 
       - name: Check for High/Medium vulnerabilities
@@ -261,7 +236,6 @@ jobs:
             echo "- High Severity: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
             echo "- Medium Severity: $MEDIUM_COUNT" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Note:** Destructive endpoints (DELETE /api/account/me, DELETE /api/admin/users/:id, ban/unban) were excluded from scanning." >> $GITHUB_STEP_SUMMARY
             
             if [ "$HIGH_COUNT" -gt 0 ] || [ "$MEDIUM_COUNT" -gt 0 ]; then
               echo "❌ Security scan failed: Found $HIGH_COUNT High and $MEDIUM_COUNT Medium severity vulnerabilities"
