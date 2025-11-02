@@ -425,16 +425,13 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
           return null;
         }
         
-        // Calculate position based on card index and grid layout
-        const cardsPerRow = Math.floor((window.innerWidth || 1200) / 240); // Approximate cards per row
+        // Calculate position based on card index and grid layout using actual responsive dimensions
+        const cardsPerRow = Math.floor((window.innerWidth || 1200) / (infraWidth + scaling.cardGap));
         const row = Math.floor(index / cardsPerRow);
         const col = index % cardsPerRow;
-        const cardWidth = 208; // lg:w-52 = 208px
-        const cardHeight = 256; // lg:h-64 = 256px
-        const gap = 12; // gap-3 = 12px
         
-        const left = col * (cardWidth + gap) + cardWidth / 2;
-        const top = row * (cardHeight + gap) - 48; // -48px for -top-12
+        const left = col * (infraWidth + scaling.cardGap) + infraWidth / 2;
+        const top = row * (infraHeight + scaling.cardGap) - 48; // -48px for -top-12
         
         return (
           <div
