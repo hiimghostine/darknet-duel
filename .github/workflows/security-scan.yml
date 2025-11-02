@@ -217,7 +217,7 @@ jobs:
         if: steps.should_run.outputs.should_run == 'true'
         uses: zaproxy/action-api-scan@v0.10.0
         with:
-          target: 'http://localhost:20000'
+          target: 'http://localhost:20000/swagger.json'
           format: openapi
           cmd_options: '-a -J -openapifile "${{ github.workspace }}/swagger.json"'
           fail_action: false
