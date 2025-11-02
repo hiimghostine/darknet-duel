@@ -13,22 +13,81 @@ on:
 jobs:
   zap-api-scan:
     # Only run if commit message starts with "scan: " or if manually triggered/scheduled
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule' ||
-      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'scan: ')) ||
-      (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, 'scan:') || contains(github.event.pull_request.body, 'scan:')))
     runs-on: ubuntu-latest
     name: ZAP API Security Scan
     
     steps:
+      - name: Debug commit message and event
+        if: always()
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Head commit message: ${{ github.event.head_commit.message }}"
+          echo "All commits:"
+          if [ "${{ github.event_name }}" == "push" ] && [ -n "${{ github.event.commits }}" ]; then
+            echo "${{ github.event.commits }}" | jq -r '.[].message' || echo "${{ github.event.commits }}"
+          fi
+          
+      - name: Check if should run
+        id: should_run
+        run: |
+          SHOULD_RUN=false
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SHOULD_RUN=true
+            echo "Triggered by workflow_dispatch"
+          elif [ "${{ github.event_name }}" == "schedule" ]; then
+            SHOULD_RUN=true
+            echo "Triggered by schedule"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            echo "Checking commit message: '$COMMIT_MSG'"
+            # Check if commit message starts with "scan:" (case insensitive, with or without space)
+            if echo "$COMMIT_MSG" | grep -qiE '^scan:'; then
+              SHOULD_RUN=true
+              echo "✅ Commit message starts with 'scan:' - workflow will run"
+            else
+              echo "Commit message does NOT start with 'scan:'"
+              # Also check all commits in the push as fallback
+              if [ -n "${{ github.event.commits }}" ] && [ "${{ github.event.commits }}" != "null" ]; then
+                echo "Checking all commits in push..."
+                while IFS= read -r msg; do
+                  if echo "$msg" | grep -qiE '^scan:'; then
+                    SHOULD_RUN=true
+                    echo "Found commit with 'scan:' prefix: $msg"
+                  fi
+                done < <(echo "${{ github.event.commits }}" | jq -r '.[].message' 2>/dev/null || echo "")
+              fi
+            fi
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            if echo "$PR_TITLE" | grep -qi 'scan:' || echo "$PR_BODY" | grep -qi 'scan:'; then
+              SHOULD_RUN=true
+              echo "PR title or body contains 'scan:'"
+            fi
+          fi
+          
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          if [ "$SHOULD_RUN" == "false" ]; then
+            echo "⚠️ Workflow will be skipped - no matching commit message or trigger"
+          else
+            echo "✅ Workflow will run"
+          fi
+    
+      - name: Skip if not needed
+        if: steps.should_run.outputs.should_run == 'false'
+        run: |
+          echo "Skipping workflow - commit message does not start with 'scan: '"
+          exit 0
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
+        if: steps.should_run.outputs.should_run == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Create test environment .env
+        if: steps.should_run.outputs.should_run == 'true'
         run: |
           cat > .env <<EOF
           MYSQL_ROOT_PASSWORD=test_root_pass_$(openssl rand -hex 16)
@@ -47,21 +106,25 @@ jobs:
           EOF
 
       - name: Print .env contents for diagnosis
+        if: steps.should_run.outputs.should_run == 'true'
         run: |
           echo "=== .env file contents ==="
           cat .env
           echo "=== End of .env file ==="
 
       - name: Build Docker images
+        if: steps.should_run.outputs.should_run == 'true'
         run: docker compose build
 
       - name: Start application stack
+        if: steps.should_run.outputs.should_run == 'true'
         run: |
           docker compose up -d
           echo "Waiting for services to start..."
           sleep 30
 
       - name: Wait for backend health
+        if: steps.should_run.outputs.should_run == 'true'
         run: |
           max_attempts=30
           attempt=0
@@ -85,6 +148,7 @@ jobs:
           exit 1
 
       - name: Create test user and get authentication token
+        if: steps.should_run.outputs.should_run == 'true'
         id: auth
         run: |
           # Register test user
@@ -130,6 +194,7 @@ jobs:
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
 
       - name: Download and filter Swagger spec (exclude destructive endpoints)
+        if: steps.should_run.outputs.should_run == 'true'
         run: |
           # Download the swagger.json
           curl -s http://localhost:20000/api/swagger.json -o swagger-original.json
@@ -152,6 +217,7 @@ jobs:
           echo "Filtered Swagger spec created (excluded destructive endpoints)"
 
       - name: ZAP API Scan - Backend (Filtered)
+        if: steps.should_run.outputs.should_run == 'true'
         uses: zaproxy/action-api-scan@v0.10.0
         with:
           target: 'http://localhost:20000/api'
