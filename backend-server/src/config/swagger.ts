@@ -1,5 +1,37 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Determine which paths to scan based on what's available
+// In development: ./src/routes/*.ts and ./src/controllers/*.ts
+// In production: prefer src (if copied), otherwise ./dist/routes/*.js
+const getApiPaths = (): string[] => {
+  const srcRoutesExists = fs.existsSync(path.join(process.cwd(), 'src', 'routes'));
+  const distRoutesExists = fs.existsSync(path.join(process.cwd(), 'dist', 'routes'));
+  
+  // Prefer src if it exists (works in both dev and production if src is copied)
+  if (srcRoutesExists) {
+    return [
+      './src/routes/*.ts',
+      './src/controllers/*.ts'
+    ];
+  }
+  
+  // Fallback to dist (production without src)
+  if (distRoutesExists) {
+    return [
+      './dist/routes/*.js',
+      './dist/controllers/*.js'
+    ];
+  }
+  
+  // Ultimate fallback (shouldn't happen)
+  return [
+    './src/routes/*.ts',
+    './src/controllers/*.ts'
+  ];
+};
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -422,10 +454,7 @@ const options: swaggerJSDoc.Options = {
       }
     ]
   },
-  apis: [
-    './src/routes/*.ts',
-    './src/controllers/*.ts'
-  ]
+  apis: getApiPaths()
 };
 
 export const specs = swaggerJSDoc(options);
