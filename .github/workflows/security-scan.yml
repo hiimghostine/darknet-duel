@@ -204,16 +204,14 @@ jobs:
           # Remove destructive endpoints using jq
           # Exclude: DELETE /api/account/me, DELETE /api/admin/users/:id, POST /api/admin/users/:id/ban, POST /api/admin/users/:id/unban
           jq '
-            # Remove DELETE /account/me
-            .paths."/api/account/me".delete = null |
-            # Remove DELETE /admin/users/{id}
-            .paths."/api/admin/users/{id}".delete = null |
-            # Remove POST /admin/users/{id}/ban
-            .paths."/api/admin/users/{id}/ban".post = null |
-            # Remove POST /admin/users/{id}/unban
-            .paths."/api/admin/users/{id}/unban".post = null |
-            # Clean up empty path objects
-            with_entries(select(.value != null))
+            # Remove DELETE method from /api/account/me
+            .paths."/api/account/me" |= del(.delete) |
+            # Remove DELETE method from /api/admin/users/{id}
+            .paths."/api/admin/users/{id}" |= del(.delete) |
+            # Remove entire /api/admin/users/{id}/ban path
+            .paths |= del(."/api/admin/users/{id}/ban") |
+            # Remove entire /api/admin/users/{id}/unban path
+            .paths |= del(."/api/admin/users/{id}/unban")
           ' swagger-original.json > swagger-filtered.json
           
           echo "Filtered Swagger spec created (excluded destructive endpoints)"
