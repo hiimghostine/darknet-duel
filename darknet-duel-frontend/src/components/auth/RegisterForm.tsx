@@ -14,8 +14,12 @@ interface RegisterFormProps {
 const RegisterSchema = z.object({
   username: z.string()
     .min(6, 'Username must be at least 6 characters')
-    .max(16, 'Username must be at most 16 characters'),
-  email: z.string().email('Invalid email format'),
+    .max(16, 'Username must be at most 16 characters')
+    .regex(/^[\x00-\x7F]*$/, 'Username can only contain ASCII characters'),
+  email: z.string()
+    .email('Invalid email format')
+    .max(254, 'Email must be at most 254 characters')
+    .regex(/^[\x00-\x7F]*$/, 'Email can only contain ASCII characters'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(63, 'Password must be at most 63 characters')
@@ -126,8 +130,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
               <input
                 type="text"
                 placeholder="System login name"
+                maxLength={16}
                 className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.username ? 'border-error' : ''}`}
                 {...register('username')}
+                onInput={(e) => {
+                  // Filter out non-ASCII characters
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^\x00-\x7F]/g, '');
+                }}
                 disabled={isLoading || !!successMessage}
               />
               <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
@@ -148,8 +158,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
               <input
                 type="email"
                 placeholder="Your email address"
+                maxLength={254}
                 className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''}`}
                 {...register('email')}
+                onInput={(e) => {
+                  // Filter out non-ASCII characters
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^\x00-\x7F]/g, '');
+                }}
                 disabled={isLoading || !!successMessage}
               />
               <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">

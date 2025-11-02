@@ -83,14 +83,14 @@ export class AuthController {
         return res.status(400).json({ message: 'Email must be 254 characters or fewer' });
       }
 
-      // Validate email format
+      // Validate email format (includes length and ASCII checks)
       if (!validateEmail(email)) {
-        return res.status(400).json({ message: 'Invalid email format' });
+        return res.status(400).json({ message: 'Invalid email format. Email must be valid, 254 characters or fewer, and contain only ASCII characters' });
       }
       
-      // Validate username length
+      // Validate username length (includes ASCII check)
       if (!validateUsernameLength(username)) {
-        return res.status(400).json({ message: 'Username must be between 6 and 16 characters' });
+        return res.status(400).json({ message: 'Username must be between 6 and 16 characters and contain only ASCII characters' });
       }
 
       // Validate password strength and length

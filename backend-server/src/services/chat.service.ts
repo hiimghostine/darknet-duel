@@ -60,6 +60,12 @@ export class ChatService {
     });
   }
 
+  private filterNonAscii(input: string): string {
+    if (!input) return input;
+    // Replace any character outside ASCII range (0-127) with ?
+    return input.replace(/[^\x00-\x7F]/g, '?');
+  }
+
   private filterProfanity(input: string): string {
     if (!input) return input;
     let result = input;
@@ -101,8 +107,9 @@ export class ChatService {
       ...data.metadata
     };
 
-    // Apply profanity filter to content
-    const filteredContent = this.filterProfanity(data.messageContent);
+    // Filter non-ASCII characters first, then apply profanity filter
+    const asciiFiltered = this.filterNonAscii(data.messageContent);
+    const filteredContent = this.filterProfanity(asciiFiltered);
 
     const chatMessage = this.lobbyRepository.create({
       chatId: data.chatId,
