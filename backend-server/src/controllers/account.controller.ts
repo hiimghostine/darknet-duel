@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { AccountService } from '../services/account.service';
+import { AuthService } from '../services/auth.service';
 import { validatePassword } from '../utils/validation';
 
 export class AccountController {
   private accountService = new AccountService();
+  private authService = new AuthService();
 
   /**
    * @swagger
@@ -104,10 +107,10 @@ export class AccountController {
   /**
    * @swagger
    * /api/account/me:
-   *   post:
+   *   put:
    *     tags: [Account Management]
    *     summary: Update current user's account details
-   *     description: Updates the authenticated user's account information (email, username, password, bio, avatar)
+   *     description: Updates the authenticated user's account information (email, username, password, bio, avatar). If changing password, existing_password must be provided.
    *     security:
    *       - bearerAuth: []
    *     requestBody:
@@ -125,6 +128,7 @@ export class AccountController {
    *           example:
    *             email: "newemail@darknet.com"
    *             username: "EliteHacker"
+   *             existing_password: "currentPassword123!"
    *             password: "newSecurePassword123!"
    *             bio: "Elite hacker from the darknet"
    *     responses:
@@ -221,7 +225,7 @@ export class AccountController {
         });
       }
 
-      const { email, username, password, bio } = req.body;
+      const { email, username, password, existing_password, bio } = req.body;
       const avatarFile = req.file;
 
       // Validate that at least one field is provided
@@ -232,12 +236,39 @@ export class AccountController {
         });
       }
 
-      // Validate password if provided
-      if (password && !validatePassword(password)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-        });
+      // If password is being changed, validate existing_password is provided
+      if (password && password.trim().length > 0) {
+        if (!existing_password || existing_password.trim().length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Existing password is required when changing password'
+          });
+        }
+
+        // Verify existing password
+        const user = await this.authService.findById(userId);
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: 'Account not found'
+          });
+        }
+
+        const isPasswordValid = await bcrypt.compare(existing_password, user.password);
+        if (!isPasswordValid) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid existing password'
+          });
+        }
+
+        // Validate new password against registration requirements
+        if (!validatePassword(password)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Password must be 8-63 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+          });
+        }
       }
 
       // Validate bio if provided

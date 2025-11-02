@@ -1,0 +1,141 @@
+I.	Executive Summary
+Since even the most basic knowledge of cybersecurity is hard to learn, especially for individuals without technical background, traditional techniques of promoting awareness of the subject typically fall short. Despite this, learning about cybersecurity is becoming increasingly crucial in today's digital environment. To address this issue, Darknet Duel offers a simulated card game that is gamified with the goal of making cybersecurity ideas understandable and enjoyable for a variety of audiences. By gamifying everyday events in the digital world, players are given hands-on experience in a fun and strategic way. This approach encourages a proactive security mindset amongst users while simultaneously lowering the barrier to obtaining basic cybersecurity knowledge.
+A.	 Problem Statement and Proposed Solution
+Due to the fact that people make mistakes, failing to see potential dangers, and lack understanding of cybersecurity, people are the weakest link in computer security and are therefore susceptible to cyberattacks. Traditional learning resources are available, but they usually fail to maintain students' attention, which leads to inadequate understanding and recall of cybersecurity fundamentals. Due to this, many computer users are still unaware of the fundamentals of cybersecurity and self-defense.
+
+Darknet Duel is a gamified web-based card game designed to teach cybersecurity awareness in a strategic, engaging and fun way. The game pits attackers against defenders, each using cards that represent ways of attacking, defending and real-world cybersecurity events. By combining a fast-paced gameplay with educational elements, Darknet Duel simplifies the concepts of cybersecurity while keeping the users entertained.
+
+B.	Expected Benefits and Impact
+The proposed cybersecurity card game, Darknet Duel, aims to address the lack of engaging and accessible cybersecurity education. By gamifying cybersecurity principles, the game is expected to achieve several key benefits and impacts:
+●	Enhanced Cybersecurity Awareness – The game will introduce players to fundamental cybersecurity concepts in an interactive and enjoyable manner, helping users develop a foundational understanding of threats and defense mechanisms (Williams et al., 2024).
+●	Broader Accessibility – Unlike traditional cybersecurity training methods that require technical expertise, Darknet Duel will be designed to be user-friendly and engaging for a diverse audience, including junior high school students, college students, professionals, and casual players (Nwokeji et al., 2020).
+●	Increased Retention of Cybersecurity Concepts - Studies have demonstrated that gamified training enhances knowledge retention. For instance, research indicates that gamified training provides significant increases in knowledge and retention compared to traditional methods.
+●	Bridging the Gap Between Theory and Practice - Gamification provides hands-on learning experiences, allowing learners to apply theoretical knowledge in simulated environments. This approach effectively bridges the gap between theoretical concepts and practical application, better preparing individuals for real-world cybersecurity challenges.
+●	Potential for Adoption in Educational and Corporate Training - The integration of gamified methods into educational and corporate training programs has been shown to enhance engagement and motivation among learners. This approach can lead to improved compliance with cybersecurity best practices and a reduction in security breaches caused by human error.
+●	Encouraging Interest in Cybersecurity Careers - Exposure to gamified cybersecurity education can inspire individuals to pursue careers in the field. By providing engaging and interactive learning experience, gamification can attract a broader audience to cybersecurity professions, helping to address the industry's growing talent gap.
+
+II.	Background and Problem Statement
+A.	Description of the Problem or Gap
+The increasing reliance on digital technologies has highlighted the importance of cybersecurity awareness. A significant section of the population is still unaware of the basic risks that online poses. Students typically don't participate in traditional teaching techniques like lectures and textbooks, which results in poor material recall. Additionally, most of the gamified learning materials available today fall short of the goal because they are either too easy or too difficult, which keeps users from receiving a sufficient education.
+
+B.	Limitations of Existing Solutions
+Most of the cybersecurity education games available today are narrowly focused, covering only a few themes without providing a thorough understanding. Those that demand high levels of technological proficiency deter novices and non-technical consumers. Additionally, many of these games offer prolonged gameplay, which could make players lose interest before grasping important ideas. The form and content of serious games have been found to significantly affect students' capacity to pick up new skills.
+C.	Justification for the Proposed Solution
+In educational settings, gamification has been demonstrated to improve student engagement and recall of the content. 
+Darknet Duel takes advantage of this by offering a comprehensive approach that blends strategic games with educational materials. By appealing to a broad audience and demystifying complex cybersecurity concepts, the game seeks to close the present educational gap. By teaching people and motivating them to adopt safer online practices, this strategy tackles the human factor in cybersecurity threats.
+
+III.	Project Objectives
+Main Objectives (SMART Goals)
+●	Specific: Develop a web-based card game, Darknet Duel, to teach fundamental cybersecurity concepts through interactive gameplay.
+●	Measurable: Achieve a 40% improvement in cybersecurity knowledge retention among players, as evidenced by pre- and post-gameplay assessments
+●	Achievable: Utilize a user-friendly card game format that requires no prior technical expertise, ensuring accessibility for all users.
+●	Relevant: Address the critical need for enhanced cybersecurity awareness in an increasingly digital world.
+●	Time-bound: Complete the development and initial testing of the web-based game within a six-month timeframe.
+Specific Objectives (Key Deliverables)
+1.	Functional Requirements
+●	Multiplayer Mode: Enable players to engage in roles as attackers and defenders in real-time.
+●	Diverse Card Decks: Develop cards representing various cyber-attacks, defenses, and events to simulate real-world scenarios.
+●	Educational Content: Incorporate informative descriptions and tutorials within the game to facilitate learning.
+2.	Non-Functional Requirements
+●	User-Friendly Interface: Design an intuitive interface that appeals to both technical and non-technical users.
+●	Performance Optimization: Ensure smooth gameplay across various web browsers and devices.
+●	Scalability: Build a flexible architecture to accommodate future expansions, including a potential physical card game version.
+IV.	Scope and Limitations
+A.	Features and Functionalities Included
+●	Role-Based Gameplay: Players can choose to act as attackers or defenders, each with unique strategies and objectives.
+●	Comprehensive Card Library: A wide range of cards covering fundamental cybersecurity topics, including common threats and defense mechanisms.
+●	Interactive Tutorials: Guided sessions to help players understand game mechanics and underlying cybersecurity concepts.
+●	Web-Based Access: The game will be accessible through standard web browsers, eliminating the need for additional software installations.
+B.	Constraints and Exclusions
+●	No Single-Player Mode: The initial release will focus solely on multiplayer interactions; AI opponents will not be included.
+●	Basic Cybersecurity Topics: Advanced subjects will be reserved for future updates to maintain accessibility for beginners.
+●	Physical Card Game Development: The transition to a tangible card game format will be considered only after validating the web-based version's success.
+
+V.	Target Users, Customers, Beneficiaries, and Partners
+A.	Intended Users
+●	Students & Educators: Schools and universities can use Darknet Duel as an interactive learning tool to teach cybersecurity fundamentals.
+●	Cybersecurity Enthusiasts & Professionals: Individuals looking to enhance their understanding of cybersecurity in a gamified setting.
+●	Corporate Employees: Organizations can integrate the game into employee training programs to reinforce cybersecurity best practices and mitigate social engineering risks.
+●	General Public: Anyone interested in learning cybersecurity through an engaging and accessible format.
+B.	How the Solution Benefits Them
+●	Students & Educators
+○	Enhances engagement and retention of cybersecurity concepts
+○	Provides an alternative to traditional teaching methods that may not be as effective in conveying cybersecurity topics.
+●	Cybersecurity Enthusiasts & Professionals
+○	Offers a dynamic way to explore cybersecurity concepts and strategies through simulated attack-defense gameplay.
+○	Reinforces learning through practical application of concepts rather than passive reading.
+●	Corporate Employees
+○	Strengthens security awareness by simulating real-world threats in an engaging format.
+○	Reduces the likelihood of cybersecurity breaches caused by human error.
+●	General Public
+○	Provides an easy-to-access, beginner-friendly platform to learn about cybersecurity threats and defenses.
+○	Encourages proactive security habits through interactive experiences.
+
+
+C.	Potential Partners or Stakeholders
+●	Educational Institutions: Universities and schools integrating cybersecurity awareness into curricula.
+●	Cybersecurity Organizations: Partnerships with industry leaders to validate content and increase credibility.
+●	Government Agencies: Cybersecurity awareness programs in collaboration with public institutions.
+●	Tech Companies & Startups: Potential sponsorships or funding to support game development and expansion.
+VI.	Conclusion
+A.	 Summary of the Proposal
+Given that there aren't enough interesting and easily available learning resources, cybersecurity education is still difficult. By using gamification to teach fundamental cybersecurity principles in an engaging and involved way, Darknet Duel fills this knowledge gap. The game is suitable for students, professionals, and the general public since it improves knowledge retention as well as awareness by letting players participate in attack-defense scenarios. Darknet Duel has the ability to transform cybersecurity education with the right connections and a clear plan.
+
+B.	Call to Action
+Working together with academic institutions, cybersecurity specialists, and possible investors is crucial to making Darknet Duel a reality. For the game to successfully raise awareness of cybersecurity, we want stakeholders to provide knowledge, money, or adoption tactics. By working together, we can provide people with the skills they need to properly navigate the digital world.
+
+VII.	Review of Related Literature 
+Gamification Techniques for Raising Cyber Security Awareness
+An exploratory study was carried out by Scholefield and Shepherd (2019) to look into the usage of gamification techniques to teach users about password security. For the Android platform, they created a role-playing game (RPG) with the goal of raising general security awareness. By taking on roles and responding to questions about password security, the program enabled users to participate in interactive learning. According to the study's findings, participants thought the gamification features enhanced their learning experience and they enjoyed using the application. According to the authors, these gamified methods could successfully meet the need for cybersecurity education.
+
+Cybersecurity Knowledge Deterioration and the Role of Gamification Intervention
+The problem of cybersecurity knowledge deterioration was investigated by Boluwatife et al. (2025), who also looked at the possibility of gamification as an intervention to reverse this decrease. According to their research, individuals' awareness and understanding frequently fall behind the evolving cybersecurity risks, making them more vulnerable. According to the study, gamified learning opportunities could be a proactive way to maintain a high level of user awareness and reinforce cybersecurity expertise. The authors contended that by including game-based components into educational programs, students may be more successfully engaged, which would enhance their recollection and application of cybersecurity principles.
+Leveraging Gamification and Game-Based Learning in Cybersecurity Education
+In order to motivate and engage students who have no prior knowledge of cybersecurity, Williams et al. (2024) investigated the use of gamification and game-based learning techniques. Their research concentrated on creating instructional interventions that demystified difficult cybersecurity ideas by using game mechanics. The authors discovered that adding components like storytelling, puzzles, and interactive simulations improved students' comprehension and memory of the subject matter in addition to raising their level of interest. According to the study, gamified methods may be especially useful for increasing the attraction of cybersecurity education to a wider range of students.
+
+Gamification of Cybersecurity Awareness for Non-IT Professionals: A Systematic Literature Review 
+A systematic literature study was carried out by Gwenhure and Rahayu (2020) to evaluate how well gamification works to raise cybersecurity awareness among non-IT professionals. According to their findings, conventional training approaches frequently fall short in engaging this group, which leads to a disregard for security best practices. Several gamified interventions that effectively improved non-IT staff engagement and knowledge retention were found in the review. The authors came to the conclusion that gamification could help organizations develop a security-conscious culture by bridging the gap between technical material and non-technical audiences.
+
+The Use of Gamification to Teach Cybersecurity Awareness in Information Systems
+The use of gamification techniques to educate cybersecurity awareness in information systems courses was investigated by Nwokeji et al. (2020). In order to inspire students and improve learning results, the study included incorporating game-based components into the curriculum, such as leaderboards, badges, and points. The findings showed that, in comparison to pupils who received standard teaching, those exposed to the gamified curriculum showed greater levels of engagement and a deeper comprehension of cybersecurity concepts. The authors suggested using gamification as a teaching strategy to enhance cybersecurity instruction and better equip students for problems they may face in the real world.
+
+Synthesis of Related Studies
+All of the studied material emphasizes how effective gamification is at raising cybersecurity awareness and educating a variety of audiences. These research' empirical data indicates that adding game-based components to educational activities can boost student engagement, enhance memory recall, and foster a deeper comprehension of cybersecurity principles. In order to foster a more security-conscious society, these findings support the wider use of gamified approaches in professional development programs and educational contexts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+VIII.	References
+
+
+1.	Berkeley Center for Long-Term Cybersecurity. Gamification of Cybersecurity Education. Retrieved from https://cltc.berkeley.edu/publication/gamification-of-cybersecurity-education.
+
+2.	Faith Fatokun, Zalizah Awang, Suraya Hamid, Johnson O. Fatokun, & Azah Norman. (2024). Cybersecurity knowledge deterioration and the role of gamification intervention. Journal of Advanced Research in Applied Sciences and Engineering Technology, 43(1), 66–94. https://doi.org/10.37934/araset.43.1.6694.
+
+
+3.	Gwenhure, A. K., & Sapty Rahayu, F. (2024). Gamification of cybersecurity awareness for Non-IT Professionals: A Systematic Literature Review. International Journal of Serious Games, 11(1), 83–99. https://doi.org/10.17083/ijsg.v11i1.719.
+
+4.	Inspired eLearning. The Importance of Gamification in Security Awareness Training. Retrieved from https://inspiredelearning.com/blog/gamification-importance-security-awareness-training.
+
+
+5.	International Journal of Cybersecurity Intelligence & Cybercrime. Security Awareness Through Gaming: A Study on Learning Effectiveness. Retrieved from https://sites.asee.org/se/wp-content/uploads/sites/56/2021/01/2020ASEESE117.pdf.
+
+6.	Nwokeji, J. C., Matovu, R., & Rawal, B. (2020, December 21). The Use of Gamification to Teach Cybersecurity Awareness in Information Systems. THE USE OF GAMIFICA THE USE OF GAMIFICATION TO TEACH CYBERSECURI CH CYBERSECURITY AWARENESS IN INFORM ARENESS IN INFORMATION SY TION SYSTEMS. Retrieved from https://www.researchgate.net/publication/349917575_THE_USE_OF_GAMIFICA_THE_USE_OF_GAMIFICATION_TO_TEACH_CYBERSECURITY_AWARENESS_IN_INFORM_ARENESS_IN_INFORMATION_SY_TION_SYSTEMS.
+
+
+7.	Scholefield, S., & Shepherd, L. A. (2019, June 12). Gamification Techniques for Raising Cyber Security Awareness. SpringerLink. Retrieved from https://link.springer.com/chapter/10.1007/978-3-030-22351-9_13.
+
+8.	Williams, L., Anthi, E., Cherdantseva, Y., & Javed, A. (2024). Leveraging gamification and game-based learning in Cybersecurity Education. Journal of The Colloquium for Information Systems Security Education, 11(1), 8. https://doi.org/10.53735/cisse.v11i1.186.
+

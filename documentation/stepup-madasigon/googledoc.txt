@@ -1,0 +1,71 @@
+PROJECT NAME	Darknet Duel				
+STAGE	Pre-Seed Stage (Initial funding, Creating a basic prototype or minimum viable product (MVP))				
+
+PROJECT DESCRIPTION (Not more than 50 words)								
+Darknet Duel is a gamified web-based card game designed to teach cybersecurity awareness in a strategic, engaging and fun way. The game pits attackers against defenders, each using cards that represent ways of attacking, defending and real-world cybersecurity events. By combining a fast-paced gameplay with educational elements, Darknet Duel simplifies the concepts of cybersecurity while keeping the users entertained.								
+								
+PROBLEM SOLVED								
+"Due to the fact that people make mistakes, failing to see potential dangers, and lack understanding of cybersecurity, people are the weakest link in computer security and are therefore susceptible to cyberattacks. Traditional learning resources are available, but they usually fail to maintain students' attention, which leads to inadequate understanding and recall of cybersecurity fundamentals. Due to this, many computer users are still unaware of the fundamentals of cybersecurity and self-defense. Our game solves this be gamifying on what an attack might look like on the perspective of a company and a hacking group, and educating users based off of this.
+
+Our target market is the general public, providing a fun game that is accessible for everyone to learn and enjoy."								
+								
+REVENUE STREAMS/MODEL								
+Selling of cosmetics in-game that do not provide unfair advantage to players.								
+								
+-- Value Proposition Canvas --					
+
+Pains
+Cybersecurity is perceived as boring, technical, or intimidating
+Traditional training materials lack engagement → low retention
+Most people don’t prioritize security until they experience a breach
+Educational games often feel “too educational” and not fun
+
+Gains
+Fun and competitive card game experience		
+Simplified learning of complex cybersecurity concepts		
+Replayability through strategic mechanics		
+Cosmetic rewards (skins, themes) for personalization		
+
+Customer:				
+General public (casual learners interested in cybersecurity basics)					
+Students (high school, college) learning cybersecurity fundamentals				
+
+Customer Jobs:	
+Learn basic cybersecurity concepts in an accessible way			
+Stay engaged while learning through interactive gameplay			
+Gain practical awareness of cyber threats and defenses			
+Have fun while improving digital literacy			
+
+Pain Relievers			
+Makes cybersecurity approachable for non-technical users			
+Reinforces awareness through repeated play			
+Provides “learning by doing” instead of passive study			
+
+Products & Services	
+Web-based gamified cybersecurity card game		
+Attacker vs. defender roles to simulate real-world cyber events		
+Educational layer embedded in gameplay		
+Beta version ready for testing		
+
+Gain Creators				
+Strategic, fun gameplay keeps players engaged			
+Cosmetic upgrades add personalization and status incentives			
+Simplifies real-world cybersecurity concepts for easier recall			
+
+-- Assumption Stress-Test Grid	--
+
+Assumption	Current Evidence	What Would Falsify It?	Validation Gap / Next Action
+"1. Players will find Darknet Duel genuinely fun, not just educational.
+"	MVP complete; no large-scale user testing yet.	"If <30% of beta testers play more than 3 sessions voluntarily, citing lack of fun.
+"	"Deploy open beta with 50–100 users. Measure repeat gameplay, time spent, and feedback on fun factor.
+"
+2. Gameplay effectively teaches players cybersecurity fundamentals.	"Concepts mapped into cards; no formal learning validation.
+"	If <25% of players show improved cybersecurity awareness (measured via pre-/post-game quiz) after multiple sessions.	"Run controlled test with students: pre-test cybersecurity knowledge → play Darknet Duel → post-test retention.
+
+
+"
+"3. Cosmetic monetization will be a viable revenue model.
+"	"Cosmetics are a standard F2P model in games; no proof this audience will pay.
+"	 If <5% of active players purchase or express willingness to purchase cosmetics during beta.	"Test limited cosmetic items in beta. Measure purchase rate and feedback on willingness to pay.
+"
+

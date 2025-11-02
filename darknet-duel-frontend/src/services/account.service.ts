@@ -23,6 +23,7 @@ export interface UpdateAccountData {
   email?: string;
   username?: string;
   password?: string;
+  existing_password?: string;
   bio?: string;
   avatar?: File;
 }
@@ -97,11 +98,12 @@ class AccountService {
     if (data.email) formData.append('email', data.email);
     if (data.username) formData.append('username', data.username);
     if (data.password) formData.append('password', data.password);
+    if (data.existing_password) formData.append('existing_password', data.existing_password);
     if (data.bio !== undefined) formData.append('bio', data.bio);
     if (data.avatar) formData.append('avatar', data.avatar);
 
     // Remove the default Content-Type header to let browser set it with boundary
-    const response = await api.post<UpdateAccountResponse>('/account/me', formData, {
+    const response = await api.put<UpdateAccountResponse>('/account/me', formData, {
       headers: {
         'Content-Type': undefined
       }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUser, FaImage, FaLock, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
+import { FaUser, FaImage, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import accountService, { type UpdateAccountData } from '../services/account.service';
-import authService from '../services/auth.service';
 import { useAuthStore } from '../store/auth.store';
 import { useToastStore } from '../store/toast.store';
 import { useAudioManager } from '../hooks/useAudioManager';
@@ -29,9 +28,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     password: ''
   });
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
-  const [verifyingPassword, setVerifyingPassword] = useState(false);
+  const [existingPassword, setExistingPassword] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,8 +58,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         setAvatarFile(null);
         setAvatarPreview(null);
         setConfirmPassword('');
-        setCurrentPassword('');
-        setIsPasswordVerified(false);
+        setExistingPassword('');
         setErrors({});
       }
     };
@@ -79,38 +75,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
   };
 
-  // Verify current password
-  const handleVerifyPassword = async () => {
-    if (!currentPassword.trim()) {
-      setErrors(prev => ({ ...prev, currentPassword: 'Enter your current password' }));
-      return;
-    }
-
-    setVerifyingPassword(true);
-    try {
-      // Use the dedicated verify-password endpoint (doesn't log user out on failure)
-      const result = await authService.verifyPassword(currentPassword);
-      
-      if (result.success) {
-        setIsPasswordVerified(true);
-        setErrors(prev => ({ ...prev, currentPassword: '' }));
-        addToast({
-          title: 'Access Granted',
-          message: 'Current password verified. You may now set a new password.',
-          type: 'success'
-        });
-      } else {
-        setErrors(prev => ({ ...prev, currentPassword: 'Invalid password. Access denied.' }));
-        setIsPasswordVerified(false);
-      }
-    } catch (error: any) {
-      console.error('Password verification failed:', error);
-      setErrors(prev => ({ ...prev, currentPassword: 'Invalid password. Access denied.' }));
-      setIsPasswordVerified(false);
-    } finally {
-      setVerifyingPassword(false);
-    }
-  };
 
   // Handle avatar file selection
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,22 +134,44 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
 
     // Password validation - only if password is being changed
-    if (formData.password || confirmPassword) {
-      // Must verify current password first
-      if (!isPasswordVerified) {
-        newErrors.password = 'You must verify your current password first';
-      } else {
-        if (formData.password && formData.password.length < 8) {
+    if (formData.password || confirmPassword || existingPassword) {
+      // If password is provided, existing password is required
+      if (formData.password && formData.password.trim().length > 0) {
+        if (!existingPassword || existingPassword.trim().length === 0) {
+          newErrors.existingPassword = 'Current password is required when changing password';
+        }
+
+        if (formData.password.length < 8) {
           newErrors.password = 'Password must be at least 8 characters';
         }
 
-        if (formData.password && formData.password !== confirmPassword) {
-          newErrors.confirmPassword = 'Passwords do not match';
+        if (!/[A-Z]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one uppercase letter';
         }
 
-        if (confirmPassword && !formData.password) {
-          newErrors.password = 'Please enter a password';
+        if (!/[a-z]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one lowercase letter';
         }
+
+        if (!/[0-9]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one number';
+        }
+
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one special character';
+        }
+
+        if (formData.password.length > 63) {
+          newErrors.password = 'Password must be 63 characters or less';
+        }
+      }
+
+      if (formData.password && formData.password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+
+      if (confirmPassword && !formData.password) {
+        newErrors.password = 'Please enter a password';
       }
     }
 
@@ -204,15 +190,16 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setLoading(true);
     try {
       // Prepare update data
-      const updateData: UpdateAccountData = {
+      const updateData: any = {
         email: formData.email,
         username: formData.username,
         bio: formData.bio || undefined
       };
 
-      // Only include password if it's provided
+      // Only include password and existing_password if password is being changed
       if (formData.password?.trim()) {
         updateData.password = formData.password;
+        updateData.existing_password = existingPassword;
       }
 
       // Add avatar if selected
@@ -395,133 +382,78 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <FaLock className="text-primary" />
-              <h4 className="text-sm font-mono text-primary">SECURITY_CREDENTIALS</h4>
+              <h4 className="text-sm font-mono text-primary">CHANGE_PASSWORD (leave empty to keep current)</h4>
             </div>
             
-            {!isPasswordVerified ? (
-              // Step 1: Verify current password
-              <div className="bg-base-300/50 border border-primary/30 p-4 space-y-3">
-                <div className="text-sm font-mono text-warning mb-2">
-                  <FaLock className="inline mr-2" />
-                  AUTHENTICATION REQUIRED :: VERIFY IDENTITY TO MODIFY CREDENTIALS
-                </div>
-                <div>
-                  <label className="block text-sm font-mono text-base-content/70 mb-1">
-                    CURRENT_PASSWORD
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      className={`input input-bordered flex-1 bg-base-100 text-base-content font-mono ${errors.currentPassword ? 'input-error' : ''}`}
-                      value={currentPassword}
-                      onChange={(e) => {
-                        setCurrentPassword(e.target.value);
-                        if (errors.currentPassword) {
-                          setErrors(prev => ({ ...prev, currentPassword: '' }));
-                        }
-                      }}
-                      placeholder="Enter current password to unlock"
-                      autoComplete="current-password"
-                      disabled={loading || verifyingPassword}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleVerifyPassword();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyPassword}
-                      className="btn btn-primary font-mono"
-                      disabled={loading || verifyingPassword || !currentPassword.trim()}
-                    >
-                      {verifyingPassword ? (
-                        <>
-                          <span className="loading loading-dots loading-xs"></span>
-                          VERIFYING...
-                        </>
-                      ) : (
-                        'VERIFY'
-                      )}
-                    </button>
-                  </div>
-                  {errors.currentPassword && (
-                    <p className="text-error text-xs mt-1 font-mono">{errors.currentPassword}</p>
-                  )}
-                </div>
-                <div className="text-xs text-base-content/50 font-mono">
-                  Skip this section if you don't want to change your password.
-                </div>
-              </div>
-            ) : (
-              // Step 2: Set new password (only shown after verification)
-              <div className="bg-success/10 border border-success/30 p-4 space-y-4">
-                <div className="text-sm font-mono text-success mb-2">
-                  <FaCheck className="inline mr-2" />
-                  ACCESS GRANTED :: CREDENTIALS VERIFIED :: NEW PASSWORD AUTHORIZED
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* New Password */}
-                  <div>
-                    <label className="block text-sm font-mono text-base-content/70 mb-1">
-                      NEW_PASSWORD
-                    </label>
-                    <input
-                      type="password"
-                      className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.password ? 'input-error' : ''}`}
-                      value={formData.password || ''}
-                      onChange={(e) => handleChange('password', e.target.value)}
-                      placeholder="Enter new password"
-                      autoComplete="new-password"
-                      disabled={loading}
-                    />
-                    {errors.password && (
-                      <p className="text-error text-xs mt-1 font-mono">{errors.password}</p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-mono text-base-content/70 mb-1">
-                      CONFIRM_PASSWORD
-                    </label>
-                    <input
-                      type="password"
-                      className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        // Clear confirm password error when user starts typing
-                        if (errors.confirmPassword) {
-                          setErrors(prev => ({ ...prev, confirmPassword: '' }));
-                        }
-                      }}
-                      placeholder="Confirm new password"
-                      autoComplete="new-password"
-                      disabled={loading}
-                    />
-                    {errors.confirmPassword && (
-                      <p className="text-error text-xs mt-1 font-mono">{errors.confirmPassword}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPasswordVerified(false);
-                    setCurrentPassword('');
-                    setFormData(prev => ({ ...prev, password: '' }));
-                    setConfirmPassword('');
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Old Password */}
+              <div>
+                <label className="block text-sm font-mono text-base-content/70 mb-1">
+                  CURRENT_PASSWORD
+                </label>
+                <input
+                  type="password"
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.existingPassword ? 'input-error' : ''}`}
+                  value={existingPassword}
+                  onChange={(e) => {
+                    setExistingPassword(e.target.value);
+                    if (errors.existingPassword) {
+                      setErrors(prev => ({ ...prev, existingPassword: '' }));
+                    }
                   }}
-                  className="btn btn-sm btn-ghost text-base-content/70 font-mono"
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
                   disabled={loading}
-                >
-                  ← CANCEL PASSWORD CHANGE
-                </button>
+                />
+                {errors.existingPassword && (
+                  <p className="text-error text-xs mt-1 font-mono">{errors.existingPassword}</p>
+                )}
               </div>
-            )}
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-mono text-base-content/70 mb-1">
+                  NEW_PASSWORD
+                </label>
+                <input
+                  type="password"
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.password ? 'input-error' : ''}`}
+                  value={formData.password || ''}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  placeholder="Enter new password"
+                  autoComplete="new-password"
+                  disabled={loading}
+                />
+                {errors.password && (
+                  <p className="text-error text-xs mt-1 font-mono">{errors.password}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-mono text-base-content/70 mb-1">
+                CONFIRM_NEW_PASSWORD
+              </label>
+              <input
+                type="password"
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  // Clear confirm password error when user starts typing
+                  if (errors.confirmPassword) {
+                    setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                  }
+                }}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+                disabled={loading}
+              />
+              {errors.confirmPassword && (
+                <p className="text-error text-xs mt-1 font-mono">{errors.confirmPassword}</p>
+              )}
+            </div>
           </div>
 
           {/* Warning */}
