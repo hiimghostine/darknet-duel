@@ -199,7 +199,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <VideoTutorial
-              videoSrc="/assets/videos/darknet-duel-tutorial.mp4"
+              videoSrc="https://youtu.be/m_xEwq1Qorg"
               title="Darknet Duel - Video Tutorial"
               onClose={() => setShowVideoTutorial(false)}
               onComplete={() => {

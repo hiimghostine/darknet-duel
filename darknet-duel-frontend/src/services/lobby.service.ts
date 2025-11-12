@@ -146,8 +146,20 @@ export const lobbyService = {
         };
       });
       
-      // Filter out private lobbies from public listing
-      const matches = allMatches.filter(match => !match.setupData.isPrivate);
+      // Filter out private lobbies, abandoned lobbies, and finished games from public listing
+      const matches = allMatches.filter(match => {
+        // Hide private lobbies
+        if (match.setupData.isPrivate) return false;
+        
+        // Hide abandoned lobbies
+        if (match.setupData.state === 'abandoned') return false;
+        
+        // Hide games that are in progress (optional - you can remove this if you want to show in-progress games)
+        // if (match.setupData.state === 'in_game') return false;
+        
+        return true;
+      });
+      
       return matches;
     } catch (error) {
       console.error('Failed to fetch matches:', error as Error);
