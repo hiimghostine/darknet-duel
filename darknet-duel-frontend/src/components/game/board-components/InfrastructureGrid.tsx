@@ -249,7 +249,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                   <div className="flex flex-wrap gap-1 justify-center">
                     {(infra as any).vulnerableVectors.slice(0, 3).map((vector: string, idx: number) => (
                       <div key={idx} className={`
-                        inline-block lg:text-[9px] text-[8px] rounded-full px-2 py-1 font-bold uppercase tracking-wide text-base-content
+                        inline-block lg:text-[10px] text-[9px] rounded-full px-2 py-1 font-bold uppercase tracking-wide text-white
                         ${vector === 'network' ? 'bg-blue-600' :
                           vector === 'web' ? 'bg-green-600' :
                           vector === 'social' ? 'bg-purple-600' :
@@ -270,12 +270,12 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
                 
                 {/* State indicator */}
                 <div className={`
-                  flex items-center justify-center gap-1.5 lg:text-[10px] text-[9px] font-bold px-2 py-1.5 rounded-lg uppercase text-center
-                  ${infra.state === 'compromised' ? 'bg-error/90 text-error-content border border-error' :
-                    infra.state === 'fortified' ? 'bg-info/90 text-info-content border border-info' :
-                    infra.state === 'vulnerable' ? 'bg-warning/90 text-warning-content border border-warning' :
-                    infra.state === 'shielded' ? 'bg-purple-600/90 text-purple-100 border border-purple-500' :
-                    'bg-success/90 text-success-content border border-success'}
+                  flex items-center justify-center gap-1.5 lg:text-[10px] text-[9px] font-bold px-2 py-1.5 rounded-lg uppercase text-center text-white
+                  ${infra.state === 'compromised' ? 'bg-error/90 border border-error' :
+                    infra.state === 'fortified' ? 'bg-info/90 border border-info' :
+                    infra.state === 'vulnerable' ? 'bg-warning/90 border border-warning' :
+                    infra.state === 'shielded' ? 'bg-purple-600/90 border border-purple-500' :
+                    'bg-success/90 border border-success'}
                 `}>
                   <div className="lg:w-3 lg:h-3 w-2.5 h-2.5">
                     {getInfraStateIcon(infra.state)}
@@ -298,12 +298,12 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <div className={`
-                    w-6 h-6 rounded-lg flex items-center justify-center
-                    ${infra.state === 'compromised' ? 'bg-error/90 text-error-content border border-error' :
-                      infra.state === 'fortified' ? 'bg-info/90 text-info-content border border-info' :
-                      infra.state === 'vulnerable' ? 'bg-warning/90 text-warning-content border border-warning' :
-                      infra.state === 'shielded' ? 'bg-purple-600/90 text-purple-100 border border-purple-500' :
-                      'bg-success/90 text-success-content border border-success'}
+                    w-6 h-6 rounded-lg flex items-center justify-center text-white
+                    ${infra.state === 'compromised' ? 'bg-error/90 border border-error' :
+                      infra.state === 'fortified' ? 'bg-info/90 border border-info' :
+                      infra.state === 'vulnerable' ? 'bg-warning/90 border border-warning' :
+                      infra.state === 'shielded' ? 'bg-purple-600/90 border border-purple-500' :
+                      'bg-success/90 border border-success'}
                   `}>
                     <div className="w-3.5 h-3.5">
                       {getInfraStateIcon(infra.state)}
@@ -328,15 +328,15 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               </div>
 
               {/* Infrastructure Name and Type */}
-              <div className="text-center mb-2 border-b border-current/30 pb-2">
-                <div className="font-bold text-sm text-base-content leading-tight mb-1">
+              <div className="text-center mb-1.5 border-b border-current/30 pb-1.5">
+                <div className="font-bold text-sm text-base-content leading-tight mb-0.5">
                   {infra.name}
                 </div>
-                <div className="text-xs opacity-70 uppercase text-base-content/70 font-semibold">
+                <div className="text-[11px] opacity-70 uppercase text-base-content/70 font-semibold">
                   {infra.type} Infrastructure
                 </div>
                 <div className={`
-                  mt-1 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase text-base-content
+                  mt-0.5 inline-block text-[10px] font-bold px-1.5 py-0.5 rounded uppercase text-white
                   ${infra.state === 'compromised' ? 'bg-red-600' :
                     infra.state === 'fortified' ? 'bg-blue-600' :
                     infra.state === 'vulnerable' ? 'bg-amber-600' :
@@ -348,27 +348,28 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               </div>
 
               {/* Infrastructure Description */}
-              <div className="flex-1 mb-2">
-                <div className="text-xs text-base-content/70 leading-tight mb-2">
+              <div className="flex-1 mb-1.5">
+                <div className="text-[11px] text-base-content/70 leading-tight mb-1.5">
                   {infra.description}
                 </div>
                 
-                {/* Vulnerabilities Section */}
-                {((infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0) || ((infra as any).vulnerabilities && (infra as any).vulnerabilities.length > 0) && (
-                  <div className="mb-2">
-                    <div className="text-[10px] font-bold text-error mb-1 uppercase">Vulnerable To:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {/* Show vulnerableVectors if available */}
-                      {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.map((vector: string, idx: number) => (
-                        <span key={`vector-${idx}`} className="text-[10px] text-error bg-error/10 rounded px-1.5 py-0.5">
-                          {vector.toUpperCase()}
-                        </span>
-                      ))}
-                      {/* Show vulnerabilities if available and different from vulnerableVectors */}
-                      {(infra as any).vulnerabilities && (infra as any).vulnerabilities.map((vuln: string, idx: number) => (
-                        <span key={`vuln-${idx}`} className="text-[10px] text-error bg-error/10 rounded px-1.5 py-0.5">
-                          {vuln.toUpperCase()}
-                        </span>
+                {/* Attack Vectors Section */}
+                {(infra as any).vulnerableVectors && (infra as any).vulnerableVectors.length > 0 && (
+                  <div className="mb-1.5">
+                    <div className="text-[10px] font-bold text-base-content/70 mb-0.5 uppercase">Attack Vectors:</div>
+                    <div className="flex flex-wrap gap-0.5">
+                      {(infra as any).vulnerableVectors.map((vector: string, idx: number) => (
+                        <div key={idx} className={`
+                          inline-block text-[10px] rounded-full px-2 py-0.5 font-bold uppercase tracking-wide text-white
+                          ${vector === 'network' ? 'bg-blue-600' :
+                            vector === 'web' ? 'bg-green-600' :
+                            vector === 'social' ? 'bg-purple-600' :
+                            vector === 'physical' ? 'bg-orange-600' :
+                            vector === 'malware' ? 'bg-red-600' :
+                            'bg-gray-600'}
+                        `}>
+                          {vector}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -376,7 +377,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
 
                 {/* Flavor Text */}
                 {(infra as any).flavor && (
-                  <div className="border-t border-current/20 pt-1.5">
+                  <div className="border-t border-current/20 pt-1">
                     <div className="text-[10px] italic text-warning leading-tight">
                       "{(infra as any).flavor}"
                     </div>
@@ -388,7 +389,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               <div className="text-center">
                 {/* Security Level Indicator */}
                 <div className={`
-                  text-[10px] font-bold py-0.5 px-1.5 rounded text-base-content
+                  text-[10px] font-bold py-0.5 px-1.5 rounded text-white
                   ${infra.state === 'compromised' ? 'bg-red-600' :
                     infra.state === 'fortified' ? 'bg-blue-600' :
                     infra.state === 'vulnerable' ? 'bg-amber-600' :
