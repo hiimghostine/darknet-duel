@@ -21,7 +21,7 @@ import GameError from '../ui/GameError';
 import GameInitializationScreen from './GameInitializationScreen';
 import './GameClient.css';
 import { playBGM, stopBGM } from '../../utils/audioHandler';
-import { useThemeStore } from '../../store/theme.store';
+import { useTheme, useToggleTheme } from '../../store/theme.store';
 import AppBar from '../AppBar';
 
 // Type declarations for debugging
@@ -351,7 +351,8 @@ const GameClient: React.FC = () => {
   const { matchID } = useParams<{ matchID: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
+  const theme = useTheme();
+  const toggleTheme = useToggleTheme();
   
   // Use the extracted credentials hook
   const {

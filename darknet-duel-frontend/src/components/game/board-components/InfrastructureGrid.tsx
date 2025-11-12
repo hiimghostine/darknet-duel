@@ -7,7 +7,7 @@ import {
 import type { GameState, InfrastructureCard } from '../../../types/game.types';
 import TemporaryEffectsDisplay from './TemporaryEffectsDisplay';
 import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 
 export interface InfrastructureGridProps {
   G: GameState;
@@ -35,7 +35,7 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
   const scaling = useResponsiveGameScaling();
   
   // Get theme for conditional styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
   
   // Get optimized infrastructure data
   const optimizedInfrastructureData = useMemo(() => ({

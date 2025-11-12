@@ -6,7 +6,7 @@ import type { GameState } from '../../../types/game.types';
 import type { BoardProps } from 'boardgame.io/react';
 
 // Import hooks
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme, useToggleTheme } from '../../../store/theme.store';
 import { useAudioManager } from '../../../hooks/useAudioManager';
 
 // Define props interface with exact properties needed
@@ -73,7 +73,8 @@ const GameControlsBar: React.FC<GameControlsBarProps> = ({
   tutorialInfo
 }) => {
   // Theme support
-  const { theme, toggleTheme } = useThemeStore();
+  const theme = useTheme();
+  const toggleTheme = useToggleTheme();
   
   // Audio manager for sound effects
   const { triggerClick } = useAudioManager();

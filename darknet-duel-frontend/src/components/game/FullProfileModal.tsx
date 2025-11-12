@@ -6,7 +6,7 @@ import accountService, { type AccountData } from '../../services/account.service
 import infoService, { type RecentActivityItem } from '../../services/info.service';
 import UserTypeTag from '../UserTypeTag';
 import logo from '../../assets/logo.png';
-import { useThemeStore } from '../../store/theme.store';
+import { useTheme } from '../../store/theme.store';
 
 interface FullProfileModalProps {
   userId: string;
@@ -25,7 +25,7 @@ const FullProfileModal: React.FC<FullProfileModalProps> = ({
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { theme } = useThemeStore();
+  const theme = useTheme();
 
   // Fetch user data
   useEffect(() => {

@@ -14,20 +14,39 @@ const getInitialTheme = (): Theme => {
   return 'cyberpunk';
 };
 
+// Helper function to update theme with View Transition API
+const updateThemeWithTransition = (newTheme: Theme) => {
+  const doc = document as any;
+  
+  // Check if View Transition API is supported
+  if (doc.startViewTransition) {
+    doc.startViewTransition(() => {
+      document.documentElement.setAttribute('data-theme', newTheme);
+    });
+  } else {
+    // Fallback for browsers that don't support View Transition API
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }
+};
+
 export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: getInitialTheme(),
   setTheme: (theme) => {
     set({ theme });
     localStorage.setItem('theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeWithTransition(theme);
   },
   toggleTheme: () => {
     const newTheme = get().theme === 'cyberpunk' ? 'cyberpunk-dark' : 'cyberpunk';
     set({ theme: newTheme });
     localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    updateThemeWithTransition(newTheme);
   },
 }));
+
+// Optimized selectors to prevent unnecessary re-renders
+export const useTheme = () => useThemeStore((state) => state.theme);
+export const useToggleTheme = () => useThemeStore((state) => state.toggleTheme);
 
 // Listen for storage events to sync theme across tabs
 if (typeof window !== 'undefined') {

@@ -48,7 +48,7 @@ import SharedEffectsDisplay from './board-components/SharedEffectsDisplay';
 
 // Import audio SFX triggers
 import { useAudioManager } from '../../hooks/useAudioManager';
-import { useThemeStore } from '../../store/theme.store';
+import { useTheme } from '../../store/theme.store';
 
 // Import auto-reaction timer
 import { useAutoReactionTimer } from '../../hooks/useAutoReactionTimer';
@@ -581,7 +581,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
   // Theme support - still needed for main component styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
 
   // Loading state
   if (!memoizedG || !memoizedCtx) {

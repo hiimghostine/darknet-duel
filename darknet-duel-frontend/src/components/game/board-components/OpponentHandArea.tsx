@@ -11,7 +11,7 @@ import type { GameComponentProps } from './types';
 
 // Import hooks
 import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 import type { ConnectionStatus } from '../../../hooks/useHeartbeat';
 
 // Define props interface extending GameComponentProps
@@ -34,7 +34,7 @@ const OpponentHandArea: React.FC<OpponentHandAreaProps> = ({
   const scaling = useResponsiveGameScaling();
   
   // Get theme for conditional styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
   
   // Profile popup state
   const [profilePopup, setProfilePopup] = useState({

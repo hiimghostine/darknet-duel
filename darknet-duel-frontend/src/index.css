@@ -33,9 +33,31 @@ html[data-theme='cyberpunk-dark'] {
   --color-primary-glow: rgba(255, 37, 91, 0.5);
 }
 
-/* Apply theme transition to the entire HTML document and all its children */
+/* 
+ * Theme Transition Optimization
+ * Use view-transition API for smooth theme changes without white flash
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    /* Enable view transitions for smooth theme switching */
+    view-transition-name: root;
+  }
+}
+
+/* Disable automatic transitions globally to prevent performance issues */
 html, html * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: none !important;
+}
+
+/* Only enable transitions for specific interactive elements */
+button, a, input, select, textarea,
+.btn, .card, .modal, .dropdown,
+[class*="hover:"], [class*="focus:"] {
+  transition: background-color 0.15s ease, 
+              color 0.15s ease, 
+              border-color 0.15s ease,
+              opacity 0.15s ease,
+              transform 0.15s ease !important;
 }
 
 /* Cyberpunk styling utilities */
