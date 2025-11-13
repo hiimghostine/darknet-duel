@@ -6,7 +6,7 @@ import type { GameComponentProps } from './types';
 
 // Import hooks
 import { useAudioManager } from '../../../hooks/useAudioManager';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 
 // Define props interface extending GameComponentProps
 export interface GameStatusOverlaysProps extends GameComponentProps {
@@ -39,7 +39,7 @@ const GameStatusOverlays: React.FC<GameStatusOverlaysProps> = ({
   const { triggerClick } = useAudioManager();
   
   // Get theme for conditional styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
 
   return (
     <>

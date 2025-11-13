@@ -21,22 +21,19 @@ import SecurityOverviewPage from './pages/SecurityOverviewPage';
 import StorePage from './pages/StorePage';
 import SettingsModal from './components/SettingsModal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import { useThemeStore } from './store/theme.store';
 import { useSettingsStore } from './store/settings.store';
 import { useLobbyReconnect } from './hooks/useLobbyReconnect';
 
 function AppContent() {
   const { loadUser } = useAuthStore();
   const { toasts, removeToast } = useToastStore();
-  const { theme } = useThemeStore();
   const { isSettingsOpen, closeSettings } = useSettingsStore();
   const { reconnecting } = useLobbyReconnect();
   
   useEffect(() => {
     // Check authentication status when app loads
     loadUser();
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [loadUser, theme]);
+  }, [loadUser]);
 
   // Show reconnecting overlay
   if (reconnecting) {

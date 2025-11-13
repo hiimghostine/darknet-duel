@@ -1,12 +1,12 @@
 import React from 'react';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 
 interface GameBackgroundElementsProps {
   isAttacker: boolean;
 }
 
 const GameBackgroundElements: React.FC<GameBackgroundElementsProps> = ({ isAttacker }) => {
-  const { theme } = useThemeStore();
+  const theme = useTheme();
   return (
     <>
       {/* Team-colored cyberpunk background grid */}

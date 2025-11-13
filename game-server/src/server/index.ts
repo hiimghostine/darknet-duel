@@ -1153,20 +1153,22 @@ const startGameOverMonitoring = () => {
                 status: 'completed'
               });
               
-              // Immediately remove the completed game from database
-              try {
-                await server.db.wipe(matchID);
-                console.log(`✅ Removed completed/abandoned game ${matchID} from database`);
-              } catch (wipeErr) {
-                console.error(`❌ Failed to wipe game ${matchID}:`, wipeErr);
-                // Don't throw - game is still marked as completed in our tracking
-              }
+              // ✅ FIX: Delay game wipe to allow players to view winner screen and refresh
+              // Players can stay on the winner screen for up to 10 minutes without the game restarting
+              setTimeout(async () => {
+                try {
+                  await server.db.wipe(matchID);
+                  console.log(`✅ Removed completed game ${matchID} from database (after 10 minute delay)`);
+                } catch (wipeErr) {
+                  console.error(`❌ Failed to wipe game ${matchID}:`, wipeErr);
+                }
+              }, 600000); // 10 minutes delay before wiping
               
-              // Clean up from processing map after successful completion (with delay)
+              // Clean up from processing map after game is wiped (with delay)
               setTimeout(() => {
                 processingStates.delete(matchID);
                 console.log(`🧹 Cleaned up processing state for ${matchID}`);
-              }, 60000); // Keep for 1 minute to prevent immediate re-processing if wipe failed
+              }, 610000); // Keep for 10 minutes + 10 seconds to ensure game is wiped first
               
             } catch (processingError) {
               // Mark as failed so it can be retried

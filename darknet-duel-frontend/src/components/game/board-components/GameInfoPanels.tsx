@@ -4,7 +4,7 @@ import type { GameState } from '../../../types/game.types';
 import PlayerBoard from './PlayerBoard';
 import PowerBar from './PowerBar';
 import ActionLog from './ActionLog';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 
 interface GameInfoPanelsProps {
   G: GameState;
@@ -36,7 +36,7 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
   optimizedInfrastructureData
 }) => {
   // Get theme for conditional styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
   
   // Common props to pass to child components
   const commonProps = {

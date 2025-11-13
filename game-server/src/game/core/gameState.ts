@@ -44,6 +44,12 @@ export const checkGameEnd = (G: GameState) => {
     return undefined;
   }
   
+  // ✅ FIX: Check if game is already over (handles page refresh after game ends)
+  if (G.gamePhase === 'gameOver' && G.winner) {
+    console.log(`🎮 Game already finished with winner: ${G.winner}`);
+    return { winner: G.winner };
+  }
+  
   // Check for infrastructure control win condition
   if (G.infrastructure && G.infrastructure.length > 0) {
     // Count controlled infrastructure for each side

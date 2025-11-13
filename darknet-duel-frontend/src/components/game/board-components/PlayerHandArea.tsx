@@ -16,7 +16,7 @@ import { isReactiveCardObject } from '../../../types/card.types';
 // Import hooks
 import { useAudioManager } from '../../../hooks/useAudioManager';
 import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
-import { useThemeStore } from '../../../store/theme.store';
+import { useTheme } from '../../../store/theme.store';
 import type { ConnectionStatus } from '../../../hooks/useHeartbeat';
 
 // Define props interface extending GameComponentProps
@@ -64,7 +64,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
   const scaling = useResponsiveGameScaling();
   
   // Get theme for conditional styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
   
   // Profile popup state
   const [profilePopup, setProfilePopup] = useState({
