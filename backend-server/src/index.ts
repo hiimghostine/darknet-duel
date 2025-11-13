@@ -215,26 +215,55 @@ async function initializeDatabase() {
     await AppDataSource.initialize();
     console.log('Database connection established successfully');
 
-    // Check if tables exist by querying the accounts table
+    // Check if all expected tables exist by querying each entity's table
+    const queryRunner = AppDataSource.createQueryRunner();
+    let needsSynchronize = false;
+    
     try {
-      const queryRunner = AppDataSource.createQueryRunner();
-      await queryRunner.query('SELECT 1 FROM accounts LIMIT 1');
-      await queryRunner.release();
-      console.log('Database tables already exist');
-    } catch (error) {
-      // Check if error is due to table not existing
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("doesn't exist") || 
-          errorMessage.includes("Unknown table") || 
-          (errorMessage.includes("Table") && errorMessage.includes("not found"))) {
-        // Tables don't exist, synchronize them
-        console.log('Database tables not found. Creating tables from entities...');
-        await AppDataSource.synchronize();
-        console.log('Database tables created successfully');
-      } else {
-        // Different error - might be permissions or connection issue
-        console.warn('Could not verify table existence, but continuing anyway:', errorMessage);
+      // Get all entity metadata to check their corresponding tables
+      const entityMetadatas = AppDataSource.entityMetadatas;
+      const missingTables: string[] = [];
+      
+      for (const metadata of entityMetadatas) {
+        const tableName = metadata.tableName;
+        try {
+          // Try to query the table to see if it exists
+          await queryRunner.query(`SELECT 1 FROM \`${tableName}\` LIMIT 1`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          // Check if error is due to table not existing
+          if (errorMessage.includes("doesn't exist") || 
+              errorMessage.includes("Unknown table") || 
+              (errorMessage.includes("Table") && errorMessage.includes("not found"))) {
+            missingTables.push(tableName);
+            needsSynchronize = true;
+          } else {
+            // Different error - might be permissions or connection issue
+            console.warn(`Could not verify table '${tableName}' existence:`, errorMessage);
+          }
+        }
       }
+      
+      if (needsSynchronize) {
+        console.log(`Missing tables detected: ${missingTables.join(', ')}`);
+        console.log('Synchronizing database schema to create missing tables...');
+        await AppDataSource.synchronize();
+        console.log('Database tables synchronized successfully');
+      } else {
+        console.log('All database tables exist');
+      }
+    } catch (error) {
+      console.error('Error checking table existence:', error);
+      // If we can't check, try to synchronize anyway (safer than failing)
+      console.log('Attempting to synchronize database schema...');
+      try {
+        await AppDataSource.synchronize();
+        console.log('Database tables synchronized successfully');
+      } catch (syncError) {
+        console.warn('Could not synchronize database:', syncError);
+      }
+    } finally {
+      await queryRunner.release();
     }
 
     // Initialize Socket.io chat service
