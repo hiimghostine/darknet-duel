@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormProps {
   onToggleForm: () => void;
@@ -20,9 +21,10 @@ type LoginFormData = z.infer<typeof LoginSchema>;
 const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
   const [showAuthErrorFlash, setShowAuthErrorFlash] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, clearError } = useAuthStore();
   const { triggerClick, triggerError, triggerNotification } = useAudioManager();
-  
+
   const {
     register,
     handleSubmit,
@@ -35,7 +37,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       password: ''
     }
   });
-  
+
   // Clear error when typing
   React.useEffect(() => {
     if (error) {
@@ -43,7 +45,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       return () => subscription.unsubscribe();
     }
   }, [error, watch, clearError]);
-  
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       triggerClick();
@@ -54,16 +56,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
-      
+
       // Show auth error flash animation (red flash + vibration for 500ms)
       setShowAuthErrorFlash(true);
       setTimeout(() => setShowAuthErrorFlash(false), 500);
-      
+
       // Note: The actual error handling is managed by the auth store
       console.error('Authentication error:', error);
     }
   };
-  
+
   return (
     <div className="w-full">
       {/* Error display with animation */}
@@ -76,7 +78,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           </div>
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="space-y-3">
           <div>
@@ -106,15 +108,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
             </label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
                 className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''} ${showErrorAnimation ? 'border-error' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
                 {...register('password')}
                 disabled={isLoading}
               />
-              <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
-                <span className="text-xs font-mono">SEC</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerClick();
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/50 hover:text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             {errors.password && (
               <div className="text-error text-xs mt-1 font-mono">{errors.password.message}</div>
@@ -122,8 +131,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           </div>
 
           <div className="mt-4">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''} ${showAuthErrorFlash ? 'auth-error-flash' : ''}`}
               disabled={isLoading}
             >
@@ -144,11 +153,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleForm }) => {
           </div>
         </div>
       </form>
-      
+
       {/* Register link */}
       <div className="mt-3 pt-2 border-t border-base-content/10 text-center font-mono text-xs">
         <div className="text-base-content/70 mb-0.5">NEW USER REGISTRATION</div>
-        <button 
+        <button
           onClick={() => {
             triggerClick();
             onToggleForm();

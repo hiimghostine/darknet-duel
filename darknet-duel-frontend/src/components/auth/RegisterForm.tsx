@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { Eye, EyeOff } from 'lucide-react';
 // Toasts are centralized in the auth store; avoid direct toast calls here
 
 interface RegisterFormProps {
@@ -38,10 +39,12 @@ type RegisterFormData = z.infer<typeof RegisterSchema>;
 const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
   const { triggerClick, triggerError, triggerNotification } = useAudioManager();
-  
+
   const {
     register,
     handleSubmit,
@@ -56,7 +59,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       confirmPassword: ''
     }
   });
-  
+
   // Clear error when typing
   React.useEffect(() => {
     if (error) {
@@ -64,8 +67,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       return () => subscription.unsubscribe();
     }
   }, [error, watch, clearError]);
-  
-  
+
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       triggerClick();
@@ -74,27 +77,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
         email: data.email,
         password: data.password
       };
-      
+
       await registerUser(userData);
       triggerNotification();
       setSuccessMessage('Registration successful! Redirecting to your dashboard...');
-      
+
       // Success toast handled by auth store
-      
+
       // Redirect will be handled by the parent component
     } catch (error: any) {
       triggerError();
-      
+
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
-      
+
       // Error toast handled by auth store
-      
+
       console.error('Registration error:', error);
     }
   };
-  
+
   return (
     <div className="w-full">
       {/* Error display with animation */}
@@ -183,15 +186,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             </label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Create a secure password"
                 className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''}`}
                 {...register('password')}
                 disabled={isLoading || !!successMessage}
               />
-              <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
-                <span className="text-xs font-mono">SEC</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerClick();
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/50 hover:text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             <div className="text-xs text-primary/70 mt-1 font-mono">8-63 chars, 1 upper, 1 lower, 1 number, 1 special</div>
             {errors.password && (
@@ -205,15 +215,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             </label>
             <div className="relative">
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Confirm your password"
                 className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.confirmPassword ? 'border-error' : ''}`}
                 {...register('confirmPassword')}
                 disabled={isLoading || !!successMessage}
               />
-              <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
-                <span className="text-xs font-mono">VER</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerClick();
+                  setShowConfirmPassword(!showConfirmPassword);
+                }}
+                className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/50 hover:text-primary transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             {errors.confirmPassword && (
               <div className="text-error text-xs mt-1 font-mono">{errors.confirmPassword.message}</div>
@@ -221,8 +238,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
           </div>
 
           <div className="mt-3">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''}`}
               disabled={isLoading || !!successMessage}
             >
@@ -247,7 +264,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       {/* Login link */}
       <div className="mt-3 pt-2 border-t border-base-content/10 text-center font-mono text-xs">
         <div className="text-base-content/70 mb-0.5">EXISTING USER LOGIN</div>
-        <button 
+        <button
           onClick={() => {
             triggerClick();
             onToggleForm();
