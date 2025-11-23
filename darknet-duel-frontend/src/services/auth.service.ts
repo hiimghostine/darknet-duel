@@ -71,9 +71,18 @@ class AuthService {
   /**
    * Logout the current user
    */
-  logout(): void {
+  async logout(): Promise<void> {
+    try {
+      // Call logout endpoint to invalidate session on server
+      await api.get('/auth/logout');
+    } catch (error) {
+      // Even if API call fails, clear local storage
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Always clear local storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    }
   }
   
   /**
@@ -96,6 +105,14 @@ class AuthService {
       }
     }
     return null;
+  }
+
+  /**
+   * Verify current user's password (for sensitive operations)
+   */
+  async verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/verify-password', { password });
+    return response.data;
   }
 }
 

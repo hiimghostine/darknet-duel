@@ -161,4 +161,41 @@ export class AccountService {
     const { password, avatar, avatarMimeType, ...accountWithoutSensitiveData } = account;
     return accountWithoutSensitiveData;
   }
+
+  /**
+   * Anonymize a user account (soft delete)
+   * Sets email to inactive-{uuid}@darknetduel.com, password to "0", 
+   * isActive to false, clears bio, avatar, and decoration
+   */
+  async anonymizeAccount(id: string, password: string): Promise<boolean> {
+    // Get current account
+    const account = await this.accountRepository.findOne({ where: { id } });
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, account.password);
+    if (!isPasswordValid) {
+      throw new Error('Invalid password');
+    }
+
+    // Anonymize the account
+    await this.accountRepository.update(
+      { id },
+      {
+        email: `inactive-${id}@darknetduel.com`,
+        username: `inactive-${id}`,
+        password: '0', // Invalid password hash
+        isActive: false,
+        bio: undefined, // Clear bio (TypeORM uses undefined to set nullable fields to null)
+        avatar: undefined, // Clear avatar (TypeORM uses undefined to set nullable fields to null)
+        avatarMimeType: undefined, // Clear avatar MIME type (TypeORM uses undefined to set nullable fields to null)
+        decoration: undefined, // Clear decoration (TypeORM uses undefined to set nullable fields to null)
+        inactiveReason: 'Deleted user'
+      }
+    );
+
+    return true;
+  }
 } 

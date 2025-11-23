@@ -3,6 +3,7 @@ import { useAudioStore } from '../store/audio.store';
 import { audioHandler } from '../utils/audioHandler';
 import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
+import { Volume2, VolumeX, X } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { theme } = useThemeStore();
   const { triggerClick } = useAudioManager();
-  
+
   const {
     bgmVolume,
     sfxVolume,
@@ -88,9 +89,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
-      style={{ 
+      style={{
         zIndex: 999999,
         position: 'fixed',
         top: 0,
@@ -99,22 +100,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         bottom: 0
       }}
     >
-      <div 
+      <div
         ref={modalRef}
-        className={`rounded-lg p-6 w-full max-w-md mx-4 border shadow-2xl ${
-          theme === 'cyberpunk' 
-            ? 'bg-base-100 border-primary/30 text-base-content' 
-            : 'bg-base-200 border-base-300 text-base-content'
-        }`}
-        style={{ 
+        className={`rounded-lg p-6 w-full max-w-md mx-4 border shadow-2xl ${theme === 'cyberpunk'
+          ? 'bg-base-100 border-primary/30 text-base-content'
+          : 'bg-base-200 border-base-300 text-base-content'
+          }`}
+        style={{
           zIndex: 1000000,
           position: 'relative'
         }}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-xl font-bold ${
-            theme === 'cyberpunk' ? 'text-primary' : 'text-base-content'
-          }`}>
+          <h2 className={`text-xl font-bold ${theme === 'cyberpunk' ? 'text-primary' : 'text-base-content'
+            }`}>
             AUDIO SETTINGS
           </h2>
           <button
@@ -122,19 +121,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               triggerClick();
               onClose();
             }}
-            className={`btn btn-ghost btn-sm ${
-              theme === 'cyberpunk' ? 'text-primary hover:text-primary/70' : 'text-base-content hover:text-base-content/70'
-            }`}
+            className={`btn btn-ghost btn-sm ${theme === 'cyberpunk' ? 'text-primary hover:text-primary/70' : 'text-base-content hover:text-base-content/70'
+              }`}
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           {/* BGM Settings */}
-          <div className={`card p-5 w-full ${
-            theme === 'cyberpunk' ? 'bg-base-200' : 'bg-base-100'
-          }`}>
+          <div className={`card p-5 w-full ${theme === 'cyberpunk' ? 'bg-base-200' : 'bg-base-100'
+            }`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-base-content">Background Music</h3>
               <label className="swap swap-rotate">
@@ -144,11 +141,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   onChange={handleBgmToggle}
                   className="swap-input"
                 />
-                <div className="swap-on">🔊</div>
-                <div className="swap-off">🔇</div>
+                <div className="swap-on p-2 rounded-lg bg-primary/20 text-primary"><Volume2 className="w-5 h-5" /></div>
+                <div className="swap-off p-2 rounded-lg bg-base-300 text-base-content/50"><VolumeX className="w-5 h-5" /></div>
               </label>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-base-content">Volume</span>
@@ -168,9 +165,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* SFX Settings */}
-          <div className={`card p-5 w-full ${
-            theme === 'cyberpunk' ? 'bg-base-200' : 'bg-base-100'
-          }`}>
+          <div className={`card p-5 w-full ${theme === 'cyberpunk' ? 'bg-base-200' : 'bg-base-100'
+            }`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-base-content">Sound Effects</h3>
               <label className="swap swap-rotate">
@@ -180,11 +176,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   onChange={handleSfxToggle}
                   className="swap-input"
                 />
-                <div className="swap-on">🔊</div>
-                <div className="swap-off">🔇</div>
+                <div className="swap-on p-2 rounded-lg bg-secondary/20 text-secondary"><Volume2 className="w-5 h-5" /></div>
+                <div className="swap-off p-2 rounded-lg bg-base-300 text-base-content/50"><VolumeX className="w-5 h-5" /></div>
               </label>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-base-content">Volume</span>
@@ -206,25 +202,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   testSFX();
                 }}
                 disabled={!sfxEnabled}
-                className={`btn btn-secondary btn-sm w-full ${
-                  theme === 'cyberpunk' ? 'btn-cyberpunk' : ''
-                }`}
+                className={`btn btn-secondary btn-sm w-full ${theme === 'cyberpunk' ? 'btn-cyberpunk' : ''
+                  }`}
               >
                 Test Sound
               </button>
-            </div>
-          </div>
-
-          {/* Info Section */}
-          <div className={`card p-5 w-full ${
-            theme === 'cyberpunk' ? 'bg-base-200' : 'bg-base-100'
-          }`}>
-            <h3 className="text-lg font-semibold mb-2 text-base-content">Audio Information</h3>
-            <div className="text-sm space-y-1 text-base-content/80">
-              <p>• Background music plays on most pages except Home, Auth, Game, and Admin pages</p>
-              <p>• Sound effects trigger on user interactions like clicks and form submissions</p>
-              <p>• Settings are automatically saved and persist between sessions</p>
-              <p>• Volume fades during page transitions for smooth audio experience</p>
             </div>
           </div>
         </div>

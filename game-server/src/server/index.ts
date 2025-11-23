@@ -81,7 +81,7 @@ server.router.use(async (ctx, next) => {
     }
     return; // We've already called next() above
   }
-  // Intercept lobby join requests to capture real user data
+  // Intercept lobby join requests to validate and capture real user data
   if (ctx.request.path.includes('/games/darknet-duel/') && 
       ctx.request.path.includes('/join') && 
       ctx.request.method === 'POST') {
@@ -109,16 +109,61 @@ server.router.use(async (ctx, next) => {
           
           // Extract real user data from lobby metadata
           const realUserMap: Record<string, { id: string; name: string }> = {};
+          const userIdCounts: Record<string, number> = {};
           
           Object.entries(matchData.metadata.players).forEach(([playerId, playerMeta]: [string, any]) => {
             if (playerMeta && playerMeta.data && playerMeta.data.realUserId && playerMeta.data.realUsername) {
+              const userId = playerMeta.data.realUserId;
+              
+              // Track how many times each user ID appears
+              userIdCounts[userId] = (userIdCounts[userId] || 0) + 1;
+              
               realUserMap[playerId] = {
-                id: playerMeta.data.realUserId,
+                id: userId,
                 name: playerMeta.data.realUsername
               };
-              console.log(`✅ Found real user data for player ${playerId}: ${playerMeta.data.realUsername} (${playerMeta.data.realUserId})`);
+              console.log(`✅ Found real user data for player ${playerId}: ${playerMeta.data.realUsername} (${userId})`);
             }
           });
+          
+          // ✅ VALIDATION: Check if the same user joined twice
+          const duplicateUserIds = Object.entries(userIdCounts).filter(([_, count]) => count > 1);
+          if (duplicateUserIds.length > 0) {
+            console.log(`❌ Detected duplicate user in lobby ${matchID}:`, duplicateUserIds);
+            
+            // Find the player who just joined (the one with the highest player ID with this user ID)
+            const duplicateUserId = duplicateUserIds[0][0];
+            const playersWithDuplicateId = Object.entries(matchData.metadata.players)
+              .filter(([_, playerMeta]: [string, any]) => 
+                playerMeta?.data?.realUserId === duplicateUserId
+              )
+              .map(([playerId]) => playerId);
+            
+            if (playersWithDuplicateId.length > 1) {
+              // Remove the player with the higher ID (the one who just joined)
+              const playerToRemove = playersWithDuplicateId.sort().pop();
+              
+              if (playerToRemove) {
+                console.log(`🚫 Removing duplicate player ${playerToRemove} from lobby ${matchID}`);
+                
+                // Update metadata to remove the duplicate player
+                const updatedPlayers = { ...matchData.metadata.players };
+                delete updatedPlayers[playerToRemove];
+                
+                const updatedMetadata = {
+                  ...matchData.metadata,
+                  players: updatedPlayers
+                };
+                
+                await server.db.setMetadata(matchID, updatedMetadata);
+                
+                // Return error to the client
+                ctx.status = 403;
+                ctx.body = { error: 'You cannot join your own lobby' };
+                return;
+              }
+            }
+          }
           
           // If we have real user data and the game state exists, update the player objects
           if (Object.keys(realUserMap).length > 0 && matchData.state.G) {
@@ -298,6 +343,166 @@ if (server.app) {
       console.error('Error handling leave notification:', error);
       ctx.body = { error: 'Internal server error' };
       ctx.status = 500;
+    }
+  });
+  
+  // ============================================
+  // Custom endpoint for ATOMIC player position swap
+  // This swaps ALL data between player 0 and player 1
+  // ============================================
+  server.router.post('/games/:name/:id/swap-positions', parseJsonBody, async (ctx) => {
+    const { name, id } = ctx.params;
+    const { playerID, credentials } = ctx.request.body as { playerID: string; credentials: string };
+    
+    console.log(`🔄 POSITION SWAP request for match ${id} from player ${playerID}`);
+    
+    try {
+      // Fetch current match data with BOTH metadata and state
+      const matchData = await server.db.fetch(id, { metadata: true, state: true });
+      
+      if (!matchData || !matchData.metadata) {
+        ctx.status = 404;
+        ctx.body = { error: 'Match not found' };
+        return;
+      }
+      
+      const metadata = matchData.metadata;
+      
+      // Verify requesting player credentials
+      if (!metadata.players?.[playerID] || metadata.players[playerID].credentials !== credentials) {
+        ctx.status = 403;
+        ctx.body = { error: 'Invalid credentials' };
+        return;
+      }
+      
+      // Get both players
+      const player0 = metadata.players['0'];
+      const player1 = metadata.players['1'];
+      
+      if (!player0 || !player1 || !player0.name || !player1.name) {
+        ctx.status = 400;
+        ctx.body = { error: 'Both players must be present to swap positions' };
+        return;
+      }
+      
+      // Check if the OTHER player has requested the swap
+      const otherPlayerId = playerID === '0' ? '1' : '0';
+      const otherPlayer = metadata.players[otherPlayerId];
+      
+      console.log(`🔍 Swap validation:`);
+      console.log(`   - Requesting player: ${playerID}`);
+      console.log(`   - Requesting player swapAccepted: ${player0.id === parseInt(playerID) ? player0.data?.swapAccepted : player1.data?.swapAccepted}`);
+      console.log(`   - Other player: ${otherPlayerId}`);
+      console.log(`   - Other player swapRequested: ${otherPlayer.data?.swapRequested}`);
+      
+      // The accepting player calls this endpoint after setting swapAccepted=true
+      // We need to verify the OTHER player has swapRequested=true
+      if (!otherPlayer.data?.swapRequested) {
+        ctx.status = 400;
+        ctx.body = { error: 'Other player must request swap first' };
+        return;
+      }
+      
+      console.log(`✅ Both players agreed to swap. Swapping positions...`);
+      
+      // ============================================
+      // ATOMIC SWAP: Exchange ALL player data
+      // ============================================
+      
+      // Store player credentials - these will ALSO be swapped
+      const player0OldCredentials = player0.credentials;
+      const player1OldCredentials = player1.credentials;
+      
+      // Create swapped player objects
+      // Player 0 gets player 1's data AND credentials
+      // Player 1 gets player 0's data AND credentials
+      const swappedPlayer0 = {
+        id: 0,
+        name: player1.name,
+        credentials: player1OldCredentials, // ✅ Swap credentials with the player!
+        data: {
+          ...(player1.data || {}),
+          swapAccepted: false, // Clear swap flags
+          swapRequested: false,
+          isReady: false // Reset ready status after swap
+        },
+        isConnected: player1.isConnected
+      };
+      
+      const swappedPlayer1 = {
+        id: 1,
+        name: player0.name,
+        credentials: player0OldCredentials, // ✅ Swap credentials with the player!
+        data: {
+          ...(player0.data || {}),
+          swapAccepted: false, // Clear swap flags
+          swapRequested: false,
+          isReady: false // Reset ready status after swap
+        },
+        isConnected: player0.isConnected
+      };
+      
+      // Update metadata with swapped players
+      const updatedMetadata = {
+        ...metadata,
+        players: {
+          '0': swappedPlayer0,
+          '1': swappedPlayer1
+        },
+        updatedAt: Date.now()
+      };
+      
+      await server.db.setMetadata(id, updatedMetadata);
+      
+      // ============================================
+      // Update game state if it exists
+      // ============================================
+      if (matchData.state && matchData.state.G) {
+        const gameState = matchData.state.G;
+        
+        // Update playerUuidMap if it exists
+        if (gameState.playerUuidMap) {
+          const oldPlayer0Uuid = gameState.playerUuidMap['0'];
+          const oldPlayer1Uuid = gameState.playerUuidMap['1'];
+          
+          if (oldPlayer0Uuid && oldPlayer1Uuid) {
+            gameState.playerUuidMap = {
+              '0': oldPlayer1Uuid,
+              '1': oldPlayer0Uuid
+            };
+            console.log('✅ Updated playerUuidMap in game state');
+          }
+        }
+        
+        // Save updated game state
+        await server.db.setState(id, matchData.state);
+      }
+      
+      // ============================================
+      // Return swap confirmation
+      // ============================================
+      
+      const swapResult = {
+        success: true,
+        swapped: true,
+        // Tell each client what their NEW player ID is
+        newPlayerIdFor: {
+          [player0OldCredentials]: '1', // Player 0's connection is now player 1
+          [player1OldCredentials]: '0'  // Player 1's connection is now player 0
+        }
+      };
+      
+      console.log(`✅ Position swap complete for match ${id}`);
+      console.log(`   - ${swappedPlayer1.name} (was player 0) → now player 1 (DEFENDER)`);
+      console.log(`   - ${swappedPlayer0.name} (was player 1) → now player 0 (ATTACKER)`);
+      
+      ctx.status = 200;
+      ctx.body = swapResult;
+      
+    } catch (error) {
+      console.error('❌ Error swapping positions:', error);
+      ctx.status = 500;
+      ctx.body = { error: 'Failed to swap positions' };
     }
   });
 }
@@ -836,6 +1041,13 @@ server.run(PORT, () => {
 // Define types for boardgame.io server match data
 type ServerMatchData = any; // Using any because boardgame.io's exact server types are complex
 
+// Processing state tracker to prevent race conditions
+interface ProcessingState {
+  matchID: string;
+  startedAt: number;
+  status: 'processing' | 'completed' | 'failed';
+}
+
 // Function to check all active games for completion and send results to backend
 const startGameOverMonitoring = () => {
   if (!server.db) {
@@ -845,25 +1057,42 @@ const startGameOverMonitoring = () => {
   
   // Check every 3 seconds for completed games that need to be processed
   const MONITOR_INTERVAL = 3000; // 3 seconds
-  const processedGames = new Set<string>(); // Keep track of games we've already processed
+  const PROCESSING_TIMEOUT = 30000; // 30 seconds - mark as stale if processing takes longer
+  
+  // Track processing state with metadata (not just a Set)
+  const processingStates = new Map<string, ProcessingState>();
   
   const gameOverMonitoringInterval = setInterval(async () => {
     try {
+      // Clean up stale processing states (stuck for >30 seconds)
+      const now = Date.now();
+      for (const [matchID, state] of processingStates.entries()) {
+        if (state.status === 'processing' && (now - state.startedAt) > PROCESSING_TIMEOUT) {
+          console.warn(`⚠️ Game ${matchID} processing timed out after ${PROCESSING_TIMEOUT/1000}s - removing stale lock`);
+          processingStates.delete(matchID);
+        }
+      }
+      
       // Get list of all matches
       const matches = await server.db.listMatches();
       if (!matches || !matches.length) return;
       
-      console.log(`DEBUG: Checking ${matches.length} games for completion status...`);
+      console.log(`🔍 Checking ${matches.length} games for completion status...`);
       
       // For each match, check if it's in a game over state
       for (const matchID of matches) {
-        // Skip if we've already processed this game
-        if (processedGames.has(matchID)) {
-          console.log(`DEBUG: Skipping already processed game ${matchID}`);
-          continue;
+        // ✅ ATOMIC CHECK: Skip if already being processed or completed
+        const existingState = processingStates.get(matchID);
+        if (existingState) {
+          if (existingState.status === 'processing') {
+            console.log(`⏳ Game ${matchID} is currently being processed (started ${((now - existingState.startedAt)/1000).toFixed(1)}s ago) - skipping`);
+            continue;
+          } else if (existingState.status === 'completed') {
+            console.log(`✅ Game ${matchID} already processed successfully - skipping`);
+            continue;
+          }
+          // If status is 'failed', we'll retry (don't skip)
         }
-        
-        console.log(`DEBUG: Examining game ${matchID}...`);
         
         try {
           // Fetch the match with all data (using fetch with more specific options)
@@ -871,19 +1100,16 @@ const startGameOverMonitoring = () => {
           
           // Validate match data
           if (!matchData) {
-            console.log(`DEBUG: No match data found for ${matchID}`);
             continue;
           }
           
           if (!matchData.state) {
-            console.log(`DEBUG: No state data found for match ${matchID}`);
             continue;
           }
           
           // Access game state
           const { state } = matchData;
           if (!state.G || !state.ctx) {
-            console.log(`DEBUG: Invalid state structure for ${matchID}`);
             continue;
           }
           
@@ -891,15 +1117,7 @@ const startGameOverMonitoring = () => {
           const G = state.G;
           const ctx = state.ctx;
           
-          console.log(`DEBUG: Game state for ${matchID}:`);
-          console.log(`- Game Phase: ${ctx.phase || 'unknown'}`);
-          console.log(`- G.gamePhase: ${G.gamePhase || 'unknown'}`);
-          console.log(`- G.winner: ${G.winner || 'none'}`);
-          console.log(`- ctx.gameover: ${ctx.gameover ? JSON.stringify(ctx.gameover) : 'none'}`);
-          console.log(`- G.gameEnded: ${G.gameEnded ? 'true' : 'false'}`);
-          
           // Check if the game is in a completed state
-          // We check multiple indicators since different game end conditions might set different flags
           const isGameOver = (
             ctx.phase === 'gameOver' || 
             G.gamePhase === 'gameOver' ||
@@ -908,39 +1126,69 @@ const startGameOverMonitoring = () => {
             G.gameEnded === true
           );
 
-          console.log(`DEBUG: Game ${matchID} completed: ${isGameOver ? 'YES' : 'NO'}`);
-
           if (isGameOver) {
             console.log(`🎮 GAME OVER DETECTED for ${matchID}!`);
             console.log(`👑 Winner: ${ctx.gameover?.winner || G.winner || 'unknown'}`);
             
-            // Fetch full match data including metadata for processing
-            const fullMatchData = await server.db.fetch(matchID, { state: true, metadata: true });
+            // ✅ ATOMIC LOCK: Mark as processing IMMEDIATELY before any async operations
+            processingStates.set(matchID, {
+              matchID,
+              startedAt: Date.now(),
+              status: 'processing'
+            });
             
-            // Process the game end
-            await handleGameEnd(matchID, fullMatchData || matchData);
+            console.log(`🔒 Locked game ${matchID} for processing`);
             
-            // Immediately remove the completed game (winner or abandoned)
             try {
-              await server.db.wipe(matchID);
-              console.log(`✅ Removed completed/abandoned game ${matchID} immediately after processing`);
-            } catch (wipeErr) {
-              console.error(`❌ Failed to remove completed game ${matchID}:`, wipeErr);
+              // Fetch full match data including metadata for processing
+              const fullMatchData = await server.db.fetch(matchID, { state: true, metadata: true });
+              
+              // Process the game end
+              await handleGameEnd(matchID, fullMatchData || matchData);
+              
+              // Mark as completed BEFORE wiping (in case wipe fails)
+              processingStates.set(matchID, {
+                matchID,
+                startedAt: processingStates.get(matchID)!.startedAt,
+                status: 'completed'
+              });
+              
+              // ✅ FIX: Delay game wipe to allow players to view winner screen and refresh
+              // Players can stay on the winner screen for up to 10 minutes without the game restarting
+              setTimeout(async () => {
+                try {
+                  await server.db.wipe(matchID);
+                  console.log(`✅ Removed completed game ${matchID} from database (after 10 minute delay)`);
+                } catch (wipeErr) {
+                  console.error(`❌ Failed to wipe game ${matchID}:`, wipeErr);
+                }
+              }, 600000); // 10 minutes delay before wiping
+              
+              // Clean up from processing map after game is wiped (with delay)
+              setTimeout(() => {
+                processingStates.delete(matchID);
+                console.log(`🧹 Cleaned up processing state for ${matchID}`);
+              }, 610000); // Keep for 10 minutes + 10 seconds to ensure game is wiped first
+              
+            } catch (processingError) {
+              // Mark as failed so it can be retried
+              console.error(`❌ Failed to process game ${matchID}:`, processingError);
+              processingStates.set(matchID, {
+                matchID,
+                startedAt: processingStates.get(matchID)!.startedAt,
+                status: 'failed'
+              });
+              
+              // Clean up failed state after a delay to allow retry
+              setTimeout(() => {
+                processingStates.delete(matchID);
+                console.log(`🔄 Cleared failed state for ${matchID} - will retry on next check`);
+              }, 30000); // Retry after 30 seconds
             }
-            
-            // Mark the game as processed
-            processedGames.add(matchID);
-            console.log(`DEBUG: Marked game ${matchID} as processed`);
-            
-            // Set timeout to remove from processed set after some time
-            // This ensures we don't accumulate memory over time
-            setTimeout(() => {
-              processedGames.delete(matchID);
-              console.log(`DEBUG: Removed game ${matchID} from processed set`);
-            }, 60 * 60 * 1000); // 1 hour
           }
         } catch (error) {
-          console.error(`Error processing match ${matchID}:`, error);
+          console.error(`Error examining match ${matchID}:`, error);
+          // Don't mark as processing if we couldn't even examine it
         }
       }
     } catch (error) {
@@ -948,18 +1196,8 @@ const startGameOverMonitoring = () => {
     }
   }, MONITOR_INTERVAL);
   
-  console.log(`🔍 Game monitoring started - checking for completed games every ${3000/1000} seconds`);
-  
-  // Immediate first check
-  setTimeout(async () => {
-    console.log('Running immediate first check for any completed games...');
-    try {
-      const matches = await server.db.listMatches();
-      console.log(`Found ${matches?.length || 0} games on initial check`);
-    } catch (error) {
-      console.error('Error in immediate game check:', error);
-    }
-  }, 1000);
+  console.log(`🔍 Game monitoring started - checking for completed games every ${MONITOR_INTERVAL/1000} seconds`);
+  console.log(`⏱️  Processing timeout set to ${PROCESSING_TIMEOUT/1000} seconds`);
 };
 
 // Export handlers for external use

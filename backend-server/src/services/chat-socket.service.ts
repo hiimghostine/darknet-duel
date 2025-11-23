@@ -1,7 +1,8 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
 import { ChatService, ChatMessage } from './chat.service';
+import { SessionService } from './session.service';
+import { AuthService } from './auth.service';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -11,6 +12,8 @@ interface AuthenticatedSocket extends Socket {
 export class ChatSocketService {
   private io: SocketIOServer;
   private chatService: ChatService;
+  private sessionService: SessionService;
+  private authService: AuthService;
   private connectedUsers: Map<string, Set<string>> = new Map(); // chatId -> Set of userIds
 
   constructor(httpServer: HttpServer) {
@@ -24,6 +27,8 @@ export class ChatSocketService {
     });
 
     this.chatService = new ChatService();
+    this.sessionService = new SessionService();
+    this.authService = new AuthService();
     this.setupSocketHandlers();
   }
 
@@ -37,9 +42,20 @@ export class ChatSocketService {
           throw new Error('No token provided');
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-        socket.userId = decoded.id;
-        socket.username = decoded.username;
+        // Validate session token
+        const userId = await this.sessionService.validateSession(token);
+        if (!userId) {
+          throw new Error('Invalid or expired session');
+        }
+
+        // Get user data
+        const user = await this.authService.findById(userId);
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        socket.userId = user.id;
+        socket.username = user.username;
         
         console.log(`🔐 Chat: User ${socket.username} (${socket.userId}) authenticated`);
         next();

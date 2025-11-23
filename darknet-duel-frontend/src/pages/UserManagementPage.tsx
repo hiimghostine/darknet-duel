@@ -21,8 +21,8 @@ const UserManagementPage: React.FC = () => {
 
   const handleLogout = () => {
     setIsLoggingOut(true);
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth', { replace: true });
     }, 1000);
   };

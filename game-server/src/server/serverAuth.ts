@@ -114,10 +114,13 @@ export const sendGameResults = async (gameResult: GameResultData): Promise<boole
         actions: gameResult.actions,
         gameMode: gameResult.gameMode,
         abandonReason: gameResult.abandonReason
-      }
+      },
+      // ✅ IDEMPOTENCY: Use gameId as idempotency key to prevent duplicate processing
+      idempotencyKey: `game-result-${gameResult.gameId}`
     };
     
     console.log('🔍 PAYLOAD DEBUG: Winner data being sent:', JSON.stringify(restructuredPayload.winner, null, 2));
+    console.log('🔑 Idempotency key:', restructuredPayload.idempotencyKey);
     
     console.log(`Sending game results to backend for ${gameResult.gameId}...`);
     let retries = 0;
@@ -153,12 +156,19 @@ export const recordGameHistory = async (gameHistory: GameHistoryData): Promise<b
       }
     });
     
+    // ✅ IDEMPOTENCY: Add idempotency key to prevent duplicate history records
+    const payload = {
+      ...gameHistory,
+      idempotencyKey: `game-history-${gameHistory.gameId}`
+    };
+    
     console.log(`Recording game history for ${gameHistory.gameId} to backend server...`);
+    console.log('🔑 Idempotency key:', payload.idempotencyKey);
     
     let retries = 0;
     while (retries < MAX_RETRIES) {
       try {
-        await serverToServerRequest<{ success: boolean }>('/server/games/history', 'POST', gameHistory);
+        await serverToServerRequest<{ success: boolean }>('/server/games/history', 'POST', payload);
         console.log('Successfully recorded game history in backend server');
         return true;
       } catch (error) {
@@ -196,10 +206,18 @@ export const updatePlayerRatings = async (ratingData: EloRatingUpdateData): Prom
       return true;
     }
     
+    // ✅ IDEMPOTENCY: Add idempotency key to prevent duplicate rating updates
+    const payload = {
+      ...ratingData,
+      idempotencyKey: `game-ratings-${ratingData.gameId}`
+    };
+    
+    console.log('🔑 Idempotency key:', payload.idempotencyKey);
+    
     let retries = 0;
     while (retries < MAX_RETRIES) {
       try {
-        const response = await serverToServerRequest<{ success: boolean }>('/server/players/ratings', 'POST', ratingData);
+        const response = await serverToServerRequest<{ success: boolean }>('/server/players/ratings', 'POST', payload);
         console.log('✅ Successfully updated player ratings in backend server');
         return response.success === true;
       } catch (error: any) {

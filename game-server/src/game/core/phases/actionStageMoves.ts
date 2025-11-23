@@ -44,6 +44,19 @@ export const actionStageMoves = {
     const { playCardMove } = require('../../actions/playerActions');
     const newG = playCardMove({ G, ctx, playerID }, cardId);
     
+    // Check if there's a pending wildcard choice - if so, stay in action stage
+    if (newG.pendingWildcardChoice) {
+      console.log('DEBUG: Found pendingWildcardChoice, staying in action stage for type selection');
+      // Keep the current player active in the action stage for wildcard type selection
+      if (events) {
+        events.setActivePlayers({ value: { [playerID]: 'action' } });
+      }
+      return {
+        ...newG,
+        currentActionPlayer: playerID
+      };
+    }
+    
     // Check if this card can be reacted to (if it's a reaction-eligible card)
     // FIXED: Use boardgame.io player IDs for validation
     const isAttacker = playerID === '0';
@@ -64,7 +77,15 @@ export const actionStageMoves = {
       // FIXED: Use boardgame.io player IDs for opponent lookup
       const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
-        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+        // Keep both players active so both receive state updates
+        // Current player stays in action stage (but can't make moves due to game logic)
+        // Opponent moves to reaction stage
+        events.setActivePlayers({ 
+          value: { 
+            [playerID]: 'action',
+            [opponentID]: 'reaction' 
+          } 
+        });
       }
       
       return updatedG;
@@ -93,6 +114,10 @@ export const actionStageMoves = {
     // Check if there's a pending chain choice - if so, don't switch to reaction yet
     if (newG.pendingChainChoice) {
       console.log('DEBUG: Found pendingChainChoice, staying in action stage for chain selection');
+      // Keep the current player active in the action stage for chain target selection
+      if (events) {
+        events.setActivePlayers({ value: { [playerID]: 'action' } });
+      }
       return {
         ...newG,
         currentActionPlayer: playerID
@@ -102,6 +127,10 @@ export const actionStageMoves = {
     // Check if there's a pending card choice (A306 AI-Powered Attack) - if so, don't switch to reaction yet
     if (newG.pendingCardChoice) {
       console.log('DEBUG: Found pendingCardChoice, staying in action stage for card selection');
+      // Keep the current player active in the action stage for card selection
+      if (events) {
+        events.setActivePlayers({ value: { [playerID]: 'action' } });
+      }
       return {
         ...newG,
         currentActionPlayer: playerID
@@ -111,6 +140,10 @@ export const actionStageMoves = {
     // Check if there's a pending hand choice (D302 Threat Intelligence) - if so, don't switch to reaction yet
     if (newG.pendingHandChoice) {
       console.log('DEBUG: Found pendingHandChoice, staying in action stage for hand discard selection');
+      // Keep the current player active in the action stage for hand discard selection
+      if (events) {
+        events.setActivePlayers({ value: { [playerID]: 'action' } });
+      }
       return {
         ...newG,
         currentActionPlayer: playerID
@@ -128,7 +161,15 @@ export const actionStageMoves = {
     // FIXED: Use boardgame.io player IDs for opponent lookup
     const opponentID = playerID === '0' ? '1' : '0';
     if (opponentID) {
-      events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+      // Keep both players active so both receive state updates
+      // Current player stays in action stage (but can't make moves due to game logic)
+      // Opponent moves to reaction stage
+      events.setActivePlayers({ 
+        value: { 
+          [playerID]: 'action',
+          [opponentID]: 'reaction' 
+        } 
+      });
     }
     
     return updatedG;
@@ -175,8 +216,30 @@ export const actionStageMoves = {
     const { chooseChainTargetMove } = require('../../moves/chooseChainTarget');
     const updatedG = chooseChainTargetMove(G, ctx, playerID, targetId);
     
-    // Chain effect completed - let the normal game flow continue
-    // Don't force phase transitions here as it can corrupt the game state
+    // After chain choice is resolved, check if we need to transition to reaction phase
+    if (!updatedG.pendingChainChoice) {
+      console.log('🔗 Chain selection completed, checking for pending reactions');
+      
+      // If there are pending reactions, transition to reaction stage
+      if (updatedG.pendingReactions && updatedG.pendingReactions.length > 0) {
+        console.log('🔗 Pending reactions exist, transitioning to reaction phase');
+        // FIXED: Use boardgame.io player IDs for opponent lookup
+        const opponentID = playerID === '0' ? '1' : '0';
+        if (opponentID) {
+          // Keep both players active so both receive state updates
+          // Attacker stays in action stage (but can't make moves due to game logic)
+          // Defender moves to reaction stage
+          events.setActivePlayers({ 
+            value: { 
+              [playerID]: 'action',
+              [opponentID]: 'reaction' 
+            } 
+          });
+        }
+      } else {
+        console.log('🔗 No pending reactions, staying in action stage');
+      }
+    }
     
     return updatedG;
   },
@@ -199,7 +262,13 @@ export const actionStageMoves = {
       const opponentID = playerID === '0' ? '1' : '0';
       console.log(`🎯 ACTION STAGE DEBUG: Setting opponent ${opponentID} to reaction stage`);
       if (opponentID) {
-        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+        // Keep both players active so both receive state updates
+        events.setActivePlayers({ 
+          value: { 
+            [playerID]: 'action',
+            [opponentID]: 'reaction' 
+          } 
+        });
       }
     } else {
       console.log('🎯 ACTION STAGE DEBUG: pendingCardChoice still exists, not transitioning to reaction');
@@ -225,7 +294,13 @@ export const actionStageMoves = {
       // FIXED: Use boardgame.io player IDs for opponent lookup  
       const opponentID = playerID === '0' ? '1' : '0';
       if (opponentID) {
-        events.setActivePlayers({ value: { [opponentID]: 'reaction' } });
+        // Keep both players active so both receive state updates
+        events.setActivePlayers({ 
+          value: { 
+            [playerID]: 'action',
+            [opponentID]: 'reaction' 
+          } 
+        });
       }
     }
     

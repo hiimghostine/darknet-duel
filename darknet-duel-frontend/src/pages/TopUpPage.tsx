@@ -5,6 +5,7 @@ import { useThemeStore } from '../store/theme.store';
 import { useAudioManager } from '../hooks/useAudioManager';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import PaymentModal from '../components/ui/PaymentModal';
 import { type PaymentResult } from '../services/payment.service';
 import logo from '../assets/logo.png';
@@ -29,6 +30,7 @@ const TopUpPage: React.FC = () => {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentPackage, setPaymentPackage] = useState<TopUpPackage | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Top-up packages with pricing
   const packages: TopUpPackage[] = [
@@ -60,9 +62,10 @@ const TopUpPage: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+    setShowLogoutModal(false);
     setIsLoggingOut(true);
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth', { replace: true });
     }, 1500);
   };
@@ -200,7 +203,10 @@ const TopUpPage: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    triggerClick();
+                    setShowLogoutModal(true);
+                  }}
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Logout"
                 >
@@ -394,6 +400,13 @@ const TopUpPage: React.FC = () => {
           onSuccess={handlePaymentSuccess}
         />
       )}
+      
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };

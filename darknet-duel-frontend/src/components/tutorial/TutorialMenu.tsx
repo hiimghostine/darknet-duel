@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Play, 
-  Target, 
-  Clock, 
-  CheckCircle, 
-  Shield, 
-  Zap
+import {
+  BookOpen,
+  Play,
+  Target,
+  Clock,
+  CheckCircle,
+  Shield,
+  Globe
 } from 'lucide-react';
 import type { TutorialScript } from '../../types/tutorial.types';
 import { useTutorial } from '../../hooks/useTutorial';
 import VideoTutorial from './VideoTutorial';
 import CardEncyclopedia from './CardEncyclopedia';
+import RealWorldCybersecurity from './RealWorldCybersecurity';
 import MockGameBoard from './MockGameBoard';
 import { tutorialScripts } from '../../data/tutorialScripts';
 import { mockGameStateProvider } from '../../services/mockDataProvider';
+import { tutorialLog } from '../../utils/tutorialLogger';
 
 interface TutorialMenuProps {
   onClose?: () => void;
@@ -25,6 +27,7 @@ interface TutorialMenuProps {
 const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
   const [showVideoTutorial, setShowVideoTutorial] = useState(false);
   const [showCardEncyclopedia, setShowCardEncyclopedia] = useState(false);
+  const [showRealWorldCybersecurity, setShowRealWorldCybersecurity] = useState(false);
   
   // Tutorial execution state
   const [isInTutorial, setIsInTutorial] = useState(false);
@@ -47,6 +50,12 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
       return;
     }
     
+    // Show Real-World Cybersecurity modal
+    if (scriptId === 'real_world_cybersecurity') {
+      setShowRealWorldCybersecurity(true);
+      return;
+    }
+    
     // Reset mock game state
     mockGameStateProvider.reset();
     
@@ -56,7 +65,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
     setSelectedScript(scriptId);
     
     // Handle tutorial execution directly in the modal
-    console.log('🎯 Starting tutorial:', { scriptId, role });
+    tutorialLog('🎯 Starting tutorial:', { scriptId, role });
     
     // Start the tutorial
     const success = await startTutorial(scriptId);
@@ -67,7 +76,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
 
   // Handle tutorial exit
   const handleExitTutorial = () => {
-    console.log('🎯 Exiting tutorial');
+    tutorialLog('🎯 Exiting tutorial');
     cancelTutorial();
     setIsInTutorial(false);
     setSelectedScript(null);
@@ -80,8 +89,8 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
         return <Target className="text-primary" size={24} />;
       case 'defender_basics':
         return <Shield className="text-primary" size={24} />;
-      case 'advanced_mechanics':
-        return <Zap className="text-primary" size={24} />;
+      case 'real_world_cybersecurity':
+        return <Globe className="text-primary" size={24} />;
       default:
         return <BookOpen className="text-primary" size={24} />;
     }
@@ -190,7 +199,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <VideoTutorial
-              videoSrc="/assets/videos/darknet-duel-tutorial.mp4"
+              videoSrc="https://youtu.be/m_xEwq1Qorg"
               title="Darknet Duel - Video Tutorial"
               onClose={() => setShowVideoTutorial(false)}
               onComplete={() => {
@@ -399,6 +408,11 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
         {/* Card Encyclopedia Modal */}
         {showCardEncyclopedia && (
           <CardEncyclopedia onClose={() => setShowCardEncyclopedia(false)} />
+        )}
+        
+        {/* Real-World Cybersecurity Modal */}
+        {showRealWorldCybersecurity && (
+          <RealWorldCybersecurity onClose={() => setShowRealWorldCybersecurity(false)} />
         )}
     </motion.div>
   );

@@ -1,12 +1,13 @@
-import type { 
-  TutorialScript, 
-  TutorialStep, 
-  TutorialState, 
-  TutorialProgress, 
+import type {
+  TutorialScript,
+  TutorialStep,
+  TutorialState,
+  TutorialProgress,
   TutorialEvent,
-  TutorialEventType 
+  TutorialEventType
 } from '../types/tutorial.types';
 import { tutorialScripts } from '../data/tutorialScripts';
+import { tutorialLog } from '../utils/tutorialLogger';
 
 class TutorialManager {
   private state: TutorialState;
@@ -45,7 +46,7 @@ class TutorialManager {
       const stored = localStorage.getItem('darknet_duel_tutorial_completions');
       return stored ? JSON.parse(stored) : {};
     } catch (error) {
-      console.log('🎯 TUTORIAL: Error loading completions, starting fresh');
+      tutorialLog('🎯 TUTORIAL: Error loading completions, starting fresh');
       return {};
     }
   }
@@ -53,9 +54,9 @@ class TutorialManager {
   private saveCompletions(completions: Record<string, boolean>) {
     try {
       localStorage.setItem('darknet_duel_tutorial_completions', JSON.stringify(completions));
-      console.log('🎯 TUTORIAL: Completions saved:', completions);
+      tutorialLog('🎯 TUTORIAL: Completions saved:', completions);
     } catch (error) {
-      console.log('🎯 TUTORIAL: Error saving completions');
+      tutorialLog('🎯 TUTORIAL: Error saving completions');
     }
   }
 
@@ -100,7 +101,7 @@ class TutorialManager {
 
     // Check prerequisites
     if (script.prerequisites) {
-      const missingPrereqs = script.prerequisites.filter(prereq => 
+      const missingPrereqs = script.prerequisites.filter(prereq =>
         !this.isScriptCompleted(prereq)
       );
       if (missingPrereqs.length > 0) {
@@ -109,28 +110,29 @@ class TutorialManager {
       }
     }
 
-    // Initialize or resume progress
-    let progress = this.getScriptProgress(scriptId);
-    if (!progress) {
-      progress = {
-        scriptId,
-        currentStep: 0,
-        completed: false,
-        startedAt: Date.now(),
-        skippedSteps: []
-      };
-      this.state.progress.push(progress);
-    }
+    // ALWAYS start from step 0 - no progress resuming
+    // Remove any existing progress for this tutorial
+    this.state.progress = this.state.progress.filter(p => p.scriptId !== scriptId);
+    
+    // Create fresh progress starting at step 0
+    const progress: TutorialProgress = {
+      scriptId,
+      currentStep: 0,
+      completed: false,
+      startedAt: Date.now(),
+      skippedSteps: []
+    };
+    this.state.progress.push(progress);
 
     this.setState({
       isActive: true,
       currentScript: script,
-      stepIndex: progress.currentStep,
+      stepIndex: 0, // Always start from step 0
       overlayVisible: true
     });
 
     this.emitEvent('tutorial_started', scriptId);
-    await this.showStep(progress.currentStep);
+    await this.showStep(0); // Always start from step 0
     return true;
   }
 
@@ -212,11 +214,11 @@ class TutorialManager {
         
         if (typeof step.validation!.condition === 'function') {
           const isValid = (step.validation!.condition as Function)();
-          console.log('🎯 TUTORIAL: Custom validation check for', step.id, ':', isValid);
+          tutorialLog('🎯 TUTORIAL: Custom validation check for', step.id, ':', isValid);
           
           if (isValid) {
             hasAdvanced = true;
-            console.log('✅ TUTORIAL: Auto-advancing step', step.id);
+            tutorialLog('✅ TUTORIAL: Auto-advancing step', step.id);
             setTimeout(() => {
               this.completeStep();
             }, 500); // Small delay for user to see the action result
@@ -370,7 +372,7 @@ class TutorialManager {
       
       // Then execute the custom action after a delay to prevent auto-advancement loops
       if (actionToExecute) {
-        console.log('🎯 Executing custom action for previous step:', currentStep?.id);
+        tutorialLog('🎯 Executing custom action for previous step:', currentStep?.id);
         setTimeout(() => {
           try {
             actionToExecute();
@@ -443,15 +445,28 @@ class TutorialManager {
     this.emitEvent('tutorial_cancelled', currentScript.id);
   }
 
+  // Public method to mark a tutorial as complete (for non-interactive tutorials like Card Encyclopedia)
+  markTutorialComplete(scriptId: string) {
+    tutorialLog('🎯 TUTORIAL: Manually marking tutorial as completed:', scriptId);
+    this.completions[scriptId] = true;
+    this.saveCompletions(this.completions);
+    tutorialLog('🎯 TUTORIAL: Current completions:', this.completions);
+    
+    // Dispatch event for components that need to react
+    window.dispatchEvent(new CustomEvent('tutorial-completed', { 
+      detail: { scriptId } 
+    }));
+  }
+
   private completeTutorial() {
     const { currentScript } = this.state;
     if (!currentScript) return;
 
     // Mark tutorial as completed
-    console.log('🎯 TUTORIAL: Marking tutorial as completed:', currentScript.id);
+    tutorialLog('🎯 TUTORIAL: Marking tutorial as completed:', currentScript.id);
     this.completions[currentScript.id] = true;
     this.saveCompletions(this.completions);
-    console.log('🎯 TUTORIAL: Current completions:', this.completions);
+    tutorialLog('🎯 TUTORIAL: Current completions:', this.completions);
 
     this.clearAllTimeouts();
     this.setState({
@@ -555,7 +570,7 @@ class TutorialManager {
     this.state.progress = [];
     this.saveCompletions(this.completions);
     this.saveProgress();
-    console.log('🎯 TUTORIAL: All progress and completions reset');
+    tutorialLog('🎯 TUTORIAL: All progress and completions reset');
   }
 }
 

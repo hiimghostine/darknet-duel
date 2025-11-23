@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt, { Secret } from 'jsonwebtoken';
+import { SessionService } from '../services/session.service';
+import { AuthService } from '../services/auth.service';
 
 // Extend Express Request type to include user
 declare global {
@@ -10,7 +11,10 @@ declare global {
   }
 }
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const sessionService = new SessionService();
+const authService = new AuthService();
+
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -21,18 +25,28 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     // Extract token from header
     const token = authHeader.split(' ')[1];
     
-    // Verify token
-    const secret: Secret = process.env.JWT_SECRET || 'fallback_secret';
-    const decoded = jwt.verify(token, secret);
+    // Validate session token
+    const userId = await sessionService.validateSession(token);
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
     
-    // Attach user to request object
-    req.user = decoded as Record<string, any>;
+    // Get user data
+    const user = await authService.findById(userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
+    // Attach user to request object (same format as before for compatibility)
+    req.user = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      type: user.type
+    };
     
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({ message: 'Invalid or expired token' });
-    }
     console.error('Auth middleware error:', error);
     return res.status(500).json({ message: 'Server error during authentication' });
   }

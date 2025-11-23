@@ -8,6 +8,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import logo from '../assets/logo.png';
 import type { GameHistoryItem, GameDetails } from '../types/game.types';
 import { useThemeStore } from '../store/theme.store';
+import { Home, Gamepad2, User, Gem, Sun, Moon, Sword, Shield, ChevronDown, AlertCircle } from 'lucide-react';
 
 const GameHistoryPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -24,6 +25,7 @@ const GameHistoryPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [sortFilter, setSortFilter] = useState<'all' | 'attacker' | 'defender'>('all');
   const { theme, toggleTheme } = useThemeStore();
 
   // If not authenticated, redirect to login
@@ -122,6 +124,42 @@ const GameHistoryPage: React.FC = () => {
     return change.toString();
   };
 
+  // Calculate winrate statistics
+  const calculateWinrates = () => {
+    const attackerGames = games.filter(g => g.playerRole === 'attacker');
+    const defenderGames = games.filter(g => g.playerRole === 'defender');
+    
+    const attackerWins = attackerGames.filter(g => g.isWinner).length;
+    const defenderWins = defenderGames.filter(g => g.isWinner).length;
+    
+    const attackerWinrate = attackerGames.length > 0 
+      ? ((attackerWins / attackerGames.length) * 100).toFixed(1)
+      : '0.0';
+    const defenderWinrate = defenderGames.length > 0 
+      ? ((defenderWins / defenderGames.length) * 100).toFixed(1)
+      : '0.0';
+    
+    return {
+      attacker: {
+        wins: attackerWins,
+        total: attackerGames.length,
+        winrate: attackerWinrate
+      },
+      defender: {
+        wins: defenderWins,
+        total: defenderGames.length,
+        winrate: defenderWinrate
+      }
+    };
+  };
+
+  // Filter games based on sort filter
+  const filteredGames = sortFilter === 'all' 
+    ? games 
+    : games.filter(game => game.playerRole === sortFilter);
+
+  const winrates = calculateWinrates();
+
   return (
     <div className="min-h-screen bg-base-100 relative overflow-hidden text-base-content">
       {/* Show loading screen when isLoading is true */}
@@ -152,7 +190,7 @@ const GameHistoryPage: React.FC = () => {
                 }} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
               >
-                <span className="mr-1">🏠</span> 
+<Home className="w-4 h-4 mr-1" /> 
                 <span className="hidden sm:inline">DASHBOARD</span>
               </button>
               
@@ -163,7 +201,7 @@ const GameHistoryPage: React.FC = () => {
                 }} 
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
               >
-                <span className="mr-1">🎮</span> 
+<Gamepad2 className="w-4 h-4 mr-1" /> 
                 <span className="hidden sm:inline">LOBBY</span>
               </button>
               
@@ -175,7 +213,7 @@ const GameHistoryPage: React.FC = () => {
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Profile"
               >
-                <span className="mr-1">👤</span>
+<User className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline">PROFILE</span>
               </button>
               
@@ -187,7 +225,7 @@ const GameHistoryPage: React.FC = () => {
                 className="btn btn-sm bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 hover:border-yellow-300 text-black font-bold btn-cyberpunk pulse-glow relative overflow-hidden group"
                 aria-label="Top Up"
               >
-                <span className="mr-1">💎</span>
+<Gem className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline text-flicker">TOP-UP</span>
                 <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
               </button>
@@ -200,7 +238,7 @@ const GameHistoryPage: React.FC = () => {
                 className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                 aria-label="Toggle Theme"
               >
-                {theme === 'cyberpunk' ? '🌙' : '☀️'}
+{theme === 'cyberpunk' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -235,6 +273,118 @@ const GameHistoryPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Winrate Statistics */}
+          {games.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Attacker Stats */}
+              <div className="p-1 bg-gradient-to-br from-red-500/20 via-red-500/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-red-500/30 p-4 relative">
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-red-500"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-red-500"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-red-500"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-red-500"></div>
+                  
+                  <div className="font-mono">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Sword className="w-6 h-6 text-red-400" />
+                        <span className="text-lg font-bold text-red-400">ATTACKER</span>
+                      </div>
+                      <div className="text-2xl font-bold text-red-400">
+                        {winrates.attacker.winrate}%
+                      </div>
+                    </div>
+                    <div className="text-xs text-base-content/70">
+                      {winrates.attacker.wins}W - {winrates.attacker.total - winrates.attacker.wins}L ({winrates.attacker.total} games)
+                    </div>
+                    <div className="mt-2 h-2 bg-base-300 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-500"
+                        style={{ width: `${winrates.attacker.winrate}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Defender Stats */}
+              <div className="p-1 bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent backdrop-blur-sm">
+                <div className="bg-base-200 border border-blue-500/30 p-4 relative">
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-blue-500"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-blue-500"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-blue-500"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-blue-500"></div>
+                  
+                  <div className="font-mono">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-6 h-6 text-blue-400" />
+                        <span className="text-lg font-bold text-blue-400">DEFENDER</span>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-400">
+                        {winrates.defender.winrate}%
+                      </div>
+                    </div>
+                    <div className="text-xs text-base-content/70">
+                      {winrates.defender.wins}W - {winrates.defender.total - winrates.defender.wins}L ({winrates.defender.total} games)
+                    </div>
+                    <div className="mt-2 h-2 bg-base-300 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+                        style={{ width: `${winrates.defender.winrate}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sort Filter Tabs */}
+          {games.length > 0 && (
+            <div className="flex gap-2 mb-6 font-mono">
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setSortFilter('all');
+                }}
+                className={`btn btn-sm ${
+                  sortFilter === 'all'
+                    ? 'btn-primary'
+                    : 'btn-outline btn-primary'
+                } btn-cyberpunk`}
+              >
+                ALL MISSIONS ({games.length})
+              </button>
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setSortFilter('attacker');
+                }}
+                className={`btn btn-sm ${
+                  sortFilter === 'attacker'
+                    ? 'bg-red-500 border-red-400 text-white hover:bg-red-600'
+                    : 'btn-outline border-red-500/50 text-red-400 hover:bg-red-500/20'
+                } btn-cyberpunk`}
+              >
+<Sword className="w-4 h-4 inline-block mr-1" /> ATTACKER ({winrates.attacker.total})
+              </button>
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setSortFilter('defender');
+                }}
+                className={`btn btn-sm ${
+                  sortFilter === 'defender'
+                    ? 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600'
+                    : 'btn-outline border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
+                } btn-cyberpunk`}
+              >
+<Shield className="w-4 h-4 inline-block mr-1" /> DEFENDER ({winrates.defender.total})
+              </button>
+            </div>
+          )}
+
           {/* Error message */}
           {error && (
             <div className="alert alert-error mb-6">
@@ -250,7 +400,7 @@ const GameHistoryPage: React.FC = () => {
 
           {/* Game history list */}
           <div className="space-y-4">
-            {games.map((game) => {
+            {filteredGames.map((game) => {
               const isExpanded = expandedGameId === game.gameId;
               const roleInfo = gameService.getRoleInfo(game.playerRole);
               const gameModeInfo = gameService.getGameModeInfo(game.gameMode);
@@ -287,8 +437,13 @@ const GameHistoryPage: React.FC = () => {
                               </span>
                             </div>
                             <div className="flex items-center gap-4 text-xs text-base-content/70">
-                              <span className={roleInfo.color}>
-                                {roleInfo.icon} {roleInfo.name}
+                              <span className={`flex items-center gap-1 ${roleInfo.color}`}>
+                                {game.playerRole === 'attacker' ? (
+                                  <Sword className="w-4 h-4" />
+                                ) : (
+                                  <Shield className="w-4 h-4" />
+                                )}
+                                {roleInfo.name}
                               </span>
                               <span className={gameModeInfo.color}>
                                 {gameModeInfo.name}
@@ -316,7 +471,7 @@ const GameHistoryPage: React.FC = () => {
                           
                           {/* Expand indicator */}
                           <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                            <span className="text-primary">▼</span>
+                            <ChevronDown className="w-5 h-5 text-primary" />
                           </div>
                         </div>
                       </div>
@@ -493,6 +648,30 @@ const GameHistoryPage: React.FC = () => {
             </div>
           )}
 
+          {/* Empty state for filtered results */}
+          {!isLoading && games.length > 0 && filteredGames.length === 0 && (
+            <div className="text-center py-16">
+              <div className="p-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-sm max-w-md mx-auto">
+                <div className="bg-base-200 border border-primary/20 p-8 relative">
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
+                  
+                  <div className="font-mono text-center">
+                    <div className="mb-4">
+                      {sortFilter === 'attacker' ? <Sword className="w-16 h-16 mx-auto text-red-400" /> : <Shield className="w-16 h-16 mx-auto text-blue-400" />}
+                    </div>
+                    <h3 className="text-xl text-primary mb-2">NO_{sortFilter.toUpperCase()}_RECORDS</h3>
+                    <p className="text-base-content/70 mb-4">
+                      No missions found as {sortFilter}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Empty state */}
           {!isLoading && games.length === 0 && (
             <div className="text-center py-16">
@@ -505,7 +684,7 @@ const GameHistoryPage: React.FC = () => {
                   <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary"></div>
                   
                   <div className="font-mono text-center">
-                    <div className="text-6xl mb-4">🎮</div>
+                    <div className="mb-4"><AlertCircle className="w-16 h-16 mx-auto text-primary" /></div>
                     <h3 className="text-xl text-primary mb-2">NO_RECORDS_FOUND</h3>
                     <p className="text-base-content/70 mb-4">
                       No combat missions have been logged yet.

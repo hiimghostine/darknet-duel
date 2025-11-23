@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { BoardProps } from 'boardgame.io/react';
 import isEqual from 'lodash/isEqual';
@@ -28,7 +28,6 @@ import WildcardChoiceUI from './board-components/WildcardChoiceUI';
 import HandDisruptionUI from './board-components/HandDisruptionUI';
 import CardSelectionUI from './board-components/CardSelectionUI';
 import WinnerLobby from './board-components/WinnerLobby';
-import ConnectionStatusIndicator from './ConnectionStatusIndicator';
 import DisconnectionAlert from './DisconnectionAlert';
 import InactivityWarning from './InactivityWarning';
 
@@ -49,10 +48,24 @@ import SharedEffectsDisplay from './board-components/SharedEffectsDisplay';
 
 // Import audio SFX triggers
 import { useAudioManager } from '../../hooks/useAudioManager';
-import { useThemeStore } from '../../store/theme.store';
+import { useTheme } from '../../store/theme.store';
 
 // Import auto-reaction timer
 import { useAutoReactionTimer } from '../../hooks/useAutoReactionTimer';
+import { useAutoTurnTimer } from '../../hooks/useAutoTurnTimer';
+
+// Debug logging helper - controlled by VITE_GAMEBOARD_DEBUG env variable
+const GAMEBOARD_DEBUG = import.meta.env.VITE_GAMEBOARD_DEBUG === 'true';
+const debugLog = (...args: any[]) => {
+  if (GAMEBOARD_DEBUG) {
+    console.log(...args);
+  }
+};
+const debugError = (...args: any[]) => {
+  if (GAMEBOARD_DEBUG) {
+    console.error(...args);
+  }
+};
 
 // Extended interface for client properties
 type ClientMoves = Record<string, ((...args: unknown[]) => unknown) | undefined> & {
@@ -85,6 +98,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   // Toast notifications
   const { addToast } = useToastStore();
+  
+  // Local state to track when choices have been made (for immediate UI feedback)
+  const [chainChoiceMade, setChainChoiceMade] = useState(false);
+  const [wildcardChoiceMade, setWildcardChoiceMade] = useState(false);
   
   // Use state buffer to prevent re-render flash during actions
   const { 
@@ -121,6 +138,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     heartbeatStatus.opponentStatus,
     isActive || false,
     Date.now(), // lastActivityTime - using current time as placeholder
+    heartbeatStatus.hasInitialized,
     {} // config - using defaults
   );
   
@@ -189,6 +207,18 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     onAutoSkip: handleSkipReaction
   });
 
+  // Auto-turn timer hook (120 seconds)
+  const {
+    isTimerActive: isTurnTimerActive,
+    timeRemaining: turnTimeRemaining,
+    isPaused: isTurnTimerPaused
+  } = useAutoTurnTimer({
+    isActive,
+    isInReactionMode: Boolean(isInReactionMode),
+    targetMode,
+    onAutoEndTurn: handleEndTurn
+  });
+
   // Track processing state - exclude animation state to prevent overlay during animations
   const isProcessingMove = cardProcessing || turnProcessing || isProcessingAction;
 
@@ -238,15 +268,28 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // NOTE: Timeout logic removed per user request - no automatic timeout for card selection
 
+  // Reset local choice flags when server state clears the pending choices
+  useEffect(() => {
+    if (!memoizedG.pendingChainChoice && chainChoiceMade) {
+      setChainChoiceMade(false);
+    }
+  }, [memoizedG.pendingChainChoice, chainChoiceMade]);
+  
+  useEffect(() => {
+    if (!memoizedG.pendingWildcardChoice && wildcardChoiceMade) {
+      setWildcardChoiceMade(false);
+    }
+  }, [memoizedG.pendingWildcardChoice, wildcardChoiceMade]);
+
   // ROBUST: Monitor pendingCardChoice state transitions for debugging
   useEffect(() => {
     if (memoizedG.pendingCardChoice) {
-      console.log(`🎯 CARD CHOICE STATE: pendingCardChoice active for player ${memoizedG.pendingCardChoice.playerId}`);
-      console.log(`🎯 CARD CHOICE STATE: Available cards: ${memoizedG.pendingCardChoice.availableCards?.length || 0}`);
-      console.log(`🎯 CARD CHOICE STATE: Choice type: ${memoizedG.pendingCardChoice.choiceType}`);
-      console.log(`🎯 CARD CHOICE STATE: Source card: ${memoizedG.pendingCardChoice.sourceCardId}`);
+      debugLog(`🎯 CARD CHOICE STATE: pendingCardChoice active for player ${memoizedG.pendingCardChoice.playerId}`);
+      debugLog(`🎯 CARD CHOICE STATE: Available cards: ${memoizedG.pendingCardChoice.availableCards?.length || 0}`);
+      debugLog(`🎯 CARD CHOICE STATE: Choice type: ${memoizedG.pendingCardChoice.choiceType}`);
+      debugLog(`🎯 CARD CHOICE STATE: Source card: ${memoizedG.pendingCardChoice.sourceCardId}`);
     } else {
-      console.log(`🎯 CARD CHOICE STATE: No pendingCardChoice active`);
+      debugLog(`🎯 CARD CHOICE STATE: No pendingCardChoice active`);
     }
   }, [memoizedG.pendingCardChoice]);
 
@@ -255,7 +298,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   useEffect(() => {
     if (isGameOver) {
-      console.log('🎮 Game Over Detected:', {
+      debugLog('🎮 Game Over Detected:', {
         ctxGameover: memoizedCtx.gameover,
         ctxPhase: memoizedCtx.phase,
         gamePhase: memoizedG.gamePhase,
@@ -267,64 +310,64 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   
   // Handle player surrender
   const surrender = useCallback(() => {
-    console.log('CLIENT: Surrender button clicked!');
-    console.log('CLIENT: Player ID:', playerID);
-    console.log('CLIENT: Is attacker:', isAttacker);
-    console.log('CLIENT: Is active:', isActive);
-    console.log('CLIENT: Current phase:', ctx.phase);
-    console.log('CLIENT: Current activePlayers:', ctx.activePlayers);
+    debugLog('CLIENT: Surrender button clicked!');
+    debugLog('CLIENT: Player ID:', playerID);
+    debugLog('CLIENT: Is attacker:', isAttacker);
+    debugLog('CLIENT: Is active:', isActive);
+    debugLog('CLIENT: Current phase:', ctx.phase);
+    debugLog('CLIENT: Current activePlayers:', ctx.activePlayers);
     
     // Show confirmation dialog - surrender should be allowed even when not active
     const confirmed = window.confirm(`Are you sure you want to surrender? This will end the game and count as a loss.\n\nNote: It's currently ${isActive ? 'your' : "your opponent's"} turn, but you can surrender at any time.`);
     if (!confirmed) {
-      console.log('CLIENT: Surrender cancelled by user');
+      debugLog('CLIENT: Surrender cancelled by user');
       return;
     }
     
-    console.log('CLIENT: Surrender confirmed by user!');
+    debugLog('CLIENT: Surrender confirmed by user!');
     
-    console.log('CLIENT: Executing surrender move');
-    console.log('CLIENT: Available moves:', Object.keys(moves || {}));
-    console.log('CLIENT: Surrender move available:', !!moves?.surrender);
-    console.log('CLIENT: Current phase:', ctx.phase);
-    console.log('CLIENT: Current game phase:', G.gamePhase);
-    console.log('CLIENT: Player ID:', playerID);
-    console.log('CLIENT: Is active:', isActive);
-    console.log('CLIENT: Active players:', ctx.activePlayers);
+    debugLog('CLIENT: Executing surrender move');
+    debugLog('CLIENT: Available moves:', Object.keys(moves || {}));
+    debugLog('CLIENT: Surrender move available:', !!moves?.surrender);
+    debugLog('CLIENT: Current phase:', ctx.phase);
+    debugLog('CLIENT: Current game phase:', G.gamePhase);
+    debugLog('CLIENT: Player ID:', playerID);
+    debugLog('CLIENT: Is active:', isActive);
+    debugLog('CLIENT: Active players:', ctx.activePlayers);
     
     // First try using the moves.surrender function - use non-memoized moves
     if (moves && typeof moves.surrender === 'function') {
       try {
-        console.log('CLIENT: Using moves.surrender()');
+        debugLog('CLIENT: Using moves.surrender()');
         moves.surrender();
         return; // If this succeeds, we're done
       } catch (error) {
-        console.error('CLIENT: Error calling moves.surrender:', error);
+        debugError('CLIENT: Error calling moves.surrender:', error);
         // Continue to try the fallbacks
       }
     } else {
-      console.log('CLIENT: surrender move not available in moves, trying alternatives');
+      debugLog('CLIENT: surrender move not available in moves, trying alternatives');
     }
     
     // Try using the client's makeMove function as a fallback
     if (props.client && props.client.moves && typeof props.client.moves.surrender === 'function') {
       try {
-        console.log('CLIENT: Using client.moves.surrender()');
+        debugLog('CLIENT: Using client.moves.surrender()');
         props.client.moves.surrender();
         return;
       } catch (error) {
-        console.error('CLIENT: Error calling client.moves.surrender:', error);
+        debugError('CLIENT: Error calling client.moves.surrender:', error);
       }
     }
     
     // As a last resort, try manual move
     try {
       if (props.client) {
-        console.log('CLIENT: Using client.makeMove("surrender", [])');
+        debugLog('CLIENT: Using client.makeMove("surrender", [])');
         props.client.makeMove('surrender', []);
       }
     } catch (error) {
-      console.error('CLIENT: All surrender attempts failed:', error);
+      debugError('CLIENT: All surrender attempts failed:', error);
       alert('Unable to surrender. Please try again or refresh the page.');
     }
   }, [moves, props.client]);
@@ -338,7 +381,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         moves.sendChatMessage(content);
         return;
       } catch (error) {
-        console.error('Error calling moves.sendChatMessage:', error);
+        debugError('Error calling moves.sendChatMessage:', error);
       }
     }
     
@@ -347,7 +390,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         props.client.moves.sendChatMessage(content);
         return;
       } catch (error) {
-        console.error('Error calling client.moves.sendChatMessage:', error);
+        debugError('Error calling client.moves.sendChatMessage:', error);
       }
     }
     
@@ -356,7 +399,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         props.client.makeMove('sendChatMessage', [content]);
       }
     } catch (error) {
-      console.error('All chat message attempts failed:', error);
+      debugError('All chat message attempts failed:', error);
     }
   }, [moves, props.client]);
 
@@ -366,7 +409,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       try {
         moves.requestRematch();
       } catch (error) {
-        console.error('Error requesting rematch:', error);
+        debugError('Error requesting rematch:', error);
       }
     } else if (props.client && props.client.moves && typeof props.client.moves.requestRematch === 'function') {
       props.client.moves.requestRematch();
@@ -376,38 +419,53 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // Choice handlers
   const handleChooseChainTarget = useCallback((targetId: string) => {
     if (moves.chooseChainTarget) {
+      // Immediately hide the modal for better UX
+      setChainChoiceMade(true);
       moves.chooseChainTarget(targetId);
+    }
+  }, [moves]);
+  
+  const handleCancelChainEffect = useCallback(() => {
+    debugLog('🔗 CHAIN CANCEL: User cancelled chain effect');
+    // Cancel by choosing an empty/invalid target that will be handled gracefully
+    if (moves.chooseChainTarget) {
+      // Immediately hide the modal for better UX
+      setChainChoiceMade(true);
+      // Pass empty string to signal cancellation
+      moves.chooseChainTarget('');
     }
   }, [moves]);
   
   const handleChooseWildcardType = useCallback((type: string) => {
     if (moves.chooseWildcardType) {
+      // Immediately hide the modal for better UX
+      setWildcardChoiceMade(true);
       moves.chooseWildcardType({ type });
     }
   }, [moves]);
   
   const handleChooseHandDiscard = useCallback((cardIds: string[]) => {
-    console.log('🎯 HAND DISCARD: Attempting to discard cards:', cardIds);
-    console.log('🎯 HAND DISCARD: Available moves:', Object.keys(moves || {}));
-    console.log('🎯 HAND DISCARD: chooseHandDiscard available:', !!moves.chooseHandDiscard);
+    debugLog('🎯 HAND DISCARD: Attempting to discard cards:', cardIds);
+    debugLog('🎯 HAND DISCARD: Available moves:', Object.keys(moves || {}));
+    debugLog('🎯 HAND DISCARD: chooseHandDiscard available:', !!moves.chooseHandDiscard);
     
     if (moves.chooseHandDiscard) {
-      console.log('🎯 HAND DISCARD: Calling moves.chooseHandDiscard with:', { cardIds });
+      debugLog('🎯 HAND DISCARD: Calling moves.chooseHandDiscard with:', { cardIds });
       moves.chooseHandDiscard({ cardIds });
     } else {
-      console.error('🎯 HAND DISCARD: chooseHandDiscard move not available!');
+      debugError('🎯 HAND DISCARD: chooseHandDiscard move not available!');
     }
   }, [moves]);
   
   const handleChooseCardFromDeck = useCallback((cardId: string) => {
-    console.log(`🎯 FRONTEND DEBUG: handleChooseCardFromDeck called with cardId: ${cardId}`);
-    console.log(`🎯 FRONTEND DEBUG: typeof cardId: ${typeof cardId}`);
-    console.log(`🎯 FRONTEND DEBUG: moves.chooseCardFromDeck available: ${!!moves.chooseCardFromDeck}`);
-    console.log(`🎯 FRONTEND DEBUG: Current pendingCardChoice: ${!!memoizedG.pendingCardChoice}`);
+    debugLog(`🎯 FRONTEND DEBUG: handleChooseCardFromDeck called with cardId: ${cardId}`);
+    debugLog(`🎯 FRONTEND DEBUG: typeof cardId: ${typeof cardId}`);
+    debugLog(`🎯 FRONTEND DEBUG: moves.chooseCardFromDeck available: ${!!moves.chooseCardFromDeck}`);
+    debugLog(`🎯 FRONTEND DEBUG: Current pendingCardChoice: ${!!memoizedG.pendingCardChoice}`);
     
     // DEFENSIVE: Validate inputs
     if (!cardId || typeof cardId !== 'string') {
-      console.error(`🎯 FRONTEND ERROR: Invalid cardId: ${cardId}`);
+      debugError(`🎯 FRONTEND ERROR: Invalid cardId: ${cardId}`);
       addToast({
         type: 'error',
         title: 'Invalid Selection',
@@ -419,7 +477,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     
     // DEFENSIVE: Validate game state
     if (!memoizedG.pendingCardChoice) {
-      console.error(`🎯 FRONTEND ERROR: No pending card choice available`);
+      debugError(`🎯 FRONTEND ERROR: No pending card choice available`);
       addToast({
         type: 'error',
         title: 'Selection Unavailable',
@@ -431,7 +489,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     
     // DEFENSIVE: Validate player permission
     if (memoizedG.pendingCardChoice.playerId !== playerID) {
-      console.error(`🎯 FRONTEND ERROR: Wrong player for card choice`);
+      debugError(`🎯 FRONTEND ERROR: Wrong player for card choice`);
       addToast({
         type: 'error',
         title: 'Access Denied',
@@ -442,10 +500,10 @@ const BalatroGameBoard = (props: GameBoardProps) => {
     }
     
     if (moves.chooseCardFromDeck) {
-      console.log(`🎯 FRONTEND DEBUG: Calling moves.chooseCardFromDeck with: ${cardId}`);
+      debugLog(`🎯 FRONTEND DEBUG: Calling moves.chooseCardFromDeck with: ${cardId}`);
       try {
         moves.chooseCardFromDeck(cardId);
-        console.log(`🎯 FRONTEND DEBUG: Move call completed successfully`);
+        debugLog(`🎯 FRONTEND DEBUG: Move call completed successfully`);
         
         // Success feedback
         addToast({
@@ -455,7 +513,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           duration: 2000
         });
       } catch (error) {
-        console.error(`🎯 FRONTEND ERROR: Failed to call chooseCardFromDeck:`, error);
+        debugError(`🎯 FRONTEND ERROR: Failed to call chooseCardFromDeck:`, error);
         addToast({
           type: 'error',
           title: 'Selection Failed',
@@ -464,7 +522,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         });
       }
     } else {
-      console.error(`🎯 FRONTEND ERROR: chooseCardFromDeck move not available!`);
+      debugError(`🎯 FRONTEND ERROR: chooseCardFromDeck move not available!`);
       addToast({
         type: 'error',
         title: 'Move Unavailable',
@@ -476,14 +534,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 
   // Developer cheat handler
   const handleCheatAddCard = useCallback((card: any) => {
-    console.log('🔧 CHEAT: Adding card to hand:', card.name);
+    debugLog('🔧 CHEAT: Adding card to hand:', card.name);
     
     if (moves && typeof moves.devCheatAddCard === 'function') {
       try {
         moves.devCheatAddCard(card);
         return;
       } catch (error) {
-        console.error('🔧 CHEAT: Error calling moves.devCheatAddCard:', error);
+        debugError('🔧 CHEAT: Error calling moves.devCheatAddCard:', error);
       }
     }
     
@@ -492,7 +550,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         props.client.moves.devCheatAddCard(card);
         return;
       } catch (error) {
-        console.error('🔧 CHEAT: Error calling client.moves.devCheatAddCard:', error);
+        debugError('🔧 CHEAT: Error calling client.moves.devCheatAddCard:', error);
       }
     }
     
@@ -501,7 +559,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         props.client.makeMove('devCheatAddCard', [card]);
       }
     } catch (error) {
-      console.error('🔧 CHEAT: All devCheatAddCard attempts failed:', error);
+      debugError('🔧 CHEAT: All devCheatAddCard attempts failed:', error);
     }
   }, [moves, props.client]);
 
@@ -523,7 +581,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
   // }), [memoizedG, memoizedCtx, playerID, isActive, moves, isAttacker]);
 
   // Theme support - still needed for main component styling
-  const { theme } = useThemeStore();
+  const theme = useTheme();
 
   // Loading state
   if (!memoizedG || !memoizedCtx) {
@@ -606,6 +664,9 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         isProcessingMove={isProcessingMove}
         handleEndTurn={handleEndTurn}
         handleSkipReaction={handleSkipReaction}
+        isTurnTimerActive={isTurnTimerActive}
+        turnTimeRemaining={turnTimeRemaining}
+        isTurnTimerPaused={isTurnTimerPaused}
         cycleCard={cycleCard}
         surrender={surrender}
         isInReactionMode={Boolean(isInReactionMode)}
@@ -613,81 +674,19 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         timeRemaining={timeRemaining}
       />
 
-      {/* Connection Status Indicator */}
-      <ConnectionStatusIndicator
-        connectionStatus={heartbeatStatus.connectionStatus}
-        opponentStatus={heartbeatStatus.opponentStatus}
-        isAttacker={isAttacker}
-        playerName={currentPlayerObj?.name}
-        opponentName={opponent?.name}
-      />
-
-      {/* Enhanced status bar with turn indicator */}
-      <div className={`
-        px-4 py-3 border-b transition-all duration-500
-        ${isActive 
-          ? isAttacker
-            ? 'bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border-red-500/50' 
-            : 'bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-blue-600/20 border-blue-500/50'
-          : isAttacker
-            ? 'bg-red-900/50 border-red-800/30'
-            : 'bg-blue-900/50 border-blue-800/30'
-        }
-      `}>
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          
-          {/* Turn status in header */}
-          {isActive && (
-            <div className="flex items-center gap-2">
-              <div className={`
-                badge gap-2 animate-pulse
-                ${isAttacker 
-                  ? 'badge-error bg-red-600 text-red-100 border-red-400' 
-                  : 'badge-info bg-blue-600 text-blue-100 border-blue-400'
-                }
-              `}>
-                <span className={`
-                  w-2 h-2 rounded-full animate-ping
-                  ${isAttacker ? 'bg-red-100' : 'bg-blue-100'}
-                `}></span>
-                YOUR TURN - TAKE ACTION
-              </div>
-            </div>
-          )}
-          
-          {!isActive && (
-            <div className="flex items-center gap-2">
-              <div className={`
-                badge gap-2
-                ${isAttacker 
-                  ? 'badge-ghost bg-red-800/50 text-red-300 border-red-700' 
-                  : 'badge-ghost bg-blue-800/50 text-blue-300 border-blue-700'
-                }
-              `}>
-                <span className="loading loading-dots loading-xs"></span>
-                WAITING FOR OPPONENT
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-
-
       {/* Main game area */}
       <main className="flex-1 flex flex-col gap-4 p-4 w-full">
         {/* Opponent area */}
-        <div className={`${!isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}`}>
-          <OpponentHandArea
-            opponent={opponent}
-            isAttacker={isAttacker}
-            G={memoizedG}
-            ctx={memoizedCtx}
-            playerID={playerID}
-            isActive={isActive}
-            moves={moves}
-          />
-        </div>
+        <OpponentHandArea
+          opponent={opponent}
+          isAttacker={isAttacker}
+          G={memoizedG}
+          ctx={memoizedCtx}
+          playerID={playerID}
+          isActive={isActive}
+          moves={moves}
+          opponentStatus={heartbeatStatus.opponentStatus}
+        />
 
         {/* Game content wrapper */}
         <div className="flex gap-4 flex-1 min-h-0 lg:flex-row flex-col">
@@ -705,16 +704,40 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             sendChatMessage={sendChatMessage}
           />
 
-          {/* Center column - Infrastructure */}
-          <div className="flex-1 flex flex-col lg:order-2 order-1">
-            <div className="bg-base-200 border border-primary/30 rounded-xl p-6 relative flex-1 lg:min-h-80 min-h-60 flex flex-col items-center justify-center backdrop-blur-sm">
-              {/* Network grid label */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-base-200 text-primary px-4 py-1 border border-primary/30 rounded-full text-xs font-bold font-mono uppercase tracking-wider">
-                NETWORK_GRID
-              </div>
-              
-              {/* Corner bracket */}
-              <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary"></div>
+                 {/* Center column - Infrastructure */}
+                 <div className="flex-1 flex flex-col lg:order-2 order-1">
+                   <div className={`
+                     border-2 rounded-xl p-6 relative flex-1 lg:min-h-80 min-h-60 flex flex-col items-center justify-center backdrop-blur-sm shadow-lg
+                     ${theme === 'cyberpunk'
+                       ? isAttacker
+                         ? 'bg-red-50/80 border-red-600/60'
+                         : 'bg-blue-50/80 border-blue-600/60'
+                       : isAttacker
+                         ? 'bg-red-950/30 border-red-500/30'
+                         : 'bg-blue-950/30 border-blue-500/30'
+                     }
+                   `}>
+                     {/* Network grid label */}
+                     <div className={`
+                       absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 border-2 rounded-full text-xs font-bold font-mono uppercase tracking-wider
+                       ${theme === 'cyberpunk'
+                         ? isAttacker
+                           ? 'bg-red-50 text-red-700 border-red-600/60 shadow-sm'
+                           : 'bg-blue-50 text-blue-700 border-blue-600/60 shadow-sm'
+                         : isAttacker
+                           ? 'bg-red-950/90 text-red-300 border-red-500/30'
+                           : 'bg-blue-950/90 text-blue-300 border-blue-500/30'
+                       }
+                     `}>
+                       NETWORK_GRID
+                     </div>
+                     
+                     {/* Corner bracket */}
+                     <div className={`absolute top-0 right-0 w-3 h-3 border-t border-r ${
+                       theme === 'cyberpunk'
+                         ? isAttacker ? 'border-red-600/60' : 'border-blue-600/60'
+                         : isAttacker ? 'border-red-500' : 'border-blue-500'
+                     }`}></div>
               
               <InfrastructureGrid
                 G={memoizedG}
@@ -745,11 +768,12 @@ const BalatroGameBoard = (props: GameBoardProps) => {
           cycleCard={cycleCard}
           selectCardToThrow={selectCardToThrow}
           cancelTargeting={cancelTargeting}
+          connectionStatus={heartbeatStatus.connectionStatus}
         />
       </main>
 
       {/* Overlay UIs for game choices */}
-      {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && (
+      {memoizedG.pendingWildcardChoice && playerID === memoizedG.pendingWildcardChoice.playerId && !wildcardChoiceMade && (
         <WildcardChoiceUI
           pendingChoice={memoizedG.pendingWildcardChoice}
           playerId={playerID || ''}
@@ -757,11 +781,12 @@ const BalatroGameBoard = (props: GameBoardProps) => {
         />
       )}
       
-      {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && (
+      {memoizedG.pendingChainChoice && playerID === memoizedG.pendingChainChoice.playerId && !chainChoiceMade && (
         <ChainEffectUI
           pendingChainChoice={memoizedG.pendingChainChoice}
           infrastructureCards={optimizedInfrastructureData.cards}
           onChooseTarget={handleChooseChainTarget}
+          onCancel={handleCancelChainEffect}
         />
       )}
       
@@ -774,7 +799,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             : (playerID !== memoizedG.pendingHandChoice.targetPlayerId) // Threat Intelligence: opponent chooses target's cards
         );
         
-        console.log('🎯 HAND CHOICE DEBUG:', {
+        debugLog('🎯 HAND CHOICE DEBUG:', {
           hasPendingHandChoice: !!memoizedG.pendingHandChoice,
           playerID,
           targetPlayerId: memoizedG.pendingHandChoice?.targetPlayerId,
@@ -843,7 +868,7 @@ const BalatroGameBoard = (props: GameBoardProps) => {
       <DisconnectionAlert
         disconnectionState={disconnectionHandler.disconnectionState}
         onForfeit={() => {
-          console.log('Player forfeited due to disconnection');
+          debugLog('Player forfeited due to disconnection');
           disconnectionHandler.stopCountdown();
           // TODO: Implement actual forfeit logic
         }}
@@ -863,14 +888,14 @@ const BalatroGameBoard = (props: GameBoardProps) => {
 const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps) => {
   // Safety check
   if (!prevProps.G || !nextProps.G || !prevProps.ctx || !nextProps.ctx) {
-    console.log('CLIENT: Re-rendering due to missing props');
+    debugLog('CLIENT: Re-rendering due to missing props');
     return false;
   }
   
   // Quick primitive checks
   if (prevProps.isActive !== nextProps.isActive ||
       prevProps.playerID !== nextProps.playerID) {
-    console.log('CLIENT: Re-rendering due to player/active state change');
+    debugLog('CLIENT: Re-rendering due to player/active state change');
     return false;
   }
   
@@ -878,13 +903,13 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   if (prevProps.ctx.phase !== nextProps.ctx.phase ||
       prevProps.ctx.currentPlayer !== nextProps.ctx.currentPlayer ||
       prevProps.ctx.gameover !== nextProps.ctx.gameover) {
-    console.log('CLIENT: Re-rendering due to context change');
+    debugLog('CLIENT: Re-rendering due to context change');
     return false;
   }
   
   // CRITICAL: Check activePlayers for reaction mode detection
   if (!isEqual(prevProps.ctx.activePlayers, nextProps.ctx.activePlayers)) {
-    console.log('CLIENT: Re-rendering due to activePlayers change (reaction mode)');
+    debugLog('CLIENT: Re-rendering due to activePlayers change (reaction mode)');
     return false;
   }
   
@@ -893,7 +918,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
       prevProps.G.message !== nextProps.G.message ||
       prevProps.G.attackerScore !== nextProps.G.attackerScore ||
       prevProps.G.defenderScore !== nextProps.G.defenderScore) {
-    console.log('CLIENT: Re-rendering due to game state change');
+    debugLog('CLIENT: Re-rendering due to game state change');
     return false;
   }
   
@@ -903,7 +928,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   if (prevMessages.length !== nextMessages.length ||
       (prevMessages.length > 0 && nextMessages.length > 0 &&
        !isEqual(prevMessages[prevMessages.length - 1], nextMessages[nextMessages.length - 1]))) {
-    console.log('CLIENT: Re-rendering due to chat message changes');
+    debugLog('CLIENT: Re-rendering due to chat message changes');
     return false;
   }
   
@@ -912,7 +937,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
       prevProps.G?.defender?.id !== nextProps.G?.defender?.id ||
       prevProps.G?.attacker?.hand?.length !== nextProps.G?.attacker?.hand?.length ||
       prevProps.G?.defender?.hand?.length !== nextProps.G?.defender?.hand?.length) {
-    console.log('CLIENT: Re-rendering due to player changes');
+    debugLog('CLIENT: Re-rendering due to player changes');
     return false;
   }
   
@@ -920,7 +945,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   const prevInfra = prevProps.G?.infrastructure || [];
   const nextInfra = nextProps.G?.infrastructure || [];
   if (prevInfra.length !== nextInfra.length) {
-    console.log('CLIENT: Re-rendering due to infrastructure count change');
+    debugLog('CLIENT: Re-rendering due to infrastructure count change');
     return false;
   }
   
@@ -928,7 +953,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   for (let i = 0; i < prevInfra.length; i++) {
     if (prevInfra[i]?.state !== nextInfra[i]?.state ||
         prevInfra[i]?.id !== nextInfra[i]?.id) {
-      console.log('CLIENT: Re-rendering due to infrastructure state change');
+      debugLog('CLIENT: Re-rendering due to infrastructure state change');
       return false;
     }
   }
@@ -938,13 +963,13 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
       prevProps.G?.pendingWildcardChoice?.playerId !== nextProps.G?.pendingWildcardChoice?.playerId ||
       prevProps.G?.pendingHandChoice?.targetPlayerId !== nextProps.G?.pendingHandChoice?.targetPlayerId ||
       prevProps.G?.pendingCardChoice?.playerId !== nextProps.G?.pendingCardChoice?.playerId) {
-    console.log('CLIENT: Re-rendering due to pending choice changes');
+    debugLog('CLIENT: Re-rendering due to pending choice changes');
     return false;
   }
   
   // Rematch requests
   if (prevProps.G?.rematchRequested !== nextProps.G?.rematchRequested) {
-    console.log('CLIENT: Re-rendering due to rematch request changes');
+    debugLog('CLIENT: Re-rendering due to rematch request changes');
     return false;
   }
   
@@ -953,7 +978,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   const nextPersistentEffects = nextProps.G?.persistentEffects || [];
   if (prevPersistentEffects.length !== nextPersistentEffects.length ||
       !isEqual(prevPersistentEffects, nextPersistentEffects)) {
-    console.log('CLIENT: Re-rendering due to persistent effects changes');
+    debugLog('CLIENT: Re-rendering due to persistent effects changes');
     return false;
   }
   
@@ -962,7 +987,7 @@ const MemoBalatroGameBoard = React.memo(BalatroGameBoard, (prevProps, nextProps)
   const nextTemporaryEffects = nextProps.G?.temporaryEffects || [];
   if (prevTemporaryEffects.length !== nextTemporaryEffects.length ||
       !isEqual(prevTemporaryEffects, nextTemporaryEffects)) {
-    console.log('CLIENT: Re-rendering due to temporary effects changes');
+    debugLog('CLIENT: Re-rendering due to temporary effects changes');
     return false;
   }
   

@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Sword, Shield, Castle, Zap, Lock, Unlock, RefreshCw,
+  User, Sparkles, X, Target as TargetIcon, AlertCircle
+} from 'lucide-react';
+import UserProfilePopup from '../../UserProfilePopup';
+import FullProfileModal from '../FullProfileModal';
+import accountService from '../../../services/account.service';
 
 // Import types
 import type { GameComponentProps } from './types';
@@ -7,6 +15,9 @@ import { isReactiveCardObject } from '../../../types/card.types';
 
 // Import hooks
 import { useAudioManager } from '../../../hooks/useAudioManager';
+import { useResponsiveGameScaling } from '../../../hooks/useResponsiveGameScaling';
+import { useTheme } from '../../../store/theme.store';
+import type { ConnectionStatus } from '../../../hooks/useHeartbeat';
 
 // Define props interface extending GameComponentProps
 export interface PlayerHandAreaProps extends GameComponentProps {
@@ -25,6 +36,9 @@ export interface PlayerHandAreaProps extends GameComponentProps {
   cycleCard: (cardId: string) => void;
   selectCardToThrow: (card: any) => void;
   cancelTargeting: () => void;
+  
+  // Connection status
+  connectionStatus?: ConnectionStatus;
 }
 
 const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
@@ -40,10 +54,144 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
   playCard,
   cycleCard,
   selectCardToThrow,
-  cancelTargeting
+  cancelTargeting,
+  connectionStatus
 }) => {
   // Audio manager for sound effects
   const { triggerClick } = useAudioManager();
+  
+  // Get responsive scaling configuration
+  const scaling = useResponsiveGameScaling();
+  
+  // Get theme for conditional styling
+  const theme = useTheme();
+  
+  // Profile popup state
+  const [profilePopup, setProfilePopup] = useState({
+    isVisible: false,
+    userId: '',
+    username: '',
+    position: { x: 0, y: 0 }
+  });
+
+  // Full profile modal state
+  const [fullProfileModal, setFullProfileModal] = useState({
+    isVisible: false,
+    userId: '',
+    username: ''
+  });
+
+  // Fetched username state
+  const [fetchedUsername, setFetchedUsername] = useState<string>('');
+
+  // Fetch username from account service
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUsername = async () => {
+      // Get real UUID from playerUuidMap
+      const realUuid = playerID && G?.playerUuidMap?.[playerID];
+      const userId = realUuid || (currentPlayerObj as any)?.uuid || (currentPlayerObj as any)?.realUserId || playerID;
+      
+      if (!userId || userId === '0' || userId === '1') {
+        // Development mode or no valid UUID
+        if (isMounted) setFetchedUsername(currentPlayerObj?.username || playerID || 'YOU');
+        return;
+      }
+
+      try {
+        const accountData = await accountService.getAccountByUuid(userId);
+        if (isMounted && accountData.username) {
+          setFetchedUsername(accountData.username);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch username:', err);
+        if (isMounted) setFetchedUsername(currentPlayerObj?.username || playerID || 'YOU');
+      }
+    };
+
+    fetchUsername();
+    return () => { isMounted = false; };
+  }, [playerID, G?.playerUuidMap, currentPlayerObj]);
+
+  // Helper functions for connection status
+  const formatLatency = (latency: number) => {
+    if (latency === 0) return '--';
+    return `${latency}ms`;
+  };
+
+  const getConnectionIcon = (isConnected: boolean, reconnectAttempts: number) => {
+    if (!isConnected && reconnectAttempts > 0) {
+      return '🔄'; // Reconnecting
+    }
+    return isConnected ? '🟢' : '🔴';
+  };
+
+  // Handle username click to show profile popup
+  const handleUsernameClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // ✅ Get real UUID from playerUuidMap (same logic as PlayerInfo)
+    const realUuid = playerID && G?.playerUuidMap?.[playerID];
+    const userId = realUuid || (currentPlayerObj as any)?.uuid || (currentPlayerObj as any)?.realUserId || playerID;
+    const username = fetchedUsername || currentPlayerObj?.username || playerID || 'YOU';
+    
+    if (!userId) return;
+    
+    // Skip for BoardGame.io IDs in development mode
+    if (userId === '0' || userId === '1') {
+      console.log('PlayerHandArea: Skipping profile popup for BoardGame.io ID:', userId);
+      return;
+    }
+
+    console.log('PlayerHandArea: Opening profile for UUID:', userId);
+    setProfilePopup({
+      isVisible: true,
+      userId,
+      username,
+      position: { x: event.clientX, y: event.clientY }
+    });
+  };
+
+  const closeProfilePopup = () => {
+    setProfilePopup(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const openFullProfileModal = () => {
+    setFullProfileModal({
+      isVisible: true,
+      userId: profilePopup.userId,
+      username: profilePopup.username
+    });
+  };
+
+  const closeFullProfileModal = () => {
+    setFullProfileModal(prev => ({ ...prev, isVisible: false }));
+  };
+
+  // Helper function to get card type icon component
+  const getCardTypeIcon = (cardType: string) => {
+    switch (cardType) {
+      case 'attack':
+        return <Sword className="w-4 h-4" />;
+      case 'exploit':
+        return <Unlock className="w-4 h-4" />;
+      case 'counter-attack':
+      case 'counter':
+        return <Shield className="w-4 h-4" />;
+      case 'reaction':
+        return <Zap className="w-4 h-4" />;
+      case 'shield':
+        return <Lock className="w-4 h-4" />;
+      case 'fortify':
+        return <Castle className="w-4 h-4" />;
+      case 'response':
+        return <AlertCircle className="w-4 h-4" />;
+      case 'wildcard':
+        return <Sparkles className="w-4 h-4" />;
+      default:
+        return <TargetIcon className="w-4 h-4" />;
+    }
+  };
 
   // Helper function to get player card classes
   const getPlayerCardClasses = (cardType: string, isAttacker: boolean) => {
@@ -145,7 +293,10 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
     const sortedHand = sortAndGroupCards(hand);
     
     return (
-      <div className="flex flex-wrap gap-3 justify-center max-w-5xl lg:gap-3 gap-2">
+      <div 
+        className="flex flex-wrap justify-start max-w-5xl overflow-visible -ml-32"
+        style={{ gap: `${scaling.cardGap}px` }}
+      >
         <AnimatePresence mode="popLayout">
           {sortedHand.map((card: any) => {
           const isSelected = selectedCard === card.id;
@@ -158,9 +309,11 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
           let isPlayable = false;
           
           // Debug logging for defender tutorial
-          if (card.name === 'Firewall') {
-            console.log('🎯 TUTORIAL: Firewall playability check:', {
+          if (card.name === 'Firewall' || card.name === 'DMZ Implementation' || card.name === 'Incident Response Team' ||
+              card.name === 'Phishing Defense' || card.type === 'fortify' || card.type === 'response' || card.type === 'reaction') {
+            console.log('🎯 TUTORIAL: Card playability check:', {
               cardName: card.name,
+              cardType: card.type,
               targetMode,
               isActive,
               ctxPhase: ctx.phase,
@@ -174,7 +327,7 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
             
             // TEMPORARY FIX: Force defender cards to be playable in tutorial during specific steps
             const currentTutorialStep = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-            const isDefenderTutorialStep = ['shield_card', 'fortify_card', 'response_card'].includes(currentTutorialStep || '');
+            const isDefenderTutorialStep = ['shield_card', 'fortify_card', 'response_card', 'reaction_card'].includes(currentTutorialStep || '');
             
             if (!card.playable && currentStage === 'action' && isActive && isDefenderTutorialStep) {
               console.log(`🎯 TUTORIAL: Forcing ${card.name} to be playable for ${currentTutorialStep} step`);
@@ -240,16 +393,22 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
+              style={{
+                width: `${scaling.breakpoint === 'lg' || scaling.breakpoint === 'xl' || scaling.breakpoint === '2xl' ? scaling.cardWidthLg : scaling.cardWidth}px`,
+                height: `${scaling.breakpoint === 'lg' || scaling.breakpoint === 'xl' || scaling.breakpoint === '2xl' ? scaling.cardHeightLg : scaling.cardHeight}px`,
+                padding: `${scaling.containerPadding}px`
+              }}
               className={`
-                group relative lg:w-32 lg:h-48 w-28 h-40 border-2 rounded-xl lg:p-3 p-2
+                group relative border-2 rounded-xl
                 flex flex-col justify-center items-center transition-all duration-500 cursor-pointer
-                font-mono lg:text-sm text-xs overflow-visible
+                font-mono text-xs
                 ${getPlayerCardClasses(cardType, isAttacker)}
                 ${borderColorClass} border-l-4
                 ${reactionModeClass}
-                ${isSelected ? 'border-warning shadow-lg shadow-warning/50 -translate-y-2 scale-105 z-30' : ''}
-                ${isPlayable ? 'border-success shadow-md shadow-success/30 hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu' : 'hover:scale-125 hover:z-20 hover:shadow-2xl transform-gpu'}
+                ${isSelected ? `border-warning ${theme === 'cyberpunk' ? 'shadow-lg shadow-warning/80 ring-2 ring-warning/60' : 'shadow-lg shadow-warning/50'} -translate-y-2 scale-105 z-30` : ''}
+                ${isPlayable ? `border-success ${theme === 'cyberpunk' ? 'shadow-md shadow-success/60 ring-1 ring-success/40' : 'shadow-md shadow-success/30'} hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu` : 'hover:scale-110 hover:z-[90] hover:shadow-2xl transform-gpu'}
                 ${!isPlayable && !targetMode ? 'cursor-not-allowed' : ''}
+                ${theme === 'cyberpunk' ? 'border-opacity-80' : ''}
               `}
               onClick={(event) => {
                 if (!isPlayable) {
@@ -285,14 +444,14 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
                   <div className="lg:w-6 lg:h-6 w-5 h-5 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center lg:text-xs text-[9px] font-bold">
                     {card.cost}
                   </div>
-                  <div className="lg:text-xl text-lg">
-                    {cardType === 'attack' ? '⚔️' : 
-                     cardType === 'exploit' ? '🔓' : 
-                     cardType === 'counter-attack' || cardType === 'counter' ? '🛡️' : 
-                     cardType === 'reaction' ? '⚡' : 
-                     cardType === 'shield' ? '🔒' : 
-                     cardType === 'fortify' ? '🏰' : 
-                     cardType === 'wildcard' ? '🃏' : '🔧'}
+                  <div className={`
+                    lg:w-8 lg:h-8 w-7 h-7 rounded-lg flex items-center justify-center
+                    ${isPlayable 
+                      ? 'bg-success/20 text-success border border-success/30' 
+                      : 'bg-base-300/50 text-base-content/50 border border-base-content/20'
+                    }
+                  `}>
+                    {getCardTypeIcon(cardType)}
                   </div>
                 </div>
                 
@@ -325,23 +484,28 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
               </div>
 
               {/* Expanded Card View (on hover) - Card-like proportions - Always fully visible regardless of playable state */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:!opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-20 transform scale-125 origin-bottom shadow-2xl w-64 h-96 p-3 flex flex-col pointer-events-none">
+              <div 
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 opacity-0 group-hover:!opacity-100 transition-all duration-300 bg-base-200/95 backdrop-blur-sm rounded-xl border-2 border-base-content/20 z-[100] transform scale-125 origin-bottom shadow-2xl p-3 flex flex-col pointer-events-none"
+                style={{
+                  width: `${scaling.expandedCardWidth}px`,
+                  height: `${scaling.expandedCardHeight}px`
+                }}
+              >
                 {/* Card Header */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 bg-amber-600 text-base-content rounded-full flex items-center justify-center text-xs font-bold">
+                    <div className="w-6 h-6 bg-amber-600 text-amber-100 rounded-full flex items-center justify-center text-xs font-bold">
                       {card.cost}
                     </div>
-
                   </div>
-                  <div className="text-xl">
-                    {cardType === 'attack' ? '⚔️' : 
-                     cardType === 'exploit' ? '🔓' : 
-                     cardType === 'counter-attack' || cardType === 'counter' ? '🛡️' : 
-                     cardType === 'reaction' ? '⚡' : 
-                     cardType === 'shield' ? '🔒' : 
-                     cardType === 'fortify' ? '🏰' : 
-                     cardType === 'wildcard' ? '🃏' : '🔧'}
+                  <div className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center
+                    ${isPlayable 
+                      ? 'bg-success/20 text-success border border-success/30' 
+                      : 'bg-base-300/50 text-base-content/50 border border-base-content/20'
+                    }
+                  `}>
+                    {getCardTypeIcon(cardType)}
                   </div>
                 </div>
 
@@ -445,44 +609,188 @@ const PlayerHandArea: React.FC<PlayerHandAreaProps> = ({
   };
 
   return (
-    <div className={`
-      flex justify-center items-start gap-4 p-4 rounded-lg relative h-56 player-hand
-      ${isAttacker ? 'attacker-area' : 'defender-area'}
-      ${isActive ? 'ring-2 ring-current/50 shadow-lg shadow-current/20' : ''}
-      ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
-    `}>
-      {/* Corner brackets */}
-      <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-current"></div>
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-current"></div>
-      
-      <div className="absolute top-2 left-4 font-bold text-sm font-mono uppercase tracking-wide team-label">
-        <div className="flex items-center gap-2">
-          <span>{isAttacker ? '🎯' : '🛡️'}</span>
-          <span>{currentPlayerObj?.username || playerID} - {isAttacker ? 'ATTACKER' : 'DEFENDER'}</span>
+    <div 
+      className={`
+        flex justify-between items-center gap-4 rounded-lg relative border backdrop-blur-md shadow-lg overflow-visible
+        ${theme === 'cyberpunk' 
+          ? isAttacker
+            ? 'bg-gradient-to-br from-red-100/80 to-red-50/60 border-red-600/60'
+            : 'bg-gradient-to-br from-blue-100/80 to-blue-50/60 border-blue-600/60'
+          : isAttacker 
+            ? 'bg-gradient-to-br from-red-950/40 to-red-900/20 border-red-500/30' 
+            : 'bg-gradient-to-br from-blue-950/40 to-blue-900/20 border-blue-500/30'
+        }
+        ${isActive 
+          ? theme === 'cyberpunk'
+            ? isAttacker
+              ? 'ring-4 ring-red-500/80 shadow-2xl shadow-red-500/60'
+              : 'ring-4 ring-blue-500/80 shadow-2xl shadow-blue-500/60'
+            : isAttacker
+              ? 'ring-4 ring-red-400/70 shadow-2xl shadow-red-400/50'
+              : 'ring-4 ring-blue-400/70 shadow-2xl shadow-blue-400/50'
+          : ''
+        }
+        ${isTransitioning ? 'transition-opacity duration-300 opacity-90' : ''}
+      `}
+      style={{
+        height: scaling.playerHandHeight,
+        padding: `${scaling.containerPadding}px`
+      }}
+    >
+      {/* Player info */}
+      <div className={`
+        flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-300
+        ${isActive
+          ? theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-red-500/20 ring-2 ring-red-500 shadow-lg shadow-red-500/50'
+              : 'bg-blue-500/20 ring-2 ring-blue-500 shadow-lg shadow-blue-500/50'
+            : isAttacker
+              ? 'bg-red-500/10 ring-2 ring-red-500/70 shadow-lg shadow-red-500/30'
+              : 'bg-blue-500/10 ring-2 ring-blue-500/70 shadow-lg shadow-blue-500/30'
+          : 'bg-transparent'
+        }
+      `}>
+        <div className={`
+          w-14 h-14 rounded-lg flex items-center justify-center
+          ${theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-gradient-to-br from-red-200/70 to-red-300/50 border-2 border-red-600/60'
+              : 'bg-gradient-to-br from-blue-200/70 to-blue-300/50 border-2 border-blue-600/60'
+            : isAttacker 
+              ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border border-red-500/30' 
+              : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30'
+          }
+        `}>
+          {isAttacker 
+            ? <Sword className={`w-7 h-7 ${theme === 'cyberpunk' ? 'text-red-700' : 'text-red-300'}`} /> 
+            : <Shield className={`w-7 h-7 ${theme === 'cyberpunk' ? 'text-blue-700' : 'text-blue-300'}`} />
+          }
+        </div>
+        
+        <div>
+          <div className="flex items-center gap-2">
+            {isActive && (
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.7, 1, 0.7]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className={`w-2.5 h-2.5 rounded-full ${
+                  isAttacker ? 'bg-red-500' : 'bg-blue-500'
+                }`}
+              />
+            )}
+            <User className="w-3.5 h-3.5 text-base-content/60" />
+            <span 
+              className="font-bold text-sm font-mono uppercase tracking-wide cursor-pointer hover:text-primary transition-colors"
+              onClick={handleUsernameClick}
+              title="View profile"
+            >
+              {fetchedUsername || currentPlayerObj?.username || playerID || 'YOU'}
+            </span>
+            {isActive && (
+              <span className={`
+                px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider
+                ${theme === 'cyberpunk'
+                  ? isAttacker
+                    ? 'bg-red-500 text-white'
+                    : 'bg-blue-500 text-white'
+                  : isAttacker
+                    ? 'bg-red-600 text-red-100'
+                    : 'bg-blue-600 text-blue-100'
+                }
+              `}>
+                YOUR TURN
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-base-content/60">
+              {isAttacker ? 'ATTACKER' : 'DEFENDER'}
+            </span>
+            {connectionStatus && (
+              <>
+                <span className="text-base-content/40">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">{getConnectionIcon(connectionStatus.isConnected, connectionStatus.reconnectAttempts)}</span>
+                  <span className="text-base-content/70 font-mono">
+                    {formatLatency(connectionStatus.latency)}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
       
-      {/* Hand peek indicator */}
-      <div className="absolute top-2 right-4 text-xs font-mono uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity team-label tactical-hand-label">
-        TACTICAL_HAND • {currentPlayerObj?.hand?.length || 0} CARDS
+      {/* Hand display - centered with overflow visible for card hover */}
+      <div 
+        className="flex-1 flex justify-center overflow-visible"
+        style={{ 
+          paddingTop: `${scaling.containerPadding}px`,
+          paddingBottom: `${scaling.containerPadding * 1.5}px`
+        }}
+      >
+        {renderPlayerHand()}
       </div>
       
-      {renderPlayerHand()}
-      
-      {/* Action buttons */}
-      <div className="absolute bottom-2 right-4 flex gap-2">
+      {/* Hand count and actions */}
+      <div className="flex items-center gap-2">
         {targetMode && (
           <button 
-            className="btn btn-sm bg-base-300/80 border-warning/30 text-warning hover:bg-warning/10 font-mono font-bold uppercase"
+            className="btn btn-sm gap-2 bg-warning/20 border-warning/50 text-warning hover:bg-warning/30 font-mono font-bold uppercase hover:scale-105 transition-all"
             onClick={() => {
-              triggerClick(); // Play click sound on button press
+              triggerClick();
               cancelTargeting();
             }}
           >
-            CANCEL
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">CANCEL</span>
           </button>
         )}
+        
+        <div className={`
+          px-3 py-1.5 rounded-lg font-mono text-xs font-bold border
+          ${theme === 'cyberpunk'
+            ? isAttacker
+              ? 'bg-red-200/60 border-red-600/60 text-red-900'
+              : 'bg-blue-200/60 border-blue-600/60 text-blue-900'
+            : isAttacker 
+              ? 'bg-red-500/10 border-red-500/30 text-red-300' 
+              : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+          }
+        `}>
+          {currentPlayerObj?.hand?.length || 0} CARDS
+        </div>
       </div>
+      
+      {/* Profile Popup - Rendered via Portal to escape z-index stacking */}
+      {profilePopup.isVisible && createPortal(
+        <UserProfilePopup
+          userId={profilePopup.userId}
+          username={profilePopup.username}
+          isVisible={profilePopup.isVisible}
+          position={profilePopup.position}
+          onClose={closeProfilePopup}
+          useModal={true}
+          onOpenFullProfile={openFullProfileModal}
+        />,
+        document.body
+      )}
+
+      {/* Full Profile Modal */}
+      <FullProfileModal
+        userId={fullProfileModal.userId}
+        username={fullProfileModal.username}
+        isVisible={fullProfileModal.isVisible}
+        onClose={closeFullProfileModal}
+      />
     </div>
   );
 };
@@ -518,17 +826,16 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
   return (
     <AnimatePresence>
       <motion.button
-        className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shadow-lg border-2 border-amber-300/50 pointer-events-auto"
+        className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg border-2 border-amber-300/50 pointer-events-auto hover:shadow-amber-500/50"
         onClick={handleCycle}
-        title="Cycle this card"
+        title="Cycle this card (draw new)"
         whileHover={{
-          scale: 1.2,
+          scale: 1.15,
           y: -2,
           boxShadow: "0 4px 20px rgba(251, 191, 36, 0.6)"
         }}
         whileTap={{ scale: 0.9 }}
         animate={isAnimating ? {
-          rotate: [0, 360],
           scale: [1, 1.2, 1],
           boxShadow: [
             "0 2px 10px rgba(251, 191, 36, 0.4)",
@@ -536,7 +843,6 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
             "0 2px 10px rgba(251, 191, 36, 0.4)"
           ]
         } : {
-          rotate: 0,
           scale: 1
         }}
         transition={{
@@ -546,12 +852,12 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
         disabled={isAnimating}
         style={{
           cursor: isAnimating ? 'wait' : 'pointer',
-          zIndex: 50 // Lower than magnified cards but visible
+          zIndex: 50
         }}
       >
-        <motion.span
+        <motion.div
           animate={isAnimating ? {
-            rotate: [0, 360, 720]
+            rotate: [0, 360]
           } : {
             rotate: 0
           }}
@@ -560,8 +866,8 @@ const CycleCardButton: React.FC<CycleCardButtonProps> = ({ cardId, cardName, onC
             ease: "easeInOut"
           }}
         >
-          🔄
-        </motion.span>
+          <RefreshCw className="w-4 h-4" strokeWidth={2.5} />
+        </motion.div>
       </motion.button>
     </AnimatePresence>
   );

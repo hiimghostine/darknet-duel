@@ -1,0 +1,26 @@
+{
+  "description": "Endpoints excluded from ZAP security scanning to prevent destructive actions",
+  "excluded_paths": [
+    {
+      "method": "DELETE",
+      "path": "/api/account/me",
+      "reason": "Account deletion - would delete test user account"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/{id}",
+      "reason": "Admin user deletion - destructive action"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/{id}/ban",
+      "reason": "User banning - would ban test accounts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/{id}/unban",
+      "reason": "User unbanning - state-changing action"
+    }
+  ]
+}
+

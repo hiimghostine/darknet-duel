@@ -279,9 +279,27 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="p-4 border border-secondary/50 bg-secondary/10 text-secondary flex items-center gap-3">
-                <span className="text-xl animate-pulse">⚠</span>
-                <span className="font-mono">NO_VALID_TARGETS_DETECTED</span>
+              <div className="p-6 border-2 border-warning/50 bg-warning/10 text-warning rounded-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-3xl animate-pulse">⚠</span>
+                  <div className="font-mono">
+                    <div className="text-lg font-bold">NO_VALID_TARGETS_DETECTED</div>
+                    <div className="text-sm text-warning/70 mt-1">All infrastructure is already vulnerable, compromised, or protected</div>
+                  </div>
+                </div>
+                {onCancel && (
+                  <div className="text-center mt-4">
+                    <motion.button 
+                      className="px-6 py-3 font-mono text-sm border-2 transition-all duration-200 bg-warning/20 hover:bg-warning/30 text-warning border-warning/50"
+                      onClick={onCancel}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <span className="animate-pulse">↩</span>
+                      <span className="ml-2">SKIP_CHAIN_EFFECT</span>
+                    </motion.button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -291,15 +309,15 @@ const ChainEffectUI: React.FC<ChainEffectUIProps> = ({
             {/* Decorative scanning line */}
             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
             
-            {onCancel && (
+            {onCancel && displayedCards.length > 0 && (
               <motion.button 
-                className="px-6 py-3 font-mono text-sm border transition-all duration-200 bg-base-200/50 hover:bg-primary/20 text-primary border-primary/30"
+                className="px-6 py-3 font-mono text-sm border-2 transition-all duration-200 bg-secondary/20 hover:bg-secondary/30 text-secondary border-secondary/50"
                 onClick={onCancel}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span className="animate-pulse">⚙</span>
-                <span className="ml-2">ABORT_CHAIN_EFFECT</span>
+                <span className="animate-pulse">↩</span>
+                <span className="ml-2">SKIP_CHAIN_EFFECT</span>
               </motion.button>
             )}
 

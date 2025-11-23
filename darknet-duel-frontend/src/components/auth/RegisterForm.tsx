@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAudioManager } from '../../hooks/useAudioManager';
+import { Eye, EyeOff } from 'lucide-react';
 // Toasts are centralized in the auth store; avoid direct toast calls here
 
 interface RegisterFormProps {
@@ -14,8 +15,12 @@ interface RegisterFormProps {
 const RegisterSchema = z.object({
   username: z.string()
     .min(6, 'Username must be at least 6 characters')
-    .max(16, 'Username must be at most 16 characters'),
-  email: z.string().email('Invalid email format'),
+    .max(16, 'Username must be at most 16 characters')
+    .regex(/^[\x00-\x7F]*$/, 'Username can only contain ASCII characters'),
+  email: z.string()
+    .email('Invalid email format')
+    .max(254, 'Email must be at most 254 characters')
+    .regex(/^[\x00-\x7F]*$/, 'Email can only contain ASCII characters'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(63, 'Password must be at most 63 characters')
@@ -34,10 +39,12 @@ type RegisterFormData = z.infer<typeof RegisterSchema>;
 const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
   const [showErrorAnimation, setShowErrorAnimation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
   const { triggerClick, triggerError, triggerNotification } = useAudioManager();
-  
+
   const {
     register,
     handleSubmit,
@@ -52,7 +59,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       confirmPassword: ''
     }
   });
-  
+
   // Clear error when typing
   React.useEffect(() => {
     if (error) {
@@ -60,8 +67,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       return () => subscription.unsubscribe();
     }
   }, [error, watch, clearError]);
-  
-  
+
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       triggerClick();
@@ -70,27 +77,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
         email: data.email,
         password: data.password
       };
-      
+
       await registerUser(userData);
       triggerNotification();
       setSuccessMessage('Registration successful! Redirecting to your dashboard...');
-      
+
       // Success toast handled by auth store
-      
+
       // Redirect will be handled by the parent component
     } catch (error: any) {
       triggerError();
-      
+
       // Show error animation for visual feedback with longer duration
       setShowErrorAnimation(true);
       setTimeout(() => setShowErrorAnimation(false), 1500);
-      
+
       // Error toast handled by auth store
-      
+
       console.error('Registration error:', error);
     }
   };
-  
+
   return (
     <div className="w-full">
       {/* Error display with animation */}
@@ -118,16 +125,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       {/* Registration form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 gap-3">
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">USERNAME</span>
             </label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="System login name"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.username ? 'border-error' : ''}`}
+                maxLength={16}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.username ? 'border-error' : ''}`}
                 {...register('username')}
+                onInput={(e) => {
+                  // Filter out non-ASCII characters
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^\x00-\x7F]/g, '');
+                }}
                 disabled={isLoading || !!successMessage}
               />
               <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
@@ -140,16 +153,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">EMAIL</span>
             </label>
             <div className="relative">
               <input
                 type="email"
                 placeholder="Your email address"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''}`}
+                maxLength={254}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.email ? 'border-error' : ''}`}
                 {...register('email')}
+                onInput={(e) => {
+                  // Filter out non-ASCII characters
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^\x00-\x7F]/g, '');
+                }}
                 disabled={isLoading || !!successMessage}
               />
               <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
@@ -161,21 +180,28 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">PASSWORD</span>
             </label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Create a secure password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.password ? 'border-error' : ''}`}
                 {...register('password')}
                 disabled={isLoading || !!successMessage}
               />
-              <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
-                <span className="text-xs font-mono">SEC</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerClick();
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/50 hover:text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             <div className="text-xs text-primary/70 mt-1 font-mono">8-63 chars, 1 upper, 1 lower, 1 number, 1 special</div>
             {errors.password && (
@@ -183,30 +209,37 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
             )}
           </div>
 
-          <div className="form-control">
-            <label className="label py-0.5">
+          <div>
+            <label className="block mb-1">
               <span className="font-mono text-xs text-primary">CONFIRM PASSWORD</span>
             </label>
             <div className="relative">
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Confirm your password"
-                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm focus:border-primary focus:ring-1 focus:ring-primary ${errors.confirmPassword ? 'border-error' : ''}`}
+                className={`input w-full bg-base-300/50 border-primary/30 font-mono text-sm text-base-content focus:border-primary focus:ring-1 focus:ring-primary ${errors.confirmPassword ? 'border-error' : ''}`}
                 {...register('confirmPassword')}
                 disabled={isLoading || !!successMessage}
               />
-              <div className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/30 pointer-events-none">
-                <span className="text-xs font-mono">VER</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerClick();
+                  setShowConfirmPassword(!showConfirmPassword);
+                }}
+                className="absolute top-0 right-0 h-full px-3 flex items-center text-base-content/50 hover:text-primary transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
             {errors.confirmPassword && (
               <div className="text-error text-xs mt-1 font-mono">{errors.confirmPassword.message}</div>
             )}
           </div>
 
-          <div className="form-control mt-3">
-            <button 
-              type="submit" 
+          <div className="mt-3">
+            <button
+              type="submit"
               className={`btn btn-sm sm:btn-md btn-primary w-full font-mono relative overflow-hidden group btn-cyberpunk ${isLoading ? 'pulse-glow' : ''}`}
               disabled={isLoading || !!successMessage}
             >
@@ -231,7 +264,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleForm }) => {
       {/* Login link */}
       <div className="mt-3 pt-2 border-t border-base-content/10 text-center font-mono text-xs">
         <div className="text-base-content/70 mb-0.5">EXISTING USER LOGIN</div>
-        <button 
+        <button
           onClick={() => {
             triggerClick();
             onToggleForm();

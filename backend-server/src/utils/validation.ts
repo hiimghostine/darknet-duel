@@ -1,9 +1,24 @@
 /**
  * Validates an email address format
+ * Requirements:
+ * - Valid email format
+ * - Maximum 254 characters (per RFC 5321)
+ * - ASCII characters only
+ * 
  * @param email Email to validate
  * @returns Boolean indicating if the email format is valid
  */
 export const validateEmail = (email: string): boolean => {
+  // Check if email is a string
+  if (typeof email !== 'string') return false;
+  
+  // Check maximum length (RFC 5321)
+  if (email.length > 254) return false;
+  
+  // Check for non-ASCII characters
+  if (!/^[\x00-\x7F]*$/.test(email)) return false;
+  
+  // Check email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
@@ -45,10 +60,20 @@ export const validatePassword = (password: string): boolean => {
  * Validates username length constraints
  * Requirements:
  * - Between 6 and 16 characters (inclusive)
+ * - ASCII characters only
  * 
  * @param username Username to validate
  * @returns Boolean indicating if username meets length requirements
  */
 export const validateUsernameLength = (username: string): boolean => {
-  return typeof username === 'string' && username.length >= 6 && username.length <= 16;
+  // Check if username is a string
+  if (typeof username !== 'string') return false;
+  
+  // Check length constraints
+  if (username.length < 6 || username.length > 16) return false;
+  
+  // Check for non-ASCII characters
+  if (!/^[\x00-\x7F]*$/.test(username)) return false;
+  
+  return true;
 };

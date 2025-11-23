@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import mysql from 'mysql2/promise';
 import { AppDataSource } from './utils/database';
 import authRoutes from './routes/auth.routes';
 import serverRoutes from './routes/server.routes';
@@ -68,6 +69,34 @@ app.use(cors({
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-Server-API-Key', 'X-Source']
 }));
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     tags: [Health]
+ *     summary: API health check endpoint
+ *     description: Returns server status for monitoring and health checks. Used by CI/CD pipelines.
+ *     responses:
+ *       200:
+ *         description: Server is running normally
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "ok"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-11-02T06:00:00.000Z"
+ */
+// Health check endpoint for API
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 
@@ -108,6 +137,18 @@ app.use('/api/logs', logRoutes);
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
+// Serve raw Swagger JSON spec
+app.get('/api/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(specs);
+});
+
+// Also serve at /swagger.json for convenience
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(specs);
+});
+
 // Redirect /docs to /api-docs for convenience
 app.get('/docs', (req, res) => {
   res.redirect('/api-docs');
@@ -145,22 +186,107 @@ app.get('/health', (req, res) => {
   res.status(200).send('Server is running');
 });
 
-// Initialize database connection
-AppDataSource.initialize()
-  .then(() => {
+// Initialize database connection and ensure tables exist
+async function initializeDatabase() {
+  const DB_HOST = process.env.DB_HOST || 'localhost';
+  const DB_PORT = process.env.DB_PORT || '3306';
+  const DB_USERNAME = process.env.DB_USERNAME || 'root';
+  const DB_PASSWORD = process.env.DB_PASSWORD || 'example';
+  const DB_NAME = process.env.DB_NAME || 'darknet_duel';
+
+  try {
+    // First, create the database if it doesn't exist
+    try {
+      const connection = await mysql.createConnection({
+        host: DB_HOST,
+        port: parseInt(DB_PORT),
+        user: DB_USERNAME,
+        password: DB_PASSWORD,
+      });
+
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``);
+      await connection.end();
+      console.log(`Database '${DB_NAME}' created or already exists`);
+    } catch (error) {
+      console.warn('Could not create database (may already exist):', error instanceof Error ? error.message : error);
+    }
+
+    // Initialize TypeORM connection
+    await AppDataSource.initialize();
     console.log('Database connection established successfully');
+
+    // Check if all expected tables exist by querying each entity's table
+    const queryRunner = AppDataSource.createQueryRunner();
+    let needsSynchronize = false;
     
+    try {
+      // Get all entity metadata to check their corresponding tables
+      const entityMetadatas = AppDataSource.entityMetadatas;
+      const missingTables: string[] = [];
+      
+      for (const metadata of entityMetadatas) {
+        const tableName = metadata.tableName;
+        try {
+          // Try to query the table to see if it exists
+          await queryRunner.query(`SELECT 1 FROM \`${tableName}\` LIMIT 1`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          // Check if error is due to table not existing
+          if (errorMessage.includes("doesn't exist") || 
+              errorMessage.includes("Unknown table") || 
+              (errorMessage.includes("Table") && errorMessage.includes("not found"))) {
+            missingTables.push(tableName);
+            needsSynchronize = true;
+          } else {
+            // Different error - might be permissions or connection issue
+            console.warn(`Could not verify table '${tableName}' existence:`, errorMessage);
+          }
+        }
+      }
+      
+      if (needsSynchronize) {
+        console.log(`Missing tables detected: ${missingTables.join(', ')}`);
+        console.log('Synchronizing database schema to create missing tables...');
+        await AppDataSource.synchronize();
+        console.log('Database tables synchronized successfully');
+      } else {
+        console.log('All database tables exist');
+      }
+    } catch (error) {
+      console.error('Error checking table existence:', error);
+      // If we can't check, try to synchronize anyway (safer than failing)
+      console.log('Attempting to synchronize database schema...');
+      try {
+        await AppDataSource.synchronize();
+        console.log('Database tables synchronized successfully');
+      } catch (syncError) {
+        console.warn('Could not synchronize database:', syncError);
+      }
+    } finally {
+      await queryRunner.release();
+    }
+
     // Initialize Socket.io chat service
     const chatSocketService = new ChatSocketService(httpServer);
     console.log('Chat Socket.io service initialized');
-    
+
     // Start the HTTP server (which includes both Express and Socket.io)
     httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on ${HOST}:${PORT}`);
       console.log(`Public URL: ${publicUrl}`);
       console.log(`Chat WebSocket available at: ${publicUrl}/socket.io`);
     });
-  })
-  .catch((error: Error) => {
-    console.error('Error connecting to database:', error);
-  });
+  } catch (error: Error | unknown) {
+    console.error('❌ Error connecting to database:', error);
+    console.error('Database connection details:');
+    console.error(`  Host: ${DB_HOST}`);
+    console.error(`  Port: ${DB_PORT}`);
+    console.error(`  Username: ${DB_USERNAME}`);
+    console.error(`  Password: ${DB_PASSWORD.substring(0, 3)}***`);
+    console.error(`  Database: ${DB_NAME}`);
+    process.exit(1);
+  }
+}
+
+// Start the server
+initializeDatabase();

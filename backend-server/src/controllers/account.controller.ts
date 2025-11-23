@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { AccountService } from '../services/account.service';
+import { AuthService } from '../services/auth.service';
+import { SessionService } from '../services/session.service';
 import { validatePassword } from '../utils/validation';
 
 export class AccountController {
   private accountService = new AccountService();
+  private authService = new AuthService();
 
   /**
    * @swagger
@@ -104,10 +108,10 @@ export class AccountController {
   /**
    * @swagger
    * /api/account/me:
-   *   post:
+   *   put:
    *     tags: [Account Management]
    *     summary: Update current user's account details
-   *     description: Updates the authenticated user's account information (email, username, password, bio, avatar)
+   *     description: Updates the authenticated user's account information (email, username, password, bio, avatar). If changing password, existing_password must be provided.
    *     security:
    *       - bearerAuth: []
    *     requestBody:
@@ -125,6 +129,7 @@ export class AccountController {
    *           example:
    *             email: "newemail@darknet.com"
    *             username: "EliteHacker"
+   *             existing_password: "currentPassword123!"
    *             password: "newSecurePassword123!"
    *             bio: "Elite hacker from the darknet"
    *     responses:
@@ -221,7 +226,7 @@ export class AccountController {
         });
       }
 
-      const { email, username, password, bio } = req.body;
+      const { email, username, password, existing_password, bio } = req.body;
       const avatarFile = req.file;
 
       // Validate that at least one field is provided
@@ -232,12 +237,39 @@ export class AccountController {
         });
       }
 
-      // Validate password if provided
-      if (password && !validatePassword(password)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-        });
+      // If password is being changed, validate existing_password is provided
+      if (password && password.trim().length > 0) {
+        if (!existing_password || existing_password.trim().length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Existing password is required when changing password'
+          });
+        }
+
+        // Verify existing password
+        const user = await this.authService.findById(userId);
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: 'Account not found'
+          });
+        }
+
+        const isPasswordValid = await bcrypt.compare(existing_password, user.password);
+        if (!isPasswordValid) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid existing password'
+          });
+        }
+
+        // Validate new password against registration requirements
+        if (!validatePassword(password)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Password must be 8-63 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+          });
+        }
       }
 
       // Validate bio if provided
@@ -529,6 +561,105 @@ export class AccountController {
         success: false,
         message: 'Failed to search account',
         error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  };
+
+  /**
+   * @swagger
+   * /api/account/me:
+   *   delete:
+   *     tags: [Account Management]
+   *     summary: Delete (anonymize) current user's account
+   *     description: Anonymizes the authenticated user's account. Requires password confirmation.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - password
+   *             properties:
+   *               password:
+   *                 type: string
+   *                 description: User's current password for confirmation
+   *     responses:
+   *       200:
+   *         description: Account successfully anonymized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Account successfully deleted"
+   *       400:
+   *         description: Bad request - invalid password or missing password
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *       500:
+   *         description: Internal server error
+   */
+  deleteMyAccount = async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+      }
+
+      const { password } = req.body;
+
+      if (!password || typeof password !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required'
+        });
+      }
+
+      // Anonymize the account (will verify password inside)
+      await this.accountService.anonymizeAccount(userId, password);
+
+      // Invalidate all sessions for this user
+      const sessionService = new SessionService();
+      await sessionService.invalidateAllUserSessions(userId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Account successfully deleted'
+      });
+    } catch (error) {
+      console.error('Delete account error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Invalid password') || errorMessage.includes('password')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid password'
+        });
+      }
+
+      if (errorMessage.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete account',
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       });
     }
   };

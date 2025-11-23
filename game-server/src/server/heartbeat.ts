@@ -278,6 +278,14 @@ export class HeartbeatManager {
         
         if (timeSinceLastHeartbeat > staleThreshold) {
           delete this.gameHeartbeats[matchID][playerID];
+          
+          // Clear associated disconnect timer to prevent memory leak
+          const timerKey = `${matchID}-${playerID}`;
+          if (this.disconnectTimers[timerKey]) {
+            clearTimeout(this.disconnectTimers[timerKey]);
+            delete this.disconnectTimers[timerKey];
+          }
+          
           console.log(`Cleaned up stale heartbeat for match ${matchID}, player ${playerID}`);
         }
       }
@@ -294,6 +302,15 @@ export class HeartbeatManager {
    */
   removeMatch(matchID: string): void {
     delete this.gameHeartbeats[matchID];
+    
+    // Clear all disconnect timers for this match to prevent memory leak
+    for (const timerKey of Object.keys(this.disconnectTimers)) {
+      if (timerKey.startsWith(`${matchID}-`)) {
+        clearTimeout(this.disconnectTimers[timerKey]);
+        delete this.disconnectTimers[timerKey];
+      }
+    }
+    
     console.log(`Removed heartbeat data for match ${matchID}`);
   }
 
@@ -304,5 +321,13 @@ export class HeartbeatManager {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
+    
+    // Clear all disconnect timers to prevent memory leak on shutdown
+    for (const timerKey of Object.keys(this.disconnectTimers)) {
+      clearTimeout(this.disconnectTimers[timerKey]);
+    }
+    this.disconnectTimers = {};
+    
+    console.log('HeartbeatManager destroyed and all timers cleared');
   }
 }

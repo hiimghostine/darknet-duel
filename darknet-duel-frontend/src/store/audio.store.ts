@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Debug flag from environment variable
+const DEBUG_AUDIO = import.meta.env.VITE_DEBUG_AUDIO === 'true';
+
 interface AudioSettings {
   bgmVolume: number;
   sfxVolume: number;
@@ -28,30 +31,30 @@ export const useAudioStore = create<AudioStore>()(
     (set, get) => ({
       ...defaultSettings,
       setBGMVolume: (volume: number) => {
-        console.log('🎵 Setting BGM volume to:', volume);
+        if (DEBUG_AUDIO) console.log('🎵 Setting BGM volume to:', volume);
         set({ bgmVolume: Math.max(0, Math.min(100, volume)) });
       },
       setSFXVolume: (volume: number) => {
-        console.log('🔊 Setting SFX volume to:', volume);
+        if (DEBUG_AUDIO) console.log('🔊 Setting SFX volume to:', volume);
         set({ sfxVolume: Math.max(0, Math.min(100, volume)) });
       },
       setBGMEnabled: (enabled: boolean) => {
-        console.log('🎵 Setting BGM enabled to:', enabled);
+        if (DEBUG_AUDIO) console.log('🎵 Setting BGM enabled to:', enabled);
         set({ bgmEnabled: enabled });
       },
       setSFXEnabled: (enabled: boolean) => {
-        console.log('🔊 Setting SFX enabled to:', enabled);
+        if (DEBUG_AUDIO) console.log('🔊 Setting SFX enabled to:', enabled);
         set({ sfxEnabled: enabled });
       },
       resetSettings: () => {
-        console.log('🎵 Resetting audio settings to defaults');
+        if (DEBUG_AUDIO) console.log('🎵 Resetting audio settings to defaults');
         set(defaultSettings);
       },
     }),
     {
       name: 'audio-settings',
       onRehydrateStorage: () => (state) => {
-        console.log('🎵 Audio store rehydrated:', state);
+        if (DEBUG_AUDIO) console.log('🎵 Audio store rehydrated:', state);
       },
     }
   )

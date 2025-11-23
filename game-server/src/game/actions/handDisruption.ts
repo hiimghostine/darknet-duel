@@ -94,6 +94,23 @@ export function handleHandDisruption(
       
     case 'view_and_discard':
       // Threat Intelligence effect - opponent needs to select cards to discard
+      
+      // Edge case: If target player has no cards or fewer cards than requested
+      if (targetPlayer.hand.length === 0) {
+        console.log(`🎯 Threat Intelligence: Target player has no cards to discard`);
+        return {
+          ...gameState,
+          message: `Threat Intelligence revealed an empty hand - no cards to discard`
+        };
+      }
+      
+      // Adjust count to not exceed available cards
+      const actualCount = Math.min(count, targetPlayer.hand.length);
+      
+      if (actualCount < count) {
+        console.log(`🎯 Threat Intelligence: Target player only has ${actualCount} card(s), adjusting from ${count}`);
+      }
+      
       // Add a game action for viewing the hand
       const viewAction: GameAction = {
         playerRole: targetPlayerId === gameState.attacker?.id ? 'defender' as PlayerRole : 'attacker' as PlayerRole,
@@ -110,10 +127,10 @@ export function handleHandDisruption(
           type: 'discard_from_hand',
           targetPlayerId,
           revealedHand: targetPlayer.hand,
-          count // Number of cards to discard
+          count: actualCount // Use adjusted count
         },
         actions: [...gameState.actions, viewAction],
-        message: `Opponent is viewing your hand and will choose ${count} card${count > 1 ? 's' : ''} to discard`
+        message: `Opponent is viewing your hand and will choose ${actualCount} card${actualCount > 1 ? 's' : ''} to discard`
       };
   }
   

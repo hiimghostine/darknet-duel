@@ -1,0 +1,273 @@
+name: Security Scan - OWASP ZAP (API Only)
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  schedule:
+    # Run comprehensive scan weekly on Mondays at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  zap-api-scan:
+    # Only run if commit message starts with "scan: " or if manually triggered/scheduled
+    runs-on: ubuntu-latest
+    name: ZAP API Security Scan
+    
+    steps:
+      - name: Debug commit message and event
+        if: always()
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Head commit message: ${{ github.event.head_commit.message }}"
+          echo "All commits:"
+          if [ "${{ github.event_name }}" == "push" ] && [ -n "${{ github.event.commits }}" ]; then
+            echo "${{ github.event.commits }}" | jq -r '.[].message' || echo "${{ github.event.commits }}"
+          fi
+          
+      - name: Check if should run
+        id: should_run
+        run: |
+          SHOULD_RUN=false
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SHOULD_RUN=true
+            echo "Triggered by workflow_dispatch"
+          elif [ "${{ github.event_name }}" == "schedule" ]; then
+            SHOULD_RUN=true
+            echo "Triggered by schedule"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            echo "Checking commit message: '$COMMIT_MSG'"
+            # Check if commit message starts with "scan:" (case insensitive, with or without space)
+            if echo "$COMMIT_MSG" | grep -qiE '^scan:'; then
+              SHOULD_RUN=true
+              echo "✅ Commit message starts with 'scan:' - workflow will run"
+            else
+              echo "Commit message does NOT start with 'scan:'"
+              # Also check all commits in the push as fallback
+              if [ -n "${{ github.event.commits }}" ] && [ "${{ github.event.commits }}" != "null" ]; then
+                echo "Checking all commits in push..."
+                while IFS= read -r msg; do
+                  if echo "$msg" | grep -qiE '^scan:'; then
+                    SHOULD_RUN=true
+                    echo "Found commit with 'scan:' prefix: $msg"
+                  fi
+                done < <(echo "${{ github.event.commits }}" | jq -r '.[].message' 2>/dev/null || echo "")
+              fi
+            fi
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            if echo "$PR_TITLE" | grep -qi 'scan:' || echo "$PR_BODY" | grep -qi 'scan:'; then
+              SHOULD_RUN=true
+              echo "PR title or body contains 'scan:'"
+            fi
+          fi
+          
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          if [ "$SHOULD_RUN" == "false" ]; then
+            echo "⚠️ Workflow will be skipped - no matching commit message or trigger"
+          else
+            echo "✅ Workflow will run"
+          fi
+    
+      - name: Skip if not needed
+        if: steps.should_run.outputs.should_run == 'false'
+        run: |
+          echo "Skipping workflow - commit message does not start with 'scan: '"
+          exit 0
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.should_run.outputs.should_run == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create test environment .env
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          # Generate a single password for both MySQL root and backend DB connection
+          DB_PASS=test_db_pass_$(openssl rand -hex 16)
+          cat > .env <<EOF
+          MYSQL_ROOT_PASSWORD=${DB_PASS}
+          DB_PASSWORD=${DB_PASS}
+          JWT_SECRET=test_jwt_secret_$(openssl rand -hex 16)
+          SERVER_API_KEY=test_server_key_$(openssl rand -hex 16)
+          XENDIT_API_KEY=test_xendit_key
+          FRONTEND_URL=http://localhost:20006
+          BACKEND_URL=http://localhost:20000
+          GAME_URL=http://localhost:20001
+          FRONTEND_PORT=20006
+          BACKEND_PORT=20000
+          GAME_PORT=20001
+          DB_PORT=20002
+          PHPMYADMIN_PORT=20003
+          EOF
+
+      - name: Print .env contents for diagnosis
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          echo "=== .env file contents ==="
+          cat .env
+          echo "=== End of .env file ==="
+
+      - name: Build Docker images
+        if: steps.should_run.outputs.should_run == 'true'
+        run: docker compose build
+
+      - name: Start application stack
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          docker compose up -d
+          echo "Waiting for services to start..."
+          sleep 30
+
+      - name: Wait for backend health
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -f http://localhost:20000/api/health 2>/dev/null || curl -f http://localhost:20000/api 2>/dev/null; then
+              echo "Backend is ready!"
+              exit 0
+            fi
+            echo "Waiting for backend... attempt $((attempt+1))/$max_attempts"
+            sleep 2
+            attempt=$((attempt+1))
+          done
+          echo "Backend failed to start"
+          echo "=== Backend logs ==="
+          docker compose logs backend
+          echo "=== Database container logs ==="
+          docker compose logs db
+          echo "=== Database connection info from .env ==="
+          echo "DB_PASSWORD from .env:"
+          grep "DB_PASSWORD" .env || echo "DB_PASSWORD not found in .env"
+          exit 1
+
+      - name: Create test user and get authentication token
+        if: steps.should_run.outputs.should_run == 'true'
+        id: auth
+        run: |
+          # Register test user
+          echo "Registering test user for ZAP scanning..."
+          TIMESTAMP=$(date +%s)
+          EMAIL="zap-scanner-${TIMESTAMP}@darknetduel.com"
+          USERNAME="zapscanner="
+          PASSWORD="ZapTest123!@#"
+          
+          REGISTER_RESPONSE=$(curl -s -X POST http://localhost:20000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"email\": \"${EMAIL}\",
+              \"username\": \"${USERNAME}\",
+              \"password\": \"${PASSWORD}\"
+            }" || echo '{"success":false}')
+          
+          echo "Registration response: $REGISTER_RESPONSE"
+          
+          # Login to get token
+          echo "Logging in..."
+          LOGIN_RESPONSE=$(curl -s -X POST http://localhost:20000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"email\": \"${EMAIL}\",
+              \"password\": \"${PASSWORD}\"
+            }")
+          
+          echo "Login response (first 200 chars): ${LOGIN_RESPONSE:0:200}..."
+          
+          # Extract token (adjust based on your API response format)
+          TOKEN=$(echo "$LOGIN_RESPONSE" | grep -oP '"token"\s*:\s*"[^"]*' | cut -d'"' -f4 || echo "")
+          
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to get authentication token"
+            echo "Login response was: $LOGIN_RESPONSE"
+            exit 1
+          fi
+          
+          echo "Token obtained: ${TOKEN:0:20}..."
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "email=$EMAIL" >> $GITHUB_OUTPUT
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+
+      - name: Download and verify Swagger spec
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          echo "Downloading swagger.json..."
+          curl -s http://localhost:20000/api/swagger.json -o swagger.json
+          if [ ! -f swagger.json ]; then
+            echo "❌ Failed to download swagger.json"
+            exit 1
+          fi
+          echo "✅ File downloaded, validating..."
+          if ! jq empty swagger.json 2>/dev/null; then
+            echo "❌ swagger.json is not valid JSON"
+            cat swagger.json | head -20
+            exit 1
+          fi
+          PATH_COUNT=$(jq '.paths | length' swagger.json)
+          echo "✅ Valid JSON with $PATH_COUNT API paths"
+
+      - name: Fix workspace permissions for ZAP
+        if: steps.should_run.outputs.should_run == 'true'
+        run: |
+          # Ensure ZAP can write report files
+          chmod -R 777 "${{ github.workspace }}" || true
+          # Create report files with correct permissions
+          touch "${{ github.workspace }}/report_md.md" "${{ github.workspace }}/report_json.json" "${{ github.workspace }}/report_html.html" || true
+          chmod 666 "${{ github.workspace }}/report_md.md" "${{ github.workspace }}/report_json.json" "${{ github.workspace }}/report_html.html" || true
+
+      - name: ZAP API Scan - Backend
+        if: steps.should_run.outputs.should_run == 'true'
+        uses: zaproxy/action-api-scan@v0.10.0
+        with:
+          target: 'http://localhost:20000/swagger.json'
+          format: openapi
+          cmd_options: '-a -J -openapifile "${{ github.workspace }}/swagger.json"'
+          fail_action: false
+
+      - name: Upload ZAP Scan Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-reports-${{ github.run_number }}
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
+            swagger.json
+          retention-days: 30
+
+      - name: Check for High/Medium vulnerabilities
+        if: always()
+        run: |
+          if [ -f report_json.json ]; then
+            HIGH_COUNT=$(jq -r '[.[] | select(.risk == "High")] | length' report_json.json 2>/dev/null || echo "0")
+            MEDIUM_COUNT=$(jq -r '[.[] | select(.risk == "Medium")] | length' report_json.json 2>/dev/null || echo "0")
+            
+            echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "- High Severity: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- Medium Severity: $MEDIUM_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$HIGH_COUNT" -gt 0 ] || [ "$MEDIUM_COUNT" -gt 0 ]; then
+              echo "❌ Security scan failed: Found $HIGH_COUNT High and $MEDIUM_COUNT Medium severity vulnerabilities"
+              echo "Please review the uploaded reports in the artifacts section"
+              exit 1
+            else
+              echo "✅ Security scan passed: No High or Medium severity vulnerabilities found"
+            fi
+          else
+            echo "⚠️ Warning: report_json.json not found"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v || true
+

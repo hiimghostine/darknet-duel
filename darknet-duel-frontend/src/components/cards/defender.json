@@ -364,12 +364,13 @@
       "cost": 3,
       "description": "Rapid incident containment and recovery",
       "flavor": "When everything goes wrong, we make it right",
-      "effect": "Restore ALL compromised infrastructure to secure state. Can only be played once per game.",
+      "effect": "Restore up to 2 randomly selected compromised infrastructure to secure state.",
       "img": "emergency_response",
       "isReactive": false,
       "target": "all_infrastructure",
       "wildcardType": "special",
-      "specialEffect": "mass_restore"
+      "specialEffect": "mass_restore",
+      "restoreCount": 2
     },
     {
       "id": "D304",

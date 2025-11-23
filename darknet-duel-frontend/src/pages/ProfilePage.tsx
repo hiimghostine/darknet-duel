@@ -6,18 +6,22 @@ import { useAudioManager } from '../hooks/useAudioManager';
 import logo from '../assets/logo.png';
 import LoadingScreen from '../components/LoadingScreen';
 import LogoutScreen from '../components/LogoutScreen';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import EditProfileModal from '../components/EditProfileModal';
 import ReportModal from '../components/ReportModal';
+import PurchaseHistoryModal from '../components/PurchaseHistoryModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 import UserTypeTag from '../components/UserTypeTag';
 import accountService, { type AccountData } from '../services/account.service';
 import infoService, { type ProfileStats, type RecentActivityItem } from '../services/info.service';
+import { Edit, AlertTriangle, Sun, Moon, LogOut } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const { id: profileId } = useParams<{ id: string }>();
   const { theme, toggleTheme } = useThemeStore();
-  const { triggerClick, triggerPositiveClick, triggerNegativeClick } = useAudioManager();
+  const { triggerClick } = useAudioManager();
 
   // If no profile ID is provided, redirect to current user's profile
   useEffect(() => {
@@ -38,6 +42,9 @@ const ProfilePage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showPurchaseHistoryModal, setShowPurchaseHistoryModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -82,9 +89,10 @@ const ProfilePage: React.FC = () => {
   }, [isOwnProfile, profileId]);
 
   const handleLogout = () => {
+    setShowLogoutModal(false);
     setShowLogoutScreen(true);
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       navigate('/auth');
     }, 3000);
   };
@@ -182,7 +190,7 @@ const ProfilePage: React.FC = () => {
                     className="btn btn-sm bg-primary/20 border-primary/50 hover:border-primary text-primary btn-cyberpunk"
                     aria-label="Edit Profile"
                   >
-                    <span className="mr-1">✏️</span>
+<Edit className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">EDIT</span>
                   </button>
                 )}
@@ -196,7 +204,7 @@ const ProfilePage: React.FC = () => {
                     className="btn btn-sm bg-error/20 border-error/50 hover:border-error text-error btn-cyberpunk"
                     aria-label="Report User"
                   >
-                    <span className="mr-1">⚠️</span>
+<AlertTriangle className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">REPORT</span>
                   </button>
                 )}
@@ -209,14 +217,17 @@ const ProfilePage: React.FC = () => {
                   className="btn btn-sm bg-base-300/80 border-primary/30 hover:border-primary text-primary btn-cyberpunk"
                   aria-label="Toggle theme"
                 >
-                  {theme === 'cyberpunk' ? '🌙' : '☀️'}
+{theme === 'cyberpunk' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 </button>
                 
                 <button 
-                  onClick={handleLogout} 
+                  onClick={() => {
+                    triggerClick();
+                    setShowLogoutModal(true);
+                  }} 
                   className="btn btn-sm btn-error"
                 >
-                  <span className="mr-1">🚪</span>
+<LogOut className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">LOGOUT</span>
                 </button>
               </div>
@@ -289,7 +300,7 @@ const ProfilePage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-base-content/70 text-sm">
-                        ID: {(displayUser.id || '').slice(0, 8)}...
+                        ID: {(displayUser.id || '')}
                       </div>
                     </div>
 
@@ -448,6 +459,31 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Purchase History Button - Only show on own profile */}
+          {isOwnProfile && (
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setShowPurchaseHistoryModal(true);
+                }}
+                className="btn btn-primary font-mono"
+              >
+                VIEW_PURCHASE_HISTORY
+              </button>
+              
+              <button
+                onClick={() => {
+                  triggerClick();
+                  setShowDeleteAccountModal(true);
+                }}
+                className="btn btn-error btn-outline font-mono"
+              >
+                DELETE_ACCOUNT
+              </button>
+            </div>
+          )}
         </main>
       </div>
 
@@ -468,6 +504,25 @@ const ProfilePage: React.FC = () => {
           reportType="profile"
         />
       )}
+      
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
+
+      {/* Purchase History Modal */}
+      <PurchaseHistoryModal
+        isOpen={showPurchaseHistoryModal}
+        onClose={() => setShowPurchaseHistoryModal(false)}
+      />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
+      />
     </div>
   );
 };

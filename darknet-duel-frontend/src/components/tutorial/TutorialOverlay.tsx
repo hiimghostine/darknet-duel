@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronRight, RotateCcw, BookOpen, X } from 'lucide-react';
+import { ChevronRight, BookOpen, X } from 'lucide-react';
 import type { TutorialState } from '../../types/tutorial.types';
 import tutorialManager from '../../services/tutorialManager';
+import { tutorialLog } from '../../utils/tutorialLogger';
 
 interface TutorialOverlayProps {
   tutorialState: TutorialState;
@@ -16,7 +17,9 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
 }) => {
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [overlayPosition, setOverlayPosition] = useState<{ top: number; left: number } | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const highlightedElementRef = useRef<Element | null>(null);
 
   const { currentStep, currentScript, stepIndex, isActive, overlayVisible, highlightTarget } = tutorialState;
 
@@ -35,29 +38,93 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       // Step-specific element selection
       switch (highlightTarget) {
         case '.infrastructure-grid':
-          element = document.querySelector('.infrastructure-grid');
+          // Target the infrastructure grid container - updated for new layout
+          element = document.querySelector('.tutorial-target.infrastructure-grid') ||
+                    document.querySelector('[class*="flex-1 flex flex-col lg:order-2"]');
           console.log('Step 3 - Infrastructure Grid:', element);
           break;
           
         case '.game-info-panel':
-          element = document.querySelector('.game-info-panel');
+          // Target the left game info panel - updated for new layout
+          element = document.querySelector('.tutorial-target.game-info-panel') ||
+                    document.querySelector('[class*="flex flex-col gap-3 lg:w-64"][class*="lg:order-1"]');
           console.log('Step 4 - Game Info Panel:', element);
           break;
           
         case '.player-hand':
-          // Target the entire player hand area container
-          element = document.querySelector('.player-hand');
+          // Target the entire player hand area container - updated for new layout
+          element = document.querySelector('.tutorial-target.player-hand') ||
+                    document.querySelector('[class*="flex justify-between items-center gap-4 rounded-lg"][class*="backdrop-blur-md"]');
           console.log('Step 5 - Player Hand Container:', element);
           break;
           
         case '.player-hand .card:first-child':
-          // Target the first card in the player hand
-          element = document.querySelector('.player-hand .card:first-child');
-          console.log('Step 6 - First Card in Hand:', element);
+          // Target the Log4Shell card (A003) for exploit step - use data-card-id instead of position
+          element = document.querySelector('[data-card-id="A003"]');
+          console.log('Step 6 - Exploit Card (Log4Shell A003):', element);
           if (!element) {
-            // Fallback: try to find the first card with data-card-id
-            element = document.querySelector('.player-hand [data-card-id]:first-child');
-            console.log('Step 6 - Fallback First Card:', element);
+            // Fallback: find first playable exploit card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50') &&
+                     !cardElement.classList.contains('cursor-not-allowed');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step 6 - Fallback First Playable Card:', element);
+          }
+          break;
+          
+        case '.player-hand .card:nth-child(2)':
+          // Target the Firewall card (D001) for shield step - use data-card-id instead of position
+          element = document.querySelector('[data-card-id="D001"]');
+          console.log('Step (Defender) - Shield Card (Firewall D001):', element);
+          if (!element) {
+            // Fallback: find first playable shield card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step (Defender) - Fallback Shield Card:', element);
+          }
+          break;
+          
+        case '.player-hand .card:nth-child(4)':
+          // Target the Incident Response Team card (D201) for response step - use data-card-id
+          element = document.querySelector('[data-card-id="D201"]');
+          console.log('Step (Defender) - Response Card (Incident Response Team D201):', element);
+          if (!element) {
+            // Fallback: find first playable response card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log('Step (Defender) - Fallback Response Card:', element);
+          }
+          break;
+          
+        // Card ID-based selectors - these will match regardless of hand sorting
+        case '[data-card-id="A003"]': // Log4Shell - Exploit card
+        case '[data-card-id="A101"]': // DDoS Attack - Attack card
+        case '[data-card-id="A205"]': // Social Engineer - Counter-attack card
+        case '[data-card-id="A002"]': // Packet Sniffer - First fortified exploit
+        case '[data-card-id="A001"]': // Port Scanner - Second fortified exploit
+        case '[data-card-id="D001"]': // Firewall - Shield card
+        case '[data-card-id="D101"]': // DMZ Implementation - Fortify card
+        case '[data-card-id="D201"]': // Incident Response Team - Response card
+        case '[data-card-id="D007"]': // Phishing Defense - Reaction card
+          element = document.querySelector(highlightTarget);
+          console.log(`Card ID selector ${highlightTarget}:`, element);
+          if (!element) {
+            // Fallback: find first playable card
+            const playableCards = document.querySelectorAll('[data-card-id]');
+            element = Array.from(playableCards).find(card => {
+              const cardElement = card as HTMLElement;
+              return !cardElement.classList.contains('opacity-50') &&
+                     !cardElement.classList.contains('cursor-not-allowed');
+            }) as HTMLElement || playableCards[0] as HTMLElement || null;
+            console.log(`Fallback for ${highlightTarget}:`, element);
           }
           break;
           
@@ -79,26 +146,28 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           
           if (!element) {
             // Fallback: just target the first infrastructure card
-            element = document.querySelector('[data-infra-id]');
+            element = document.querySelector('[data-infra-id]') ||
+                     document.querySelector('[class*="infrastructure"]');
             console.log('Step 7 - Fallback infrastructure card:', element);
           }
           break;
           
         case '.tactical-hand-label':
-          // Target specifically the TACTICAL_HAND label
-          element = document.querySelector('.tactical-hand-label');
-          console.log('Step 5 - Tactical Hand Label:', element);
-          if (!element) {
-            // Fallback: try to find any element with TACTICAL_HAND text
-            const allElements = document.querySelectorAll('*');
-            for (const el of allElements) {
-              if (el.textContent?.includes('TACTICAL_HAND')) {
-                element = el;
-                console.log('Step 5 - Found TACTICAL_HAND via text search:', element);
-                break;
-              }
-            }
-          }
+          // This selector is no longer used in the new layout
+          // Fallback to player hand container
+          element = document.querySelector('.tutorial-target.player-hand') ||
+                    document.querySelector('[class*="flex justify-between items-center gap-4 rounded-lg"]');
+          console.log('Step 5 - Tactical Hand Label (fallback to player hand):', element);
+          break;
+          
+        case '.end-turn-button':
+          // Target the end turn button in GameControlsBar
+          element = document.querySelector('.tutorial-target.end-turn-button') ||
+                    document.querySelector('button[class*="END_TURN"]') ||
+                    Array.from(document.querySelectorAll('button')).find(btn =>
+                      btn.textContent?.includes('END_TURN') || btn.textContent?.includes('END TURN')
+                    );
+          console.log('End Turn Button:', element);
           break;
           
         default:
@@ -112,6 +181,9 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       if (element) {
         const rect = element.getBoundingClientRect();
         setHighlightRect(rect);
+        
+        // Store reference to highlighted element for hover detection
+        highlightedElementRef.current = element;
         
         // Calculate overlay position based on step position preference
         if (currentStep && overlayRef.current) {
@@ -169,6 +241,26 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     };
   }, [highlightTarget, currentStep, isActive]);
 
+  // Handle hover state on highlighted element
+  useEffect(() => {
+    const element = highlightedElementRef.current;
+    if (!element || !isActive) {
+      setIsHovering(false);
+      return;
+    }
+
+    const handleMouseEnter = () => setIsHovering(true);
+    const handleMouseLeave = () => setIsHovering(false);
+
+    element.addEventListener('mouseenter', handleMouseEnter);
+    element.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      element.removeEventListener('mouseenter', handleMouseEnter);
+      element.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [highlightedElementRef.current, isActive]);
+
   // Handle click events for validation
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -208,7 +300,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     if (currentStep.validation.type === 'custom' && typeof currentStep.validation.condition === 'function') {
       try {
         const result = currentStep.validation.condition();
-        console.log('🎯 TUTORIAL: Validation check for step', currentStep.id, ':', result);
+        tutorialLog('🎯 TUTORIAL: Validation check for step', currentStep.id, ':', result);
         return result;
       } catch (error) {
         console.error('Tutorial validation error:', error);
@@ -223,39 +315,37 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
 
   return (
     <>
-      {/* Clean highlight overlay - VERY LOW Z-INDEX to stay under all card interactions */}
-      <div className="fixed inset-0 z-[1] pointer-events-none">
-        {highlightRect && (
+      {/* Clean highlight overlay - hides when user hovers over highlighted element */}
+      <div className="fixed inset-0 z-[9998] pointer-events-none">
+        {highlightRect && !isHovering && (
           <>
-            {/* Enhanced border highlight with glow effect - NO BLUR, LOWER Z-INDEX */}
+            {/* Enhanced border highlight - fades out on hover */}
             <div
-              className="absolute border-4 border-blue-400 rounded-lg shadow-lg animate-pulse bg-blue-400/10"
+              className="absolute border-4 border-blue-400 rounded-lg shadow-lg animate-pulse bg-blue-400/10 transition-opacity duration-200"
               style={{
                 top: highlightRect.top - 8,
                 left: highlightRect.left - 8,
                 width: highlightRect.width + 16,
                 height: highlightRect.height + 16,
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.1)',
-                zIndex: 1
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.1)'
               }}
             />
-            {/* Additional outer glow - LOWER Z-INDEX */}
+            {/* Additional outer glow - fades out on hover */}
             <div
-              className="absolute border-2 border-blue-300/50 rounded-lg animate-ping"
+              className="absolute border-2 border-blue-300/50 rounded-lg animate-ping transition-opacity duration-200"
               style={{
                 top: highlightRect.top - 12,
                 left: highlightRect.left - 12,
                 width: highlightRect.width + 24,
-                height: highlightRect.height + 24,
-                zIndex: 1
+                height: highlightRect.height + 24
               }}
             />
-            {/* Single animated arrow */}
+            {/* Single animated arrow - fades out on hover */}
             <div
-              className="absolute text-blue-400 animate-bounce"
+              className="absolute text-blue-400 animate-bounce transition-opacity duration-200"
               style={{
                 top: highlightRect.top - 40,
-                left: highlightRect.left + highlightRect.width / 2 - 12,
+                left: highlightRect.left + highlightRect.width / 2 - 12
               }}
             >
               <div className="text-2xl">↓</div>
@@ -267,7 +357,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       {/* Tutorial overlay panel */}
       <div
         ref={overlayRef}
-        className="fixed z-50 bg-gray-900 border border-gray-600 rounded-lg shadow-2xl max-w-md w-full mx-4"
+        className="fixed z-[9999] bg-gray-900 border border-gray-600 rounded-lg shadow-2xl max-w-md w-full mx-4"
         style={overlayPosition ? overlayPosition : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
         data-tutorial-step={currentStep.id}
       >
@@ -286,7 +376,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             </span>
             <button
               onClick={() => {
-                console.log('🎯 TUTORIAL: Exit tutorial clicked');
+                tutorialLog('🎯 TUTORIAL: Exit tutorial clicked');
                 if (onCancel) onCancel();
               }}
               className="text-gray-400 hover:text-red-400 transition-colors"
@@ -329,45 +419,24 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         </div>
 
         {/* Footer with controls */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-600">
-          <div className="flex items-center space-x-2">
-            {/* Next/Custom Action button */}
-            <button
-              onClick={() => {
-                if (currentStep.customButtonAction === 'exit_tutorial') {
-                  console.log('🎯 TUTORIAL: Finish tutorial clicked - completing tutorial');
-                  // Complete the tutorial properly by calling onNext, which will trigger completeTutorial()
-                  if (onNext) onNext();
-                } else {
-                  if (onNext) onNext();
-                }
-              }}
-              disabled={!canGoNext && !currentStep.customButtonAction}
-              className="flex items-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors text-sm"
-            >
-              <span>{currentStep.customButtonText || 'Next'}</span>
-              {!currentStep.customButtonAction && <ChevronRight size={16} />}
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {/* Reset Tutorial button */}
-            <button
-              onClick={() => {
-                console.log('🎯 TUTORIAL: Reset tutorial clicked - restarting tutorial');
-                if (currentScript) {
-                  // Reset progress for current script and restart
-                  tutorialManager.resetProgress(currentScript.id);
-                  tutorialManager.startTutorial(currentScript.id);
-                }
-              }}
-              className="flex items-center space-x-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors text-sm"
-              title="Reset Tutorial"
-            >
-              <RotateCcw size={16} />
-              <span>Reset Tutorial</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-center p-4 border-t border-gray-600">
+          {/* Next/Custom Action button */}
+          <button
+            onClick={() => {
+              if (currentStep.customButtonAction === 'exit_tutorial') {
+                tutorialLog('🎯 TUTORIAL: Finish tutorial clicked - completing tutorial');
+                // Complete the tutorial properly by calling onNext, which will trigger completeTutorial()
+                if (onNext) onNext();
+              } else {
+                if (onNext) onNext();
+              }
+            }}
+            disabled={!canGoNext && !currentStep.customButtonAction}
+            className="flex items-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors text-sm"
+          >
+            <span>{currentStep.customButtonText || 'Next'}</span>
+            {!currentStep.customButtonAction && <ChevronRight size={16} />}
+          </button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import type { GameState } from '../types/game.types';
+import { tutorialLog } from '../utils/tutorialLogger';
 
 // Mock card data based on actual game cards
 export const mockInfrastructureCards = [
@@ -63,7 +64,7 @@ export const mockAttackerCards = [
   {
     id: "A003",
     name: "Log4Shell",
-    type: "exploit", 
+    type: "exploit",
     category: "network",
     cost: 1,
     description: "Remote code execution in Java logging",
@@ -140,57 +141,54 @@ export const mockAttackerCards = [
     ]
   },
   {
-    id: "A301",
-    name: "Advanced Persistent Threat",
-    type: "wildcard",
-    category: "any",
-    cost: 2,
-    description: "Long-term stealthy network infiltration",
-    flavor: "We've been in your network longer than most of your employees",
-    effect: "Can be played as any Exploit or Attack card. Target infrastructure can't be protected by reactive cards for 1 turn.",
-    img: "apt",
+    id: "A002",
+    name: "Packet Sniffer",
+    type: "exploit",
+    category: "network",
+    cost: 1,
+    description: "Captures and analyzes network traffic",
+    flavor: "Listening to conversations that weren't meant for you",
+    effect: "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+    img: "packet_sniffer",
     isReactive: false,
-    target: "any",
-    wildcardType: "exploit-attack",
-    specialEffect: "prevent_reactions",
+    target: "infrastructure",
+    vulnerability: "network",
     playable: true,
     metadata: {
-      category: "any",
-      flavor: "We've been in your network longer than most of your employees"
+      category: "network",
+      flavor: "Listening to conversations that weren't meant for you"
     },
     effects: [
       {
-        type: "Wildcard",
+        type: "Exploit",
         value: 1,
-        description: "Can be played as any Exploit or Attack card with special effect"
+        description: "Makes infrastructure vulnerable to Network attacks"
       }
     ]
   },
   {
-    id: "A306",
-    name: "AI-Powered Attack",
-    type: "wildcard",
-    category: "any",
-    cost: 2,
-    description: "Uses machine learning to optimize attacks",
-    flavor: "The attack that learns as it goes",
-    effect: "Can be played as any Exploit or Attack card. Look at the top 3 cards of your deck and place one in your hand.",
-    img: "ai_attack",
+    id: "A001",
+    name: "Port Scanner",
+    type: "exploit",
+    category: "network",
+    cost: 1,
+    description: "Identifies open network services",
+    flavor: "Finding the doors before trying the locks",
+    effect: "Target 1 infrastructure card. It becomes vulnerable to Network attacks.",
+    img: "port_scan",
     isReactive: false,
-    target: "any",
-    wildcardType: "exploit-attack",
-    draw: 1,
-    lookAt: 3,
+    target: "infrastructure",
+    vulnerability: "network",
     playable: true,
     metadata: {
-      category: "any",
-      flavor: "The attack that learns as it goes"
+      category: "network",
+      flavor: "Finding the doors before trying the locks"
     },
     effects: [
       {
-        type: "Wildcard",
+        type: "Exploit",
         value: 1,
-        description: "Can be played as any Exploit or Attack card with card draw benefit"
+        description: "Makes infrastructure vulnerable to Network attacks"
       }
     ]
   },
@@ -376,7 +374,7 @@ export class MockGameStateProvider {
     
     // Debug: Check if defender cards have playable property set correctly
     if (!isAttacker) {
-      console.log('🎯 TUTORIAL: Defender hand cards playable status:', 
+      tutorialLog('🎯 TUTORIAL: Defender hand cards playable status:',
         defenderHand.map(card => ({ name: card.name, playable: card.playable }))
       );
     }
@@ -461,7 +459,7 @@ export class MockGameStateProvider {
   }
 
   // Tutorial-specific state mutations
-  setInfrastructureState(infraId: string, state: 'secure' | 'vulnerable' | 'compromised' | 'shielded' | 'fortified') {
+  setInfrastructureState(infraId: string, state: 'secure' | 'vulnerable' | 'compromised' | 'shielded' | 'fortified' | 'fortified_weaken') {
     this.infrastructureStates.set(infraId, state);
   }
 
@@ -479,7 +477,22 @@ export class MockGameStateProvider {
 
   // Simulate tutorial actions
   simulateExploit(infraId: string) {
-    this.setInfrastructureState(infraId, 'vulnerable');
+    const currentState = this.infrastructureStates.get(infraId);
+    
+    // Special handling for fortified infrastructure
+    if (currentState === 'fortified') {
+      // First exploit on fortified: fortified → fortified_weaken
+      this.setInfrastructureState(infraId, 'fortified_weaken');
+      tutorialLog('🎯 TUTORIAL: First exploit on fortified infrastructure - weakened to fortified_weaken');
+    } else if (currentState === 'fortified_weaken') {
+      // Second exploit on fortified_weaken: fortified_weaken → vulnerable
+      this.setInfrastructureState(infraId, 'vulnerable');
+      tutorialLog('🎯 TUTORIAL: Second exploit on weakened fortified infrastructure - now vulnerable');
+    } else {
+      // Normal exploit: secure → vulnerable
+      this.setInfrastructureState(infraId, 'vulnerable');
+    }
+    
     this.setActionPoints('attacker', this.attackerActionPoints - 1);
   }
 
@@ -509,9 +522,37 @@ export class MockGameStateProvider {
 
   simulateResponse(infraId: string) {
     const currentState = this.infrastructureStates.get(infraId);
-    if (currentState === 'shielded' || currentState === 'fortified') {
+    tutorialLog('🎯 TUTORIAL: simulateResponse called for', infraId, 'current state:', currentState);
+    if (currentState === 'compromised') {
       this.setInfrastructureState(infraId, 'secure');
       this.setActionPoints('defender', this.defenderActionPoints - 1);
+      tutorialLog('🎯 TUTORIAL: Infrastructure restored to secure state');
+    } else {
+      tutorialLog('🎯 TUTORIAL: Infrastructure not compromised, cannot restore');
+    }
+  }
+
+  simulateCounterAttack(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    tutorialLog('🎯 TUTORIAL: simulateCounterAttack called for', infraId, 'current state:', currentState);
+    if (currentState === 'shielded' || currentState === 'fortified') {
+      this.setInfrastructureState(infraId, 'secure');
+      this.setActionPoints('attacker', this.attackerActionPoints - 1);
+      tutorialLog('🎯 TUTORIAL: Shield removed, infrastructure returned to secure state');
+    } else {
+      tutorialLog('🎯 TUTORIAL: Infrastructure not shielded/fortified, cannot remove shield');
+    }
+  }
+
+  simulateReaction(infraId: string) {
+    const currentState = this.infrastructureStates.get(infraId);
+    tutorialLog('🎯 TUTORIAL: simulateReaction called for', infraId, 'current state:', currentState);
+    if (currentState === 'vulnerable') {
+      this.setInfrastructureState(infraId, 'secure');
+      this.setActionPoints('defender', this.defenderActionPoints - 1);
+      tutorialLog('🎯 TUTORIAL: Reaction card protected vulnerable infrastructure, returned to secure state');
+    } else {
+      tutorialLog('🎯 TUTORIAL: Infrastructure not vulnerable, cannot apply reaction');
     }
   }
 
@@ -529,7 +570,7 @@ export class MockGameStateProvider {
   exitReactionPhase() {
     // Return to action mode
     this.currentStage = 'action';
-    console.log('🎯 TUTORIAL: Exited reaction phase, returned to action mode');
+    tutorialLog('🎯 TUTORIAL: Exited reaction phase, returned to action mode');
   }
 
   // Reset to initial state
@@ -545,10 +586,13 @@ export class MockGameStateProvider {
 
   private calculateScore(role: 'attacker' | 'defender', infrastructure: any[]) {
     if (role === 'attacker') {
+      // Attacker gets points for compromised infrastructure
       return infrastructure.filter(infra => infra.state === 'compromised').length;
     } else {
-      return infrastructure.filter(infra => 
-        infra.state === 'secure' || infra.state === 'shielded' || infra.state === 'fortified'
+      // Defender only gets points for shielded or fortified infrastructure
+      // Secure infrastructure is neutral (not yet claimed by either side)
+      return infrastructure.filter(infra =>
+        infra.state === 'shielded' || infra.state === 'fortified'
       ).length;
     }
   }

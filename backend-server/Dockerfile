@@ -35,6 +35,7 @@ ENV PORT=8000
 # Copy production deps and built files
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src ./src
 COPY assets ./assets
 COPY files ./files
 COPY package*.json ./

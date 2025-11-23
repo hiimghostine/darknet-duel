@@ -1,15 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Search, 
   Shield, 
   Sword, 
-  Server, 
   Zap, 
-  Globe, 
-  Users, 
-  Bug, 
   BookOpen, 
   Clock, 
   Target, 
@@ -18,6 +14,7 @@ import {
   Filter,
   Eye
 } from 'lucide-react';
+import tutorialManager from '../../services/tutorialManager';
 
 // Import card data
 import attackerCards from '../cards/attacker.json';
@@ -28,29 +25,17 @@ interface CardEncyclopediaProps {
   onClose: () => void;
 }
 
-interface Card {
-  id: string;
-  name: string;
-  type: string;
-  category?: string;
-  cost?: number;
-  description: string;
-  flavor?: string;
-  effect?: string;
-  vulnerabilities?: string[];
-  isReactive?: boolean;
-  target?: string;
-  vulnerability?: string;
-  img?: string;
-  source: string;
-}
-
 const CardEncyclopedia: React.FC<CardEncyclopediaProps> = ({ onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [showAnnotations, setShowAnnotations] = useState(false);
+
+  // Mark Card Encyclopedia as complete when user opens it
+  useEffect(() => {
+    tutorialManager.markTutorialComplete('card_encyclopedia');
+  }, []);
 
   // Combine all cards with their source
   const allCards = [
@@ -263,7 +248,7 @@ const CardEncyclopedia: React.FC<CardEncyclopediaProps> = ({ onClose }) => {
 
           {/* Main Content - Card Grid */}
           <div className="flex-1 p-6 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
               <AnimatePresence mode="wait">
                 {filteredCards.map((card, index) => (
                   <motion.div
@@ -278,44 +263,60 @@ const CardEncyclopedia: React.FC<CardEncyclopediaProps> = ({ onClose }) => {
                       damping: 40,
                       delay: index * 0.03
                     }}
-                    className={`border p-4 cursor-pointer transition-all hover:shadow-lg ${getCategoryColor(card.source)}`}
+                    className="cursor-pointer group"
                     onClick={() => setSelectedCard(card)}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {getCategoryIcon(card.source)}
-                        <span className="font-mono text-xs opacity-70">{card.id}</span>
-                      </div>
-                      {(card as any).cost && (
-                        <div className="flex items-center gap-1 text-xs">
-                          <Clock size={12} />
-                          {(card as any).cost} AP
+                    {/* Playing card container with 5:7 aspect ratio */}
+                    <div className="relative w-full" style={{ paddingBottom: '140%' }}>
+                      <div className={`absolute inset-0 border-2 rounded-lg p-3 transition-all hover:shadow-2xl hover:scale-105 hover:-translate-y-2 flex flex-col ${getCategoryColor(card.source)}`}>
+                        {/* Card Header */}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-1">
+                            {getCategoryIcon(card.source)}
+                            <span className="font-mono text-[0.6rem] opacity-70">{card.id}</span>
+                          </div>
+                          {(card as any).cost && (
+                            <div className="flex items-center gap-1 text-[0.6rem] font-bold">
+                              <Clock size={10} />
+                              {(card as any).cost}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    
-                    <h3 className="font-bold font-mono text-sm mb-2">{card.name}</h3>
-                    
-                    <div className="flex items-center gap-2 mb-2">
-                      {getTypeIcon(card.type)}
-                      <span className="text-xs font-mono opacity-70">{card.type?.toUpperCase()}</span>
-                      {(card as any).category && (
-                        <>
-                          <span className="text-xs opacity-50">•</span>
-                          <span className="text-xs font-mono opacity-70">{(card as any).category?.toUpperCase()}</span>
-                        </>
-                      )}
-                    </div>
-                    
-                    <p className="text-xs font-mono text-base-content/70 line-clamp-3">
-                      {card.description}
-                    </p>
+                        
+                        {/* Card Name */}
+                        <h3 className="font-bold font-mono text-xs mb-2 line-clamp-2 leading-tight">{card.name}</h3>
+                        
+                        {/* Card Type */}
+                        <div className="flex flex-col gap-1 mb-2">
+                          <div className="flex items-center gap-1">
+                            {getTypeIcon(card.type)}
+                            <span className="text-[0.6rem] font-mono opacity-70">{card.type?.toUpperCase()}</span>
+                          </div>
+                          {(card as any).category && (
+                            <div className="flex items-center gap-1">
+                              <Filter size={8} />
+                              <span className="text-[0.6rem] font-mono opacity-70">{(card as any).category?.toUpperCase()}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Card Description - grows to fill space */}
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-[0.65rem] font-mono text-base-content/70 line-clamp-4 leading-tight">
+                            {card.description}
+                          </p>
+                        </div>
 
-                    {(card as any).isReactive && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-warning/20 text-warning text-xs font-mono border border-warning/30">
-                        REACTIVE
+                        {/* Reactive Badge at bottom */}
+                        {(card as any).isReactive && (
+                          <div className="mt-auto pt-2">
+                            <div className="inline-block px-1.5 py-0.5 bg-warning/20 text-warning text-[0.6rem] font-mono border border-warning/30 rounded">
+                              ⚡ REACTIVE
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -410,90 +411,113 @@ const CardEncyclopedia: React.FC<CardEncyclopediaProps> = ({ onClose }) => {
                 )}
               </AnimatePresence>
 
-              <motion.div
-                className={`bg-base-200 border p-6 max-w-md w-full ${getCategoryColor(selectedCard.source)}`}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(selectedCard.source)}
-                    <span className="font-mono text-sm opacity-70">{selectedCard.id}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowAnnotations(!showAnnotations)}
-                      className={`btn btn-ghost btn-xs ${showAnnotations ? 'text-primary' : ''}`}
-                      title="Toggle annotations"
-                    >
-                      <HelpCircle size={16} />
-                    </button>
-                    <button
-                      onClick={() => setSelectedCard(null)}
-                      className="btn btn-ghost btn-xs"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+              {/* Playing card detail view with 5:7 aspect ratio */}
+              <div className="relative w-full max-w-md px-4" onClick={(e) => e.stopPropagation()}>
+                <div className="relative w-full" style={{ paddingBottom: '140%' }}>
+                  <motion.div
+                    className={`absolute inset-0 border-4 rounded-xl p-6 flex flex-col shadow-2xl ${getCategoryColor(selectedCard.source)}`}
+                    initial={{ scale: 0.5, opacity: 0, rotateY: -180 }}
+                    animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+                    exit={{ scale: 0.5, opacity: 0, rotateY: 180 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {getCategoryIcon(selectedCard.source)}
+                        <span className="font-mono text-sm opacity-70">{selectedCard.id}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowAnnotations(!showAnnotations)}
+                          className={`btn btn-ghost btn-xs ${showAnnotations ? 'text-primary' : ''}`}
+                          title="Toggle annotations"
+                        >
+                          <HelpCircle size={16} />
+                        </button>
+                        <button
+                          onClick={() => setSelectedCard(null)}
+                          className="btn btn-ghost btn-xs"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card Name */}
+                    <h3 className="text-2xl font-bold font-mono mb-3 leading-tight">{selectedCard.name}</h3>
+                    
+                    {/* Card Type & Category */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4 text-sm font-mono">
+                      <div className={`flex items-center gap-1 px-2 py-1 border rounded transition-all duration-300 ${showAnnotations ? 'bg-primary/20 border-primary/50 animate-pulse' : 'border-current/30'}`}>
+                        {getTypeIcon(selectedCard.type)}
+                        {selectedCard.type?.toUpperCase()}
+                      </div>
+                      {(selectedCard as any).category && (
+                        <div className={`flex items-center gap-1 px-2 py-1 border rounded transition-all duration-300 ${showAnnotations ? 'bg-secondary/20 border-secondary/50 animate-pulse' : 'border-current/30'}`}>
+                          <Filter size={12} />
+                          {(selectedCard as any).category?.toUpperCase()}
+                        </div>
+                      )}
+                      {(selectedCard as any).cost && (
+                        <div className={`flex items-center gap-1 px-2 py-1 border rounded font-bold transition-all duration-300 ${showAnnotations ? 'bg-accent/20 border-accent/50 animate-pulse' : 'border-current/30'}`}>
+                          <Clock size={12} />
+                          {(selectedCard as any).cost} AP
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scrollable content area */}
+                    <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                      {/* Description */}
+                      <div>
+                        <h4 className="font-mono text-xs font-bold mb-1 opacity-70">DESCRIPTION</h4>
+                        <p className="font-mono text-sm leading-relaxed">{selectedCard.description}</p>
+                      </div>
+
+                      {/* Flavor Text */}
+                      {selectedCard.flavor && (
+                        <div className="border-l-2 border-primary/30 pl-3 py-1">
+                          <p className="italic text-sm text-base-content/80 leading-relaxed">
+                            "{selectedCard.flavor}"
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Effect */}
+                      {selectedCard.effect && (
+                        <div>
+                          <h4 className="font-mono text-xs font-bold mb-1 opacity-70">EFFECT</h4>
+                          <p className="font-mono text-sm leading-relaxed">{selectedCard.effect}</p>
+                        </div>
+                      )}
+
+                      {/* Vulnerabilities */}
+                      {selectedCard.vulnerabilities && (
+                        <div>
+                          <h4 className="font-mono text-xs font-bold mb-2 opacity-70">VULNERABILITIES</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedCard.vulnerabilities.map((vuln: string) => (
+                              <span key={vuln} className="px-2 py-1 bg-error/20 text-error text-xs font-mono border border-error/30 rounded">
+                                {vuln.toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reactive Badge at bottom */}
+                    {(selectedCard as any).isReactive && (
+                      <div className="mt-3 pt-3 border-t border-current/20">
+                        <div className={`inline-block px-3 py-1.5 text-sm font-mono border rounded transition-all duration-300 ${showAnnotations ? 'bg-warning/40 border-warning animate-pulse shadow-lg' : 'bg-warning/20 text-warning border-warning/30'}`}>
+                          ⚡ REACTIVE CARD
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 </div>
-
-                <h3 className="text-xl font-bold font-mono mb-2">{selectedCard.name}</h3>
-                
-                <div className="flex items-center gap-4 mb-4 text-sm font-mono relative">
-                  <div className={`flex items-center gap-1 relative transition-all duration-300 ${showAnnotations ? 'bg-primary/20 border border-primary/50 px-2 py-1 rounded animate-pulse' : ''}`} id="card-type">
-                    {getTypeIcon(selectedCard.type)}
-                    {selectedCard.type?.toUpperCase()}
-                  </div>
-                  {(selectedCard as any).category && (
-                    <div className={`flex items-center gap-1 relative transition-all duration-300 ${showAnnotations ? 'bg-secondary/20 border border-secondary/50 px-2 py-1 rounded animate-pulse' : ''}`} id="card-category">
-                      <Filter size={12} />
-                      {(selectedCard as any).category?.toUpperCase()}
-                    </div>
-                  )}
-                  {(selectedCard as any).cost && (
-                    <div className={`flex items-center gap-1 relative transition-all duration-300 ${showAnnotations ? 'bg-accent/20 border border-accent/50 px-2 py-1 rounded animate-pulse' : ''}`} id="card-cost">
-                      <Clock size={12} />
-                      {(selectedCard as any).cost} AP
-                    </div>
-                  )}
-                </div>
-
-                <p className="font-mono text-sm mb-4">{selectedCard.description}</p>
-
-                {selectedCard.flavor && (
-                  <p className="italic text-sm text-white dark:text-pink-300 mb-4 border-l-2 border-primary/30 pl-3">
-                    "{selectedCard.flavor}"
-                  </p>
-                )}
-
-                {selectedCard.effect && (
-                  <div className="mb-4">
-                    <h4 className="font-mono text-sm font-bold mb-2 text-white ">EFFECT:</h4>
-                    <p className="font-mono text-sm text-white dark:text-pink-200">{selectedCard.effect}</p>
-                  </div>
-                )}
-
-                {selectedCard.vulnerabilities && (
-                  <div className="mb-4">
-                    <h4 className="font-mono text-sm font-bold mb-2">VULNERABILITIES:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCard.vulnerabilities.map(vuln => (
-                        <span key={vuln} className="px-2 py-1 bg-error/20 text-error text-xs font-mono border border-error/30">
-                          {vuln.toUpperCase()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {(selectedCard as any).isReactive && (
-                  <div className={`inline-block px-3 py-1 text-sm font-mono border border-warning/30 relative transition-all duration-300 ${showAnnotations ? 'bg-warning/40 border-warning animate-pulse shadow-lg' : 'bg-warning/20 text-warning'}`} id="reactive-badge">
-                    ⚡ REACTIVE CARD
-                  </div>
-                )}
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -111,12 +111,16 @@ const WinnerLobby: React.FC<WinnerLobbyProps> = ({
     }
 
     try {
-      // Do NOT clean up game credentials or connection here; just navigate away
-      // This prevents the lobby from being removed while still being polled
+      // Clean up game credentials and notify server when leaving post-game
+      if (matchID && playerID) {
+        await leaveMatch();
+        clearCredentials();
+      }
       navigate('/lobbies');
     } catch (error) {
       console.error('Error leaving game:', error);
-      // Still navigate even if cleanup fails
+      // Still clean up and navigate even if server notification fails
+      clearCredentials();
       navigate('/lobbies');
     }
   };

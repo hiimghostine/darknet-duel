@@ -28,6 +28,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     password: ''
   });
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [existingPassword, setExistingPassword] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,6 +58,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         setAvatarFile(null);
         setAvatarPreview(null);
         setConfirmPassword('');
+        setExistingPassword('');
         setErrors({});
       }
     };
@@ -72,6 +74,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
 
   // Handle avatar file selection
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,16 +133,46 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       newErrors.bio = 'Bio must be 30 characters or less';
     }
 
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
+    // Password validation - only if password is being changed
+    if (formData.password || confirmPassword || existingPassword) {
+      // If password is provided, existing password is required
+      if (formData.password && formData.password.trim().length > 0) {
+        if (!existingPassword || existingPassword.trim().length === 0) {
+          newErrors.existingPassword = 'Current password is required when changing password';
+        }
 
-    if (formData.password && formData.password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
+        if (formData.password.length < 8) {
+          newErrors.password = 'Password must be at least 8 characters';
+        }
 
-    if (confirmPassword && !formData.password) {
-      newErrors.password = 'Please enter a password';
+        if (!/[A-Z]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one uppercase letter';
+        }
+
+        if (!/[a-z]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one lowercase letter';
+        }
+
+        if (!/[0-9]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one number';
+        }
+
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) {
+          newErrors.password = 'Password must contain at least one special character';
+        }
+
+        if (formData.password.length > 63) {
+          newErrors.password = 'Password must be 63 characters or less';
+        }
+      }
+
+      if (formData.password && formData.password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+
+      if (confirmPassword && !formData.password) {
+        newErrors.password = 'Please enter a password';
+      }
     }
 
     setErrors(newErrors);
@@ -157,15 +190,16 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setLoading(true);
     try {
       // Prepare update data
-      const updateData: UpdateAccountData = {
+      const updateData: any = {
         email: formData.email,
         username: formData.username,
         bio: formData.bio || undefined
       };
 
-      // Only include password if it's provided
+      // Only include password and existing_password if password is being changed
       if (formData.password?.trim()) {
         updateData.password = formData.password;
+        updateData.existing_password = existingPassword;
       }
 
       // Add avatar if selected
@@ -348,10 +382,34 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <FaLock className="text-primary" />
-              <h4 className="text-sm font-mono text-primary">SECURITY_CREDENTIALS</h4>
+              <h4 className="text-sm font-mono text-primary">CHANGE_PASSWORD (leave empty to keep current)</h4>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Old Password */}
+              <div>
+                <label className="block text-sm font-mono text-base-content/70 mb-1">
+                  CURRENT_PASSWORD
+                </label>
+                <input
+                  type="password"
+                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.existingPassword ? 'input-error' : ''}`}
+                  value={existingPassword}
+                  onChange={(e) => {
+                    setExistingPassword(e.target.value);
+                    if (errors.existingPassword) {
+                      setErrors(prev => ({ ...prev, existingPassword: '' }));
+                    }
+                  }}
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
+                  disabled={loading}
+                />
+                {errors.existingPassword && (
+                  <p className="text-error text-xs mt-1 font-mono">{errors.existingPassword}</p>
+                )}
+              </div>
+
               {/* New Password */}
               <div>
                 <label className="block text-sm font-mono text-base-content/70 mb-1">
@@ -370,35 +428,31 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   <p className="text-error text-xs mt-1 font-mono">{errors.password}</p>
                 )}
               </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-mono text-base-content/70 mb-1">
-                  CONFIRM_PASSWORD
-                </label>
-                <input
-                  type="password"
-                  className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    // Clear confirm password error when user starts typing
-                    if (errors.confirmPassword) {
-                      setErrors(prev => ({ ...prev, confirmPassword: '' }));
-                    }
-                  }}
-                  placeholder="Confirm new password"
-                  autoComplete="new-password"
-                  disabled={loading}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-error text-xs mt-1 font-mono">{errors.confirmPassword}</p>
-                )}
-              </div>
             </div>
-            
-            <div className="text-xs text-base-content/50 font-mono">
-              Leave both fields empty to keep your current password unchanged.
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-mono text-base-content/70 mb-1">
+                CONFIRM_NEW_PASSWORD
+              </label>
+              <input
+                type="password"
+                className={`input input-bordered w-full bg-base-100 text-base-content font-mono ${errors.confirmPassword ? 'input-error' : ''}`}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  // Clear confirm password error when user starts typing
+                  if (errors.confirmPassword) {
+                    setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                  }
+                }}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+                disabled={loading}
+              />
+              {errors.confirmPassword && (
+                <p className="text-error text-xs mt-1 font-mono">{errors.confirmPassword}</p>
+              )}
             </div>
           </div>
 

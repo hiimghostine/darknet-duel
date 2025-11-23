@@ -3,6 +3,7 @@ import { Account, AccountType } from '../entities/account.entity';
 import { validateEmail } from '../utils/validation';
 import bcrypt from 'bcrypt';
 import { LogService } from './log.service';
+import { SessionService } from './session.service';
 
 export interface GetUsersFilters {
   page: number;
@@ -46,6 +47,7 @@ export interface AdminUserData {
 export class AdminService {
   private accountRepository = AppDataSource.getRepository(Account);
   private logService = new LogService();
+  private sessionService = new SessionService();
 
   /**
    * Get paginated list of users with search and filtering
@@ -327,6 +329,9 @@ export class AdminService {
     user.updatedAt = new Date();
 
     const updatedUser = await this.accountRepository.save(user);
+
+    // Invalidate all sessions for the banned user (force logout)
+    await this.sessionService.invalidateAllUserSessions(id);
 
     // Log the ban action
     await this.logService.logUserBan(adminId, updatedUser.username);
