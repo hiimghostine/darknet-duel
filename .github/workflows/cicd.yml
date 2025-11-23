@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'main') && fromJSON('["self-hosted","thunder-server"]') || (github.ref_name == 'main' && fromJSON('["self-hosted","thunder-server"]') || fromJSON('["self-hosted","ghostine-server"]')) }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_env == 'main') && fromJSON('["self-hosted","prod-server"]') || (github.ref_name == 'main' && fromJSON('["self-hosted","prod-server"]') || fromJSON('["self-hosted","ghostine-server"]')) }}
     environment: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.target_env == 'main' && 'prod' || 'dev')) || (github.ref_name == 'main' && 'prod' || 'dev') }}
     env:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
