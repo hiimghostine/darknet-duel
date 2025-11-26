@@ -260,7 +260,7 @@ const TutorialMenu: React.FC<TutorialMenuProps> = ({ onClose }) => {
               <div className="mb-8">
                 <h4 className="text-lg font-semibold font-mono text-primary mb-4 flex items-center">
                   <Play className="mr-2 text-primary" size={20} style={{transform: 'translateY(-2px)'}} />
-                  VIDEO_TUTORIAL
+                  VIDEO_LORE
                 </h4>
                 <div className="border border-primary/30 bg-base-300/50 p-4">
                   <div className="flex items-center justify-between">
