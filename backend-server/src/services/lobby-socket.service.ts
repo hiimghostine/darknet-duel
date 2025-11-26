@@ -706,7 +706,7 @@ export class LobbySocketService {
               });
 
               // Close the lobby
-              await this.lobbyManager.closeLobby(lobby.lobbyId);
+              await this.lobbyManager.closeLobby(lobby.lobbyId, 'Host disconnected');
               
               console.log(`🗑️ Lobby ${lobby.lobbyId} closed due to host disconnection`);
             } else {

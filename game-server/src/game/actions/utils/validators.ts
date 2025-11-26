@@ -74,7 +74,7 @@ export function validateCardTargeting(
         const existingVulns = infrastructure.vulnerabilities?.filter(v => {
           if (typeof v === 'string') {
             return v === attackVector;
-          } else if (typeof v === 'object' && v !== null) {
+          } else if (typeof v === 'object' && v !== null && 'vector' in v) {
             return v.vector === attackVector;
           }
           return false;
@@ -164,7 +164,7 @@ export function validateCardTargeting(
             // Handle both string vulnerabilities and object vulnerabilities
             if (typeof v === 'string') {
               return v === attackVector;
-            } else if (typeof v === 'object' && v !== null) {
+            } else if (typeof v === 'object' && v !== null && 'vector' in v) {
               return v.vector === attackVector;
             }
             return false;
