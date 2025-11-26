@@ -7,7 +7,9 @@
 
 import { io, Socket } from 'socket.io-client';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+// Derive backend URL from API URL by removing /api suffix
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const BACKEND_URL = API_URL.replace('/api', '');
 
 // Types matching backend
 export type LobbyState = 
