@@ -403,13 +403,14 @@ const LobbyBrowser: React.FC = () => {
     // Get match state
     const state = match.setupData.state || 'waiting';
     
-    // Cannot join abandoned games
-    if (state === 'abandoned') {
+    // Cannot join closed, starting, or empty lobbies
+    if (state === 'closed' || state === 'starting' || state === 'empty') {
       return false;
     }
     
-    // Can only join lobbies that are waiting or ready
-    if (state !== 'waiting' && state !== 'ready') {
+    // Can join lobbies that are waiting, active, or full (backend will validate actual capacity)
+    // The 'full' state might be stale, so we check player count below
+    if (state !== 'waiting' && state !== 'active' && state !== 'full') {
       return false;
     }
     
@@ -421,15 +422,33 @@ const LobbyBrowser: React.FC = () => {
   
   // Render the appropriate label for the join button
   const renderJoinButtonLabel = (match: GameMatch): React.ReactNode => {
-    if (match.setupData.state === 'in_game') {
-      return <>IN PROGRESS</>;
-    } else if (match.setupData.state === 'abandoned') {
-      return <>ABANDONED</>;
-    } else if (!isLobbyJoinable(match)) {
-      return <>FULL</>;
-    } else {
-      return <>JOIN</>;
+    const state = match.setupData.state;
+    const realPlayerCount = getActivePlayerCount(match);
+    
+    // Check specific states first
+    if (state === 'starting') {
+      return <>STARTING</>;
+    } else if (state === 'closed') {
+      return <>CLOSED</>;
+    } else if (state === 'empty') {
+      return <>EMPTY</>;
     }
+    
+    // Check if user is already in lobby
+    if (user) {
+      const isAlreadyInLobby = match.players.some(
+        player => player.data?.realUserId === user.id
+      );
+      if (isAlreadyInLobby) return <>ALREADY IN</>;
+    }
+    
+    // Check if actually full
+    if (realPlayerCount >= 2) {
+      return <>FULL</>;
+    }
+    
+    // Otherwise, joinable
+    return <>JOIN</>;
   };
 
   return (

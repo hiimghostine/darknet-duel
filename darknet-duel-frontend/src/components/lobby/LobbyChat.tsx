@@ -32,9 +32,19 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
   
   // Channel switching state
   const [currentChannel, setCurrentChannel] = useState<'global' | 'lobby'>('global');
@@ -337,8 +347,8 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
               <h3 className="text-sm font-bold font-mono text-primary">
                 #{channelInfo.name.toUpperCase()}
               </h3>
-              <div className="text-xs text-base-content/70">
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div className="text-xs text-base-content/70 font-mono">
+                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
 
