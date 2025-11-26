@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
 import { websocketLobbyService } from '../../services/websocketLobby.service';
 import type { GameMatch, LobbyState } from '../../services/lobby.service';
-import { FaLock, FaPlay, FaCircleNotch, FaExclamationTriangle as FaExclamationCircle } from 'react-icons/fa';
+import { FaLock, FaPlay, FaCircleNotch, FaExclamationTriangle as FaExclamationCircle, FaUserFriends, FaRocket, FaQuestionCircle } from 'react-icons/fa';
 import { useAuthStore } from '../../store/auth.store';
 import { FaSync, FaPlus, FaExclamationTriangle, FaServer, FaUserSecret, FaNetworkWired } from 'react-icons/fa';
 import { useThemeStore } from '../../store/theme.store';
@@ -61,7 +61,12 @@ const LobbyBrowser: React.FC = () => {
                   realUsername: p.username
                 }
               })),
-              setupData: lobby.gameSettings,
+              setupData: {
+                ...lobby.gameSettings,
+                lobbyName: lobby.name,
+                lobbyCode: lobby.lobbyCode,
+                state: lobby.state
+              },
               createdAt: lobby.createdAt,
               updatedAt: lobby.lastActivity
             }));
@@ -337,40 +342,48 @@ const LobbyBrowser: React.FC = () => {
   const getLobbyStateStyles = (state: LobbyState): string => {
     switch (state) {
       case 'waiting':
+      case 'empty':
         return 'bg-primary/20 text-primary border border-primary/30';
-      case 'ready':
+      case 'active':
         return 'bg-green-900/20 text-green-500 border border-green-500/30';
-      case 'in_game':
+      case 'full':
+        return 'bg-yellow-900/20 text-yellow-500 border border-yellow-500/30';
+      case 'starting':
         return 'bg-accent/20 text-accent border border-accent/30';
-      case 'abandoned':
+      case 'closed':
         return 'bg-error/20 text-error border border-error/30';
       default:
-        return 'bg-primary/20 text-primary border border-primary/30';
+        return 'bg-base-content/20 text-base-content/70 border border-base-content/30';
     }
   };
   
   const getLobbyStateIcon = (state: LobbyState): React.ReactNode => {
     switch (state) {
       case 'waiting':
+      case 'empty':
         return <FaCircleNotch className="animate-spin" />;
-      case 'ready':
+      case 'active':
         return <FaPlay />;
-      case 'in_game':
-        return <FaLock />;
-      case 'abandoned':
+      case 'full':
+        return <FaUserFriends />;
+      case 'starting':
+        return <FaRocket />;
+      case 'closed':
         return <FaExclamationCircle />;
       default:
-        return <FaCircleNotch />;
+        return <FaQuestionCircle />;
     }
   };
   
   const getLobbyStateLabel = (state: LobbyState): string => {
     switch (state) {
       case 'waiting': return 'WAITING';
-      case 'ready': return 'READY';
-      case 'in_game': return 'IN PROGRESS';
-      case 'abandoned': return 'ABANDONED';
-      default: return 'UNKNOWN';
+      case 'empty': return 'EMPTY';
+      case 'active': return 'ACTIVE';
+      case 'full': return 'FULL';
+      case 'starting': return 'STARTING';
+      case 'closed': return 'CLOSED';
+      default: return state?.toUpperCase() || 'UNKNOWN';
     }
   };
   
@@ -576,9 +589,11 @@ const LobbyBrowser: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <span>{playerCount}/2</span>
                       </div>
-                      <div className="hidden md:block text-base-content/50 text-xs">
-                        {match.matchID.substring(0, 8)}
-                      </div>
+                      {match.setupData?.lobbyCode && (
+                        <div className="hidden md:block text-primary/70 text-xs font-bold">
+                          {match.setupData.lobbyCode}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
