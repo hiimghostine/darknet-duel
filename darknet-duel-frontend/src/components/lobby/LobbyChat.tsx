@@ -332,66 +332,51 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
         {/* IRC-style header - compact */}
         <div className="p-2 border-b border-primary/20">
           <div className="font-mono">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold font-mono text-primary">
-                  #{channelInfo.name.toUpperCase()}
-                </h3>
-                
-{/* Footer Status Bar */}
-<div className="flex items-center justify-between text-xs text-base-content/70 w-full px-2">
-  {/* Left side: Channel switcher */}
-  {showChannelSwitcher && lobbyId && channels.length > 1 && (
-    <div className="flex items-center gap-1">
-      {channels.map(channel => (
-        <button
-          key={channel.id}
-          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
-          className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
-            currentChannel === channel.id
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
-          }`}
-        >
-          <FaHashtag className="text-xs" />
-          <span className="text-xs">
-            {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
-          </span>
-        </button>
-      ))}
-    </div>
-  )}
-
-  {/* Right side: Time + Connection status */}
-  <div className="flex items-center gap-4">
-    {/* Time */}
-    <div>
-      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-    </div>
-
-    {/* Connection status */}
-    <div className="flex items-center gap-2 text-sm">
-      <div
-        className={`w-2 h-2 rounded-full ${
-          isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'
-        }`}
-      ></div>
-      <span>
-        {connectedUsers.size} USER(S) CONNECTED •{' '}
-        {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}
-      </span>
-    </div>
-  </div>
-</div>
-
+            {/* Top row: Channel name and time */}
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold font-mono text-primary">
+                #{channelInfo.name.toUpperCase()}
+              </h3>
+              <div className="text-xs text-base-content/70">
+                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
-            <div className="text-base-content text-xs flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
-              <span>{connectedUsers.size} USERS • {isConnected ? 'SECURE' : 'OFFLINE'}</span>
+
+            {/* Bottom row: Channel switcher and connection status */}
+            <div className="flex items-center justify-between text-xs">
+              {/* Left: Channel switcher */}
+              {showChannelSwitcher && lobbyId && channels.length > 1 ? (
+                <div className="flex items-center gap-1">
+                  {channels.map(channel => (
+                    <button
+                      key={channel.id}
+                      onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
+                      className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
+                        currentChannel === channel.id
+                          ? 'bg-primary/20 text-primary border border-primary/40'
+                          : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
+                      }`}
+                    >
+                      <FaHashtag className="text-xs" />
+                      <span className="text-xs">
+                        {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div></div>
+              )}
+
+              {/* Right: Connection status */}
+              <div className="flex items-center gap-2 text-base-content/70">
+                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
+                <span>{connectedUsers.size} USER(S) CONNECTED • {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}</span>
+              </div>
             </div>
+
             {error && (
-              <div className="text-xs text-error mt-1">⚠️ {error}</div>
+              <div className="text-xs text-error mt-2">⚠️ {error}</div>
             )}
           </div>
         </div>

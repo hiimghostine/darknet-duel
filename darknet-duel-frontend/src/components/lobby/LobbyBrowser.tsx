@@ -616,6 +616,24 @@ const LobbyBrowser: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Footer Info */}
+      <div className="mt-3 border border-primary/20 bg-base-200/20 p-3">
+        <div className="flex items-center justify-between text-xs font-mono text-base-content/60">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${websocketLobbyService.isConnected() ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{websocketLobbyService.isConnected() ? 'CONNECTED' : 'DISCONNECTED'}</span>
+            </div>
+            <div>
+              <span className="text-primary/70">ACTIVE LOBBIES:</span> <span className="text-primary font-bold">{matches.length}</span>
+            </div>
+          </div>
+          <div className="hidden md:block text-base-content/50">
+            Press <kbd className="px-1.5 py-0.5 bg-base-300 border border-primary/30 rounded text-primary">SCAN</kbd> to refresh • Create private lobbies for invite-only matches
+          </div>
+        </div>
+      </div>
     </>
   );
 };

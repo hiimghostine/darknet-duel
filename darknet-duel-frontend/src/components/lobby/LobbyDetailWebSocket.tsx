@@ -626,6 +626,31 @@ const LobbyDetailWebSocket: React.FC = () => {
       <LobbyChat lobbyId={matchID} showChannelSwitcher={lobby.visibility === 'public'} />
     </div>
   </div>
+
+  {/* Footer Info */}
+  <div className="mt-4 border border-primary/20 bg-base-200/20 p-3">
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 text-xs font-mono text-base-content/60">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+          <span>LOBBY ACTIVE</span>
+        </div>
+        <div>
+          <span className="text-primary/70">LOBBY ID:</span> <span className="text-primary font-bold">{lobby.lobbyId.substring(0, 8)}</span>
+        </div>
+        <div>
+          <span className="text-primary/70">VISIBILITY:</span> <span className="text-accent font-bold">{lobby.visibility.toUpperCase()}</span>
+        </div>
+      </div>
+      <div className="hidden lg:block text-base-content/50">
+        {isHost ? (
+          <>All players must be ready to start • You can kick players or swap roles</>
+        ) : (
+          <>Click <kbd className="px-1.5 py-0.5 bg-base-300 border border-primary/30 rounded text-primary">READY</kbd> when prepared • Request role swap if needed</>
+        )}
+      </div>
+    </div>
+  </div>
 </div>
   );
 };
