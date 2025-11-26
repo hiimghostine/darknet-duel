@@ -1,4 +1,5 @@
 import api from './api';
+import { clearActiveMatch } from '../utils/lobbyStorage';
 
 export interface LoginCredentials {
   email: string;
@@ -80,8 +81,10 @@ class AuthService {
       console.error('Logout API call failed:', error);
     } finally {
       // Always clear local storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Clear active lobby/game session
+      clearActiveMatch();
     }
   }
   

@@ -37,6 +37,12 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
+  // Client-side rate limiting
+  const [rateLimitCooldown, setRateLimitCooldown] = useState<number>(0);
+  const [messagesSent, setMessagesSent] = useState<number[]>([]);
+  const MESSAGE_LIMIT = 5;
+  const TIME_WINDOW = 10000; // 10 seconds
+  
   // Update time every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,6 +51,20 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
     
     return () => clearInterval(timer);
   }, []);
+  
+  // Update cooldown countdown every 100ms for smooth countdown
+  useEffect(() => {
+    if (rateLimitCooldown <= 0) return;
+    
+    const interval = setInterval(() => {
+      setRateLimitCooldown(prev => {
+        const newValue = prev - 100;
+        return newValue > 0 ? newValue : 0;
+      });
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [rateLimitCooldown]);
   
   // Channel switching state
   const [currentChannel, setCurrentChannel] = useState<'global' | 'lobby'>('global');
@@ -210,6 +230,19 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
       setError(data.message);
     });
 
+    // Handle rate limiting from server
+    socketInstance.on('rate_limited', (data: { message: string; cooldownMs: number; limit: number; window: number }) => {
+      console.warn('⚠️ Rate limited:', data.message);
+      setError(data.message);
+      setRateLimitCooldown(data.cooldownMs);
+      
+      // Clear error after cooldown
+      setTimeout(() => {
+        setError(null);
+        setRateLimitCooldown(0);
+      }, data.cooldownMs);
+    });
+
     setSocket(socketInstance);
 
     return () => {
@@ -242,6 +275,27 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   const sendMessage = () => {
     if (!socket || !newMessage.trim()) return;
+
+    // Client-side rate limiting check
+    const now = Date.now();
+    const recentMessages = messagesSent.filter(timestamp => now - timestamp < TIME_WINDOW);
+    
+    if (recentMessages.length >= MESSAGE_LIMIT) {
+      const oldestTimestamp = recentMessages[0];
+      const remainingTime = Math.ceil((TIME_WINDOW - (now - oldestTimestamp)) / 1000);
+      setError(`Please slow down! Wait ${remainingTime} seconds before sending more messages.`);
+      setRateLimitCooldown(TIME_WINDOW - (now - oldestTimestamp));
+      
+      setTimeout(() => {
+        setError(null);
+        setRateLimitCooldown(0);
+      }, TIME_WINDOW - (now - oldestTimestamp));
+      
+      return;
+    }
+
+    // Record message timestamp
+    setMessagesSent([...recentMessages, now]);
 
     triggerSendMsg();
     socket.emit('send_message', {
@@ -450,8 +504,8 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   setIsTyping(e.target.value.length > 0);
                 }}
                 onKeyPress={handleKeyPress}
-                placeholder="TYPE MESSAGE..."
-                disabled={!isConnected}
+                placeholder={rateLimitCooldown > 0 ? "RATE LIMITED..." : "TYPE MESSAGE..."}
+                disabled={!isConnected || rateLimitCooldown > 0}
                 maxLength={500}
                 className={`flex-1 border-none outline-none text-base-content text-xs font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200`}
               />
@@ -466,8 +520,21 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
             <div className="px-1.5 pb-1 text-xs text-base-content/50 font-mono border-t border-primary/20">
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1">
-                  <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
-                  <span className="text-xs">{isTyping ? 'TYPING' : 'READY'}</span>
+                  <div className={`w-1 h-1 rounded-full ${
+                    rateLimitCooldown > 0 
+                      ? 'bg-error animate-pulse' 
+                      : isTyping 
+                        ? 'bg-primary animate-pulse' 
+                        : 'bg-base-content/30'
+                  }`}></div>
+                  <span className="text-xs">
+                    {rateLimitCooldown > 0 
+                      ? `COOLDOWN: ${Math.ceil(rateLimitCooldown / 1000)}s`
+                      : isTyping 
+                        ? 'TYPING' 
+                        : 'READY'
+                    }
+                  </span>
                 </span>
                 <span className="text-xs">
                   {newMessage.length}/500
