@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
+import { websocketLobbyService } from '../../services/websocketLobby.service';
 import type { GameMatch, LobbyState } from '../../services/lobby.service';
 import { FaLock, FaPlay, FaCircleNotch, FaExclamationTriangle as FaExclamationCircle } from 'react-icons/fa';
 import { useAuthStore } from '../../store/auth.store';
@@ -34,6 +35,60 @@ const LobbyBrowser: React.FC = () => {
     }
   };
 
+  // Connect to WebSocket and listen for lobby list updates
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && user) {
+      const initWebSocket = async () => {
+        try {
+          if (!websocketLobbyService.isConnected()) {
+            await websocketLobbyService.connect(token);
+          }
+
+          // Listen for lobby list updates
+          websocketLobbyService.on('lobbies:list', (data: { lobbies: any[] }) => {
+            console.log('📡 Received lobby list update:', data.lobbies.length, 'lobbies');
+            // Convert WebSocket lobby format to match format
+            const convertedMatches = data.lobbies.map(lobby => ({
+              matchID: lobby.lobbyId,
+              gameName: 'darknet-duel',
+              players: lobby.players.map((p: any, idx: number) => ({
+                id: idx,
+                name: p.username,
+                credentials: undefined,
+                data: {
+                  realUserId: p.userId,
+                  realUsername: p.username
+                }
+              })),
+              setupData: lobby.gameSettings,
+              createdAt: lobby.createdAt,
+              updatedAt: lobby.lastActivity
+            }));
+            setMatches(convertedMatches);
+            setLoading(false);
+          });
+
+          // Request initial lobby list
+          websocketLobbyService.requestLobbyList();
+        } catch (err) {
+          console.error('Failed to connect to lobby WebSocket:', err);
+          // Fallback to polling
+          fetchMatches();
+        }
+      };
+
+      initWebSocket();
+
+      return () => {
+        websocketLobbyService.off('lobbies:list');
+      };
+    } else {
+      // Not logged in, use polling
+      fetchMatches();
+    }
+  }, [user]);
+
   const handleJoinPrivateLobby = async () => {
     if (!user) {
       setError('You must be logged in to join a match');
@@ -41,7 +96,7 @@ const LobbyBrowser: React.FC = () => {
     }
 
     if (!privateLobbysId.trim()) {
-      setError('Please enter a lobby ID');
+      setError('Please enter a lobby code');
       return;
     }
 
@@ -49,8 +104,53 @@ const LobbyBrowser: React.FC = () => {
       setIsJoiningPrivate(true);
       setError(null);
 
-      // Try to join the private lobby
-      const result = await lobbyService.joinPrivateLobby(privateLobbysId.trim());
+      const lobbyId = privateLobbysId.trim();
+
+      // Try WebSocket first (for new private lobbies)
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          if (!websocketLobbyService.isConnected()) {
+            await websocketLobbyService.connect(token);
+          }
+
+          console.log('🔌 Attempting to join private lobby via WebSocket:', lobbyId);
+          const lobby = await websocketLobbyService.joinLobby(lobbyId);
+          
+          console.log('✅ Joined WebSocket lobby:', lobby);
+          // Navigate using the actual lobbyId from the response (not the code)
+          navigate(`/lobbies/${lobby.lobbyId}`);
+          return;
+        } catch (wsError) {
+          const errorMessage = wsError instanceof Error ? wsError.message : String(wsError);
+          console.log('⚠️ WebSocket join failed, trying boardgame.io fallback:', errorMessage);
+          
+          // Handle specific WebSocket errors
+          if (errorMessage === 'LOBBY_EMPTY') {
+            setError('This lobby is empty and cannot be joined. The host may have left.');
+            setIsJoiningPrivate(false);
+            return;
+          }
+          
+          if (errorMessage === 'LOBBY_FULL') {
+            setError('This lobby is full.');
+            setIsJoiningPrivate(false);
+            return;
+          }
+          
+          if (errorMessage === 'LOBBY_CLOSED') {
+            setError('This lobby has been closed.');
+            setIsJoiningPrivate(false);
+            return;
+          }
+          
+          // Fall through to boardgame.io for other errors
+        }
+      }
+
+      // Fallback to old boardgame.io system
+      console.log('📡 Attempting to join via boardgame.io:', lobbyId);
+      const result = await lobbyService.joinPrivateLobby(lobbyId);
 
       if (!result.success) {
         setError(result.error || 'Failed to join private lobby');
@@ -62,7 +162,6 @@ const LobbyBrowser: React.FC = () => {
         return;
       }
 
-      // ✅ Check if the current user is already in this lobby
       const isAlreadyInLobby = result.match.players.some(
         player => player.data?.realUserId === user.id
       );
@@ -73,7 +172,6 @@ const LobbyBrowser: React.FC = () => {
         return;
       }
 
-      // Find an empty slot
       let playerID = '0';
       for (let i = 0; i < result.match.players.length; i++) {
         if (!result.match.players[i].name) {
@@ -82,7 +180,6 @@ const LobbyBrowser: React.FC = () => {
         }
       }
 
-      // Auto-assign a role based on availability
       let role: 'attacker' | 'defender' | undefined = undefined;
       const roles = result.match.setupData?.roles || {};
 
@@ -101,35 +198,26 @@ const LobbyBrowser: React.FC = () => {
       };
 
       const joinResult = await lobbyService.joinMatch(
-        privateLobbysId.trim(),
+        lobbyId,
         user.username,
         playerID,
         joinData
       );
 
       if (joinResult) {
-        navigate(`/lobbies/${privateLobbysId.trim()}`);
+        navigate(`/lobbies/${lobbyId}`);
       } else {
         setError('Failed to join the private lobby');
       }
     } catch (err) {
-      setError('Failed to join the private lobby. Please check the lobby ID and try again.');
+      setError('Failed to join the private lobby. Please check the lobby code and try again.');
       console.error(err);
     } finally {
       setIsJoiningPrivate(false);
     }
   };
 
-  useEffect(() => {
-    fetchMatches();
-    
-    // Set up polling for match updates
-    const pollInterval = setInterval(fetchMatches, 5000);
-    
-    return () => {
-      clearInterval(pollInterval);
-    };
-  }, []);
+  // Removed old polling - now using WebSocket real-time updates
 
   const handleJoinMatch = async (matchID: string) => {
     if (!user) {
@@ -140,7 +228,44 @@ const LobbyBrowser: React.FC = () => {
     try {
       setIsJoining(matchID);
       
-      // Find the first available player slot
+      // Try WebSocket first (for new public lobbies)
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          if (!websocketLobbyService.isConnected()) {
+            await websocketLobbyService.connect(token);
+          }
+
+          console.log('🔌 Attempting to join public lobby via WebSocket:', matchID);
+          const lobby = await websocketLobbyService.joinLobby(matchID);
+          
+          console.log('✅ Joined WebSocket lobby:', lobby);
+          // Navigate using the actual lobbyId
+          navigate(`/lobbies/${lobby.lobbyId}`);
+          return;
+        } catch (wsError) {
+          const errorMessage = wsError instanceof Error ? wsError.message : String(wsError);
+          console.log('⚠️ WebSocket join failed, trying boardgame.io fallback:', errorMessage);
+          
+          // Handle specific WebSocket errors
+          if (errorMessage === 'LOBBY_FULL') {
+            setError('This lobby is full.');
+            setIsJoining(null);
+            return;
+          }
+          
+          if (errorMessage === 'LOBBY_CLOSED') {
+            setError('This lobby has been closed.');
+            setIsJoining(null);
+            return;
+          }
+          
+          // Fall through to boardgame.io for other errors
+        }
+      }
+
+      // Fallback to old boardgame.io system
+      console.log('📡 Attempting to join via boardgame.io:', matchID);
       const match = matches.find(m => m.matchID === matchID);
       if (!match) return;
       
@@ -174,22 +299,13 @@ const LobbyBrowser: React.FC = () => {
         role = 'defender';
       }
       
-      // ✅ SIMPLE FIX: Pass real user data directly from auth store
-      console.log('🔍 TRACING: About to join match with user data:');
-      console.log('   - user.id:', user.id);
-      console.log('   - user.username:', user.username);
-      console.log('   - playerID:', playerID);
-      console.log('   - role:', role);
-      
       const joinData = {
         role,
         data: {
-          realUserId: user.id,        // ✅ Pass UUID directly
-          realUsername: user.username // ✅ Pass username directly
+          realUserId: user.id,
+          realUsername: user.username
         }
       };
-      
-      console.log('🔍 TRACING: Join data being sent:', joinData);
       
       const result = await lobbyService.joinMatch(
         matchID,
@@ -324,7 +440,15 @@ const LobbyBrowser: React.FC = () => {
             <button 
               onClick={() => {
                 triggerClick();
-                fetchMatches();
+                // Request updated lobby list via WebSocket
+                if (websocketLobbyService.isConnected()) {
+                  setLoading(true);
+                  websocketLobbyService.requestLobbyList();
+                  setTimeout(() => setLoading(false), 500);
+                } else {
+                  // Fallback to old API if not connected
+                  fetchMatches();
+                }
               }} 
               className="flex items-center gap-1 bg-base-200/50 hover:bg-primary/20 text-primary border border-primary/30 py-1 px-2 text-xs transition-all duration-200"
               disabled={loading}
@@ -356,14 +480,15 @@ const LobbyBrowser: React.FC = () => {
       {/* Compact Private Lobby Join Section */}
       <div className="mb-3 border border-primary/30 bg-base-200/30 p-3">
         <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <label className="font-mono text-xs text-primary whitespace-nowrap">PRIVATE ID:</label>
+          <label className="font-mono text-xs text-primary whitespace-nowrap">LOBBY CODE:</label>
           <input
             type="text"
             value={privateLobbysId}
-            onChange={(e) => setPrivateLobbyId(e.target.value)}
-            placeholder="Enter ID..."
+            onChange={(e) => setPrivateLobbyId(e.target.value.toUpperCase())}
+            placeholder="Enter code (e.g. ABC123)..."
             className={`flex-1 px-2 py-1 border font-mono text-xs placeholder:text-primary/50 focus:border-primary focus:outline-none transition-colors duration-200 ${theme === 'cyberpunk-dark' ? 'bg-base-900/80 border-primary/30 text-primary' : 'bg-base-100/80 border-primary/40 text-primary'}`}
             disabled={isJoiningPrivate}
+            maxLength={6}
           />
           <button
             onClick={() => {

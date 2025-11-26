@@ -233,8 +233,8 @@ const InfrastructureGrid: React.FC<InfrastructureGridProps> = ({
               
               {/* Middle section - Infrastructure name */}
               <div className="flex-1 flex items-center justify-center mb-2">
-                <div className="font-bold lg:text-sm text-xs leading-tight px-1 text-center">
-                  {infra.name.length > 16 ? infra.name.substring(0, 16) + '...' : infra.name}
+                <div className="font-bold lg:text-sm text-xs leading-tight px-1 text-center break-words">
+                  {infra.name}
                 </div>
               </div>
               

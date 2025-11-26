@@ -20,6 +20,8 @@ import reportRoutes from './routes/report.routes';
 import logRoutes from './routes/log.routes';
 import { specs, swaggerUi, swaggerUiOptions } from './config/swagger';
 import { ChatSocketService } from './services/chat-socket.service';
+import { LobbySocketService } from './services/lobby-socket.service';
+import { Server as SocketIOServer } from 'socket.io';
 
 // Load environment variables
 dotenv.config();
@@ -266,15 +268,28 @@ async function initializeDatabase() {
       await queryRunner.release();
     }
 
-    // Initialize Socket.io chat service
+    // Initialize chat service (creates Socket.io server internally)
     const chatSocketService = new ChatSocketService(httpServer);
     console.log('Chat Socket.io service initialized');
+
+    // Get the Socket.io server instance created by ChatSocketService
+    // ChatSocketService creates the server on httpServer, so we can access it
+    const io = chatSocketService['io'] as SocketIOServer;
+    
+    if (io) {
+      // Initialize lobby service on the same Socket.io server
+      const lobbySocketService = new LobbySocketService(io);
+      console.log('Lobby Socket.io service initialized');
+    } else {
+      console.error('⚠️  Could not get Socket.io instance from ChatSocketService');
+    }
 
     // Start the HTTP server (which includes both Express and Socket.io)
     httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on ${HOST}:${PORT}`);
       console.log(`Public URL: ${publicUrl}`);
       console.log(`Chat WebSocket available at: ${publicUrl}/socket.io`);
+      console.log(`Lobby WebSocket available at: ${publicUrl}/lobby`);
     });
   } catch (error: Error | unknown) {
     console.error('❌ Error connecting to database:', error);
