@@ -702,10 +702,11 @@ const BalatroGameBoard = (props: GameBoardProps) => {
             currentPhase={currentPhase}
             optimizedInfrastructureData={optimizedInfrastructureData}
             sendChatMessage={sendChatMessage}
+            matchID={matchID}
           />
 
-                 {/* Center column - Infrastructure */}
-                 <div className="flex-1 flex flex-col lg:order-2 order-1">
+                 {/* Center column - Infrastructure (slight bias to left for chat panel) */}
+                 <div className="flex-[1.2] flex flex-col lg:order-2 order-1">
                    <div className={`
                      border-2 rounded-xl p-6 relative flex-1 lg:min-h-80 min-h-60 flex flex-col items-center justify-center backdrop-blur-sm shadow-lg
                      ${theme === 'cyberpunk'
