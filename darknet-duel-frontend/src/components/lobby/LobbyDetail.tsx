@@ -876,12 +876,12 @@ const LobbyDetail: React.FC = () => {
             <div className="text-primary font-mono text-xs">{gameMode.toUpperCase()}</div>
           </div>
           <div className="border border-primary/20 bg-base-900/60 p-2">
-            <div className="text-xs text-primary-300 font-mono mb-0.5">RESOURCES</div>
-            <div className="text-primary font-mono text-xs">{match.setupData?.initialResources || 5}</div>
+            <div className="text-xs text-primary-300 font-mono mb-0.5">MAX AP</div>
+            <div className="text-primary font-mono text-xs">10</div>
           </div>
           <div className="border border-primary/20 bg-base-900/60 p-2">
             <div className="text-xs text-primary-300 font-mono mb-0.5">MAX TURNS</div>
-            <div className="text-primary font-mono text-xs">{match.setupData?.maxTurns || 30}</div>
+            <div className="text-primary font-mono text-xs">15</div>
           </div>
           {match.setupData?.timeLimit && (
             <div className="border border-primary/20 bg-base-900/60 p-2">
