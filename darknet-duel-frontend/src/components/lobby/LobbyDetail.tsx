@@ -171,6 +171,8 @@ const LobbyDetail: React.FC = () => {
           const hostPlayer = matchDetails.players.find(p => p.id === 0);
           if (hostPlayer?.data?.gameStarted) {
             // Game has been started by the host, navigate to game page
+            const { updateMatchToGame } = await import('../../utils/lobbyStorage');
+            updateMatchToGame();
             navigate(`/game/${matchID}`);
             return;
           }
@@ -303,6 +305,10 @@ const LobbyDetail: React.FC = () => {
     const success = await lobbyService.startMatch(matchID);
     
     if (success) {
+      // Update localStorage to mark as in-game
+      const { updateMatchToGame } = await import('../../utils/lobbyStorage');
+      updateMatchToGame();
+      
       // Then navigate to the game
       navigate(`/game/${matchID}`);
     } else {

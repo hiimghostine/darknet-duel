@@ -10,6 +10,7 @@ export interface ActiveMatch {
   playerID: string;
   credentials: string;
   timestamp: number;
+  isInGame?: boolean; // true if in /game/, false if in /lobbies/
 }
 
 const ACTIVE_MATCH_KEY = 'activeMatch';
@@ -40,6 +41,23 @@ export const setActiveMatch = (match: ActiveMatch): void => {
     console.log(`✅ Active match set: ${match.matchID}`);
   } catch (error) {
     console.error('Error saving active match to localStorage:', error);
+  }
+};
+
+/**
+ * Update the active match to mark it as in-game
+ * This should be called when navigating from /lobbies/ to /game/
+ */
+export const updateMatchToGame = (): void => {
+  try {
+    const active = getActiveMatch();
+    if (active) {
+      active.isInGame = true;
+      localStorage.setItem(ACTIVE_MATCH_KEY, JSON.stringify(active));
+      console.log(`✅ Active match updated to game mode: ${active.matchID}`);
+    }
+  } catch (error) {
+    console.error('Error updating active match to game:', error);
   }
 };
 

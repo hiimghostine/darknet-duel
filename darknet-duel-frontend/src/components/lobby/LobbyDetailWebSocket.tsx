@@ -206,6 +206,11 @@ const LobbyDetailWebSocket: React.FC = () => {
 
       if (result) {
         console.log('✅ Successfully joined match, navigating to game...');
+        
+        // Update localStorage to mark as in-game
+        const { updateMatchToGame } = await import('../../utils/lobbyStorage');
+        updateMatchToGame();
+        
         // Navigate to the game with the matchID
         navigate(`/game/${data.matchID}`);
       } else {

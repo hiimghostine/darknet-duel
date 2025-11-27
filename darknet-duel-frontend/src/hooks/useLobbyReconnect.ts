@@ -100,12 +100,16 @@ export const useLobbyReconnect = () => {
   // Handle user's choice to reconnect
   const handleReconnect = () => {
     if (validatedMatchID) {
-      console.log(`🔄 User chose to reconnect to lobby ${validatedMatchID}`);
+      const activeMatch = getActiveMatch();
+      const isInGame = activeMatch?.isInGame || false;
+      const route = isInGame ? `/game/${validatedMatchID}` : `/lobbies/${validatedMatchID}`;
+      
+      console.log(`🔄 User chose to reconnect to ${isInGame ? 'game' : 'lobby'} ${validatedMatchID}`);
       setReconnecting(true);
       setShowDialog(false);
       
       setTimeout(() => {
-        navigate(`/lobbies/${validatedMatchID}`, { replace: true });
+        navigate(route, { replace: true });
         setReconnecting(false);
       }, 300);
     }
