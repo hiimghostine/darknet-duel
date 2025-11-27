@@ -765,6 +765,9 @@ export class LobbySocketService {
       };
 
       console.log(`🎮 Creating boardgame.io match for lobby ${lobby.lobbyId}...`);
+      console.log(`   GAME_SERVER_URL: ${GAME_SERVER_URL}`);
+      console.log(`   Target endpoint: ${GAME_SERVER_URL}/games/darknet-duel/create`);
+      console.log(`   Setup data:`, JSON.stringify(setupData, null, 2));
 
       // Create the match using boardgame.io lobby API
       const createResponse = await axios.post(`${GAME_SERVER_URL}/games/darknet-duel/create`, {
@@ -781,11 +784,27 @@ export class LobbySocketService {
 
       return matchID;
     } catch (error: any) {
-      console.error('❌ Failed to create boardgame.io match:', error.message);
+      console.error('❌ Failed to create boardgame.io match');
+      console.error('   Error type:', error.constructor.name);
+      console.error('   Error message:', error.message);
+      console.error('   Error code:', error.code);
+      
       if (error.response) {
-        console.error('   Response status:', error.response.status);
-        console.error('   Response data:', error.response.data);
+        console.error('   HTTP Response status:', error.response.status);
+        console.error('   HTTP Response statusText:', error.response.statusText);
+        console.error('   HTTP Response data:', JSON.stringify(error.response.data, null, 2));
+        console.error('   HTTP Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('   No response received from server');
+        console.error('   Request config:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          timeout: error.config?.timeout
+        });
       }
+      
+      console.error('   Full error stack:', error.stack);
+      
       return null;
     }
   }
