@@ -11,7 +11,10 @@ interface ThemeState {
 const getInitialTheme = (): Theme => {
   const saved = localStorage.getItem('theme');
   if (saved === 'cyberpunk' || saved === 'cyberpunk-dark') return saved;
-  return 'cyberpunk';
+  
+  // Detect browser's preferred color scheme
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return prefersDark ? 'cyberpunk-dark' : 'cyberpunk';
 };
 
 // Helper function to update theme with View Transition API

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lobbyService } from '../../services/lobby.service';
+import { websocketLobbyService } from '../../services/websocketLobby.service';
 import { useAuthStore } from '../../store/auth.store';
 import { FaNetworkWired, FaShieldAlt, FaUserSecret, FaExclamationTriangle, FaTag } from 'react-icons/fa';
 import { useAudioManager } from '../../hooks/useAudioManager';
@@ -32,6 +33,20 @@ const CreateLobby: React.FC = () => {
     return cyberpunkLobbyNames[Math.floor(Math.random() * cyberpunkLobbyNames.length)];
   };
 
+  // Connect to WebSocket on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && user) {
+      websocketLobbyService.connect(token).catch(err => {
+        console.error('Failed to connect to lobby WebSocket:', err);
+      });
+    }
+
+    return () => {
+      // Don't disconnect on unmount - keep connection alive
+    };
+  }, [user]);
+
   const handleCreateLobby = async () => {
     if (!user) {
       setError('You must be logged in to create a lobby');
@@ -52,50 +67,38 @@ const CreateLobby: React.FC = () => {
     setError(null);
     
     try {
-      // Using standard mode settings only
-      interface GameSettings {
-        gameMode: string;
-        isPrivate: boolean;
-        lobbyName: string;
+      // Use WebSocket for ALL lobbies (both public and private)
+      console.log(`🔌 Creating ${isPrivate ? 'private' : 'public'} lobby via WebSocket...`);
+      
+      // Ensure WebSocket is connected
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Not authenticated');
       }
-      
-      const settings: GameSettings = {
-        gameMode: 'standard',
-        isPrivate: isPrivate,
-        lobbyName: finalLobbyName
-      };
-      
-      const matchID = await lobbyService.createMatch(2, settings);
-      
-      if (!matchID) {
-        throw new Error('Failed to create lobby');
+
+      if (!websocketLobbyService.isConnected()) {
+        await websocketLobbyService.connect(token);
       }
-      
-      // Join the created match - auto-assign role with real user data
-      console.log('🔍 TRACING: CreateLobby joining with user data:');
-      console.log('   - user.id:', user.id);
-      console.log('   - user.username:', user.username);
-      
-      const result = await lobbyService.joinMatch(
-        matchID,
-        user.username,
-        '0', // Host is always player 0
-        {
-          data: {
-            realUserId: user.id,        // ✅ Pass UUID directly
-            realUsername: user.username // ✅ Pass username directly
-          }
+
+      const lobby = await websocketLobbyService.createLobby({
+        name: finalLobbyName,
+        visibility: isPrivate ? 'private' : 'public',
+        maxPlayers: 2,
+        gameSettings: {
+          gameMode: 'standard',
+          initialResources: 100,
+          maxTurns: 50
         }
-      );
+      });
+
+      console.log(`✅ ${isPrivate ? 'Private' : 'Public'} lobby created:`, lobby);
       
-      if (result) {
-        navigate(`/lobbies/${matchID}`);
-      } else {
-        throw new Error('Failed to join created lobby');
-      }
+      // Navigate to lobby detail page
+      navigate(`/lobbies/${lobby.lobbyId}`);
     } catch (err) {
       console.error('Error creating lobby:', err);
-      setError('Failed to create lobby. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby';
+      setError(errorMessage);
     } finally {
       setIsCreating(false);
     }

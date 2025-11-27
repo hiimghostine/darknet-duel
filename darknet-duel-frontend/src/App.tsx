@@ -23,12 +23,13 @@ import SettingsModal from './components/SettingsModal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useSettingsStore } from './store/settings.store';
 import { useLobbyReconnect } from './hooks/useLobbyReconnect';
+import { LobbyReconnectDialog } from './components/LobbyReconnectDialog';
 
 function AppContent() {
   const { loadUser } = useAuthStore();
   const { toasts, removeToast } = useToastStore();
   const { isSettingsOpen, closeSettings } = useSettingsStore();
-  const { reconnecting } = useLobbyReconnect();
+  const { reconnecting, showDialog, matchID, onReconnect, onDismiss } = useLobbyReconnect();
   
   useEffect(() => {
     // Check authentication status when app loads
@@ -79,6 +80,14 @@ function AppContent() {
       
       {/* Settings Modal */}
       <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+      
+      {/* Lobby Reconnect Dialog */}
+      <LobbyReconnectDialog
+        open={showDialog}
+        matchID={matchID || ''}
+        onReconnect={onReconnect}
+        onDismiss={onDismiss}
+      />
     </>
   );
 }

@@ -121,6 +121,22 @@ export function useCardActions(props: BoardProps & {
   }, []);
 
   /**
+   * Helper function to check if infrastructure has a temporary effect that prevents certain card types
+   * Matches backend's TemporaryEffectsManager.hasEffect logic
+   */
+  const hasTemporaryEffect = useCallback((effectType: string, infrastructureId: string): boolean => {
+    if (!G.temporaryEffects || G.temporaryEffects.length === 0) {
+      return false;
+    }
+    
+    return G.temporaryEffects.some((effect: any) => 
+      effect.type === effectType && 
+      effect.targetId === infrastructureId &&
+      effect.duration > 0 // Only active effects
+    );
+  }, [G.temporaryEffects]);
+
+  /**
    * Determine valid targets for a card with vector validation
    */
   const getValidTargets = useCallback((card: ExtendedCard): string[] => {
@@ -190,7 +206,8 @@ export function useCardActions(props: BoardProps & {
                     .filter((infra: InfrastructureCard) => {
                       const stateMatch = infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
                       const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-                      return stateMatch && vectorMatch;
+                      const notProtected = !hasTemporaryEffect('prevent_exploits', infra.id);
+                      return stateMatch && vectorMatch && notProtected;
                     })
                     .map((infra: InfrastructureCard) => infra.id);
                   break;
@@ -226,7 +243,8 @@ export function useCardActions(props: BoardProps & {
                     .filter((infra: InfrastructureCard) => {
                       const stateMatch = infra.state === 'compromised';
                       const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-                      return stateMatch && vectorMatch;
+                      const notProtected = !hasTemporaryEffect('prevent_restore', infra.id);
+                      return stateMatch && vectorMatch && notProtected;
                     })
                     .map((infra: InfrastructureCard) => infra.id);
                   break;
@@ -235,7 +253,8 @@ export function useCardActions(props: BoardProps & {
                     .filter((infra: InfrastructureCard) => {
                       const stateMatch = infra.state === 'vulnerable' || infra.state === 'compromised';
                       const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-                      return stateMatch && vectorMatch;
+                      const notProtected = !hasTemporaryEffect('prevent_reactions', infra.id);
+                      return stateMatch && vectorMatch && notProtected;
                     })
                     .map((infra: InfrastructureCard) => infra.id);
                   break;
@@ -281,7 +300,8 @@ export function useCardActions(props: BoardProps & {
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-            return stateMatch && vectorMatch;
+            const notProtected = !hasTemporaryEffect('prevent_exploits', infra.id);
+            return stateMatch && vectorMatch && notProtected;
           })
           .map((infra: InfrastructureCard) => infra.id);
         
@@ -378,7 +398,8 @@ export function useCardActions(props: BoardProps & {
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'secure' || infra.state === 'fortified' || infra.state === 'fortified_weaken';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-            return stateMatch && vectorMatch;
+            const notProtected = !hasTemporaryEffect('prevent_exploits', infra.id);
+            return stateMatch && vectorMatch && notProtected;
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
@@ -409,7 +430,8 @@ export function useCardActions(props: BoardProps & {
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'compromised';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-            return stateMatch && vectorMatch;
+            const notProtected = !hasTemporaryEffect('prevent_restore', infra.id);
+            return stateMatch && vectorMatch && notProtected;
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
@@ -419,7 +441,8 @@ export function useCardActions(props: BoardProps & {
           .filter((infra: InfrastructureCard) => {
             const stateMatch = infra.state === 'vulnerable';
             const vectorMatch = card.type === 'wildcard' || !cardAttackVector || checkVectorCompatibility(cardAttackVector, infra);
-            return stateMatch && vectorMatch;
+            const notProtected = !hasTemporaryEffect('prevent_reactions', infra.id);
+            return stateMatch && vectorMatch && notProtected;
           })
           .map((infra: InfrastructureCard) => infra.id);
       }
@@ -472,7 +495,7 @@ export function useCardActions(props: BoardProps & {
     }
     
     return targets;
-  }, [G.infrastructure, getCardAttackVector, checkVectorCompatibility]); // Updated dependencies
+  }, [G.infrastructure, G.temporaryEffects, getCardAttackVector, checkVectorCompatibility, hasTemporaryEffect]); // Updated dependencies
 
   /**
    * Play a card - handles both direct play and targeted play

@@ -15,6 +15,12 @@ export class ChatSocketService {
   private sessionService: SessionService;
   private authService: AuthService;
   private connectedUsers: Map<string, Set<string>> = new Map(); // chatId -> Set of userIds
+  
+  // Rate limiting: Track message timestamps per user
+  private messageTimestamps: Map<string, number[]> = new Map(); // userId -> array of timestamps
+  private readonly MESSAGE_LIMIT = 5; // Max messages
+  private readonly TIME_WINDOW = 10000; // 10 seconds in milliseconds
+  private readonly COOLDOWN_DURATION = 30000; // 30 seconds cooldown after rate limit
 
   constructor(httpServer: HttpServer) {
     this.io = new SocketIOServer(httpServer, {
@@ -30,6 +36,52 @@ export class ChatSocketService {
     this.sessionService = new SessionService();
     this.authService = new AuthService();
     this.setupSocketHandlers();
+  }
+
+  /**
+   * Check if user is rate limited
+   * @param userId User ID to check
+   * @returns true if rate limited, false otherwise
+   */
+  private isRateLimited(userId: string): boolean {
+    const now = Date.now();
+    const timestamps = this.messageTimestamps.get(userId) || [];
+    
+    // Remove timestamps older than the time window
+    const recentTimestamps = timestamps.filter(ts => now - ts < this.TIME_WINDOW);
+    
+    // Update the map with filtered timestamps
+    this.messageTimestamps.set(userId, recentTimestamps);
+    
+    // Check if user has exceeded the message limit
+    return recentTimestamps.length >= this.MESSAGE_LIMIT;
+  }
+
+  /**
+   * Record a message timestamp for rate limiting
+   * @param userId User ID
+   */
+  private recordMessageTimestamp(userId: string): void {
+    const now = Date.now();
+    const timestamps = this.messageTimestamps.get(userId) || [];
+    timestamps.push(now);
+    this.messageTimestamps.set(userId, timestamps);
+  }
+
+  /**
+   * Get remaining cooldown time for a rate-limited user
+   * @param userId User ID
+   * @returns Remaining cooldown in milliseconds, or 0 if not rate limited
+   */
+  private getRemainingCooldown(userId: string): number {
+    const timestamps = this.messageTimestamps.get(userId) || [];
+    if (timestamps.length === 0) return 0;
+    
+    const oldestTimestamp = timestamps[0];
+    const elapsed = Date.now() - oldestTimestamp;
+    const remaining = this.TIME_WINDOW - elapsed;
+    
+    return remaining > 0 ? remaining : 0;
   }
 
   private setupSocketHandlers() {
@@ -138,6 +190,20 @@ export class ChatSocketService {
             return;
           }
 
+          // Check rate limiting
+          if (this.isRateLimited(socket.userId)) {
+            const cooldown = this.getRemainingCooldown(socket.userId);
+            const cooldownSeconds = Math.ceil(cooldown / 1000);
+            socket.emit('rate_limited', { 
+              message: `You're sending messages too quickly. Please wait ${cooldownSeconds} seconds.`,
+              cooldownMs: cooldown,
+              limit: this.MESSAGE_LIMIT,
+              window: this.TIME_WINDOW / 1000
+            });
+            console.log(`⚠️  Chat: ${socket.username} is rate limited (${cooldownSeconds}s remaining)`);
+            return;
+          }
+
           if (!message.trim()) {
             socket.emit('chat_error', { message: 'Message cannot be empty' });
             return;
@@ -149,6 +215,9 @@ export class ChatSocketService {
           }
 
           console.log(`💬 Chat: ${socket.username} sending message to ${chatId}`);
+
+          // Record message timestamp for rate limiting
+          this.recordMessageTimestamp(socket.userId);
 
           // Save message to database
           const savedMessage = await this.chatService.sendMessage({

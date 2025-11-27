@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LobbyBrowser from '../components/lobby/LobbyBrowser';
 import CreateLobby from '../components/lobby/CreateLobby';
-import LobbyDetail from '../components/lobby/LobbyDetail';
+import LobbyDetailWebSocket from '../components/lobby/LobbyDetailWebSocket';
 import LobbyChat from '../components/lobby/LobbyChat';
 import AppBar from '../components/AppBar';
 import { useAuthStore } from '../store/auth.store';
@@ -163,7 +163,7 @@ const LobbyPage: React.FC = () => {
                 </div>
               } />
               <Route path="/create" element={<CreateLobby />} />
-              <Route path="/:matchID" element={<LobbyDetail />} />
+              <Route path="/:matchID" element={<LobbyDetailWebSocket />} />
             </Routes>
         </main>
         </div>

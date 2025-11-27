@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Show success toast after successful registration and login
       showToast.success(
         'Registration Successful',
-        'Account created successfully! You are now logged in.',
+        'Account created successfully! Please open the Tutorial.',
         5000
       );
     } catch (error: any) {

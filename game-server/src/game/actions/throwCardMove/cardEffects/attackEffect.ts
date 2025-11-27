@@ -34,7 +34,7 @@ export function attackEffect(
     currentInfra.vulnerabilities.some(v => {
       const match = typeof v === 'string' ? 
         v === attackVector : 
-        (v && typeof v === 'object' && v.vector === attackVector);
+        (v && typeof v === 'object' && 'vector' in v && v.vector === attackVector);
       
       console.log(`Checking vulnerability ${JSON.stringify(v)} against ${attackVector}: ${match}`);
       return match;

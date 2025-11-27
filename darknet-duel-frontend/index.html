@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="cyberpunk-dark">
+<html lang="en" data-theme="cyberpunk">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -9,9 +9,20 @@
     <script>
       // Theme handling
       (function() {
-        // Default to dark theme (cyberpunk-dark) if no preference is stored
-        const savedTheme = localStorage.getItem('darknet-theme') || 'cyberpunk-dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        // Check if user has a saved preference
+        const savedTheme = localStorage.getItem('theme');
+        
+        let themeToApply;
+        if (savedTheme === 'cyberpunk' || savedTheme === 'cyberpunk-dark') {
+          // Use saved preference if valid
+          themeToApply = savedTheme;
+        } else {
+          // Detect browser's preferred color scheme
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          themeToApply = prefersDark ? 'cyberpunk-dark' : 'cyberpunk';
+        }
+        
+        document.documentElement.setAttribute('data-theme', themeToApply);
       })();
     </script>
   </head>

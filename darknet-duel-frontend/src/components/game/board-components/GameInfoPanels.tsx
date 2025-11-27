@@ -1,10 +1,10 @@
 import React from 'react';
-import { Zap, Circle, Database, Shield, Swords, ScrollText } from 'lucide-react';
+import { Zap, Circle, Database, Shield, Swords } from 'lucide-react';
 import type { GameState } from '../../../types/game.types';
 import PlayerBoard from './PlayerBoard';
 import PowerBar from './PowerBar';
-import ActionLog from './ActionLog';
 import { useTheme } from '../../../store/theme.store';
+import LobbyChat from '../../lobby/LobbyChat';
 
 interface GameInfoPanelsProps {
   G: GameState;
@@ -22,6 +22,7 @@ interface GameInfoPanelsProps {
     states: any[];
   };
   sendChatMessage?: (content: string) => void;
+  matchID?: string;
 }
 
 const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
@@ -33,7 +34,8 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
   isAttacker,
   currentPlayerObj,
   currentPhase,
-  optimizedInfrastructureData
+  optimizedInfrastructureData,
+  matchID
 }) => {
   // Get theme for conditional styling
   const theme = useTheme();
@@ -50,11 +52,10 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
 
   return (
     <>
-      {/* Left info panel */}
-      <div className="flex flex-col gap-3 lg:w-64 w-full flex-shrink-0 lg:order-1 order-2">
-        {/* Consolidated Game State */}
+      {/* Left info panel - Single Unified Panel */}
+      <div className="flex flex-col gap-2 lg:w-64 w-full flex-shrink-0 lg:order-1 order-2">
         <div className={`
-          rounded-xl p-4 relative backdrop-blur-md border-2 shadow-lg
+          rounded-lg p-3 relative backdrop-blur-md border-2 shadow-lg
           ${theme === 'cyberpunk'
             ? isAttacker
               ? 'bg-gradient-to-br from-red-50/90 to-red-100/80 border-red-600/60'
@@ -64,24 +65,25 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
               : 'bg-gradient-to-br from-blue-950/40 to-blue-900/30 border-blue-500/30'
           }
         `}>
-          <div className="flex items-center gap-2 mb-4">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-base-content/10">
             <Circle className={`w-4 h-4 ${
               theme === 'cyberpunk'
                 ? isAttacker ? 'text-red-700' : 'text-blue-700'
                 : isAttacker ? 'text-red-400' : 'text-blue-400'
             }`} />
-            <h3 className={`font-bold text-xs font-mono uppercase tracking-wider ${
+            <h3 className={`font-bold text-sm font-mono uppercase tracking-wide ${
               theme === 'cyberpunk'
                 ? isAttacker ? 'text-red-700' : 'text-blue-700'
                 : isAttacker ? 'text-red-400' : 'text-blue-400'
             }`}>
-              GAME STATE
+              GAME INFO
             </h3>
           </div>
           
-          <div className="space-y-3">
-            {/* Round */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-base-300/50">
+          {/* Game State Section */}
+          <div className="space-y-1.5 mb-3">
+            <div className="flex items-center justify-between p-1.5 rounded bg-base-300/50">
               <span className="text-xs text-base-content/70 font-mono">ROUND</span>
               <span className={`text-sm font-bold font-mono ${
                 theme === 'cyberpunk'
@@ -90,18 +92,17 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
               }`}>{G.currentRound || 1}</span>
             </div>
             
-            {/* Action Points */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-base-300/50" data-testid="action-points">
-              <div className="flex items-center gap-1.5">
-                <Zap className={`w-3.5 h-3.5 ${
+            <div className="flex items-center justify-between p-1.5 rounded bg-base-300/50" data-testid="action-points">
+              <div className="flex items-center gap-1">
+                <Zap className={`w-3 h-3 ${
                   theme === 'cyberpunk'
                     ? isAttacker ? 'text-red-600' : 'text-blue-600'
                     : 'text-accent'
                 }`} />
-                <span className="text-xs text-base-content/70 font-mono">ACTION POINTS</span>
+                <span className="text-xs text-base-content/70 font-mono">AP</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className={`text-lg font-bold font-mono ${
+                <span className={`text-base font-bold font-mono ${
                   theme === 'cyberpunk'
                     ? isAttacker ? 'text-red-700' : 'text-blue-700'
                     : 'text-accent'
@@ -113,39 +114,127 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
               </div>
             </div>
           </div>
-        </div>
-        
-        {/* Action Log */}
-        <div className={`
-          rounded-xl p-4 backdrop-blur-md border-2 shadow-lg
-          ${theme === 'cyberpunk'
-            ? isAttacker
-              ? 'bg-gradient-to-br from-red-50/90 to-red-100/80 border-red-600/60'
-              : 'bg-gradient-to-br from-blue-50/90 to-blue-100/80 border-blue-600/60'
-            : isAttacker
-              ? 'bg-gradient-to-br from-red-950/40 to-red-900/30 border-red-500/30'
-              : 'bg-gradient-to-br from-blue-950/40 to-blue-900/30 border-blue-500/30'
-          }
-        `}>
-          <div className="flex items-center gap-2 mb-3">
-            <ScrollText className={`w-4 h-4 ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`} />
-            <h3 className={`font-bold text-xs font-mono uppercase tracking-wider ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`}>ACTION_LOG</h3>
+          
+          {/* Divider */}
+          <div className="border-t border-base-content/10 my-3"></div>
+          
+          {/* Network Dominance Section */}
+          <div className="mb-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Swords className={`w-3.5 h-3.5 ${
+                theme === 'cyberpunk'
+                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                  : isAttacker ? 'text-red-400' : 'text-blue-400'
+              }`} />
+              <span className={`text-xs font-bold font-mono uppercase ${
+                theme === 'cyberpunk'
+                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                  : isAttacker ? 'text-red-400' : 'text-blue-400'
+              }`}>DOMINANCE</span>
+            </div>
+            <PowerBar
+              attackerScore={G?.attackerScore || 0}
+              defenderScore={G?.defenderScore || 0}
+              totalInfrastructure={optimizedInfrastructureData.length}
+            />
           </div>
-          <ActionLog G={G} maxActions={4} />
+          
+          {/* Divider */}
+          <div className="border-t border-base-content/10 my-3"></div>
+          
+          {/* Infrastructure Section */}
+          <div className="mb-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Shield className={`w-3.5 h-3.5 ${
+                theme === 'cyberpunk'
+                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                  : isAttacker ? 'text-red-400' : 'text-blue-400'
+              }`} />
+              <span className={`text-xs font-bold font-mono uppercase ${
+                theme === 'cyberpunk'
+                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                  : isAttacker ? 'text-red-400' : 'text-blue-400'
+              }`}>INFRASTRUCTURE</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-center justify-between p-1.5 rounded bg-base-300/50">
+                <span className="text-xs text-base-content/70 font-mono">TOTAL</span>
+                <span className={`text-sm font-bold font-mono ${
+                  theme === 'cyberpunk'
+                    ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                    : isAttacker ? 'text-red-400' : 'text-blue-400'
+                }`}>
+                  {optimizedInfrastructureData.length}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-1.5 rounded bg-error/5">
+                <span className="text-xs text-error/70 font-mono">COMP</span>
+                <span className="text-sm font-bold font-mono text-error">
+                  {optimizedInfrastructureData.cards.filter(i => i.state === 'compromised').length}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-1.5 rounded bg-success/5">
+                <span className="text-xs text-success/70 font-mono">FORT</span>
+                <span className="text-sm font-bold font-mono text-success">
+                  {optimizedInfrastructureData.cards.filter(i => i.state === 'fortified').length}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-1.5 rounded bg-warning/5">
+                <span className="text-xs text-warning/70 font-mono">VULN</span>
+                <span className="text-sm font-bold font-mono text-warning">
+                  {optimizedInfrastructureData.cards.filter(i => i.state === 'vulnerable').length}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Played Cards - Only show if there are cards */}
+          {currentPlayerObj?.playedCards && currentPlayerObj.playedCards.length > 0 && (
+            <>
+              <div className="border-t border-base-content/10 my-3"></div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Database className={`w-3.5 h-3.5 ${
+                    theme === 'cyberpunk'
+                      ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                      : isAttacker ? 'text-red-400' : 'text-blue-400'
+                  }`} />
+                  <span className={`text-xs font-bold font-mono uppercase ${
+                    theme === 'cyberpunk'
+                      ? isAttacker ? 'text-red-700' : 'text-blue-700'
+                      : isAttacker ? 'text-red-400' : 'text-blue-400'
+                  }`}>PLAYED CARDS</span>
+                </div>
+                <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                  <PlayerBoard
+                    {...commonProps}
+                    player={currentPlayerObj}
+                    isCurrentPlayer={true}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        
-        {/* Played Cards - Only show if there are cards */}
-        {currentPlayerObj?.playedCards && currentPlayerObj.playedCards.length > 0 && (
+      </div>
+
+      {/* Right info panel - Full height chat */}
+      <div className="flex flex-col lg:w-96 w-full flex-shrink-0 lg:order-3 order-3">
+        {/* Lobby-specific Chat */}
+        {matchID ? (
+          <LobbyChat 
+            chatId={`lobby_${matchID}`}
+            lobbyId={matchID} 
+            showChannelSwitcher={false}
+            className="h-full"
+          />
+        ) : (
           <div className={`
-            rounded-xl p-4 backdrop-blur-md border-2 shadow-lg
+            rounded-lg p-4 backdrop-blur-md border-2 shadow-lg flex-1 flex items-center justify-center
             ${theme === 'cyberpunk'
               ? isAttacker
                 ? 'bg-gradient-to-br from-red-50/90 to-red-100/80 border-red-600/60'
@@ -155,130 +244,11 @@ const GameInfoPanels: React.FC<GameInfoPanelsProps> = ({
                 : 'bg-gradient-to-br from-blue-950/40 to-blue-900/30 border-blue-500/30'
             }
           `}>
-            <div className="flex items-center gap-2 mb-3">
-              <Database className={`w-4 h-4 ${
-                theme === 'cyberpunk'
-                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                  : isAttacker ? 'text-red-400' : 'text-blue-400'
-              }`} />
-              <h3 className={`font-bold text-xs font-mono uppercase tracking-wider ${
-                theme === 'cyberpunk'
-                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                  : isAttacker ? 'text-red-400' : 'text-blue-400'
-              }`}>PLAYED CARDS</h3>
-            </div>
-            <div className="max-h-32 overflow-y-auto custom-scrollbar">
-              <PlayerBoard
-                {...commonProps}
-                player={currentPlayerObj}
-                isCurrentPlayer={true}
-              />
+            <div className="text-center text-base-content/50">
+              <p className="text-xs font-mono">Loading chat...</p>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Right info panel */}
-      <div className="flex flex-col gap-3 lg:w-64 w-full flex-shrink-0 lg:order-3 order-3">
-        {/* Network Dominance */}
-        <div className={`
-          rounded-xl p-4 backdrop-blur-md border-2 shadow-lg
-          ${theme === 'cyberpunk'
-            ? isAttacker
-              ? 'bg-gradient-to-br from-red-50/90 to-red-100/80 border-red-600/60'
-              : 'bg-gradient-to-br from-blue-50/90 to-blue-100/80 border-blue-600/60'
-            : isAttacker
-              ? 'bg-gradient-to-br from-red-950/40 to-red-900/30 border-red-500/30'
-              : 'bg-gradient-to-br from-blue-950/40 to-blue-900/30 border-blue-500/30'
-          }
-        `}>
-          <div className="flex items-center gap-2 mb-4">
-            <Swords className={`w-4 h-4 ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`} />
-            <h3 className={`font-bold text-xs font-mono uppercase tracking-wider ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`}>
-              NETWORK_DOMINANCE
-            </h3>
-          </div>
-          
-          <PowerBar
-            attackerScore={G?.attackerScore || 0}
-            defenderScore={G?.defenderScore || 0}
-            totalInfrastructure={optimizedInfrastructureData.length}
-          />
-        </div>
-        
-        {/* Infrastructure Summary */}
-        <div className={`
-          rounded-xl p-4 backdrop-blur-md border-2 shadow-lg
-          ${theme === 'cyberpunk'
-            ? isAttacker
-              ? 'bg-gradient-to-br from-red-50/90 to-red-100/80 border-red-600/60'
-              : 'bg-gradient-to-br from-blue-50/90 to-blue-100/80 border-blue-600/60'
-            : isAttacker
-              ? 'bg-gradient-to-br from-red-950/40 to-red-900/30 border-red-500/30'
-              : 'bg-gradient-to-br from-blue-950/40 to-blue-900/30 border-blue-500/30'
-          }
-        `}>
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className={`w-4 h-4 ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`} />
-            <h3 className={`font-bold text-xs font-mono uppercase tracking-wider ${
-              theme === 'cyberpunk'
-                ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                : isAttacker ? 'text-red-400' : 'text-blue-400'
-            }`}>
-              INFRASTRUCTURE
-            </h3>
-          </div>
-          
-          <div className="space-y-2">
-            {/* Total */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-base-300/50">
-              <span className="text-xs text-base-content/70 font-mono">TOTAL NODES</span>
-              <span className={`text-sm font-bold font-mono ${
-                theme === 'cyberpunk'
-                  ? isAttacker ? 'text-red-700' : 'text-blue-700'
-                  : isAttacker ? 'text-red-400' : 'text-blue-400'
-              }`}>
-                {optimizedInfrastructureData.length}
-              </span>
-            </div>
-            
-            {/* Compromised */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-error/5">
-              <span className="text-xs text-error/70 font-mono">COMPROMISED</span>
-              <span className="text-sm font-bold font-mono text-error">
-                {optimizedInfrastructureData.cards.filter(i => i.state === 'compromised').length}
-              </span>
-            </div>
-            
-            {/* Fortified */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-success/5">
-              <span className="text-xs text-success/70 font-mono">FORTIFIED</span>
-              <span className="text-sm font-bold font-mono text-success">
-                {optimizedInfrastructureData.cards.filter(i => i.state === 'fortified').length}
-              </span>
-            </div>
-            
-            {/* Vulnerable */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-warning/5">
-              <span className="text-xs text-warning/70 font-mono">VULNERABLE</span>
-              <span className="text-sm font-bold font-mono text-warning">
-                {optimizedInfrastructureData.cards.filter(i => i.state === 'vulnerable').length}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

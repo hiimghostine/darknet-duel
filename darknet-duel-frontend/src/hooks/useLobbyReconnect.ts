@@ -4,11 +4,11 @@ import { getActiveMatch, clearActiveMatch, migrateOldLobbyStorage } from '../uti
 import { lobbyService } from '../services/lobby.service';
 
 /**
- * Hook to handle automatic lobby reconnection
+ * Hook to handle lobby reconnection with user confirmation
  * 
  * - Checks for active lobby in localStorage on mount
  * - Validates if lobby still exists
- * - Auto-redirects to lobby if valid
+ * - Shows confirmation dialog before reconnecting
  * - Cleans up dead lobbies silently
  */
 export const useLobbyReconnect = () => {
@@ -16,6 +16,8 @@ export const useLobbyReconnect = () => {
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
   const [reconnecting, setReconnecting] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [validatedMatchID, setValidatedMatchID] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAndReconnect = async () => {
@@ -78,16 +80,11 @@ export const useLobbyReconnect = () => {
           return;
         }
 
-        // Lobby is valid! Auto-redirect
-        console.log(`✅ Lobby ${activeMatch.matchID} is still active. Reconnecting...`);
-        setReconnecting(true);
-        
-        // Small delay for UX
-        setTimeout(() => {
-          navigate(`/lobbies/${activeMatch.matchID}`, { replace: true });
-          setIsChecking(false);
-          setReconnecting(false);
-        }, 500);
+        // Lobby is valid! Show confirmation dialog
+        console.log(`✅ Lobby ${activeMatch.matchID} is still active. Showing confirmation...`);
+        setValidatedMatchID(activeMatch.matchID);
+        setShowDialog(true);
+        setIsChecking(false);
 
       } catch (error) {
         console.error('Error checking for active lobby:', error);
@@ -100,5 +97,38 @@ export const useLobbyReconnect = () => {
     checkAndReconnect();
   }, [navigate, location.pathname]);
 
-  return { isChecking, reconnecting };
+  // Handle user's choice to reconnect
+  const handleReconnect = () => {
+    if (validatedMatchID) {
+      const activeMatch = getActiveMatch();
+      const isInGame = activeMatch?.isInGame || false;
+      const route = isInGame ? `/game/${validatedMatchID}` : `/lobbies/${validatedMatchID}`;
+      
+      console.log(`🔄 User chose to reconnect to ${isInGame ? 'game' : 'lobby'} ${validatedMatchID}`);
+      setReconnecting(true);
+      setShowDialog(false);
+      
+      setTimeout(() => {
+        navigate(route, { replace: true });
+        setReconnecting(false);
+      }, 300);
+    }
+  };
+
+  // Handle user's choice to dismiss
+  const handleDismiss = () => {
+    console.log('❌ User dismissed lobby reconnection');
+    clearActiveMatch();
+    setShowDialog(false);
+    setValidatedMatchID(null);
+  };
+
+  return { 
+    isChecking, 
+    reconnecting, 
+    showDialog, 
+    matchID: validatedMatchID,
+    onReconnect: handleReconnect,
+    onDismiss: handleDismiss
+  };
 };

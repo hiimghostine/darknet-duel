@@ -32,9 +32,39 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Client-side rate limiting
+  const [rateLimitCooldown, setRateLimitCooldown] = useState<number>(0);
+  const [messagesSent, setMessagesSent] = useState<number[]>([]);
+  const MESSAGE_LIMIT = 5;
+  const TIME_WINDOW = 10000; // 10 seconds
+  
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  // Update cooldown countdown every 100ms for smooth countdown
+  useEffect(() => {
+    if (rateLimitCooldown <= 0) return;
+    
+    const interval = setInterval(() => {
+      setRateLimitCooldown(prev => {
+        const newValue = prev - 100;
+        return newValue > 0 ? newValue : 0;
+      });
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [rateLimitCooldown]);
   
   // Channel switching state
   const [currentChannel, setCurrentChannel] = useState<'global' | 'lobby'>('global');
@@ -200,6 +230,19 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
       setError(data.message);
     });
 
+    // Handle rate limiting from server
+    socketInstance.on('rate_limited', (data: { message: string; cooldownMs: number; limit: number; window: number }) => {
+      console.warn('⚠️ Rate limited:', data.message);
+      setError(data.message);
+      setRateLimitCooldown(data.cooldownMs);
+      
+      // Clear error after cooldown
+      setTimeout(() => {
+        setError(null);
+        setRateLimitCooldown(0);
+      }, data.cooldownMs);
+    });
+
     setSocket(socketInstance);
 
     return () => {
@@ -232,6 +275,27 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
 
   const sendMessage = () => {
     if (!socket || !newMessage.trim()) return;
+
+    // Client-side rate limiting check
+    const now = Date.now();
+    const recentMessages = messagesSent.filter(timestamp => now - timestamp < TIME_WINDOW);
+    
+    if (recentMessages.length >= MESSAGE_LIMIT) {
+      const oldestTimestamp = recentMessages[0];
+      const remainingTime = Math.ceil((TIME_WINDOW - (now - oldestTimestamp)) / 1000);
+      setError(`Please slow down! Wait ${remainingTime} seconds before sending more messages.`);
+      setRateLimitCooldown(TIME_WINDOW - (now - oldestTimestamp));
+      
+      setTimeout(() => {
+        setError(null);
+        setRateLimitCooldown(0);
+      }, TIME_WINDOW - (now - oldestTimestamp));
+      
+      return;
+    }
+
+    // Record message timestamp
+    setMessagesSent([...recentMessages, now]);
 
     triggerSendMsg();
     socket.emit('send_message', {
@@ -332,66 +396,51 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
         {/* IRC-style header - compact */}
         <div className="p-2 border-b border-primary/20">
           <div className="font-mono">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold font-mono text-primary">
-                  #{channelInfo.name.toUpperCase()}
-                </h3>
-                
-{/* Footer Status Bar */}
-<div className="flex items-center justify-between text-xs text-base-content/70 w-full px-2">
-  {/* Left side: Channel switcher */}
-  {showChannelSwitcher && lobbyId && channels.length > 1 && (
-    <div className="flex items-center gap-1">
-      {channels.map(channel => (
-        <button
-          key={channel.id}
-          onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
-          className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
-            currentChannel === channel.id
-              ? 'bg-primary/20 text-primary border border-primary/40'
-              : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
-          }`}
-        >
-          <FaHashtag className="text-xs" />
-          <span className="text-xs">
-            {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
-          </span>
-        </button>
-      ))}
-    </div>
-  )}
-
-  {/* Right side: Time + Connection status */}
-  <div className="flex items-center gap-4">
-    {/* Time */}
-    <div>
-      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-    </div>
-
-    {/* Connection status */}
-    <div className="flex items-center gap-2 text-sm">
-      <div
-        className={`w-2 h-2 rounded-full ${
-          isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'
-        }`}
-      ></div>
-      <span>
-        {connectedUsers.size} USER(S) CONNECTED •{' '}
-        {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}
-      </span>
-    </div>
-  </div>
-</div>
-
+            {/* Top row: Channel name and time */}
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold font-mono text-primary">
+                #{channelInfo.name.toUpperCase()}
+              </h3>
+              <div className="text-xs text-base-content/70 font-mono">
+                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
-            <div className="text-base-content text-xs flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
-              <span>{connectedUsers.size} USERS • {isConnected ? 'SECURE' : 'OFFLINE'}</span>
+
+            {/* Bottom row: Channel switcher and connection status */}
+            <div className="flex items-center justify-between text-xs">
+              {/* Left: Channel switcher */}
+              {showChannelSwitcher && lobbyId && channels.length > 1 ? (
+                <div className="flex items-center gap-1">
+                  {channels.map(channel => (
+                    <button
+                      key={channel.id}
+                      onClick={() => switchChannel(channel.id as 'global' | 'lobby')}
+                      className={`px-2 py-0.5 text-xs font-mono transition-colors flex items-center gap-0.5 ${
+                        currentChannel === channel.id
+                          ? 'bg-primary/20 text-primary border border-primary/40'
+                          : 'text-base-content/60 hover:text-primary/80 hover:bg-primary/10 border border-transparent'
+                      }`}
+                    >
+                      <FaHashtag className="text-xs" />
+                      <span className="text-xs">
+                        {channel.id === 'global' ? 'GLOBAL' : 'LOBBY'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div></div>
+              )}
+
+              {/* Right: Connection status */}
+              <div className="flex items-center gap-2 text-base-content/70">
+                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 pulse-glow' : 'bg-red-500'}`}></div>
+                <span>{connectedUsers.size} USER(S) CONNECTED • {isConnected ? 'SECURE CHANNEL ACTIVE' : 'CONNECTION LOST'}</span>
+              </div>
             </div>
+
             {error && (
-              <div className="text-xs text-error mt-1">⚠️ {error}</div>
+              <div className="text-xs text-error mt-2">⚠️ {error}</div>
             )}
           </div>
         </div>
@@ -455,8 +504,8 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
                   setIsTyping(e.target.value.length > 0);
                 }}
                 onKeyPress={handleKeyPress}
-                placeholder="TYPE MESSAGE..."
-                disabled={!isConnected}
+                placeholder={rateLimitCooldown > 0 ? "RATE LIMITED..." : "TYPE MESSAGE..."}
+                disabled={!isConnected || rateLimitCooldown > 0}
                 maxLength={500}
                 className={`flex-1 border-none outline-none text-base-content text-xs font-mono bg-transparent placeholder:text-base-content/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200`}
               />
@@ -471,8 +520,21 @@ const LobbyChat: React.FC<LobbyChatProps> = ({
             <div className="px-1.5 pb-1 text-xs text-base-content/50 font-mono border-t border-primary/20">
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1">
-                  <div className={`w-1 h-1 rounded-full ${isTyping ? 'bg-primary animate-pulse' : 'bg-base-content/30'}`}></div>
-                  <span className="text-xs">{isTyping ? 'TYPING' : 'READY'}</span>
+                  <div className={`w-1 h-1 rounded-full ${
+                    rateLimitCooldown > 0 
+                      ? 'bg-error animate-pulse' 
+                      : isTyping 
+                        ? 'bg-primary animate-pulse' 
+                        : 'bg-base-content/30'
+                  }`}></div>
+                  <span className="text-xs">
+                    {rateLimitCooldown > 0 
+                      ? `COOLDOWN: ${Math.ceil(rateLimitCooldown / 1000)}s`
+                      : isTyping 
+                        ? 'TYPING' 
+                        : 'READY'
+                    }
+                  </span>
                 </span>
                 <span className="text-xs">
                   {newMessage.length}/500

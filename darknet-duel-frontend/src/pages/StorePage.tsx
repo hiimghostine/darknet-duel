@@ -278,7 +278,6 @@ const StorePage: React.FC = () => {
                               </div>
                               
                               <h3 className="text-xl font-semibold text-center mb-3 text-base-content">{item.n}</h3>
-                              <p className="text-base text-base-content/70 text-center mb-6">{item.d}</p>
                             </div>
                             
                             {/* Bottom Section: Price and Actions */}
