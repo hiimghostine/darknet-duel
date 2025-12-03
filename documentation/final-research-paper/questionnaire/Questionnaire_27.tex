@@ -1,0 +1,99 @@
+\documentclass[12pt]{article}
+\usepackage{mathptmx}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+% Set margins
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \includegraphics[width=2cm]{cit_logo.png}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{Cebu Institute of Technology - University} \par}
+    \vspace{1.5cm}
+    
+    \includegraphics[width=2cm]{css_logo.png}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{College of Computer Studies} \par}
+    \vspace{2cm}
+    
+    \includegraphics[width=3.5cm]{dnd_logo.png}
+    \vspace{1cm}
+    
+    {\Huge \textbf{Framework / Model and Questionnaire Document} \par}
+    \vspace{0.5cm}
+    
+    {\Large for \par}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{Darknet Duel} \par}
+    \vfill
+    
+\end{titlepage}
+
+\section{Introduction}
+In an era where digital threats are ubiquitous, cybersecurity awareness is no longer optional—it is a fundamental skill. However, traditional pedagogical methods often struggle to capture the attention of learners, resulting in a gap between theoretical knowledge and practical application. \textbf{Darknet Duel} addresses this challenge by introducing a gamified approach to cybersecurity education. By simulating real-world attacks, defenses, and events within a competitive card game format, the project aims to transform abstract concepts into tangible strategic decisions.
+
+This document outlines the methodological framework employed to evaluate the system's usability and user experience. Specifically, it details the adoption of the System Usability Scale (SUS) as the primary data collection instrument, supplemented by qualitative inquiries to provide a holistic assessment of the software's performance in a live testing environment.
+
+\section{Framework Discussion}
+To rigorously assess the usability of Darknet Duel, we selected the \textbf{System Usability Scale (SUS)} as our core evaluation framework. Developed by John Brooke in 1986, SUS is widely recognized as an industry standard for measuring perceived usability. Its selection was predicated on several key advantages:
+
+\begin{itemize}
+    \item \textbf{Robustness and Reliability}: Despite its brevity, SUS has been statistically proven to provide reliable results even with smaller sample sizes.
+    \item \textbf{Technology Agnostic}: The framework is designed to evaluate a wide range of systems, making it highly adaptable to a novel web-based card game like Darknet Duel.
+    \item \textbf{Standardized Scoring}: It yields a single composite score (0-100), facilitating immediate benchmarking against industry averages and providing a clear, quantifiable metric of system performance.
+\end{itemize}
+
+However, while SUS provides an excellent quantitative measure of \textit{usability}, it does not fully capture the \textit{user experience} or specific qualitative feedback. To address this limitation and ensure a comprehensive evaluation, we augmented the standard SUS framework with:
+\begin{enumerate}
+    \item \textbf{Open-Ended Questions}: Three targeted inquiries were added to elicit specific feedback regarding the system's strengths, weaknesses, and potential areas for improvement. This qualitative data is crucial for contextualizing the SUS score.
+    \item \textbf{Overall Experience Rating}: A 10-star rating system was included to gauge the users' general satisfaction and "fun factor," which allows us to contrast the strict usability score against the overall enjoyment of the game.
+\end{enumerate}
+
+\section{Questionnaire}
+The data collection instrument was administered to 33 respondents following their interaction with the live deployed system. The questionnaire is structured into three distinct sections.
+
+\subsection{Part I: System Usability Scale (SUS)}
+Respondents were asked to rate the following 10 statements on a Likert scale ranging from \textbf{1 (Strongly Disagree)} to \textbf{5 (Strongly Agree)}.
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item I think that I would like to use this system frequently.
+    \item I found the system unnecessarily complex.
+    \item I thought the system was easy to use.
+    \item I think that I would need the support of a technical person to be able to use this system.
+    \item I found the various functions in this system were well integrated.
+    \item I thought there was too much inconsistency in this system.
+    \item I would imagine that most people would learn to use this system very quickly.
+    \item I found the system very cumbersome to use.
+    \item I felt very confident using the system.
+    \item I needed to learn a lot of things before I could get going with this system.
+\end{enumerate}
+
+\subsection{Part II: Qualitative Feedback}
+To gather in-depth insights, respondents were asked to provide free-text answers to the following questions:
+
+\begin{itemize}
+    \item What do you like most about the system?
+    \item What challenges have you faced while using the system?
+    \item Are there any features you think should be added or improved?
+\end{itemize}
+
+\subsection{Part III: Overall Experience}
+Finally, to measure general satisfaction, respondents were asked to provide a global rating of their experience.
+
+\begin{itemize}
+    \item How would you rate your overall experience with the system on a scale of 1 to 10 (1 = Very Poor, 10 = Excellent)?
+\end{itemize}
+
+\end{document}
