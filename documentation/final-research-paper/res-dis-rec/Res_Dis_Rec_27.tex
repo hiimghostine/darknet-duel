@@ -1,0 +1,135 @@
+\documentclass[12pt]{article}
+\usepackage{mathptmx}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+\usepackage{graphicx}
+
+% Set margins
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \includegraphics[width=2cm]{cit_logo.png}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{Cebu Institute of Technology - University} \par}
+    \vspace{1.5cm}
+    
+    \includegraphics[width=2cm]{css_logo.png}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{College of Computer Studies} \par}
+    \vspace{2cm}
+    
+    \includegraphics[width=3.5cm]{dnd_logo.png}
+    \vspace{1cm}
+    
+    {\Huge \textbf{Results, Discussion and Recommendation Document} \par}
+    \vspace{0.5cm}
+    
+    {\Large for \par}
+    \vspace{0.5cm}
+    
+    {\Huge \textbf{Darknet Duel} \par}
+    \vfill
+    
+
+\end{titlepage}
+
+\section{Introduction}
+In an era where digital threats are ubiquitous, cybersecurity awareness is no longer optional—it is a fundamental skill. However, traditional pedagogical methods often struggle to capture the attention of learners, resulting in a gap between theoretical knowledge and practical application. \textbf{Darknet Duel} addresses this challenge by introducing a gamified approach to cybersecurity education. By simulating real-world attacks, defenses, and events within a competitive card game format, the project aims to transform abstract concepts into tangible strategic decisions.
+
+This document presents the findings from a live testing scenario designed to evaluate the system's efficacy, usability, and user reception. Unlike controlled local tests, this study involved a full-scale deployment of the application—frontend, backend, and game server—to the public internet, allowing for a realistic assessment of the system's performance in a production-like environment.
+
+\section{Data Gathering}
+The study targeted a specific demographic of \textbf{Third-year Bachelor of Science in Information Technology (BSIT)} students at Cebu Institute of Technology - University. This group was selected for their baseline familiarity with technology, allowing the study to focus on the \textit{game mechanics} and \textit{educational value} rather than basic computer literacy.
+
+\begin{itemize}
+    \item \textbf{Total Respondents}: 33 students
+    \item \textbf{Testing Environment}: The application was hosted on a cloud server, and participants accessed the game remotely via the computers within their computer laboratory through standard web browsers. This setup mirrored the intended real-world use case of the software.
+\end{itemize}
+
+\section{Results}
+Data processing involved a review of the raw survey responses to ensure data integrity. \textbf{Four (4) responses were identified as outliers} (e.g., incomplete data or straight-lined answers) and were removed from the final dataset to prevent skewing the results.
+
+The quantitative analysis of the remaining valid responses yielded the following key metrics:
+
+\begin{itemize}
+    \item \textbf{Average System Usability Scale (SUS) Score}: \textbf{50.9}
+    \begin{itemize}
+        \item \textit{Interpretation}: This score falls within the "Marginal" range of acceptability. It indicates that while the system is functional, it possesses significant usability hurdles that need to be addressed.
+    \end{itemize}
+    \item \textbf{Average Overall Experience Rating}: \textbf{7.82 / 10}
+    \begin{itemize}
+        \item \textit{Interpretation}: A strong positive rating that contrasts with the SUS score, suggesting high user satisfaction with the core concept despite usability issues.
+    \end{itemize}
+\end{itemize}
+
+\section{Discussion}
+The disparity between the low SUS score (50.9) and the high satisfaction rating (7.82/10) provides a rich ground for analysis.
+
+\subsection{Deep Dive into Usability (SUS Analysis)}
+A granular analysis of the individual SUS questions reveals the specific drivers of the low usability score:
+
+\begin{enumerate}
+    \item \textbf{The "Learning Cliff" (Q10 \& Q4)}:
+    \begin{itemize}
+        \item \textbf{Question 10 ("I needed to learn a lot of things before I could get going")} received the highest negative average score of \textbf{4.25 / 5}. This is the most critical finding. It confirms that the barrier to entry is too high; users felt overwhelmed before they could even start playing effectively.
+        \item \textbf{Question 4 ("I think that I would need the support of a technical person")} also scored high (\textbf{3.68 / 5}). Given that the respondents were IT students, this is significant. It implies that the difficulty wasn't technical (how to use a website) but conceptual (how to play the game).
+    \end{itemize}
+    
+    \item \textbf{System Integrity (Q5 \& Q6)}:
+    \begin{itemize}
+        \item On a positive note, \textbf{Question 5 ("I found the various functions in this system were well integrated")} received a high positive score of \textbf{3.89 / 5}.
+        \item \textbf{Question 6 ("I thought there was too much inconsistency")} received a low score of \textbf{2.57 / 5} (lower is better).
+        \item These scores indicate that the software itself is stable, consistent, and cohesive. The "low usability" is not due to bugs or disjointed features, but rather the complexity of the content and the onboarding process.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Qualitative Feedback \& User Sentiments}
+The open-ended responses corroborate the quantitative data, highlighting three distinct themes:
+
+\begin{itemize}
+    \item \textbf{Theme 1: Strong Conceptual Appeal}: Users were enthusiastic about the educational value. Comments such as \textit{"I like the idea of the system, educational and fun"} and \textit{"The UI is very clean and interactive"} were common. The visual design and the "cybersecurity battle" theme were major wins.
+    \item \textbf{Theme 2: Tutorial Deficiencies}: Many users explicitly mentioned that the tutorial was buggy or insufficient. One user noted, \textit{"The tutorial has a bug, wherein it suddenly stops,"} while another stated, \textit{"I found it a bit complex... one would need some time to study the rules."}
+    \item \textbf{Theme 3: UI Obstructions}: A specific, recurring UI issue was identified: \textit{"The pop-up modal of the card stats/details was a bit annoying on hover because it kept blocking our view."} This simple interface flaw likely contributed significantly to the feeling of frustration.
+\end{itemize}
+
+\section{Recommendation}
+To bridge the gap between the excellent concept and the marginal usability, the following targeted improvements are recommended:
+
+\subsection{1. Revolutionize the Onboarding Process}
+The current tutorial is the system's weakest link.
+\begin{itemize}
+    \item \textbf{Interactive Walkthrough}: Replace the static or buggy tutorial with a fully interactive, scripted match where the system guides the user through the first 3 turns.
+    \item \textbf{"Just-in-Time" Learning}: Instead of front-loading all information (which leads to the high Q10 score), introduce concepts as they become relevant during gameplay using tooltips or an advisor character.
+\end{itemize}
+
+\subsection{2. Implement a "Sandbox" Practice Mode}
+Users requested a low-stakes environment to learn.
+\begin{itemize}
+    \item \textbf{Single Player vs. AI}: Develop a simple AI bot. This allows users to practice mechanics without the pressure of a live timer or a human opponent.
+    \item \textbf{Scenario Challenges}: Create specific puzzle scenarios (e.g., "Defend against this DDoS attack") to teach specific card interactions.
+\end{itemize}
+
+\subsection{3. UI/UX Refinements}
+Address the specific friction points identified in the feedback.
+\begin{itemize}
+    \item \textbf{Fix Card Hovers}: Move the card detail pop-ups to a fixed sidebar or a dedicated area of the screen so they never obscure the game board.
+    \item \textbf{Visual Clarity}: enhance the visual language to clearly indicate \textit{whose turn it is} and \textit{which cards are playable}. Use glowing borders or distinct color shifts to reduce cognitive load.
+\end{itemize}
+
+\section{Conclusion}
+The live testing of Darknet Duel has proven that the project succeeds in its primary mission: \textbf{engagement}. The high overall experience rating (7.82/10) demonstrates that students find the concept of a cybersecurity card game inherently fun and valuable.
+
+However, the System Usability Scale score of 50.9 serves as a crucial reality check. The complexity of the rules, combined with an insufficient onboarding experience, creates a steep barrier to entry. The software is stable and well-integrated, but it is currently "hard to learn."
+
+By prioritizing a redesigned tutorial and a practice mode, the development team can lower this barrier. Transforming the "hard to learn" aspect into a "easy to learn, hard to master" curve will likely propel the usability score into the acceptable range, fulfilling the project's potential as a premier educational tool.
+
+\end{document}
